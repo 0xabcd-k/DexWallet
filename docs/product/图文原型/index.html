@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DexWallet · 页面图文规划</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#w01"><span class="logo">D</span><strong>DexWallet</strong><span>页面图文规划</span></a>
+    <div class="top-actions"><span class="pill">低保真 · 示例数据</span><button id="print">打印当前页面</button></div>
+  </header>
+  <div class="workspace">
+    <nav class="catalog" aria-label="页面目录">
+      <div class="catalog-head"><strong>页面目录</strong><span id="count"></span></div>
+      <label class="search"><span>搜索页面</span><input id="search" type="search" placeholder="页面名称或功能关键词"></label>
+      <div id="navigation"></div>
+      <a class="source-index" href="../README.md">查看完整文字目录 ↗</a>
+    </nav>
+    <main id="main">
+      <div class="page-heading"><div><div class="eyebrow" id="breadcrumb"></div><h1 id="title"></h1></div><a id="source" class="source-link">页面原文 ↗</a></div>
+      <p class="lead" id="intro"></p>
+      <div class="review-layout">
+        <section class="canvas" aria-label="页面线框图">
+          <div class="canvas-heading"><span>页面布局</span><span>编号对应右侧说明 · 点击按钮看交互</span></div>
+          <div id="device"></div>
+          <p class="canvas-note">本稿用于确认页面结构与功能。各页是独立示例场景，数据不构成同一账户的连续状态。</p>
+        </section>
+        <aside class="annotations" aria-label="功能说明">
+          <div class="review-tabs" role="tablist" aria-label="说明分类">
+            <button role="tab" id="tab-layout" data-tab="layout" aria-controls="notes">布局</button>
+            <button role="tab" id="tab-actions" data-tab="actions" aria-controls="notes">按钮</button>
+            <button role="tab" id="tab-dialogs" data-tab="dialogs" aria-controls="notes">弹窗</button>
+            <button role="tab" id="tab-states" data-tab="states" aria-controls="notes">状态</button>
+          </div>
+          <div id="notes" role="tabpanel"></div>
+        </aside>
+      </div>
+      <footer class="page-footer"><button id="previous">← 上一页</button><span id="position"></span><button id="next">下一页 →</button></footer>
+    </main>
+  </div>
+  <dialog id="interaction" aria-labelledby="dialog-title">
+    <div class="dialog-head"><span class="eyebrow">交互预览 · 不执行真实操作</span><button id="close-dialog" aria-label="关闭弹窗">✕</button></div>
+    <h2 id="dialog-title"></h2><div id="dialog-body"></div>
+  </dialog>
+  <script src="assets/pages.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
