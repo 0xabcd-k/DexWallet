@@ -1,0 +1,455 @@
+{
+  "source_commit": "16ba778267a6cea5c9a38104a74847177c4923f3",
+  "source_branch": "docs/editable-page-drafts",
+  "archived_on": "2026-10-26",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "aad337ee72def694bc07cdb1cf2245234992d8faaf7a26686516c9d29f94c956"
+    },
+    {
+      "path": "design/专项讨论清单.md",
+      "sha256": "66107a61c4f4a58fa8072ad3885f94beeb524a14d455504b5de031aff9932c82"
+    },
+    {
+      "path": "design/外部钱包接入方案.md",
+      "sha256": "243b721e2f184654b6444e0d2dbf4e32ee319a5c606c431ff63a2f765e6cd486"
+    },
+    {
+      "path": "design/待确认功能清单.md",
+      "sha256": "55da6fc2cd4c498e6e8dee9db1481ccceea7ea3a1034849cacb36bbea6be4a1b"
+    },
+    {
+      "path": "design/水果机奖励方案.md",
+      "sha256": "6c565787e51b387b048752904f4474d2a322eb4c01708e531fcd68422121487f"
+    },
+    {
+      "path": "design/界面与交互重构方案.md",
+      "sha256": "fff3e5f4219dabc0361431e76243dcd604dce4c1790d9bceccd1709cc8f3a2a3"
+    },
+    {
+      "path": "design/网络币种与外部钱包建议.md",
+      "sha256": "fce5f7ab3336e77ff631c4028a470b367aaf797671491e309fffac25fc6beef8"
+    },
+    {
+      "path": "design/钱包支付全场景与前后端工作流.md",
+      "sha256": "54694d12f1508db0185992388fc37903c61be7e49d21749e9a7a6e1c4637aaef"
+    },
+    {
+      "path": "design/页面规划.md",
+      "sha256": "222fb2eb85bbb855f33856ef8c47c5328549d8ce47fafa0772b82ee7b67977de"
+    },
+    {
+      "path": "product/README.md",
+      "sha256": "ec21991c939aff5672b226c0e401ab677d35b917ed793eff7bbf249d8c210dbb"
+    },
+    {
+      "path": "product/产品约定.md",
+      "sha256": "412d08947c37c9063355d78f6d4919bc3d6bb080a08e41e8459f2172475ae19c"
+    },
+    {
+      "path": "product/公共/交互与弹窗.md",
+      "sha256": "b3a93623f2e3ca04d4b54ab3eaf59c0286d34982e3e1353558c3346d8cf0385d"
+    },
+    {
+      "path": "product/公共/后台登录.md",
+      "sha256": "b7092a5f932c5280360d81d4fdae72f71c78f917b9b02d6b6ef8f6976d06540e"
+    },
+    {
+      "path": "product/可编辑页面稿/00页面目录.docx",
+      "sha256": "8994c3d0f5aba82a0b209d65ff4b43fa143862c94f3618a69990d306fcb61227"
+    },
+    {
+      "path": "product/可编辑页面稿/README.md",
+      "sha256": "146835503df239b58d16a89b9a3f6da6e36ccbaa2cf2007c3173b95fd26adfc4"
+    },
+    {
+      "path": "product/可编辑页面稿/公共/后台登录.docx",
+      "sha256": "27e2d4dbaf9ee55898e879df1a7e8ad6ae8f1c2d79051d3ec2317dd2889afaf1"
+    },
+    {
+      "path": "product/可编辑页面稿/商户端/01商户概览.docx",
+      "sha256": "6dedeb0795bd975f2a49208b29d5246b271f1f6a6d7cd7dc6a3661404885f951"
+    },
+    {
+      "path": "product/可编辑页面稿/商户端/02订单列表.docx",
+      "sha256": "c43a08175396e0c62772115f001bc6d4b5231c5ba906d788fff78012a18a7144"
+    },
+    {
+      "path": "product/可编辑页面稿/商户端/03订单详情.docx",
+      "sha256": "73941395ee4ed9d65725defb55fb97d1bdadaacf6a9b1f422ac4f42f3ac2150b"
+    },
+    {
+      "path": "product/可编辑页面稿/商户端/04创建收款单.docx",
+      "sha256": "436f42d5f69f921e1e35fe35bf3b667444c42ee60301a995bb13aa0bcbed714e"
+    },
+    {
+      "path": "product/可编辑页面稿/商户端/05资金与结算.docx",
+      "sha256": "ac65c1322c453db3137eb8a6dbdfcddf5f7636c15214e3e6b8f181a197e37e61"
+    },
+    {
+      "path": "product/可编辑页面稿/商户端/06接入设置与文档.docx",
+      "sha256": "71d16c1b00f6358c4c510dddadcd7d345ebd5ee2dfba3da31810dd7587100832"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/01工作台.docx",
+      "sha256": "086c3bf5247f74a8e07340cbd1a5abfbac931de35be4d772bddf1e4a3774f3f3"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/02用户管理.docx",
+      "sha256": "846e5672fdcd5043d5ce39e323570bf8ce61d3e4d0db94e8c8c0e4386764ae11"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/03商户管理.docx",
+      "sha256": "b471bcb3c0d9081b4bbff05ed59e2c562471be2746ba7f312a25f307a029d105"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/04任务管理.docx",
+      "sha256": "0924a708803022208f85a2d0569e1417880c8cdd15f4f23f1c6c342d84c74ab0"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/05审核中心.docx",
+      "sha256": "b6f118b797d0bf5d0f13ae8f94db6f9e97420dbe4f6d05262080539fc2d19811"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/06异常订单.docx",
+      "sha256": "5f71a9f1caf81eaca25d413608588e76b6ebd74c46324b885bdb995f6353bf20"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/07资金与结算.docx",
+      "sha256": "d05f98ec6197d782daf6a8d8d6286cde05b0c2ec761fa80c1a74479afd2d784b"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/08参数配置.docx",
+      "sha256": "b9a79055043b9782c9a41c795551246597da57d4d478264715d1b25849d9c355"
+    },
+    {
+      "path": "product/可编辑页面稿/平台端/09操作记录.docx",
+      "sha256": "4319aba7dec6ee1ef7201cf64112942e80a2eb4cdae8aec5fae1ce65731c6114"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/任务/01任务列表.docx",
+      "sha256": "dffb08ea1ae2b950a3725b3d6fd982faf60fe49fcbd79a3866de628a532c6e84"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/任务/02任务详情.docx",
+      "sha256": "b970ac0b57d9e5cad0cbe27d2649d31b3ef6b7847741db0d33bde2e1806584b4"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/任务/03受邀任务.docx",
+      "sha256": "6cfb34ba4c8fab8232044fd46c8fc269a7ca08558eef9d642ca323be6def5a6f"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/任务/04水果机.docx",
+      "sha256": "b62e5d19670abf86d318188b2fa8035426464d75e4f19871fad93abf8dc09213"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/任务/05Pro权益.docx",
+      "sha256": "8d9dc8d26b124690a79923e1812e92a569aae7e960206904c81fe0c4186f8057"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/任务/06奖励提现.docx",
+      "sha256": "3f7379fc84f1eb4f62449047e550bbb82edf8531b84f545d82dc68e306172aa5"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/支付/01扫码与订单查找.docx",
+      "sha256": "16ec2637c9a28c255aa156135b14436cb27552a9ee791a0eda24fedbdef8e3ac"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/支付/02支付确认.docx",
+      "sha256": "34eb23779dddc570d9f34f97ed7c6454e0c83b77716f7c0aa4ba3d131be09e56"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/支付/03支付结果.docx",
+      "sha256": "1039d6dbe74efb718ee5cb04b57a4c2faa134e5fabcccff03c71e7fd6812c00a"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/记录/01账单列表.docx",
+      "sha256": "8505a540b0fd5521f39854effb3ce09b57f8720ce92d328de8ae535a27495498"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/记录/02账单详情.docx",
+      "sha256": "d68ce9e83e9a8aef0aca2f2a08c2a7d0a025d528bf4caf685a834525acc3cbc5"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/账户/01登录与进入.docx",
+      "sha256": "90c8d46101f88a53227b99394315961f68ffcfce382e5bbb17bf0ebc6d995234"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/账户/02账户与帮助.docx",
+      "sha256": "50b8f256460012e97e9bba887872350ffbb4c6b259e4fa5a53c6ccbab25113bd"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/邀请/01邀请统计.docx",
+      "sha256": "5d17d656ff151bdc33e2a9b4bfe56ee407321a0eb54657fb2032e63c9bf99bc1"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/01钱包首页.docx",
+      "sha256": "7c8bb69e057656282fb53880c77f97cd713d631218251e8635ebba346aa37c35"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/02钱包管理.docx",
+      "sha256": "fde26c982ef6893ff31cb9db26f675807ad5b33b18285d08dcad1e9c4697f1a5"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/03创建与导入钱包.docx",
+      "sha256": "5f31a582583d44d789a366bf4ba531bd585430400eac4aa7ef4747fd5b981ac7"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/04连接外部钱包.docx",
+      "sha256": "10cd9bfa00892f2895e92f1fe62daf5647528137130056b2f78b3f717eb1407d"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/05资产详情.docx",
+      "sha256": "19b9042eb40ab43c12d668f36bba5b3b3cf1727454f66f2dee178d9754f0068d"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/06收款.docx",
+      "sha256": "23b4dc072562451952805c4a3c7b404d985a497b8aed50a94674da55a2232ad1"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/07转账.docx",
+      "sha256": "593afb29bc20018f6168347d42d9279fad81773aad5eaf3b44eda95749ae3dfc"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/08充值美元余额.docx",
+      "sha256": "2f84134900a03522784cfb30926c3b70193f62e27c329b3211d39424d391b0a0"
+    },
+    {
+      "path": "product/可编辑页面稿/用户端/钱包/09美元余额提现.docx",
+      "sha256": "4ac6641c2d9b3d2c07f1a3c0d346d9acb00120f47b27d325318b7a9e2caecefd"
+    },
+    {
+      "path": "product/商户端/01商户概览.md",
+      "sha256": "52c1b5cbdc98a5169e7542de259ae5518a92ab07c6ddf76cb1e497a905d84bf2"
+    },
+    {
+      "path": "product/商户端/02订单列表.md",
+      "sha256": "473419403ab388da6b9da37334eae60a241e563e6ef736484723043353861894"
+    },
+    {
+      "path": "product/商户端/03订单详情.md",
+      "sha256": "2adb0ec3d24ab72872758ff1769885e9591a0ceb93857078e99f54495eaf24dc"
+    },
+    {
+      "path": "product/商户端/04创建收款单.md",
+      "sha256": "6c3f7e70ec6b305d997c8402b3e90182d1cd9f1ab60604ee53f7df6315c0137c"
+    },
+    {
+      "path": "product/商户端/05资金与结算.md",
+      "sha256": "f869d9d65c2fe851f9e6a896bb735d977fa5e2ae1d2212958a73b84c3a341d1d"
+    },
+    {
+      "path": "product/商户端/06接入设置与文档.md",
+      "sha256": "8caf7b9e23194e9c179f7060a3d24c716668817d4bb641f570229208161aacec"
+    },
+    {
+      "path": "product/图文原型/README.md",
+      "sha256": "a1839106a59e6422c27e02c4245fc6f49e772512ab8dae8fcbc19fce9420b864"
+    },
+    {
+      "path": "product/图文原型/assets/app.js",
+      "sha256": "85b4e2465e0b78df34b79a8bf1496ea7fa1a8d8e262844f953f3150a3653281b"
+    },
+    {
+      "path": "product/图文原型/assets/pages.js",
+      "sha256": "16e2f035ee886979b22ac8fa07c46250811469098a7f6ae6639454b557557ff0"
+    },
+    {
+      "path": "product/图文原型/assets/style.css",
+      "sha256": "1fc92e7d006b503f55f4668d4dba95bc196cacfa83120cb5250fdebadde9a53e"
+    },
+    {
+      "path": "product/图文原型/build.py",
+      "sha256": "8051f861bd4b6ed94da2d4a018035d0140705bfcad88d7af0e2c8dc68067902d"
+    },
+    {
+      "path": "product/图文原型/index.html",
+      "sha256": "86c717f7d12abe61477c6dbc52d92dacda96b9f48623e34240039a3b4f7a44ee"
+    },
+    {
+      "path": "product/图文原型/pages.json",
+      "sha256": "970cc13daf34fe037629be56948a0e18ebfe7d98e23f0f7e7ffdc3dea972ddcf"
+    },
+    {
+      "path": "product/图文原型/previews/01-wallet.png",
+      "sha256": "aac3b89453956f060da09e60ba9b54b6f6fd0412466224bd777edb8f3e4d5514"
+    },
+    {
+      "path": "product/图文原型/previews/02-transfer.png",
+      "sha256": "1ade3f16a9af0b6eb3a391985afeb220566d97c3635758e65790b8adf25417ff"
+    },
+    {
+      "path": "product/图文原型/previews/03-task.png",
+      "sha256": "756ee7ab1fc8c44af9ad27ade7214822a610362b1d54cd30ae9e87a54f81f679"
+    },
+    {
+      "path": "product/图文原型/previews/04-merchant.png",
+      "sha256": "f13d8cb29ebf6fc8e7a53daeec60792ad77413ae0a41afe8bc6b04c0ad33f625"
+    },
+    {
+      "path": "product/图文原型/previews/05-review.png",
+      "sha256": "2739ad3d08ad1bf9c00722c83bf65d823122e8443d3e87430f821fdd2e146400"
+    },
+    {
+      "path": "product/图文原型/previews/06-review-dialog.png",
+      "sha256": "4f99ed24f5593f70640ce0cb53154fe496075f990655ebcc5c2385307fffeca6"
+    },
+    {
+      "path": "product/导航与流程.md",
+      "sha256": "cecce2968c4c9e4de004ebed252c4b8f3477074edb637506d11cf67f59075d1c"
+    },
+    {
+      "path": "product/平台端/01工作台.md",
+      "sha256": "689ab3417df180c93544b116a14c63652b322e87599dacca6cea929f21b27fe5"
+    },
+    {
+      "path": "product/平台端/02用户管理.md",
+      "sha256": "29e903acf67cd8e7a9d7e8f101e9f663649e6c9ea5b0b0a07268a27ebe722587"
+    },
+    {
+      "path": "product/平台端/03商户管理.md",
+      "sha256": "5eaec0d75b5ab87a310d984af908da7cc7e71015d0034ca134014ab27a9ecf21"
+    },
+    {
+      "path": "product/平台端/04任务管理.md",
+      "sha256": "a48e97bf315a73e8f55f6833ac0cc59296ffe501d0ab5e2f9c3b6bb003298bc4"
+    },
+    {
+      "path": "product/平台端/05审核中心.md",
+      "sha256": "88984a83ff6165071e7f3f1f23f9922add4ac74471677a2e615db1ad8f593951"
+    },
+    {
+      "path": "product/平台端/06异常订单.md",
+      "sha256": "43775ef9112c3d695a3d94569327cf900ab081b2005be9445da2fa8c3f6571dc"
+    },
+    {
+      "path": "product/平台端/07资金与结算.md",
+      "sha256": "10d20f9400e5903d6cac80ff155527d1d2706534181016b0c477d211702c5250"
+    },
+    {
+      "path": "product/平台端/08参数配置.md",
+      "sha256": "9cf7d67d308d931f60b1a8e6d859a577b79a06fb89cbc8e93148263bb2799855"
+    },
+    {
+      "path": "product/平台端/09操作记录.md",
+      "sha256": "7b9a68f78fb9902bc8c47a1ab833d65b3b10160c38272cd575d8caa3346cd42d"
+    },
+    {
+      "path": "product/用户端/任务/01任务列表.md",
+      "sha256": "ded821a5a1a2da3dfb9091a1c42e64341ba4fe380ae2bc4c3fb5102d886d8d15"
+    },
+    {
+      "path": "product/用户端/任务/02任务详情.md",
+      "sha256": "faac322312a4a21980fb422c33cb998933787fa2de1ee212ea6502bfa8e6ede6"
+    },
+    {
+      "path": "product/用户端/任务/03受邀任务.md",
+      "sha256": "efddbd1472bdb0a7fc759081776b12c0f2a3e77f7c32241f9b8fd5e8b74076ca"
+    },
+    {
+      "path": "product/用户端/任务/04水果机.md",
+      "sha256": "675591119c36ae7b4b53346882edefd66bfbf1cb242b35f1f6ab55cc06d0539b"
+    },
+    {
+      "path": "product/用户端/任务/05Pro权益.md",
+      "sha256": "5fd282644d791026fa70b7a915d6cd40bf9da96be386d3d1735d167def3e19ff"
+    },
+    {
+      "path": "product/用户端/任务/06奖励提现.md",
+      "sha256": "a9d9a931876d977352baf53457d7cad8c2ce1b0044e58685b7763d0a1cc1d3d5"
+    },
+    {
+      "path": "product/用户端/支付/01扫码与订单查找.md",
+      "sha256": "a2eb9ddfbd5ef52d4d1d6af38aa8cf95c4805b8a29c66237d511b2f935faaccd"
+    },
+    {
+      "path": "product/用户端/支付/02支付确认.md",
+      "sha256": "7300199713d9eef9fc8ef71c8342e6229f88e6560aa3877d7bfc0da01d870e8e"
+    },
+    {
+      "path": "product/用户端/支付/03支付结果.md",
+      "sha256": "e04a5b50613183e7f90e89eb6aae4296f99411af92e9640906f2292197b8af1b"
+    },
+    {
+      "path": "product/用户端/记录/01账单列表.md",
+      "sha256": "5aca8adf3b7222e205276d16fb6ad95eb50cb705b49e228c5412cc0df008f211"
+    },
+    {
+      "path": "product/用户端/记录/02账单详情.md",
+      "sha256": "e633e1d0dfc2f4a3f274cee412e6083b736583917e39ed07b84bbc9da07a150f"
+    },
+    {
+      "path": "product/用户端/账户/01登录与进入.md",
+      "sha256": "d23c336b0dd4043842a8738f992017138507cfd739b8bb073ebf0583a7615e16"
+    },
+    {
+      "path": "product/用户端/账户/02账户与帮助.md",
+      "sha256": "015546c877bdee6ea1d2614c8532c5e2662e63e24eb8295b771145562b523425"
+    },
+    {
+      "path": "product/用户端/邀请/01邀请统计.md",
+      "sha256": "20dea7bf3e219c78c96e0eeb34bee0c15afc68f5b7c414c26b0d51f1c8f41fdd"
+    },
+    {
+      "path": "product/用户端/钱包/01钱包首页.md",
+      "sha256": "53a384a5b0f9e1636f59cb9087e8d3367923322037144d513b0056f8aac176fb"
+    },
+    {
+      "path": "product/用户端/钱包/02钱包管理.md",
+      "sha256": "cbbf01e49436ce56ea5fb8e8a11af4795a9cdda94d8388520fe48447060740dd"
+    },
+    {
+      "path": "product/用户端/钱包/03创建与导入钱包.md",
+      "sha256": "92a445aa689173738962aef0ae96ae687766074675be6e5b6b45097dfcb7dd9d"
+    },
+    {
+      "path": "product/用户端/钱包/04连接外部钱包.md",
+      "sha256": "9e225a3f66f834192965bcc1990d4b753d93c93f0fb41bbc9050712575a621c6"
+    },
+    {
+      "path": "product/用户端/钱包/05资产详情.md",
+      "sha256": "edc7a1c2123e3e2ab6a1fcea1b0d4569e72cee90f5758798bb39128cbd731933"
+    },
+    {
+      "path": "product/用户端/钱包/06收款.md",
+      "sha256": "9ca994ab59fc4905ba8e48801e46efee2659926f4959f0969812758d82c94387"
+    },
+    {
+      "path": "product/用户端/钱包/07转账.md",
+      "sha256": "f1ec7dc812d1fd3425866a2643cd0d603c9f180ec03337e17378a377a3ce574f"
+    },
+    {
+      "path": "product/用户端/钱包/08充值美元余额.md",
+      "sha256": "b3b27117173c5290be1b29ec5403ba1336fbc2b3786b5ea92ccb586c9835cec2"
+    },
+    {
+      "path": "product/用户端/钱包/09美元余额提现.md",
+      "sha256": "0d3a8de5810dea2b7a722983107e9bdf9e35ca44d9269431945a7a1e4f85a482"
+    },
+    {
+      "path": "产品页面功能拆分.md",
+      "sha256": "e7da7438d326cbfeb9cf72f59bd351e52ce9bebd96e39ea9d30e4ce5dac17315"
+    },
+    {
+      "path": "任务列表.md",
+      "sha256": "6d26cf71fd5b0f30ef7f15d2393287a866a2f808c682eabe56a72a3a154cf875"
+    },
+    {
+      "path": "任务详情.md",
+      "sha256": "28dc8564d35027df31013cf3ccee10e74e44efbed90ecf23f8fe2eac11458077"
+    },
+    {
+      "path": "大纲.md",
+      "sha256": "b8e6985e50be42496ba097ba3e7491517bde7465eed5666536f182f454219693"
+    },
+    {
+      "path": "邀请统计.md",
+      "sha256": "8cc7d66adcd3000e7c709a70f0a342049bb276264de6ab24ae41a93016194746"
+    },
+    {
+      "path": "钱包.md",
+      "sha256": "268002cb016d01c884f27d605c222940311707739fed71d5eb87c7db3ac3ff9d"
+    }
+  ]
+}
