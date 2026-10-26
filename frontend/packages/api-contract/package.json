@@ -1,0 +1,11 @@
+{
+  "name": "@dexwallet/api-contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./example": { "types": "./src/example.ts" }
+  },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "devDependencies": { "typescript": "5.9.3" }
+}

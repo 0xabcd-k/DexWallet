@@ -1,0 +1,26 @@
+syntax = "v1"
+
+import "shared.api"
+
+// 工程回显示例；amount 仅验证传输精度，不代表业务金额契约。
+type EchoRequest {
+    Message string `json:"message"`
+    Amount string `json:"amount"`
+    Note string `json:"note,optional,omitempty"`
+    Items []SampleItem `json:"items"`
+}
+
+type EchoResponse {
+    Message string `json:"message"`
+    Amount string `json:"amount"`
+    Note string `json:"note,omitempty"`
+    Items []SampleItem `json:"items"`
+}
+
+@server (
+    group: example
+)
+service contract {
+    @handler Echo
+    post /examples/echo (EchoRequest) returns (EchoResponse)
+}

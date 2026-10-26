@@ -1,0 +1,1 @@
+ALTER TABLE contract_sample ADD COLUMN note VARCHAR(128) NOT NULL DEFAULT '';

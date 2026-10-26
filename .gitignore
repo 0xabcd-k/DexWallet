@@ -1,5 +1,7 @@
 /.codex/
 /.envrc
+/.tools/
+__pycache__/
 
 # Local dependencies and frontend build output
 node_modules/

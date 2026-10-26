@@ -1,0 +1,18 @@
+{
+  "generated": {
+    "backend/model/example/contract_sample_model_gen.go": "4d56eb89d2b1f1d15ac75622840b514b3af11ad0f8d258e788b754df532a9ba2",
+    "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
+    "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
+    "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c"
+  },
+  "scaffold": [
+    "backend/model/example/contract_sample_model.go",
+    "backend/model/example/vars.go",
+    "backend/tests/codegen/example/contract.go",
+    "backend/tests/codegen/example/etc/contract.yaml",
+    "backend/tests/codegen/example/internal/config/config.go",
+    "backend/tests/codegen/example/internal/handler/example/echo_handler.go",
+    "backend/tests/codegen/example/internal/logic/example/echo_logic.go",
+    "backend/tests/codegen/example/internal/svc/service_context.go"
+  ]
+}

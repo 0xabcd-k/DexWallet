@@ -1,0 +1,7 @@
+syntax = "v1"
+
+type SampleItem {
+    Kind string `json:"kind,options=label|counter"`
+    Label string `json:"label"`
+    Sequence int64 `json:"sequence"`
+}

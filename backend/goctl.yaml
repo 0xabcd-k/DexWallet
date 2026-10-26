@@ -1,0 +1,17 @@
+model:
+  types_map:
+    decimal:
+      type: decimal.Decimal
+      unsigned_type: decimal.Decimal
+      null_type: decimal.NullDecimal
+      pkg: github.com/shopspring/decimal
+    dec:
+      type: decimal.Decimal
+      unsigned_type: decimal.Decimal
+      null_type: decimal.NullDecimal
+      pkg: github.com/shopspring/decimal
+    numeric:
+      type: decimal.Decimal
+      unsigned_type: decimal.Decimal
+      null_type: decimal.NullDecimal
+      pkg: github.com/shopspring/decimal

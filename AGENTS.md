@@ -3,8 +3,9 @@
 - 从 [项目文档](docs/README.md) 开始，当前内容为新版项目定义；`docs/archive/` 是历史依据，不是当前实施规范。
 - 阅读 [开发规范](docs/engineering/开发规范.md) 与 [决议台账](docs/decisions/决议与待落实事项.md)，保留已确认规则与本版方案的区别。
 - 说明、设计、规范、验收统一维护在 `docs/`。修改业务规则时同步相关流程、界面和验收，避免重复定义。
-- 已初始化最小 Go module 与前端 workspace，准备和检查见 [工程结构](docs/engineering/工程结构.md)。当前无应用代码、可运行 API 或数据库迁移；未来有生成链时先改源定义，保留手写扩展边界。不得把文档中的概念契约声称为已实现接口。
+- 已初始化最小 Go module 与前端 workspace，准备和检查见 [工程结构](docs/engineering/工程结构.md)。已建立隔离契约样例与生成/迁移工具，实际入口见 [契约生成与迁移](docs/engineering/契约生成与迁移.md)；正式业务 API 与业务迁移尚未建立。先改源定义，保留手写扩展边界。不得把文档中的概念契约声称为已实现接口。
 - 工程清单检查：`backend/` 下执行 `go list -m -json`；`frontend/` 下按 `.nvmrc` 切换 Node 后执行 `pnpm install --frozen-lockfile`、`pnpm -r list --depth -1 --json`。
+- 契约检查：`bash scripts/check_contracts.sh`；生成：`python3 scripts/generate.py`。MySQL 集成测试使用独立入口，不随普通检查运行。
 - 文档检查：`python3 scripts/check_docs.py`；差异检查：`git diff --check`。
 - 保护用户已有改动；每轮依用户要求先同步当前远端同名分支，交付时仅提交本轮内容并推送。新分支以已同步起点为准，不自动合并主分支。
 
