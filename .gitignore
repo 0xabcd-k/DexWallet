@@ -1,2 +1,11 @@
 /.codex/
 /.envrc
+
+# Local dependencies and frontend build output
+node_modules/
+/frontend/apps/*/dist/
+
+# Local environment files; committed examples contain no credentials
+.env
+.env.*
+!.env.example
