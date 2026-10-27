@@ -1,5 +1,22 @@
 {
   "name": "@dexwallet/user",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router": "7.18.4",
+    "react-i18next": "17.1.9",
+    "@dexwallet/api-client": "workspace:*",
+    "@dexwallet/i18n": "workspace:*",
+    "antd-mobile": "5.43.0",
+    "@tma.js/bridge": "2.3.3"
+  }
 }

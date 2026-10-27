@@ -11,3 +11,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Frontend test evidence is local; checked conclusions live in docs.
+/frontend/test-results/
+/frontend/playwright-report/

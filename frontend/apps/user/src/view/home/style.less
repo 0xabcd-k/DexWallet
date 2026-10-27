@@ -1,0 +1,19 @@
+:root { --adm-color-primary: #206657; --adm-font-family: Inter, system-ui, sans-serif; color: #183b31; background: #f4f7f3; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, sans-serif; }
+a { color: #206657; text-decoration: none; }
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid #52a98d; outline-offset: 3px; }
+.mobile-shell { max-width: 540px; margin: auto; min-height: 100dvh; background: #f8faf6; padding-top: env(safe-area-inset-top); }
+.mobile-header { padding: 26px 24px; display: flex; align-items: center; justify-content: space-between; }
+.mobile-header strong { font-size: 22px; letter-spacing: -.6px; }
+.mobile-shell main { padding: 20px 24px 110px; }
+.eyebrow { font-size: 13px; color: #667c70; }
+h1 { font-size: 36px; font-weight: 600; letter-spacing: -1px; margin: 12px 0 28px; }
+.availability-card { border: 1px solid #e1e8de; background: #fff; border-radius: 24px; padding: 40px 16px; text-align: center; color: #667c70; }
+.bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 540px; border-top: 1px solid #e1e8de; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); background: #fff; }
+.bottom-nav a { display: block; min-width: 70px; padding: 10px; font-size: 15px; }
+.settings-panel { background: #fff; padding: 24px; border-radius: 20px; }
+.language-control { display: inline-flex; align-items: center; gap: 12px; font-size: 15px; }
+.language-control select { color: inherit; background: white; border: 1px solid #ccd8ce; padding: 10px; border-radius: 8px; }
+
+.availability-card { --adm-color-light: #52675c; }
