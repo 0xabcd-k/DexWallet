@@ -17,6 +17,7 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/internal/migration"
 	"github.com/0xabcd-k/DexWallet/backend/model/example"
+	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	driver "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/shopspring/decimal"
@@ -183,6 +184,30 @@ func TestMySQLContract(t *testing.T) {
 	}
 	if _, err = model.FindOneBySampleKey(ctx, "rolled-back"); !errors.Is(err, example.ErrNotFound) {
 		t.Fatalf("transaction extension committed independently: %v", err)
+	}
+
+	for _, fail := range []bool{false, true} {
+		prefix := fmt.Sprintf("shared-%t-", fail)
+		err = transaction.New(upgraded).TransactCtx(ctx, func(ctx context.Context, s sqlx.Session) error {
+			for i := 0; i < 2; i++ {
+				if _, e := model.WithSession(s).Insert(ctx, &example.ContractSample{SampleKey: fmt.Sprintf("%s%d", prefix, i), Amount: decimal.NewFromInt(1)}); e != nil {
+					return e
+				}
+			}
+			if fail {
+				return rollback
+			}
+			return nil
+		})
+		if fail && !errors.Is(err, rollback) || !fail && err != nil {
+			t.Fatal(err)
+		}
+		for i := 0; i < 2; i++ {
+			_, e := model.FindOneBySampleKey(ctx, fmt.Sprintf("%s%d", prefix, i))
+			if fail && !errors.Is(e, example.ErrNotFound) || !fail && e != nil {
+				t.Fatalf("shared transaction: %v", e)
+			}
+		}
 	}
 	// A failed migration must retain dirty state; never automatically force/down.
 	failing := t.TempDir()

@@ -1,0 +1,32 @@
+Name: dexwallet-api
+Environment: local
+Host: 127.0.0.1
+Port: 8888
+Log:
+  ServiceName: dexwallet-api
+  Mode: console
+  Encoding: json
+  Level: info
+RequestTimeout: 5s
+DependencyTimeout: 3s
+ProbeTimeout: 1s
+ProbeInterval: 5s
+ProbeFreshness: 15s
+ShutdownTimeout: 30s
+MaxInFlight: 1000
+MaxBodyBytes: 1048576
+MySQL:
+  DSN: ""
+  MaxOpen: 20
+  MaxIdle: 5
+Redis:
+  Enabled: true
+  Required: false
+  Address: 127.0.0.1:6379
+  DB: 0
+RocketMQ:
+  Enabled: true
+  Required: false
+  NameServers:
+    - 127.0.0.1:9876
+  BrokerAddress: 127.0.0.1:10911

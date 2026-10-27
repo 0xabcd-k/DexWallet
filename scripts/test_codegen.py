@@ -29,6 +29,17 @@ class CodegenTests(unittest.TestCase):
         self.assertEqual(before, [logic.read_bytes(), model.read_bytes()])
         generate.synchronize(self.root, first, scaffold, check=True)
 
+    def test_platform_contract_generates_codes_and_preserves_entrypoint(self):
+        source = self.root / "backend/manifest/api/platform/platform.api"
+        source.write_text(source.read_text().replace("|PAYLOAD_TOO_LARGE", "|PAYLOAD_TOO_LARGE|EXAMPLE_FAILURE"))
+        entry = self.root / "backend/api/platform.go"
+        before = entry.read_bytes()
+        output, scaffold = generate.render(self.root)
+        self.assertIn(b'ExampleFailure', output["backend/apperror/codes_gen.go"])
+        self.assertIn(b'EXAMPLE_FAILURE', output["frontend/packages/api-contract/src/platform.ts"])
+        generate.synchronize(self.root, output, scaffold)
+        self.assertEqual(before, entry.read_bytes())
+
     def test_source_addition_and_removal_are_visible(self):
         source = self.root / "backend/manifest/api/examples/contract.api"
         original = source.read_text()

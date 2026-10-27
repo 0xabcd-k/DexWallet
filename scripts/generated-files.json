@@ -1,11 +1,23 @@
 {
   "generated": {
+    "backend/api/internal/handler/routes.go": "9d3f359ffc4b2948e5a272bd8074ebe3522f6ab93a3b256db17dfaf6e8ee9e72",
+    "backend/api/internal/types/types.go": "ec1ae4eb9ee5d4960fec21df93d1a2a520d3d6a0915a765ef3ea0a7b6d63150a",
+    "backend/apperror/codes_gen.go": "af08bc7ad7964da63982beeaed5abfc32c5abef92fe547621bf929e5ec70a57e",
     "backend/model/example/contract_sample_model_gen.go": "4d56eb89d2b1f1d15ac75622840b514b3af11ad0f8d258e788b754df532a9ba2",
     "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
     "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
-    "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c"
+    "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c",
+    "frontend/packages/api-contract/src/platform.ts": "c6e9bf7bfec37411c20aa3a14bc4116081d8f8b6fcd9f5ecf4ef8c37de5ab0a4"
   },
   "scaffold": [
+    "backend/api/etc/platform.yaml",
+    "backend/api/internal/config/config.go",
+    "backend/api/internal/handler/health/live_handler.go",
+    "backend/api/internal/handler/health/ready_handler.go",
+    "backend/api/internal/logic/health/live_logic.go",
+    "backend/api/internal/logic/health/ready_logic.go",
+    "backend/api/internal/svc/service_context.go",
+    "backend/api/platform.go",
     "backend/model/example/contract_sample_model.go",
     "backend/model/example/vars.go",
     "backend/tests/codegen/example/contract.go",

@@ -4,8 +4,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./example": { "types": "./src/example.ts" }
+    "./example": {
+      "types": "./src/example.ts"
+    },
+    "./platform": {
+      "types": "./src/platform.ts"
+    }
   },
-  "scripts": { "typecheck": "tsc --noEmit" },
-  "devDependencies": { "typescript": "5.9.3" }
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
 }

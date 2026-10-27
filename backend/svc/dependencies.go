@@ -1,0 +1,128 @@
+package svc
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/0xabcd-k/DexWallet/backend/config"
+	"github.com/0xabcd-k/DexWallet/backend/health"
+	"github.com/0xabcd-k/DexWallet/backend/transaction"
+	rocketmq "github.com/apache/rocketmq-client-go/v2"
+	"github.com/apache/rocketmq-client-go/v2/admin"
+	"github.com/apache/rocketmq-client-go/v2/primitive"
+	"github.com/apache/rocketmq-client-go/v2/producer"
+	"github.com/go-sql-driver/mysql"
+	"github.com/redis/go-redis/v9"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+)
+
+const (
+	MySQLDependency = "mysql"
+	RedisDependency = "redis"
+	MQDependency    = "rocketmq"
+)
+
+type Dependencies struct {
+	DB        *sql.DB
+	SQL       sqlx.SqlConn
+	Tx        *transaction.Runner
+	Redis     *redis.Client
+	Producer  rocketmq.Producer
+	mqAdmin   admin.Admin
+	Checks    []health.Check
+	Namespace string
+	once      sync.Once
+	closeErr  error
+}
+
+// Open owns clients; failed initialization closes all already-created clients.
+func Open(ctx context.Context, c config.Config) (d *Dependencies, err error) {
+	if err = c.Check(); err != nil {
+		return nil, err
+	}
+	d = &Dependencies{Namespace: c.Namespace()}
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, d.Close())
+			d = nil
+		}
+	}()
+	cfg, _ := mysql.ParseDSN(c.MySQL.DSN)
+	cfg.Timeout = c.DependencyTimeout
+	cfg.ReadTimeout = c.DependencyTimeout
+	cfg.WriteTimeout = c.DependencyTimeout
+	cfg.ParseTime = true
+	d.DB, err = sql.Open("mysql", cfg.FormatDSN())
+	if err != nil {
+		return d, fmt.Errorf("mysql open: %w", err)
+	}
+	d.DB.SetMaxOpenConns(c.MySQL.MaxOpen)
+	d.DB.SetMaxIdleConns(c.MySQL.MaxIdle)
+	d.DB.SetConnMaxLifetime(5 * time.Minute)
+	call, cancel := context.WithTimeout(ctx, c.DependencyTimeout)
+	defer cancel()
+	if err = d.DB.PingContext(call); err != nil {
+		return d, fmt.Errorf("mysql startup: %w", err)
+	}
+	d.SQL = sqlx.NewSqlConnFromDB(d.DB)
+	d.Tx = transaction.New(d.DB)
+	d.Checks = append(d.Checks, health.Check{Name: MySQLDependency, Required: true, Run: d.DB.PingContext})
+	if c.Redis.Enabled {
+		d.Redis = redis.NewClient(&redis.Options{Addr: c.Redis.Address, Password: c.Redis.Password, DB: c.Redis.DB, DialTimeout: c.DependencyTimeout, ReadTimeout: c.DependencyTimeout, WriteTimeout: c.DependencyTimeout, ContextTimeoutEnabled: true, MaxRetries: -1})
+		d.Checks = append(d.Checks, health.Check{Name: RedisDependency, Required: c.Redis.Required, Run: func(ctx context.Context) error { return d.Redis.Ping(ctx).Err() }})
+	}
+	if c.RocketMQ.Enabled {
+		setupMQLogging()
+		credentials := primitive.Credentials{AccessKey: c.RocketMQ.AccessKey, SecretKey: c.RocketMQ.SecretKey}
+		d.Producer, err = rocketmq.NewProducer(producer.WithNameServer(primitive.NamesrvAddr(c.RocketMQ.NameServers)), producer.WithGroupName(d.Namespace+"_api"), producer.WithInstanceName(d.Namespace+"_api"), producer.WithCredentials(credentials), producer.WithRetry(0), producer.WithSendMsgTimeout(c.DependencyTimeout))
+		if err != nil {
+			return d, fmt.Errorf("rocketmq configure: %w", err)
+		}
+		if err = d.Producer.Start(); err != nil {
+			return d, fmt.Errorf("rocketmq start: %w", err)
+		}
+		d.mqAdmin, err = admin.NewAdmin(admin.WithResolver(primitive.NewPassthroughResolver(c.RocketMQ.NameServers)), admin.WithCredentials(credentials))
+		if err != nil {
+			return d, fmt.Errorf("rocketmq diagnostics: %w", err)
+		}
+		d.Checks = append(d.Checks, health.Check{Name: MQDependency, Required: c.RocketMQ.Required, Run: func(ctx context.Context) error {
+			// Read-only nameserver protocol check plus broker transport check, NOT a delivery guarantee.
+			if _, err := d.mqAdmin.FetchAllTopicList(ctx); err != nil {
+				return fmt.Errorf("nameserver: %w", err)
+			}
+			conn, err := (&net.Dialer{Timeout: c.ProbeTimeout}).DialContext(ctx, "tcp", c.RocketMQ.BrokerAddress)
+			if err != nil {
+				return fmt.Errorf("broker transport: %w", err)
+			}
+			return conn.Close()
+		}})
+	}
+	return d, nil
+}
+func (d *Dependencies) RedisKey(parts ...string) string {
+	return d.Namespace + ":" + strings.Join(parts, ":")
+}
+func (d *Dependencies) Topic(name string) string { return d.Namespace + "_" + name }
+func (d *Dependencies) Close() error {
+	d.once.Do(func() {
+		if d.Producer != nil {
+			d.closeErr = errors.Join(d.closeErr, d.Producer.Shutdown())
+		}
+		if d.mqAdmin != nil {
+			d.closeErr = errors.Join(d.closeErr, d.mqAdmin.Close())
+		}
+		if d.Redis != nil {
+			d.closeErr = errors.Join(d.closeErr, d.Redis.Close())
+		}
+		if d.DB != nil {
+			d.closeErr = errors.Join(d.closeErr, d.DB.Close())
+		}
+	})
+	return d.closeErr
+}

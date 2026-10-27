@@ -1,0 +1,26 @@
+syntax = "v1"
+
+type (
+    ErrorResponse {
+        Code string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE"`
+        Message string `json:"message"`
+        TraceId string `json:"traceId"`
+    }
+    HealthData {
+        Status string `json:"status,options=live|ready"`
+    }
+    HealthResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data HealthData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+)
+
+@server(group: health)
+service platform {
+    @handler live
+    get /health/live returns (HealthResponse)
+    @handler ready
+    get /health/ready returns (HealthResponse)
+}
