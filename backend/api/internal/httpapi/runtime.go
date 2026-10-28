@@ -1,71 +1,36 @@
 package httpapi
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	"github.com/0xabcd-k/DexWallet/backend/config"
 	"github.com/0xabcd-k/DexWallet/backend/health"
-	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/zeromicro/go-zero/core/logx"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"github.com/zeromicro/go-zero/core/syncx"
+	"github.com/zeromicro/go-zero/rest/handler"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
-type Event struct {
-	TraceID, Method, Route, Code string
-	Status                       int
-	Duration                     time.Duration
-	Cause                        error
-	Stack                        []byte
-}
+// Runtime owns project admission and drain policy, not HTTP timeout or tracing machinery.
 type Runtime struct {
 	Config   config.Config
 	Health   *health.Monitor
-	tracer   trace.Tracer
-	provider *sdktrace.TracerProvider
 	Report   func(context.Context, Event)
 	mu       sync.Mutex
 	stopping bool
 	active   sync.WaitGroup
-	slots    chan struct{}
-	Routes   map[string]string
+	slots    syncx.Limit
 }
 
 func New(c config.Config, h *health.Monitor) *Runtime {
-	// Local provider always creates valid IDs; no exporter or global state needed.
-	provider := sdktrace.NewTracerProvider(sdktrace.WithSampler(sdktrace.NeverSample()))
-	rt := &Runtime{Config: c, Health: h, provider: provider, tracer: provider.Tracer(c.Name), slots: make(chan struct{}, c.MaxInFlight), Routes: map[string]string{}}
-	rt.Report = func(ctx context.Context, e Event) {
-		fields := []logx.LogField{logx.Field("service", c.Name), logx.Field("environment", c.Environment), logx.Field("traceId", e.TraceID), logx.Field("method", e.Method), logx.Field("route", e.Route), logx.Field("httpStatus", e.Status), logx.Field("code", e.Code), logx.Field("durationMs", e.Duration.Milliseconds())}
-		if e.Cause != nil {
-			fields = append(fields, logx.Field("cause", e.Cause.Error()))
-		}
-		var tx *transaction.Failure
-		if errors.As(e.Cause, &tx) && len(tx.Stack) > 0 {
-			e.Stack = tx.Stack
-		}
-		if len(e.Stack) > 0 {
-			fields = append(fields, logx.Field("stack", string(e.Stack)))
-		}
-		logger := logx.WithContext(ctx)
-		switch {
-		case e.Status >= 500:
-			logger.Errorw("http request", fields...)
-		case e.Duration >= c.RequestTimeout*4/5:
-			logger.Sloww("http request", fields...)
-		case e.Route != LivePath && e.Route != ReadyPath:
-			logger.Infow("http request", fields...)
-		}
-	}
-	return rt
+	return &Runtime{Config: c, Health: h, Report: reporter(c), slots: syncx.NewLimit(c.MaxConns)}
 }
 func (rt *Runtime) Stop() { rt.mu.Lock(); rt.stopping = true; rt.mu.Unlock(); rt.Health.Stop() }
 func (rt *Runtime) Wait(ctx context.Context) error {
@@ -78,146 +43,94 @@ func (rt *Runtime) Wait(ctx context.Context) error {
 		return ctx.Err()
 	}
 }
-func (rt *Runtime) Close(ctx context.Context) error { return rt.provider.Shutdown(ctx) }
 
-// Middleware surrounds the router, so 404/405 share the same context and exits.
+// Middleware covers routing failures as well as matched routes with one framework trace.
 func (rt *Runtime) Middleware(next http.Handler) http.Handler {
+	observed := rt.observe(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// This entry serves JSON only. Protocol hints must not opt out of the
+		// framework timeout (which deliberately skips SSE and WebSocket).
+		if r.Header.Get("Upgrade") != "" || strings.Contains(strings.ToLower(r.Header.Get("Accept")), "text/event-stream") {
+			Error(r.Context(), w, apperror.New(apperror.InvalidArgument, nil))
+			return
+		}
+		if r.ContentLength > rt.Config.MaxBytes {
+			Error(r.Context(), w, apperror.New(apperror.PayloadTooLarge, nil))
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, rt.Config.MaxBytes)
+		next.ServeHTTP(w, r)
+	}))
+	traced := handler.TraceHandler(rt.Config.Name, "unmatched")(observed)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		started := time.Now()
-		// This public entry is not a trusted distributed-tracing boundary. Start a root
-		// rather than reflecting caller-supplied tracing headers into our correlation ID.
-		ctx, span := rt.tracer.Start(r.Context(), "http request", trace.WithNewRoot())
-		defer span.End()
-		ctx, cancel := context.WithTimeout(ctx, rt.Config.RequestTimeout)
-		defer cancel()
-		r = r.WithContext(ctx)
-		w.Header().Set(TraceHeader, TraceID(ctx))
-		route := rt.Routes[r.Method+" "+r.URL.Path]
-		if route == "" {
-			route = "unmatched"
+		// Public clients cannot choose the server's correlation ID. Keep extraction and
+		// span ownership in go-zero, clearing only propagation inputs at this boundary.
+		r = r.Clone(trace.ContextWithSpanContext(r.Context(), trace.SpanContext{}))
+		for _, name := range otel.GetTextMapPropagator().Fields() {
+			r.Header.Del(name)
 		}
-		event := Event{TraceID: TraceID(ctx), Method: r.Method, Route: route}
-		finish := func(b *buffer) {
-			event.Status = b.status
-			if event.Status == 0 {
-				event.Status = 200
-			}
-			event.Code = b.code
-			if event.Code == "" {
-				event.Code = SuccessCode
-			}
-			event.Cause = b.cause
-			event.Stack = b.stack
-			event.Duration = time.Since(started)
-			for k, v := range b.header {
-				w.Header()[k] = v
-			}
-			w.Header().Set(TraceHeader, TraceID(ctx))
-			w.WriteHeader(event.Status)
-			_, _ = w.Write(b.body.Bytes())
-			rt.Report(ctx, event)
-		}
-		reject := func(code apperror.Code, cause error) {
-			b := newBuffer()
-			Error(ctx, b, apperror.New(code, cause))
-			finish(b)
-		}
-		isHealth := r.URL.Path == LivePath || r.URL.Path == ReadyPath
-		if !isHealth && !rt.Health.Ready() {
-			reject(apperror.ServiceUnavailable, nil)
-			return
-		}
-		rt.mu.Lock()
-		if rt.stopping && !isHealth {
-			rt.mu.Unlock()
-			reject(apperror.ServiceUnavailable, nil)
-			return
-		}
-		// No new jobs after Stop; health requests during draining are handled inline.
-		if rt.stopping {
-			rt.mu.Unlock()
-			b := newBuffer()
-			next.ServeHTTP(b, r)
-			finish(b)
-			return
-		}
-		if !isHealth {
-			select {
-			case rt.slots <- struct{}{}:
-			default:
-				rt.mu.Unlock()
-				reject(apperror.RateLimited, nil)
-				return
-			}
-		}
-		rt.active.Add(1)
-		rt.mu.Unlock()
-		if r.ContentLength > rt.Config.MaxBodyBytes {
-			if !isHealth {
-				<-rt.slots
-			}
-			rt.active.Done()
-			reject(apperror.PayloadTooLarge, nil)
-			return
-		}
-		r.Body = http.MaxBytesReader(w, r.Body, rt.Config.MaxBodyBytes)
-		b := newBuffer()
-		done := make(chan struct{})
-		go func() {
-			defer rt.active.Done()
-			if !isHealth {
-				defer func() { <-rt.slots }()
-			}
-			defer close(done)
-			defer func() {
-				if p := recover(); p != nil {
-					b = newBuffer()
-					b.stack = debug.Stack()
-					Error(ctx, b, fmt.Errorf("panic: %v", p))
-				}
-				if ctx.Err() != nil && b.cause != nil {
-					rt.Report(ctx, Event{TraceID: TraceID(ctx), Method: r.Method, Route: route, Code: b.code, Status: b.status, Duration: time.Since(started), Cause: b.cause, Stack: b.stack})
-				}
-			}()
-			next.ServeHTTP(b, r)
-		}()
-		select {
-		case <-done:
-			if ctx.Err() != nil {
-				reject(apperror.RequestTimeout, ctx.Err())
-			} else {
-				finish(b)
-			}
-		case <-ctx.Done():
-			reject(apperror.RequestTimeout, ctx.Err())
-			// The worker owns its buffer until completion. Never read/write it here.
-		}
+		traced.ServeHTTP(w, r)
 	})
 }
 
-type buffer struct {
-	header http.Header
-	body   bytes.Buffer
-	status int
-	code   string
-	cause  error
-	stack  []byte
+// Work runs INSIDE go-zero's TimeoutHandler. A timed-out operation keeps its
+// admission slot and participates in drain until the operation actually returns.
+func (rt *Runtime) Work(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		isHealth := r.URL.Path == LivePath || r.URL.Path == ReadyPath
+		rt.mu.Lock()
+		if !isHealth && (rt.stopping || !rt.Health.Ready()) {
+			rt.mu.Unlock()
+			Error(r.Context(), w, apperror.New(apperror.ServiceUnavailable, nil))
+			return
+		}
+		tracked := !rt.stopping
+		if !isHealth && !rt.slots.TryBorrow() {
+			rt.mu.Unlock()
+			Error(r.Context(), w, apperror.New(apperror.RateLimited, nil))
+			return
+		}
+		if tracked {
+			rt.active.Add(1)
+		}
+		rt.mu.Unlock()
+		if tracked {
+			defer rt.active.Done()
+		}
+		if !isHealth {
+			defer func() {
+				if err := rt.slots.Return(); err != nil {
+					logx.WithContext(r.Context()).Error(err)
+				}
+			}()
+		}
+		// The stock recover handler writes an empty 500. Only the project error
+		// conversion is adapted here; timeout and response buffering stay in go-zero.
+		written := &statusWriter{ResponseWriter: w}
+		defer func() {
+			if p := recover(); p != nil {
+				failure := &panicError{cause: fmt.Errorf("panic: %v", p), stack: debug.Stack()}
+				if written.wrote {
+					// The framework owns the response buffer; there is no public reset.
+					// Abort instead of appending an error to a partially written success.
+					recordError(r.Context(), apperror.InternalError, http.StatusInternalServerError, failure)
+					panic(http.ErrAbortHandler)
+				}
+				Error(r.Context(), w, failure)
+			}
+		}()
+		next(written, r)
+		// A canceled handler may return without writing. Ensure the framework's
+		// completion/timeout race cannot turn that into an empty successful reply.
+		if err := r.Context().Err(); err != nil && !written.wrote {
+			Error(r.Context(), w, err)
+		}
+	}
 }
 
-func newBuffer() *buffer              { return &buffer{header: make(http.Header)} }
-func (b *buffer) Header() http.Header { return b.header }
-func (b *buffer) WriteHeader(status int) {
-	if b.status == 0 {
-		b.status = status
-	}
+type panicError struct {
+	cause error
+	stack []byte
 }
-func (b *buffer) Write(data []byte) (int, error) {
-	if b.body.Len()+len(data) > 4<<20 {
-		panic("JSON response exceeds 4 MiB")
-	}
-	if b.status == 0 {
-		b.status = 200
-	}
-	return b.body.Write(data)
-}
-func (b *buffer) recordError(err error, code string) { b.cause = err; b.code = code }
+
+func (e *panicError) Error() string { return e.cause.Error() }
+func (e *panicError) Unwrap() error { return e.cause }

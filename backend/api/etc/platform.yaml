@@ -1,5 +1,6 @@
 Name: dexwallet-api
 Environment: local
+Mode: dev
 Host: 127.0.0.1
 Port: 8888
 Log:
@@ -7,14 +8,24 @@ Log:
   Mode: console
   Encoding: json
   Level: info
-RequestTimeout: 5s
+Timeout: 5000
 DependencyTimeout: 3s
 ProbeTimeout: 1s
 ProbeInterval: 5s
 ProbeFreshness: 15s
 ShutdownTimeout: 30s
-MaxInFlight: 1000
-MaxBodyBytes: 1048576
+MaxConns: 1000
+MaxBytes: 1048576
+# Framework middleware remains enabled except features not used by this JSON API.
+Middlewares:
+  Breaker: false
+  Shedding: false
+  Gunzip: false
+Telemetry:
+  Sampler: 0
+Shutdown:
+  WrapUpTime: 1s
+  WaitTime: 37s
 MySQL:
   DSN: ""
   MaxOpen: 20

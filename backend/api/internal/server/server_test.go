@@ -31,9 +31,9 @@ func setup(t *testing.T, extra ...rest.Route) (*Server, *health.Monitor) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.RequestTimeout = 100 * time.Millisecond
-	c.MaxInFlight = 1
-	c.MaxBodyBytes = 100
+	c.Timeout = 100
+	c.MaxConns = 1
+	c.MaxBytes = 100
 	checks := []health.Check{{Name: "db", Required: true, Run: func(context.Context) error { return nil }}}
 	h := health.New(checks, time.Minute)
 	h.Refresh(context.Background(), checks, time.Second, nil)
@@ -47,7 +47,6 @@ func setup(t *testing.T, extra ...rest.Route) (*Server, *health.Monitor) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		s.Runtime.Wait(ctx)
-		s.Runtime.Close(ctx)
 	})
 	return s, h
 }
@@ -85,7 +84,7 @@ func TestHTTPExitsAndTrace(t *testing.T) {
 				httpapi.Error(r.Context(), w, apperror.New(apperror.InvalidArgument, err))
 				return
 			}
-			httpapi.JSON(w, 200, map[string]any{"code": "OK", "traceId": httpapi.TraceID(r.Context())})
+			httpapi.JSON(r.Context(), w, 200, map[string]any{"code": "OK", "traceId": httpapi.TraceID(r.Context())})
 		}},
 	)
 	var mu sync.Mutex
@@ -138,9 +137,8 @@ func TestAdmissionAndGracefulShutdown(t *testing.T) {
 	s, _ := setup(t, rest.Route{Method: "GET", Path: "/work", Handler: func(w http.ResponseWriter, r *http.Request) {
 		close(entered)
 		<-release
-		httpapi.JSON(w, 200, map[string]any{"code": "OK", "traceId": httpapi.TraceID(r.Context())})
+		httpapi.JSON(r.Context(), w, 200, map[string]any{"code": "OK", "traceId": httpapi.TraceID(r.Context())})
 	}})
-	s.Runtime.Config.RequestTimeout = time.Second
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -185,7 +183,6 @@ func TestStructuredDiagnosticsExcludeRequestCredentials(t *testing.T) {
 		httpapi.Error(r.Context(), w, errors.New("diagnostic-cause"))
 	}})
 	reporter := httpapi.New(s.Runtime.Config, h)
-	defer reporter.Close(context.Background())
 	s.Runtime.Report = reporter.Report
 	var output bytes.Buffer
 	old := logx.Reset()
@@ -249,4 +246,153 @@ func TestShutdownDeadlineBoundsUncooperativeHandler(t *testing.T) {
 	}
 	close(release)
 	<-clientDone
+}
+
+// The timeout worker remains subject to admission and drain even after its HTTP
+// response has returned. Its late failure must retain the original correlation.
+func TestTimedOutWorkRetainsSlotAndDiagnostics(t *testing.T) {
+	lateWrite := make(chan error, 1)
+	release := make(chan struct{})
+	var once sync.Once
+	defer once.Do(func() { close(release) })
+	s, _ := setup(t, rest.Route{Method: "GET", Path: "/late", Handler: func(w http.ResponseWriter, _ *http.Request) {
+		<-release
+		_, err := w.Write([]byte("late-response"))
+		lateWrite <- err
+		panic("late-panic")
+	}})
+	events := make(chan httpapi.Event, 8)
+	s.Runtime.Report = func(_ context.Context, e httpapi.Event) { events <- e }
+	w := httptest.NewRecorder()
+	s.HTTP.Handler.ServeHTTP(w, httptest.NewRequest("GET", "/late", nil))
+	if w.Code != 503 || !strings.Contains(w.Body.String(), "REQUEST_TIMEOUT") {
+		t.Fatalf("%d %s", w.Code, w.Body)
+	}
+	first := <-events
+	w2 := httptest.NewRecorder()
+	s.HTTP.Handler.ServeHTTP(w2, httptest.NewRequest("GET", "/late", nil))
+	if w2.Code != 429 {
+		t.Fatalf("timed-out work released admission: %d", w2.Code)
+	}
+	<-events
+	s.Runtime.Stop()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	if err := s.Runtime.Wait(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("worker not drained: %v", err)
+	}
+	once.Do(func() { close(release) })
+	select {
+	case late := <-events:
+		if late.TraceID != first.TraceID || len(late.Stack) == 0 || !strings.Contains(late.Cause.Error(), "late-panic") {
+			t.Fatalf("late diagnostic: %+v", late)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("late diagnostic missing")
+	}
+	if err := <-lateWrite; !errors.Is(err, http.ErrHandlerTimeout) {
+		t.Fatalf("late write: %v", err)
+	}
+	if !strings.Contains(w.Body.String(), "REQUEST_TIMEOUT") || strings.Contains(w.Body.String(), "late-panic") {
+		t.Fatal("late failure replaced timeout response")
+	}
+}
+
+func TestFrameworkAdaptersPreserveJSONContract(t *testing.T) {
+	s, _ := setup(t,
+		rest.Route{Method: "GET", Path: "/marshal", Handler: func(w http.ResponseWriter, r *http.Request) { httpapi.JSON(r.Context(), w, 200, make(chan int)) }},
+		rest.Route{Method: "POST", Path: "/body", Handler: func(w http.ResponseWriter, r *http.Request) {
+			_, err := io.ReadAll(r.Body)
+			if err != nil {
+				httpapi.Error(r.Context(), w, apperror.New(apperror.InvalidArgument, err))
+			}
+		}},
+		rest.Route{Method: "GET", Path: "/auth", Handler: func(w http.ResponseWriter, r *http.Request) {
+			httpapi.Error(r.Context(), w, apperror.New(apperror.Unauthenticated, nil))
+		}},
+		rest.Route{Method: "GET", Path: "/forbidden", Handler: func(w http.ResponseWriter, r *http.Request) {
+			httpapi.Error(r.Context(), w, apperror.New(apperror.PermissionDenied, nil))
+		}},
+		rest.Route{Method: "GET", Path: "/items/:idx", Handler: func(w http.ResponseWriter, r *http.Request) {
+			httpapi.JSON(r.Context(), w, 200, map[string]any{"code": "OK", "traceId": httpapi.TraceID(r.Context())})
+		}},
+		rest.Route{Method: "GET", Path: "/cancel", Handler: func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() }},
+	)
+	for _, tc := range []struct {
+		name, method, path, code string
+		status                   int
+		header, value            string
+	}{
+		{name: "marshal", method: "GET", path: "/marshal", code: "INTERNAL_ERROR", status: 500},
+		{name: "unknown body size", method: "POST", path: "/body", code: "PAYLOAD_TOO_LARGE", status: 413},
+		{name: "unauthenticated", method: "GET", path: "/auth", code: "UNAUTHENTICATED", status: 401},
+		{name: "forbidden", method: "GET", path: "/forbidden", code: "PERMISSION_DENIED", status: 403},
+		{name: "dynamic route", method: "GET", path: "/items/123", code: "OK", status: 200},
+		{name: "SSE cannot bypass timeout", method: "GET", path: "/cancel", code: "INVALID_ARGUMENT", status: 400, header: "Accept", value: "text/event-stream"},
+		{name: "upgrade cannot bypass timeout", method: "GET", path: "/cancel", code: "INVALID_ARGUMENT", status: 400, header: "Upgrade", value: "websocket"},
+		{name: "client cancellation", method: "GET", path: "/cancel", code: "REQUEST_TIMEOUT", status: 503},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			events := make(chan httpapi.Event, 2)
+			s.Runtime.Report = func(_ context.Context, e httpapi.Event) { events <- e }
+			req := httptest.NewRequest(tc.method, tc.path, nil)
+			if tc.method == "POST" {
+				req.Body = io.NopCloser(strings.NewReader(strings.Repeat("x", 101)))
+				req.ContentLength = -1
+			}
+			if tc.header != "" {
+				req.Header.Set(tc.header, tc.value)
+			}
+			if tc.name == "client cancellation" {
+				ctx, cancel := context.WithCancel(req.Context())
+				cancel()
+				req = req.WithContext(ctx)
+			}
+			w := httptest.NewRecorder()
+			s.HTTP.Handler.ServeHTTP(w, req)
+			var body map[string]any
+			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if w.Code != tc.status || body["code"] != tc.code || body["traceId"] != w.Header().Get(httpapi.TraceHeader) {
+				t.Fatalf("%d %v", w.Code, body)
+			}
+			if (w.Header().Get("WWW-Authenticate") != "") != (tc.status == 401) {
+				t.Fatal("incorrect authentication challenge")
+			}
+			event := <-events
+			if tc.path == "/items/123" && event.Route != "/items/:idx" {
+				t.Fatalf("route template lost: %+v", event)
+			}
+			if tc.name == "marshal" && strings.Contains(w.Body.String(), "chan") {
+				t.Fatal("marshal diagnostic exposed")
+			}
+		})
+	}
+}
+
+func TestPanicAfterWriteAbortsInsteadOfReturningSuccess(t *testing.T) {
+	s, _ := setup(t, rest.Route{Method: "GET", Path: "/partial", Handler: func(w http.ResponseWriter, r *http.Request) {
+		httpapi.JSON(r.Context(), w, 200, map[string]any{"code": "OK"})
+		panic("after-write")
+	}})
+	events := make(chan httpapi.Event, 1)
+	s.Runtime.Report = func(_ context.Context, e httpapi.Event) { events <- e }
+	ts := httptest.NewServer(s.HTTP.Handler)
+	defer ts.Close()
+	res, err := ts.Client().Get(ts.URL + "/partial")
+	if res != nil {
+		res.Body.Close()
+	}
+	if err == nil {
+		t.Fatal("partially written panic returned a normal response")
+	}
+	select {
+	case event := <-events:
+		if event.Status != 500 || len(event.Stack) == 0 || !strings.Contains(event.Cause.Error(), "after-write") {
+			t.Fatalf("panic diagnostic lost: %+v", event)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("panic diagnostic missing")
+	}
 }

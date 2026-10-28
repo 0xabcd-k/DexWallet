@@ -9,23 +9,17 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/rest"
 )
 
 type Config struct {
-	Name              string
+	rest.RestConf
 	Environment       string
-	Host              string
-	Port              int
-	Log               logx.LogConf
-	RequestTimeout    time.Duration `json:",default=5s"`
 	DependencyTimeout time.Duration `json:",default=3s"`
 	ProbeTimeout      time.Duration `json:",default=1s"`
 	ProbeInterval     time.Duration `json:",default=5s"`
 	ProbeFreshness    time.Duration `json:",default=15s"`
 	ShutdownTimeout   time.Duration `json:",default=30s"`
-	MaxInFlight       int           `json:",default=1000"`
-	MaxBodyBytes      int64         `json:",default=1048576"`
 	MySQL             MySQL
 	Redis             Redis
 	RocketMQ          RocketMQ
@@ -70,10 +64,22 @@ func (c Config) Check() error {
 	if c.Host == "" || c.Port < 1 || c.Port > 65535 {
 		return fmt.Errorf("invalid HTTP address")
 	}
-	if c.RequestTimeout <= 0 || c.DependencyTimeout <= 0 || c.DependencyTimeout > c.RequestTimeout || c.ProbeTimeout <= 0 || c.ProbeInterval <= 0 || c.ProbeFreshness < c.ProbeInterval+c.ProbeTimeout || c.ShutdownTimeout < c.RequestTimeout {
+	if c.Timeout <= 0 || c.Timeout > int64((1<<63-1)/time.Millisecond) || c.DependencyTimeout <= 0 || c.DependencyTimeout > c.RequestDuration() || c.ProbeTimeout <= 0 || c.ProbeInterval <= 0 || c.ProbeFreshness < c.ProbeInterval+c.ProbeTimeout || c.ShutdownTimeout < c.RequestDuration() {
 		return fmt.Errorf("invalid timeout budgets")
 	}
-	if c.MaxInFlight < 1 || c.MaxBodyBytes < 1 || c.MySQL.MaxOpen < 1 || c.MySQL.MaxIdle < 0 || c.MySQL.MaxIdle > c.MySQL.MaxOpen {
+	if c.Telemetry.Disabled || !c.Middlewares.Trace || !c.Middlewares.Timeout || !c.Middlewares.Recover || !c.Middlewares.MaxBytes || !c.Middlewares.MaxConns {
+		return fmt.Errorf("JSON API requires trace, timeout, recovery and resource limits")
+	}
+	if len(c.TraceIgnorePaths) != 0 || c.Middlewares.Gunzip {
+		return fmt.Errorf("JSON API requires trace IDs on every path and does not enable compressed requests")
+	}
+	if c.Middlewares.Breaker || c.Middlewares.Shedding {
+		return fmt.Errorf("native breaker and shedding responses do not implement the JSON error contract; keep them disabled")
+	}
+	if c.Shutdown.WaitTime < c.ShutdownTimeout+c.DependencyTimeout || c.Shutdown.WrapUpTime < 0 || c.Shutdown.WrapUpTime >= c.Shutdown.WaitTime {
+		return fmt.Errorf("process shutdown budget must exceed request drain and dependency cleanup")
+	}
+	if c.MaxConns < 1 || c.MaxBytes < 1 || c.MySQL.MaxOpen < 1 || c.MySQL.MaxIdle < 0 || c.MySQL.MaxIdle > c.MySQL.MaxOpen {
 		return fmt.Errorf("invalid resource limits")
 	}
 	dsn, err := mysql.ParseDSN(c.MySQL.DSN)
@@ -110,3 +116,6 @@ func (c Config) Check() error {
 	return nil
 }
 func (c Config) Namespace() string { return "dexwallet_" + c.Environment }
+
+// RestConf.Timeout uses milliseconds; application budgets use time.Duration.
+func (c Config) RequestDuration() time.Duration { return time.Duration(c.Timeout) * time.Millisecond }

@@ -18,7 +18,7 @@ func ReadyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if err != nil {
 			httpapi.Error(r.Context(), w, err)
 		} else {
-			httpapi.JSON(w, 200, resp)
+			httpapi.JSON(r.Context(), w, 200, resp)
 		}
 	}
 }

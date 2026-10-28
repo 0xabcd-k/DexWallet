@@ -12,7 +12,8 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	"github.com/zeromicro/go-zero/rest"
-	"github.com/zeromicro/go-zero/rest/chain"
+	framework "github.com/zeromicro/go-zero/rest/handler"
+	"github.com/zeromicro/go-zero/rest/httpx"
 	"github.com/zeromicro/go-zero/rest/router"
 )
 
@@ -25,36 +26,36 @@ type Server struct {
 // listening/shutdown so readiness, in-flight work and dependency close are ordered.
 func Build(s *svc.ServiceContext, extra ...rest.Route) (*Server, error) {
 	rt := httpapi.New(s.Config, s.Health)
-	r := router.NewRouter()
-	c := rest.RestConf{}
-	c.Name = s.Config.Name
-	c.Host = s.Config.Host
-	c.Port = s.Config.Port
-	c.Log = s.Config.Log
-	c.Shutdown.WaitTime = s.Config.ShutdownTimeout + 2*s.Config.DependencyTimeout + time.Second
-	app, err := rest.NewServer(c, rest.WithRouter(r), rest.WithChain(chain.New()))
+	httpapi.ConfigureErrors()
+	r := &routeRouter{Router: router.NewRouter()}
+	c := s.Config.RestConf
+	// Keep native Timeout/Metrics/Prometheus. Move tracing outside the router for
+	// 404/405; project adapters cover JSON errors, safe logging and global work slots.
+	c.Middlewares.Trace = false
+	c.Middlewares.Log = false
+	c.Middlewares.Recover = false
+	c.Middlewares.MaxConns = false
+	c.Middlewares.MaxBytes = false
+	app, err := rest.NewServer(c, rest.WithRouter(r))
 	if err != nil {
 		return nil, err
 	}
-	// Override the router directly: the framework default 404 wrapper starts a second trace.
-	r.SetNotFoundHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		httpapi.Error(r.Context(), w, apperror.New(apperror.NotFound, nil))
-	}))
-	r.SetNotAllowedHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		httpapi.Error(r.Context(), w, apperror.New(apperror.MethodNotAllowed, nil))
-	}))
+	// The default 404 wrapper starts a second trace. Keep our common outer trace.
+	fallback := func(code apperror.Code) http.Handler {
+		return framework.TimeoutHandler(s.Config.RequestDuration())(rt.Work(func(w http.ResponseWriter, r *http.Request) { httpapi.Error(r.Context(), w, apperror.New(code, nil)) }))
+	}
+	r.SetNotFoundHandler(fallback(apperror.NotFound))
+	r.SetNotAllowedHandler(fallback(apperror.MethodNotAllowed))
+	app.Use(rt.Work)
 	handler.RegisterHandlers(app, s)
 	for _, route := range extra {
 		app.AddRoute(route)
 	} // Test harness only; main passes no extras.
-	for _, route := range app.Routes() {
-		rt.Routes[route.Method+" "+route.Path] = route.Path
-	}
 	adapter, err := rest.NewServerless(app)
 	if err != nil {
 		return nil, err
 	}
-	return &Server{Runtime: rt, HTTP: &http.Server{Handler: rt.Middleware(http.HandlerFunc(adapter.Serve)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: s.Config.RequestTimeout, WriteTimeout: s.Config.RequestTimeout + time.Second, IdleTimeout: 60 * time.Second}}, nil
+	return &Server{Runtime: rt, HTTP: &http.Server{Handler: rt.Middleware(http.HandlerFunc(adapter.Serve)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: s.Config.RequestDuration(), WriteTimeout: s.Config.RequestDuration() + time.Second, IdleTimeout: 60 * time.Second}}, nil
 }
 func (s *Server) Serve(ctx context.Context, listener net.Listener, grace time.Duration) error {
 	result := make(chan error, 1)
@@ -75,5 +76,12 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener, grace time.Du
 		_ = s.HTTP.Close()
 	}
 	workErr := s.Runtime.Wait(drain)
-	return errors.Join(shutdownErr, workErr, s.Runtime.Close(drain))
+	return errors.Join(shutdownErr, workErr)
+}
+
+// Decorate matches via the public Router interface; generated routes stay untouched.
+type routeRouter struct{ httpx.Router }
+
+func (r *routeRouter) Handle(method, path string, h http.Handler) error {
+	return r.Router.Handle(method, path, httpapi.Route(path, h))
 }

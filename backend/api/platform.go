@@ -17,6 +17,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/health"
 	"github.com/0xabcd-k/DexWallet/backend/svc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/trace"
 )
 
 func run() (err error) {
@@ -30,6 +31,7 @@ func run() (err error) {
 		return err
 	}
 	defer logx.Close()
+	defer trace.StopAgent()
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	deps, err := svc.Open(ctx, c)
