@@ -4,9 +4,7 @@ package integration
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -16,22 +14,18 @@ import (
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/internal/migration"
+	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	"github.com/0xabcd-k/DexWallet/backend/model/example"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
-	driver "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/shopspring/decimal"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 func TestMySQLContract(t *testing.T) {
-	secret := os.Getenv("DEXWALLET_TEST_MYSQL_DSN")
-	if secret == "" {
-		t.Fatal("DEXWALLET_TEST_MYSQL_DSN is required for explicit integration tests")
-	}
-	cfg, err := driver.ParseDSN(secret)
+	cfg, err := testenv.AdminConfig()
 	if err != nil {
-		t.Fatal("invalid integration DSN (value omitted)")
+		t.Fatal(err)
 	}
 	cfg.DBName = ""
 	cfg.ParseTime = true
@@ -52,26 +46,16 @@ func TestMySQLContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log("MySQL server:", serverVersion)
+	databaseIndex := 0
 	newDatabase := func() (string, string, *sql.DB) {
-		var id [8]byte
-		if _, err = rand.Read(id[:]); err != nil {
-			t.Fatal(err)
-		}
-		name := "dexwallet_contract_" + hex.EncodeToString(id[:])
-		if _, err = admin.ExecContext(ctx, "CREATE DATABASE `"+name+"` CHARACTER SET utf8mb4 COLLATE utf8mb4_bin"); err != nil {
-			t.Fatal(err)
-		}
-		local := *cfg
-		local.DBName = name
-		dsn := local.FormatDSN()
-		db, err := sql.Open("mysql", dsn)
-		if err != nil {
-			t.Fatal(err)
+		databaseIndex++
+		name, dsn, db, e := testRun.NewDatabase(ctx, fmt.Sprintf("contract_%d", databaseIndex))
+		if e != nil {
+			t.Fatal(e)
 		}
 		t.Cleanup(func() {
-			db.Close()
-			if _, err := admin.Exec("DROP DATABASE `" + name + "`"); err != nil {
-				t.Errorf("cleanup %s: %v", name, err)
+			if e := db.Close(); e != nil {
+				t.Error(e)
 			}
 		})
 		return name, dsn, db

@@ -19,7 +19,7 @@ DexWallet 提供美元账户与链上钱包协同的收付款能力，通过任�
 | 制作用户端界面 | [用户端界面](design/02用户端界面.md) |
 | 制作后台界面 | [商户与平台界面](design/03商户与平台界面.md) |
 | 拆分领域、数据和接口 | [系统架构与契约](design/04系统架构与契约.md) |
-| 开始工程工作 | [开发规范](engineering/开发规范.md)、[工程结构与基础工具](engineering/工程结构.md)、[契约生成与迁移](engineering/契约生成与迁移.md)、[后端公共基础](engineering/后端公共基础.md)、[前端公共基础](engineering/前端公共基础.md)、[实施路线](engineering/实施路线.md) |
+| 开始工程工作 | [开发规范](engineering/开发规范.md)、[工程结构与基础工具](engineering/工程结构.md)、[契约生成与迁移](engineering/契约生成与迁移.md)、[后端公共基础](engineering/后端公共基础.md)、[前端公共基础](engineering/前端公共基础.md)、[开发与测试环境](engineering/开发与测试环境.md)、[实施路线](engineering/实施路线.md) |
 | 逐项讨论工程落地步骤 | [工程阶段与工作清单](engineering/工程阶段与工作清单.md)：八阶段、52 个工作项，含依赖、边界与完成条件，当前为讨论稿 |
 | 记录各功能的开发过程 | [工程工作记录目录](design/工程工作记录/README.md)：按阶段与工作编号保存讨论、方案、实施和验证记录 |
 | 核对覆盖与验收结果 | [验收与场景追踪](testing/验收与场景追踪.md) |

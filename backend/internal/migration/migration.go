@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	driver "github.com/go-sql-driver/mysql"
+	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	"github.com/golang-migrate/migrate/v4"
 	mysql "github.com/golang-migrate/migrate/v4/database/mysql"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -21,9 +21,9 @@ func Open(dsn, database, directory string) (*migrate.Migrate, error) {
 	if dsn == "" || database == "" || directory == "" {
 		return nil, errors.New("DSN, explicit database and migration directory are required")
 	}
-	cfg, err := driver.ParseDSN(dsn)
+	cfg, err := testenv.ValidateDSN(dsn, "migration")
 	if err != nil {
-		return nil, errors.New("invalid MySQL DSN (value omitted)")
+		return nil, err
 	}
 	if cfg.DBName != database {
 		return nil, errors.New("DSN database does not match explicit target")

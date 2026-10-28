@@ -18,7 +18,7 @@ function boundaryCheck(root: string): Plugin {
 export function appConfig(root: string, port: number) {
   return defineConfig({
     root, plugins: [react(), boundaryCheck(root)], resolve: { alias: { '@': resolve(root, 'src') } },
-    server: { port, strictPort: true, proxy: { '/api': {
+    server: { host: '127.0.0.1', port, strictPort: true, proxy: { '^/api(?:/|$)': {
       target: process.env.DEXWALLET_API_PROXY_TARGET ?? 'http://127.0.0.1:8888',
       rewrite: path => path.replace(/^\/api(?=\/|$)/, ''),
     } } },
