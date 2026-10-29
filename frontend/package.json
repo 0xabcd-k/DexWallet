@@ -10,6 +10,7 @@
   "type": "module",
   "scripts": {
     "dev:user": "pnpm --filter @dexwallet/user dev",
+    "dev:user:tg": "pnpm --filter @dexwallet/user dev --mode telegram",
     "dev:merchant": "pnpm --filter @dexwallet/merchant dev",
     "dev:admin": "pnpm --filter @dexwallet/admin dev",
     "typecheck": "pnpm -r typecheck && tsc -p tsconfig.tools.json",

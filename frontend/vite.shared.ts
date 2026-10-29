@@ -7,7 +7,7 @@ function boundaryCheck(root: string): Plugin {
       if (output.type !== 'chunk') continue;
       for (const id of Object.keys(output.modules)) {
         const path = id.replaceAll('\\', '/');
-        if (path.includes('/view/dev/') || path.includes('/dev/DevPage')) this.error('Development module entered production build');
+        if (path.includes('/view/dev/') || path.includes('/src/dev/')) this.error('Development module entered production build');
         if (root.endsWith('/user') && (path.includes('/node_modules/antd/') || path.includes('/packages/ui-desktop/'))) {
           this.error('Desktop UI entered user build');
         }

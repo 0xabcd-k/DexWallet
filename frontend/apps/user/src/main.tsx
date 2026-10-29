@@ -9,8 +9,13 @@ import { session } from './auth/session';
 import { autoLoginAllowed } from './auth/context';
 
 const navigation = performance.getEntriesByType('navigation')[0];
+const navigationType = navigation instanceof PerformanceNavigationTiming ? navigation.type : 'navigate';
+if (import.meta.env.DEV && import.meta.env.DEV_TELEGRAM) {
+  const { injectTelegram } = await import('./dev/telegram');
+  await injectTelegram(navigationType);
+}
 const context = await bootstrapTelegram({ href: location.href,
-  navigationType: navigation instanceof PerformanceNavigationTiming ? navigation.type : 'navigate', storage: sessionStorageOrUndefined() });
+  navigationType, storage: sessionStorageOrUndefined() });
 const i18n = await createAppI18n('user', appResources, context.language);
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing root element');
