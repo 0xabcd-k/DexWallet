@@ -14,6 +14,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/health"
 	"github.com/0xabcd-k/DexWallet/backend/svc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/core/trace"
 )
 
@@ -29,7 +30,12 @@ func run() (err error) {
 	}
 	defer logx.Close()
 	defer trace.StopAgent()
-	ctx := context.Background()
+	// Install the framework budget and cancellation before opening dependencies:
+	// a signal may arrive while the database handshake or first probe is pending.
+	proc.SetTimeToForceQuit(c.Shutdown.WaitTime)
+	ctx, cancelStartup := context.WithCancel(context.Background())
+	defer cancelStartup()
+	proc.AddWrapUpListener(cancelStartup)
 	deps, err := svc.Open(ctx, c)
 	if err != nil {
 		return err
@@ -45,6 +51,9 @@ func run() (err error) {
 		}
 	}
 	monitor.Refresh(ctx, deps.Checks, c.ProbeTimeout, report)
+	if err = ctx.Err(); err != nil {
+		return err
+	}
 	checks, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	finished := make(chan struct{})
@@ -57,11 +66,14 @@ func run() (err error) {
 	if err != nil {
 		return err
 	}
+	if err = ctx.Err(); err != nil {
+		return err
+	}
 	logx.Infow("starting api", logx.Field("host", c.Host), logx.Field("port", c.Port), logx.Field("environment", c.Environment))
 	return server.Start(app, rt)
 }
 func main() {
-	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
