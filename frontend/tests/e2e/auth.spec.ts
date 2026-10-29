@@ -27,23 +27,37 @@ test('email login, errors, source recovery, profile, reload and logout', async (
   await expect(page.getByRole('button', { name: 'Replace', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Unlink', exact: true })).toBeDisabled();
   await page.screenshot({ path: `test-results/identities-${test.info().project.name}.png`, fullPage: true });
+  await expect(page.getByRole('button', { name: 'Switch account', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign out everywhere', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(`${base}/#/wallet`);
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).token, SESSION_KEY)).toBeNull();
 });
 
-test('Telegram launch signs in once, explicit logout survives refresh', async ({ page }) => {
+test('Telegram launch signs in once and hides account switching, logout and Telegram replacement', async ({ page }) => {
   const state = await mockAccount(page);
   await page.goto(`${base}/#${telegramLaunch()}`);
   await expect(page).toHaveURL(`${base}/#/wallet`);
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await expect(page.getByText('Telegram Test', { exact: false })).toBeVisible();
   expect(state.tokenRequests).toHaveLength(1);
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await expect(page).toHaveURL(`${base}/#/wallet`);
-  await page.reload(); await page.getByRole('link', { name: 'Settings', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+  state.email = 'Alice@example.com';
+  await page.reload();
+  await expect(page.getByText(state.email, { exact: true })).toBeVisible();
+  const telegram = page.locator('.settings-identity').filter({ has: page.getByRole('heading', { name: 'Telegram', exact: true }) });
+  await expect(telegram.getByRole('button', { name: 'Replace', exact: true })).toHaveCount(0);
+  await expect(telegram.getByRole('button', { name: 'Unlink', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Replace', exact: true })).toBeEnabled();
+  await expect(page.getByRole('heading', { name: 'Account actions', exact: true })).toHaveCount(0);
+  for (const name of ['Switch account', 'Sign out', 'Sign out everywhere']) {
+    await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);
+  }
   expect(state.tokenRequests).toHaveLength(1);
+  state.unavailable = true;
+  await page.reload();
+  await expect(page.getByRole('alert')).toContainText('temporarily unavailable');
+  await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toHaveCount(0);
 });
 
 test('binding conflict keeps account; success returns to source and new version survives replacement', async ({ page }) => {

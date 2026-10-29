@@ -41,6 +41,6 @@ export function AccountActions() {
       <Button disabled={busy} onClick={() => { void signOut(auth.launch).then(() => navigate('/login?manual=1&returnTo=%2Fsettings')); }}>{t('switchAccount')}</Button>
       <Button disabled={busy} onClick={() => { void leave(false); }}>{t('signOut')}</Button>
       <Button disabled={busy} onClick={() => { void leave(true); }}>{t('signOutAll')}</Button>
-    </div>{!auth.session.persistent && <p role="status" className="muted">{t('memorySession')}</p>}
+    </div>
   </>;
 }

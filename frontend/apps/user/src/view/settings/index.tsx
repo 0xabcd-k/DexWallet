@@ -17,7 +17,8 @@ export default function Settings() {
     <section className="settings-section"><h2>{t('preferences')}</h2><LanguageControl app="user" /></section>
     {accountReady && <>
       <IdentitySettings />
-      <section className="settings-section"><h2>{t('accountActions')}</h2><AccountActions /></section>
+      {auth.launch.mode !== 'telegram' && <section className="settings-section"><h2>{t('accountActions')}</h2><AccountActions /></section>}
+      {!auth.session.persistent && <p role="status" className="muted">{t('memorySession')}</p>}
     </>}
   </section>;
 }
