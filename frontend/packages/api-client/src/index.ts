@@ -30,8 +30,8 @@ export interface ClientOptions {
 }
 const DEFAULT_TIMEOUT_MS = 10_000;
 function checkedTimeout(value: number): number {
-  if (!Number.isFinite(value) || value <= 0 || value > 2_147_483_647) {
-    throw new TypeError('timeoutMs must be a positive timer duration');
+  if (!Number.isInteger(value) || value <= 0 || value > 2_147_483_647) {
+    throw new TypeError('timeoutMs must be a positive integer timer duration');
   }
   return value;
 }
@@ -48,24 +48,19 @@ export function createApiClient(options: ClientOptions) {
         throw new TypeError('invalid API path or baseUrl');
       }
       const timeoutMs = checkedTimeout(request.timeoutMs ?? defaultTimeout);
-      const controller = new AbortController();
-      let reason: 'timeout' | 'cancelled' | undefined;
-      const abort = (kind: 'timeout' | 'cancelled') => {
-        if (!controller.signal.aborted) {
-          reason = kind;
-          controller.abort();
-        }
-      };
-      const onCancel = () => abort('cancelled');
-      request.signal?.addEventListener('abort', onCancel, { once: true });
-      if (request.signal?.aborted) onCancel();
-      const timer = setTimeout(() => abort('timeout'), timeoutMs);
+      const deadline = AbortSignal.timeout(timeoutMs);
+      const signal = request.signal ? AbortSignal.any([request.signal, deadline]) : deadline;
+      // The native combined signal retains the FIRST abort reason. A caller can
+      // supply any reason (even TimeoutError), so classify by identity, not name.
+      const abortKind = (): 'timeout' | 'cancelled' | undefined => signal.aborted
+        ? deadline.aborted && signal.reason === deadline.reason ? 'timeout' : 'cancelled'
+        : undefined;
       let status: number | undefined;
       let traceId: string | undefined;
       try {
-        if (reason) throw new ApiError(reason);
+        signal.throwIfAborted();
         const headers = new Headers({ Accept: 'application/json' });
-        const init: RequestInit = { method: request.method ?? 'GET', headers, signal: controller.signal };
+        const init: RequestInit = { method: request.method ?? 'GET', headers, signal };
         if (request.body !== undefined) {
           headers.set('Content-Type', 'application/json');
           init.body = JSON.stringify(request.body);
@@ -77,10 +72,10 @@ export function createApiClient(options: ClientOptions) {
         try {
           payload = await response.json();
         } catch (cause) {
-          if (reason) throw new ApiError(reason, status, undefined, traceId, { cause });
+          if (signal.aborted) throw cause;
           throw new ApiError(response.ok ? 'protocol' : 'http', status, undefined, traceId, { cause });
         }
-        if (reason) throw new ApiError(reason, status, undefined, traceId);
+        signal.throwIfAborted();
         if (!isRecord(payload) || typeof payload.code !== 'string' || typeof payload.message !== 'string' ||
             typeof payload.traceId !== 'string' || !payload.traceId) {
           throw new ApiError(response.ok ? 'protocol' : 'http', status, undefined, traceId);
@@ -97,11 +92,10 @@ export function createApiClient(options: ClientOptions) {
           throw new ApiError('protocol', status, undefined, traceId, { cause });
         }
       } catch (cause) {
+        const kind = abortKind();
+        if (kind) throw new ApiError(kind, status, undefined, traceId, { cause });
         if (cause instanceof ApiError) throw cause;
-        throw new ApiError(reason ?? 'network', status, undefined, traceId, { cause });
-      } finally {
-        clearTimeout(timer);
-        request.signal?.removeEventListener('abort', onCancel);
+        throw new ApiError('network', status, undefined, traceId, { cause });
       }
     },
   };

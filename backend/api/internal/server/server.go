@@ -2,29 +2,23 @@ package server
 
 import (
 	"context"
-	"errors"
-	"net"
 	"net/http"
-	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/handler"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/httpapi"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/rest"
 	framework "github.com/zeromicro/go-zero/rest/handler"
 	"github.com/zeromicro/go-zero/rest/httpx"
 	"github.com/zeromicro/go-zero/rest/router"
 )
 
-type Server struct {
-	HTTP    *http.Server
-	Runtime *httpapi.Runtime
-}
-
-// Build preserves goctl route registration and go-zero routing. net/http owns
-// listening/shutdown so readiness, in-flight work and dependency close are ordered.
-func Build(s *svc.ServiceContext, extra ...rest.Route) (*Server, error) {
+// Build configures the native server. Project middleware only covers the JSON
+// contract, public trace boundary and dependency/work admission policy.
+func Build(s *svc.ServiceContext) (*rest.Server, *httpapi.Runtime, error) {
 	rt := httpapi.New(s.Config, s.Health)
 	httpapi.ConfigureErrors()
 	r := &routeRouter{Router: router.NewRouter()}
@@ -38,7 +32,7 @@ func Build(s *svc.ServiceContext, extra ...rest.Route) (*Server, error) {
 	c.Middlewares.MaxBytes = false
 	app, err := rest.NewServer(c, rest.WithRouter(r))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// The default 404 wrapper starts a second trace. Keep our common outer trace.
 	fallback := func(code apperror.Code) http.Handler {
@@ -48,35 +42,28 @@ func Build(s *svc.ServiceContext, extra ...rest.Route) (*Server, error) {
 	r.SetNotAllowedHandler(fallback(apperror.MethodNotAllowed))
 	app.Use(rt.Work)
 	handler.RegisterHandlers(app, s)
-	for _, route := range extra {
-		app.AddRoute(route)
-	} // Test harness only; main passes no extras.
-	adapter, err := rest.NewServerless(app)
-	if err != nil {
-		return nil, err
-	}
-	return &Server{Runtime: rt, HTTP: &http.Server{Handler: rt.Middleware(http.HandlerFunc(adapter.Serve)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: s.Config.RequestDuration(), WriteTimeout: s.Config.RequestDuration() + time.Second, IdleTimeout: 60 * time.Second}}, nil
+	return app, rt, nil
 }
-func (s *Server) Serve(ctx context.Context, listener net.Listener, grace time.Duration) error {
-	result := make(chan error, 1)
-	go func() { result <- s.HTTP.Serve(listener) }()
-	select {
-	case err := <-result:
-		if errors.Is(err, http.ErrServerClosed) {
-			return nil
+
+// Start leaves listening, signals, HTTP shutdown and the process deadline to
+// go-zero. Its starter waits for ALL shutdown listeners before returning, so the
+// caller can close dependencies afterwards without racing active handlers.
+func Start(app *rest.Server, rt *httpapi.Runtime) (drainErr error) {
+	proc.AddWrapUpListener(rt.Stop)
+	proc.AddShutdownListener(func() {
+		// Wrap-up listeners run concurrently; also close admission here before Wait.
+		rt.Stop()
+		ctx, cancel := context.WithTimeout(context.Background(), rt.Config.ShutdownTimeout)
+		defer cancel()
+		drainErr = rt.Wait(ctx)
+		if drainErr != nil {
+			logx.Errorw("request work did not finish before shutdown deadline", logx.Field("cause", drainErr.Error()))
 		}
-		return err
-	case <-ctx.Done():
-	}
-	s.Runtime.Stop()
-	drain, cancel := context.WithTimeout(context.Background(), grace)
-	defer cancel()
-	shutdownErr := s.HTTP.Shutdown(drain)
-	if shutdownErr != nil {
-		_ = s.HTTP.Close()
-	}
-	workErr := s.Runtime.Wait(drain)
-	return errors.Join(shutdownErr, workErr)
+	})
+	app.StartWithOpts(func(s *http.Server) {
+		s.Handler = rt.Middleware(s.Handler)
+	})
+	return drainErr
 }
 
 // Decorate matches via the public Router interface; generated routes stay untouched.

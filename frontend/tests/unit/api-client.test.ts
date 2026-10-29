@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createApiClient, decodeHealth } from '@dexwallet/api-client';
+import { ApiError, createApiClient, decodeHealth } from '@dexwallet/api-client';
 const good = { code: 'OK', message: 'OK', traceId: 'trace-test', data: { status: 'live' } };
 function setup(payload: unknown = good, status = 200) {
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(new Response(JSON.stringify(payload), { status }));
@@ -37,17 +37,36 @@ describe('API boundary', () => {
     await expect(client.request('/health/live', decodeHealth, { signal: controller.signal })).rejects.toMatchObject({ kind: 'cancelled' });
     expect(fetch).not.toHaveBeenCalled();
   });
+  it.each([new DOMException('caller deadline', 'TimeoutError'), new ApiError('business')])('treats arbitrary caller abort reasons as cancellation', async reason => {
+    const { client, fetch } = setup();
+    const controller = new AbortController(); controller.abort(reason);
+    await expect(client.request('/health/live', decodeHealth, { signal: controller.signal })).rejects.toMatchObject({ kind: 'cancelled' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each(['cancelled', 'timeout'] as const)('preserves the first %s when both abort sources fire before transport settles', async first => {
+    const deadline = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal);
+    let fail: (reason: unknown) => void = () => { throw new Error('transport not called'); };
+    const fetch: typeof globalThis.fetch = () => new Promise((_resolve, reject) => { fail = reject; });
+    const controller = new AbortController();
+    const pending = createApiClient({ baseUrl: '/api', fetch, timeoutMs: 20 }).request('/health/live', decodeHealth, { signal: controller.signal });
+    const assertion = expect(pending).rejects.toMatchObject({ kind: first });
+    if (first === 'cancelled') controller.abort();
+    deadline.abort(new DOMException('deadline', 'TimeoutError'));
+    controller.abort();
+    fail(new Error('transport completed after abort'));
+    await assertion;
+  });
   it('keeps the deadline active while reading the response body', async () => {
-    vi.useFakeTimers();
-    try {
-      const fetch: typeof globalThis.fetch = async (_url, init) => new Response(new ReadableStream({
-        start(stream) { init?.signal?.addEventListener('abort', () => stream.error(new Error('aborted')), { once: true }); },
-      }));
-      const pending = createApiClient({ baseUrl: '/api', fetch }).request('/health/live', decodeHealth);
-      const assertion = expect(pending).rejects.toMatchObject({ kind: 'timeout', status: 200 });
-      await vi.advanceTimersByTimeAsync(10_000); await assertion;
-      expect(vi.getTimerCount()).toBe(0);
-    } finally { vi.useRealTimers(); }
+    const deadline = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal);
+    const fetch: typeof globalThis.fetch = async (_url, init) => new Response(new ReadableStream({
+      start(stream) { init?.signal?.addEventListener('abort', () => stream.error(new Error('aborted')), { once: true }); },
+    }));
+    const pending = createApiClient({ baseUrl: '/api', fetch }).request('/health/live', decodeHealth);
+    const assertion = expect(pending).rejects.toMatchObject({ kind: 'timeout', status: 200 });
+    deadline.abort(new DOMException('deadline', 'TimeoutError'));
+    await assertion;
   });
   it('distinguishes caller cancellation from timeout', async () => {
     const fetch: typeof globalThis.fetch = (_url, init) => new Promise((_resolve, reject) => {

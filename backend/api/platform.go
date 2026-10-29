@@ -6,10 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"net"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/server"
 	apisvc "github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
@@ -32,8 +29,7 @@ func run() (err error) {
 	}
 	defer logx.Close()
 	defer trace.StopAgent()
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	ctx := context.Background()
 	deps, err := svc.Open(ctx, c)
 	if err != nil {
 		return err
@@ -57,16 +53,12 @@ func run() (err error) {
 		monitor.Run(checks, deps.Checks, c.ProbeInterval, c.ProbeTimeout, report)
 	}()
 	defer func() { cancel(); <-finished }()
-	app, err := server.Build(&apisvc.ServiceContext{Config: c, Dependencies: deps, Health: monitor})
+	app, rt, err := server.Build(&apisvc.ServiceContext{Config: c, Dependencies: deps, Health: monitor})
 	if err != nil {
 		return err
 	}
-	ln, err := net.Listen("tcp", net.JoinHostPort(c.Host, fmt.Sprint(c.Port)))
-	if err != nil {
-		return err
-	}
-	logx.Infow("api listening", logx.Field("address", ln.Addr().String()), logx.Field("environment", c.Environment))
-	return app.Serve(ctx, ln, c.ShutdownTimeout)
+	logx.Infow("starting api", logx.Field("host", c.Host), logx.Field("port", c.Port), logx.Field("environment", c.Environment))
+	return server.Start(app, rt)
 }
 func main() {
 	if err := run(); err != nil && !errors.Is(err, context.Canceled) {

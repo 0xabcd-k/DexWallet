@@ -48,12 +48,14 @@ func TestFrameworkConfigBudgets(t *testing.T) {
 		t.Fatal("framework defaults or duration units changed")
 	}
 	for name, mutate := range map[string]func(*Config){
-		"disabled trace":     func(c *Config) { c.Telemetry.Disabled = true },
-		"disabled timeout":   func(c *Config) { c.Middlewares.Timeout = false },
-		"unadapted breaker":  func(c *Config) { c.Middlewares.Breaker = true },
-		"unadapted shedding": func(c *Config) { c.Middlewares.Shedding = true },
-		"shutdown too short": func(c *Config) { c.Shutdown.WaitTime = c.ShutdownTimeout },
-		"duration overflow":  func(c *Config) { c.Timeout = 1<<63 - 1 },
+		"disabled trace":                               func(c *Config) { c.Telemetry.Disabled = true },
+		"disabled timeout":                             func(c *Config) { c.Middlewares.Timeout = false },
+		"unadapted breaker":                            func(c *Config) { c.Middlewares.Breaker = true },
+		"unadapted shedding":                           func(c *Config) { c.Middlewares.Shedding = true },
+		"shutdown too short":                           func(c *Config) { c.Shutdown.WaitTime = c.ShutdownTimeout },
+		"wrap-up omitted from budget":                  func(c *Config) { c.Shutdown.WaitTime = c.ShutdownTimeout + c.DependencyTimeout },
+		"zero wrap-up falls back to framework default": func(c *Config) { c.Shutdown.WrapUpTime = 0 },
+		"duration overflow":                            func(c *Config) { c.Timeout = 1<<63 - 1 },
 	} {
 		t.Run(name, func(t *testing.T) {
 			bad := c

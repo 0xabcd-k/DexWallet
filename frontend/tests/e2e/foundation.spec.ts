@@ -72,6 +72,30 @@ test('user: cancellation leaves no failure alert and the next request can succee
   await page.getByRole('button', { name: 'Check API connection' }).click();
   await expect(page.getByRole('status')).toContainText('API connection available');
 });
+test('user: native request deadline aborts a stalled fetch', async ({ page }) => {
+  let release: () => void = () => {};
+  const blocked = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/api/health/live', async route => {
+    await blocked;
+    await route.fulfill({ json: health }).catch(() => {});
+  });
+  try {
+    await page.goto('http://127.0.0.1:5173/#/wallet');
+    const kind = await page.evaluate(async () => {
+      const modulePath = '/src/api/request.ts';
+      const { api }: { api: import('@dexwallet/api-client').ApiClient } = await import(modulePath);
+      try {
+        await api.request('/health/live', value => value, { timeoutMs: 25 });
+        return 'unexpected-success';
+      } catch (error) {
+        return error instanceof Error && 'kind' in error ? error.kind : 'unexpected-error';
+      }
+    });
+    expect(kind).toBe('timeout');
+  } finally {
+    release();
+  }
+});
 test('user: route load failure displays a recoverable localized boundary', async ({ page }) => {
   await page.route('**/src/view/dev/index.tsx', route => route.abort());
   await page.goto('http://127.0.0.1:5173/#/__dev');

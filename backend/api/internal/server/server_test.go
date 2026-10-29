@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -24,7 +23,13 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func setup(t *testing.T, extra ...rest.Route) (*Server, *health.Monitor) {
+// Serverless is only a test adapter: production starts the native rest.Server.
+type testServer struct {
+	HTTP    *http.Server
+	Runtime *httpapi.Runtime
+}
+
+func setup(t *testing.T, extra ...rest.Route) (*testServer, *health.Monitor) {
 	t.Helper()
 	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
 	c, err := config.Load("../../etc/platform.yaml")
@@ -37,10 +42,18 @@ func setup(t *testing.T, extra ...rest.Route) (*Server, *health.Monitor) {
 	checks := []health.Check{{Name: "db", Required: true, Run: func(context.Context) error { return nil }}}
 	h := health.New(checks, time.Minute)
 	h.Refresh(context.Background(), checks, time.Second, nil)
-	s, err := Build(&svc.ServiceContext{Config: c, Health: h}, extra...)
+	app, rt, err := Build(&svc.ServiceContext{Config: c, Health: h})
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, route := range extra {
+		app.AddRoute(route)
+	}
+	adapter, err := rest.NewServerless(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &testServer{HTTP: &http.Server{Handler: rt.Middleware(http.HandlerFunc(adapter.Serve))}, Runtime: rt}
 	s.Runtime.Report = func(context.Context, httpapi.Event) {}
 	t.Cleanup(func() {
 		s.Runtime.Stop()
@@ -132,50 +145,37 @@ func TestHTTPExitsAndTrace(t *testing.T) {
 		t.Fatal(status)
 	}
 }
-func TestAdmissionAndGracefulShutdown(t *testing.T) {
+func TestAdmissionKeepsHealthAvailable(t *testing.T) {
 	entered, release := make(chan struct{}), make(chan struct{})
+	var once sync.Once
+	defer once.Do(func() { close(release) })
 	s, _ := setup(t, rest.Route{Method: "GET", Path: "/work", Handler: func(w http.ResponseWriter, r *http.Request) {
 		close(entered)
 		<-release
 		httpapi.JSON(r.Context(), w, 200, map[string]any{"code": "OK", "traceId": httpapi.TraceID(r.Context())})
 	}})
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	finished := make(chan error, 1)
-	go func() { finished <- s.Serve(ctx, ln, time.Second) }()
-	completed := make(chan error, 1)
-	url := "http://" + ln.Addr().String()
+	ts := httptest.NewServer(s.HTTP.Handler)
+	defer ts.Close()
+	completed := make(chan struct{})
 	go func() {
-		resp, err := http.Get(url + "/work")
+		defer close(completed)
+		res, err := ts.Client().Get(ts.URL + "/work")
 		if err == nil {
-			io.Copy(io.Discard, resp.Body)
-			resp.Body.Close()
-			if resp.StatusCode != 200 {
-				err = errors.New("work failed")
-			}
+			io.Copy(io.Discard, res.Body)
+			res.Body.Close()
 		}
-		completed <- err
 	}()
 	<-entered
-	status, _, _ := request(t, http.DefaultClient, "GET", url+"/work", "")
+	status, _, _ := request(t, ts.Client(), "GET", ts.URL+"/work", "")
 	if status != 429 {
 		t.Fatal(status)
 	}
-	cancel()
-	close(release)
-	if err := <-completed; err != nil {
-		t.Fatal(err)
+	status, _, _ = request(t, ts.Client(), "GET", ts.URL+"/health/live", "")
+	if status != 200 {
+		t.Fatal(status)
 	}
-	if err := <-finished; err != nil {
-		t.Fatal(err)
-	}
-	if s.Runtime.Health.Ready() {
-		t.Fatal("still ready after stop")
-	}
+	once.Do(func() { close(release) })
+	<-completed
 }
 
 func TestStructuredDiagnosticsExcludeRequestCredentials(t *testing.T) {
@@ -213,39 +213,6 @@ func TestStructuredDiagnosticsExcludeRequestCredentials(t *testing.T) {
 	if strings.Contains(w.Body.String(), "diagnostic-cause") {
 		t.Fatal("internal cause exposed")
 	}
-}
-
-func TestShutdownDeadlineBoundsUncooperativeHandler(t *testing.T) {
-	entered, release := make(chan struct{}), make(chan struct{})
-	s, _ := setup(t, rest.Route{Method: "GET", Path: "/blocked", Handler: func(http.ResponseWriter, *http.Request) { close(entered); <-release }})
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	done := make(chan error, 1)
-	go func() { done <- s.Serve(ctx, ln, 20*time.Millisecond) }()
-	clientDone := make(chan struct{})
-	go func() {
-		defer close(clientDone)
-		res, _ := http.Get("http://" + ln.Addr().String() + "/blocked")
-		if res != nil {
-			res.Body.Close()
-		}
-	}()
-	<-entered
-	cancel()
-	select {
-	case err := <-done:
-		if !errors.Is(err, context.DeadlineExceeded) {
-			t.Fatal(err)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("shutdown blocked indefinitely")
-	}
-	close(release)
-	<-clientDone
 }
 
 // The timeout worker remains subject to admission and drain even after its HTTP

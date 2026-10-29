@@ -76,7 +76,7 @@ func (c Config) Check() error {
 	if c.Middlewares.Breaker || c.Middlewares.Shedding {
 		return fmt.Errorf("native breaker and shedding responses do not implement the JSON error contract; keep them disabled")
 	}
-	if c.Shutdown.WaitTime < c.ShutdownTimeout+c.DependencyTimeout || c.Shutdown.WrapUpTime < 0 || c.Shutdown.WrapUpTime >= c.Shutdown.WaitTime {
+	if c.Shutdown.WaitTime < c.Shutdown.WrapUpTime+c.ShutdownTimeout+c.DependencyTimeout || c.Shutdown.WrapUpTime <= 0 {
 		return fmt.Errorf("process shutdown budget must exceed request drain and dependency cleanup")
 	}
 	if c.MaxConns < 1 || c.MaxBytes < 1 || c.MySQL.MaxOpen < 1 || c.MySQL.MaxIdle < 0 || c.MySQL.MaxIdle > c.MySQL.MaxOpen {
