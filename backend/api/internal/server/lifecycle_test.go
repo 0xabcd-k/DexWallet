@@ -33,6 +33,7 @@ func TestNativeLifecycleProcess(t *testing.T) {
 	if mode == "" {
 		return
 	}
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
 	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
 	c, err := config.Load("../../etc/platform.yaml")
 	if err != nil {

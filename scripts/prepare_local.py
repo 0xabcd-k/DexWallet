@@ -32,6 +32,7 @@ def main():
         raise SystemExit('Reserved local accounts/schemas already exist. Supply scoped test credentials explicitly; no changes made.')
     passwords = {name: secrets.token_hex(24) for name in names}
     values = {
+        'DEXWALLET_ID_SECRET': secrets.token_hex(16),
         'DEXWALLET_TEST_ENV': 'local', 'DEXWALLET_TEST_MYSQL_ADDRESS': '127.0.0.1:3306',
         'DEXWALLET_TEST_MYSQL_DSN': f'dexwallet_test_admin:{passwords[names[0]]}@tcp(127.0.0.1:3306)/',
         'DEXWALLET_TEST_HTTP_MYSQL_DSN': f'dexwallet_test_http:{passwords[names[1]]}@tcp(127.0.0.1:3306)/dexwallet_test_http',
@@ -44,7 +45,7 @@ def main():
         file.write('\n'.join('export '+k+'='+shlex.quote(v) for k,v in values.items())+'\n')
     statements = [f"CREATE USER '{n}'@'%' IDENTIFIED BY '{passwords[n]}';" for n in names]
     statements += [
-        "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, INDEX ON `dexwallet\\_contract\\_%`.* TO 'dexwallet_test_admin'@'%';",
+        "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, INDEX, REFERENCES ON `dexwallet\\_contract\\_%`.* TO 'dexwallet_test_admin'@'%';",
         "CREATE DATABASE dexwallet_test_http CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;",
         "GRANT SELECT ON dexwallet_test_http.* TO 'dexwallet_test_http'@'%';",
         "CREATE DATABASE dexwallet_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;",

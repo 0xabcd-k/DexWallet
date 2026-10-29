@@ -41,7 +41,7 @@ try {
   await run('go', ['build', '-o', resolve(dir, 'testenv'), './tools/testenv'], resolve(root, 'backend'));
   await run('pnpm', ['build'], resolve(root, 'frontend'));
   await run('pnpm', ['exec', 'playwright', 'test', '--config', 'playwright.integration.config.ts'], resolve(root, 'frontend'), {
-    ...process.env, DEXWALLET_MYSQL_DSN: process.env.DEXWALLET_TEST_HTTP_MYSQL_DSN,
+    ...process.env, DEXWALLET_ID_SECRET: 'test-only-key123', DEXWALLET_MYSQL_DSN: process.env.DEXWALLET_TEST_HTTP_MYSQL_DSN,
     DEXWALLET_INTEGRATION_DIR: dir, DEXWALLET_API_PROXY_TARGET: 'http://127.0.0.1:18888',
     // Application and browsers never inherit the test preparation account.
     DEXWALLET_TEST_MYSQL_DSN: '',

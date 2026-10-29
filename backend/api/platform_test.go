@@ -43,6 +43,7 @@ func TestSignalCancelsDependencyInitialization(t *testing.T) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestStartupSignalProcess$")
 	cmd.Env = append(os.Environ(), "DEXWALLET_STARTUP_TEST=1",
+		"DEXWALLET_ID_SECRET=test-only-key123",
 		"DEXWALLET_MYSQL_DSN=test@tcp("+listener.Addr().String()+")/test",
 		"GORACE=atexit_sleep_ms=0")
 	var output bytes.Buffer

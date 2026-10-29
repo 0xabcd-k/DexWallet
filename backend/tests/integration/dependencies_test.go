@@ -23,6 +23,7 @@ func TestDependencyClients(t *testing.T) {
 	defer db.Close()
 	cfg, _ := driver.ParseDSN(dsn)
 	cfg.MultiStatements = false
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
 	t.Setenv("DEXWALLET_MYSQL_DSN", cfg.FormatDSN())
 	c, err := config.Load("../../api/etc/platform.yaml")
 	if err != nil {

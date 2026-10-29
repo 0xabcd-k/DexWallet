@@ -66,7 +66,7 @@ func TestMySQLContract(t *testing.T) {
 	root := filepath.Join("..", "..", "manifest", "sql")
 	directory := filepath.Join(root, "diff", "examples")
 	open := func(dsn, name, dir string) *migrate.Migrate {
-		m, err := migration.Open(dsn, name, dir)
+		m, err := migration.Open(dsn, name, dir, "examples")
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -166,6 +166,11 @@ func (r *Run) NewDatabase(ctx context.Context, label string) (string, string, *s
 	}
 	c.DBName = name
 	c.ParseTime = true
+	c.Loc = time.UTC
+	if c.Params == nil {
+		c.Params = map[string]string{}
+	}
+	c.Params["time_zone"] = "'+00:00'"
 	c.MultiStatements = true
 	connection, e := sql.Open("mysql", c.FormatDSN())
 	return name, c.FormatDSN(), connection, e

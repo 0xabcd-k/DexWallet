@@ -5,6 +5,7 @@ go 1.26.10
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
+	github.com/capitalone/fpe v1.2.1
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/redis/go-redis/v9 v9.21.0

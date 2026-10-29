@@ -17,7 +17,10 @@ import (
 
 // Open requires agreement between the explicit target and the secret DSN.
 // The caller must close the returned migrator, which owns the SQL connection.
-func Open(dsn, database, directory string) (*migrate.Migrate, error) {
+func Open(dsn, database, directory, source string) (*migrate.Migrate, error) {
+	if source != "examples" && source != "business" {
+		return nil, errors.New("unknown migration source")
+	}
 	if dsn == "" || database == "" || directory == "" {
 		return nil, errors.New("DSN, explicit database and migration directory are required")
 	}
@@ -40,7 +43,11 @@ func Open(dsn, database, directory string) (*migrate.Migrate, error) {
 		db.Close()
 		return nil, err
 	}
-	databaseDriver, err := mysql.WithInstance(db, &mysql.Config{DatabaseName: database})
+	table := "schema_migrations"
+	if source == "business" {
+		table = "schema_migrations_business"
+	}
+	databaseDriver, err := mysql.WithInstance(db, &mysql.Config{DatabaseName: database, MigrationsTable: table})
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -50,8 +57,8 @@ func Open(dsn, database, directory string) (*migrate.Migrate, error) {
 		databaseDriver.Close()
 		return nil, err
 	}
-	source := (&url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}).String()
-	m, err := migrate.NewWithDatabaseInstance(source, database, databaseDriver)
+	sourceURL := (&url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}).String()
+	m, err := migrate.NewWithDatabaseInstance(sourceURL, database, databaseDriver)
 	if err != nil {
 		databaseDriver.Close()
 		return nil, err

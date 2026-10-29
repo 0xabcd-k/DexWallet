@@ -51,7 +51,7 @@ func ValidateDSN(secret, role string) (*mysql.Config, error) {
 		}
 	case "migration":
 		if c.User != AdminUser || !databaseName.MatchString(c.DBName) {
-			return nil, errors.New("example migration requires a dedicated contract schema and test account")
+			return nil, errors.New("migration requires a dedicated contract schema and test account")
 		}
 	default:
 		return nil, errors.New("unknown test connection role")

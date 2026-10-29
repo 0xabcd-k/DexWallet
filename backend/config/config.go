@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	"github.com/go-sql-driver/mysql"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"
@@ -15,6 +16,7 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
+	IDSecret          string        `json:",optional"`
 	DependencyTimeout time.Duration `json:",default=3s"`
 	ProbeTimeout      time.Duration `json:",default=1s"`
 	ProbeInterval     time.Duration `json:",default=5s"`
@@ -52,12 +54,16 @@ func Load(path string) (Config, error) {
 		return c, fmt.Errorf("load config %q: %w", path, err)
 	}
 	c.MySQL.DSN = os.Getenv("DEXWALLET_MYSQL_DSN")
+	c.IDSecret = os.Getenv("DEXWALLET_ID_SECRET")
 	c.Redis.Password = os.Getenv("DEXWALLET_REDIS_PASSWORD")
 	c.RocketMQ.AccessKey = os.Getenv("DEXWALLET_MQ_ACCESS_KEY")
 	c.RocketMQ.SecretKey = os.Getenv("DEXWALLET_MQ_SECRET_KEY")
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if _, err := idcodec.New(c.IDSecret, idcodec.User); err != nil {
+		return fmt.Errorf("DEXWALLET_ID_SECRET: %w", err)
+	}
 	if c.Name == "" || !regexp.MustCompile(`^[a-z][a-z0-9_]*$`).MatchString(c.Environment) {
 		return fmt.Errorf("Name and valid Environment are required")
 	}

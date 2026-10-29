@@ -12,6 +12,9 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/config"
 	"github.com/0xabcd-k/DexWallet/backend/health"
+	"github.com/0xabcd-k/DexWallet/backend/idcodec"
+	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
+	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	rocketmq "github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/admin"
@@ -19,6 +22,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"github.com/go-sql-driver/mysql"
 	"github.com/redis/go-redis/v9"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 const (
@@ -30,19 +34,24 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
-	Config    config.Config
-	Health    *health.Monitor
-	DB        *sql.DB
-	Tx        *transaction.Runner
-	Redis     *redis.Client
-	Producer  rocketmq.Producer
-	mqAdmin   admin.Admin
-	Namespace string
-	checks    []health.Check
-	stopProbe context.CancelFunc
-	probeDone chan struct{}
-	once      sync.Once
-	closeErr  error
+	Config                config.Config
+	UserIdx               *idcodec.Codec
+	Users                 *userlogic.Service
+	ModelUser             usermodel.UserModel
+	ModelEmailIdentity    usermodel.EmailIdentityModel
+	ModelTelegramIdentity usermodel.TelegramIdentityModel
+	Health                *health.Monitor
+	DB                    *sql.DB
+	Tx                    *transaction.Runner
+	Redis                 *redis.Client
+	Producer              rocketmq.Producer
+	mqAdmin               admin.Admin
+	Namespace             string
+	checks                []health.Check
+	stopProbe             context.CancelFunc
+	probeDone             chan struct{}
+	once                  sync.Once
+	closeErr              error
 }
 
 // NewServiceContext initializes clients and health checks. Failed startup closes
@@ -52,6 +61,10 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 		return nil, err
 	}
 	d = &ServiceContext{Config: c, Namespace: c.Namespace()}
+	d.UserIdx, err = idcodec.New(c.IDSecret, idcodec.User)
+	if err != nil {
+		return nil, err
+	}
 	defer func() {
 		if err != nil {
 			err = errors.Join(err, d.Close())
@@ -63,6 +76,11 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	cfg.ReadTimeout = c.DependencyTimeout
 	cfg.WriteTimeout = c.DependencyTimeout
 	cfg.ParseTime = true
+	cfg.Loc = time.UTC
+	if cfg.Params == nil {
+		cfg.Params = map[string]string{}
+	}
+	cfg.Params["time_zone"] = "'+00:00'"
 	d.DB, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
 		return d, fmt.Errorf("mysql open: %w", err)
@@ -76,6 +94,11 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 		return d, fmt.Errorf("mysql startup: %w", err)
 	}
 	d.Tx = transaction.New(d.DB)
+	conn := sqlx.NewSqlConnFromDB(d.DB)
+	d.ModelUser = usermodel.NewUserModel(conn)
+	d.ModelEmailIdentity = usermodel.NewEmailIdentityModel(conn)
+	d.ModelTelegramIdentity = usermodel.NewTelegramIdentityModel(conn)
+	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx)
 	d.checks = append(d.checks, health.Check{Name: MySQLDependency, Required: true, Run: d.DB.PingContext})
 	if c.Redis.Enabled {
 		d.Redis = redis.NewClient(&redis.Options{Addr: c.Redis.Address, Password: c.Redis.Password, DB: c.Redis.DB, DialTimeout: c.DependencyTimeout, ReadTimeout: c.DependencyTimeout, WriteTimeout: c.DependencyTimeout, ContextTimeoutEnabled: true, MaxRetries: -1})

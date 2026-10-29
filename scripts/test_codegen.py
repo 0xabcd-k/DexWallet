@@ -28,11 +28,22 @@ class CodegenTests(unittest.TestCase):
         model = self.root / generate.MODEL_OUT / "contract_sample_model.go"
         handler = self.root / generate.PLATFORM_OUT / "internal/handler/health/live_handler.go"
         handler.write_bytes(handler.read_bytes() + b"\n// handwritten extension\n")
-        before = [logic.read_bytes(), model.read_bytes(), handler.read_bytes()]
+        user_model = self.root / generate.USER_MODEL_OUT / "user_model.go"
+        before = [logic.read_bytes(), model.read_bytes(), handler.read_bytes(), user_model.read_bytes()]
         generate.synchronize(self.root, first, scaffold)
-        self.assertEqual(before, [logic.read_bytes(), model.read_bytes(), handler.read_bytes()])
+        self.assertEqual(before, [logic.read_bytes(), model.read_bytes(), handler.read_bytes(), user_model.read_bytes()])
         self.assertFalse((self.root / generate.PLATFORM_OUT / "internal/config/config.go").exists())
         generate.synchronize(self.root, first, scaffold, check=True)
+
+    def test_user_sql_generates_fields_without_persisting_idx(self):
+        source = self.root / "backend/manifest/sql/ddl/user/tables.sql"
+        source.write_text(source.read_text().replace("`nickname` VARCHAR(128)", "`test_note` VARCHAR(32) NOT NULL DEFAULT '',\n    `nickname` VARCHAR(128)"))
+        output, scaffold = generate.render(self.root)
+        model = output["backend/model/user/user_model_gen.go"]
+        self.assertIn(b"TestNote", model)
+        self.assertNotIn(b'db:"idx"', model)
+        self.assertIn(b"sql.NullInt64", output["backend/model/user/email_identity_model_gen.go"])
+        self.assertIn("backend/model/user/user_model.go", scaffold)
 
     def test_new_handler_uses_project_errors_without_manual_changes(self):
         source = self.root / "backend/manifest/api/platform/platform.api"

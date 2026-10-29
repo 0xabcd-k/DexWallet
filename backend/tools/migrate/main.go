@@ -21,11 +21,11 @@ func main() {
 
 func execute() error {
 	target := flag.String("database", "", "explicit database matching DEXWALLET_MYSQL_DSN")
-	source := flag.String("source", "", "migration set (currently: examples)")
+	source := flag.String("source", "", "migration set: examples or business")
 	action := flag.String("action", "", "up or version; no automatic rollback/force")
 	flag.Parse()
-	if *source != "examples" || !strings.HasPrefix(*target, "dexwallet_contract_") {
-		return errors.New("explicit --source examples and --database dexwallet_contract_<name> are required")
+	if (*source != "examples" && *source != "business") || !strings.HasPrefix(*target, "dexwallet_contract_") {
+		return errors.New("explicit --source examples|business and --database dexwallet_contract_<name> are required")
 	}
 	if *action != "up" && *action != "version" {
 		return errors.New("--action must be up or version")
@@ -34,7 +34,7 @@ func execute() error {
 	if _, err := os.Stat(directory); err != nil {
 		return errors.New("run from backend/; migration directory missing")
 	}
-	m, err := migration.Open(os.Getenv("DEXWALLET_MYSQL_DSN"), *target, directory)
+	m, err := migration.Open(os.Getenv("DEXWALLET_MYSQL_DSN"), *target, directory, *source)
 	if err != nil {
 		return err
 	}
