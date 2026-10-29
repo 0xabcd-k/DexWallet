@@ -101,12 +101,13 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.ModelUser = usermodel.NewUserModel(conn)
 	d.ModelEmailIdentity = usermodel.NewEmailIdentityModel(conn)
 	d.ModelTelegramIdentity = usermodel.NewTelegramIdentityModel(conn)
-	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx)
 	d.checks = append(d.checks, health.Check{Name: MySQLDependency, Required: true, Run: d.DB.PingContext})
 	if c.Redis.Enabled {
 		d.Redis = redis.NewClient(&redis.Options{Addr: c.Redis.Address, Password: c.Redis.Password, DB: c.Redis.DB, DialTimeout: c.DependencyTimeout, ReadTimeout: c.DependencyTimeout, WriteTimeout: c.DependencyTimeout, ContextTimeoutEnabled: true, MaxRetries: -1})
+		d.ModelUser = usermodel.NewUserModelWithCache(conn, usermodel.NewUserCache(d.Redis, d.Namespace))
 		d.checks = append(d.checks, health.Check{Name: RedisDependency, Required: c.Redis.Required, Run: func(ctx context.Context) error { return d.Redis.Ping(ctx).Err() }})
 	}
+	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx)
 	if c.Auth != nil {
 		var sender authlogic.Mailer
 		if c.Auth.EmailEnabled {

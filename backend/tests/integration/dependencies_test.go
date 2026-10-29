@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -51,6 +52,22 @@ func TestDependencyClients(t *testing.T) {
 			t.Error(err)
 		}
 	}()
+	ddl, err := os.ReadFile("../../manifest/sql/ddl/user/tables.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, db, string(ddl))
+	userKey := d.RedisKey("user", "1")
+	if err = testRun.Record("redis", userKey); err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, db, "INSERT INTO `user`(id) VALUES(1)")
+	if _, err = d.Users.FindUserByID(ctx, 1); err != nil {
+		t.Fatal(err)
+	}
+	if ttl, err := d.Redis.PTTL(ctx, userKey).Result(); err != nil || ttl <= 0 || ttl > 30*time.Second {
+		t.Fatalf("shared user cache not initialized: TTL=%v err=%v", ttl, err)
+	}
 	for _, state := range d.Health.Snapshot() {
 		if state.Err != nil {
 			t.Fatalf("%s: %v", state.Name, state.Err)

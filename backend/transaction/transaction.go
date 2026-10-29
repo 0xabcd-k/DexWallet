@@ -41,6 +41,19 @@ type tx interface {
 	Rollback() error
 }
 type activeTransaction struct{}
+type commitCallbacks map[string]func()
+
+// AfterCommit registers best-effort cache invalidation after the outer commit.
+// It also runs after an indeterminate commit, since the write may have succeeded.
+// Callbacks must not perform business writes; failures must be logged by callers.
+func AfterCommit(ctx context.Context, key string, fn func()) error {
+	callbacks, ok := ctx.Value(activeTransaction{}).(commitCallbacks)
+	if !ok {
+		return errors.New("after-commit callback requires transaction.Runner context")
+	}
+	callbacks[key] = fn
+	return nil
+}
 
 type Runner struct {
 	begin func(context.Context) (tx, error)
@@ -84,7 +97,8 @@ func (r *Runner) TransactCtx(ctx context.Context, fn func(context.Context, sqlx.
 			err = &Failure{Phase: "panic", Cause: cause, Cleanup: t.Rollback(), Stack: debug.Stack()}
 		}
 	}()
-	if err = fn(context.WithValue(ctx, activeTransaction{}, true), t); err == nil {
+	callbacks := make(commitCallbacks)
+	if err = fn(context.WithValue(ctx, activeTransaction{}, callbacks), t); err == nil {
 		err = ctx.Err()
 	}
 	if err != nil {
@@ -94,7 +108,11 @@ func (r *Runner) TransactCtx(ctx context.Context, fn func(context.Context, sqlx.
 		}
 		return err
 	}
-	if err = t.Commit(); err != nil {
+	err = t.Commit()
+	for _, callback := range callbacks {
+		callback()
+	}
+	if err != nil {
 		return &Failure{Phase: "commit", Cause: err}
 	}
 	return nil

@@ -125,3 +125,47 @@ func TestNestedTransactionRejectedBeforeSecondBegin(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestInvalidationAfterCommitIncludingUnknownOutcome(t *testing.T) {
+	for _, uncertain := range []bool{false, true} {
+		t.Run(map[bool]string{false: "committed", true: "unknown"}[uncertain], func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+			mock.ExpectBegin()
+			commit := mock.ExpectCommit()
+			lost := errors.New("commit response lost")
+			if uncertain {
+				commit.WillReturnError(lost)
+			}
+			calls := 0
+			err = New(db).TransactCtx(context.Background(), func(ctx context.Context, _ sqlx.Session) error {
+				for i := 0; i < 2; i++ {
+					if err := AfterCommit(ctx, "same-user", func() { calls++ }); err != nil {
+						return err
+					}
+				}
+				if calls != 0 {
+					t.Fatal("invalidation before commit")
+				}
+				return nil
+			})
+			if calls != 1 {
+				t.Fatalf("invalidation calls=%d", calls)
+			}
+			if uncertain {
+				var failure *Failure
+				if !errors.As(err, &failure) || !failure.Unknown() || !errors.Is(err, lost) {
+					t.Fatal(err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if err = mock.ExpectationsWereMet(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
