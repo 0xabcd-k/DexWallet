@@ -49,6 +49,20 @@ it('can capture a fresh launch in memory when lifecycle storage is unavailable',
   const raw = launch('one');
   expect(await bootstrapTelegram({ href: `https://example.test/#${raw}`, navigationType: 'navigate', storage: undefined, retrieve: () => raw })).toMatchObject({ mode: 'telegram', storageAvailable: false });
 });
+it('keeps the same launch fingerprint on development HTTP without secure-context crypto APIs', async () => {
+  const raw = launch('lan');
+  const secure = await boot(raw);
+  const native = globalThis.crypto;
+  vi.stubGlobal('crypto', { getRandomValues: native.getRandomValues.bind(native) });
+  try {
+    const restored = await boot(raw, 'http://192.168.1.2/#/wallet', 'reload');
+    expect(restored).toMatchObject({ mode: 'telegram', source: 'restored', fingerprint: secure.fingerprint, launchId: secure.launchId });
+    const fresh = await boot(raw, `http://192.168.1.2/#${raw}`);
+    expect(fresh.mode).toBe('telegram');
+    expect(fresh.launchId).not.toBe(secure.launchId);
+    expect(fresh.fingerprint).toBe(secure.fingerprint);
+  } finally { vi.stubGlobal('crypto', native); }
+});
 it('restricts child-page return targets to known local parents', () => {
   expect(safeReturn({ from: '/records?filter=a&page=2' })).toBe('/records?filter=a&page=2');
   for (const from of ['//evil.test', 'https://evil.test', '/settings', '/wallet\\evil', '/wallet#x']) expect(safeReturn({ from })).toBe('/wallet');

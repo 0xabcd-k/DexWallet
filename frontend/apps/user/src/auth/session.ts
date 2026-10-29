@@ -1,4 +1,6 @@
 import { isRecord } from '@dexwallet/api-client';
+import { randomToken } from '../app/random';
+export { randomToken as randomRequestToken } from '../app/random';
 
 export const SESSION_KEY = 'dexwallet:user:session';
 export const TOKEN_HEADER = 'X-Access-Token';
@@ -20,15 +22,12 @@ export function readCredential(raw: string): Credential {
       !Number.isSafeInteger(c.exp) || c.exp - c.iat !== TOKEN_LIFETIME_SECONDS) throw new TypeError('Invalid claims');
   return { raw, idx: c.sub, issuer: c.iss, version: c.auth_version, expiresAt: c.exp };
 }
-export function randomRequestToken(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, '0')).join('');
-}
 type SessionStorage = Pick<Storage, 'getItem' | 'setItem'>;
 type Lock = <T>(work: () => T) => Promise<T>;
 export function createSessionStore(storage: SessionStorage | undefined, lock: Lock) {
   let persistent = !!storage;
   let lastRaw: string | null = null;
-  let current: Session = { generation: crypto.randomUUID(), credential: null, persistent };
+  let current: Session = { generation: randomToken(), credential: null, persistent };
   const listeners = new Set<() => void>();
   const notify = () => { for (const listener of listeners) listener(); };
   function sync() {
@@ -43,7 +42,7 @@ export function createSessionStore(storage: SessionStorage | undefined, lock: Lo
       if (!isRecord(saved) || typeof saved.generation !== 'string' || (saved.token !== null && typeof saved.token !== 'string')) throw new TypeError('Invalid saved session');
       current = { generation: saved.generation, credential: saved.token === null ? null : readCredential(saved.token), persistent };
     } catch {
-      current = { generation: crypto.randomUUID(), credential: null, persistent };
+      current = { generation: randomToken(), credential: null, persistent };
     }
     notify();
   }
@@ -64,12 +63,12 @@ export function createSessionStore(storage: SessionStorage | undefined, lock: Lo
     async begin(ticket: Session) {
       return atomic(() => {
         sync(); if (ticket.generation !== current.generation) return undefined;
-        save(null, crypto.randomUUID()); return current;
+        save(null, randomToken()); return current;
       });
     },
     async establish(ticket: Session, raw: string) {
       const credential = readCredential(raw);
-      return atomic(() => { sync(); if (ticket.generation !== current.generation) return false; save(credential, crypto.randomUUID()); return true; });
+      return atomic(() => { sync(); if (ticket.generation !== current.generation) return false; save(credential, randomToken()); return true; });
     },
     async renew(ticket: Session, raw: string) {
       let next: Credential;
@@ -85,7 +84,7 @@ export function createSessionStore(storage: SessionStorage | undefined, lock: Lo
       await atomic(() => {
         sync();
         if (ticket && (ticket.generation !== current.generation || (exactToken && ticket.credential?.raw !== current.credential?.raw))) return;
-        save(null, crypto.randomUUID());
+        save(null, randomToken());
       });
     },
   };

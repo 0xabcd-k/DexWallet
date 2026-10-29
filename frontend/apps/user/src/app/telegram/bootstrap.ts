@@ -1,5 +1,6 @@
 import { retrieveRawLaunchParams } from '@tma.js/bridge';
 import { isRecord } from '@dexwallet/api-client';
+import { randomToken } from '../random';
 
 export const LAUNCH_STORAGE_KEY = 'dexwallet:user:launch';
 export type TargetStatus = 'pending' | 'consumed' | 'invalid';
@@ -66,14 +67,17 @@ export async function bootstrapTelegram(options: BootstrapOptions): Promise<Laun
       throw new Error('SDK recovered stale data for a fresh launch');
     }
     const init = new URLSearchParams(rawInitData);
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawInitData));
-    const fingerprint = Array.from(new Uint8Array(digest), v => v.toString(16).padStart(2, '0')).join('');
+    const bytes = new TextEncoder().encode(rawInitData);
+    const digest = import.meta.env.DEV && !crypto.subtle
+      ? (await import('../../dev/sha256')).sha256(bytes)
+      : new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+    const fingerprint = Array.from(digest, v => v.toString(16).padStart(2, '0')).join('');
     // This fingerprint correlates a cache with a launch; it is NOT authentication.
     if (restoring && saved?.fingerprint !== fingerprint) throw new Error('Launch recovery mismatch');
     let language: string | undefined;
     const user: unknown = JSON.parse(init.get('user') ?? 'null');
     if (isRecord(user) && typeof user.language_code === 'string') language = user.language_code;
-    const lifecycle = fresh ? { fingerprint, launchId: crypto.randomUUID(), ...targetFrom(init, url.searchParams) } : saved;
+    const lifecycle = fresh ? { fingerprint, launchId: randomToken(), ...targetFrom(init, url.searchParams) } : saved;
     if (!lifecycle) throw new Error('Missing launch lifecycle');
     const context: LaunchContext = { ...lifecycle, mode: 'telegram', source: fresh ? 'fresh' : 'restored', rawInitData, language, storageAvailable: false };
     context.storageAvailable = save(context, options.storage);
