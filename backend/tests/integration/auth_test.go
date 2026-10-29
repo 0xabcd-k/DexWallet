@@ -48,7 +48,9 @@ const authTestBot = "123456:integration-fake-token"
 
 func authRequest(i int) string { return fmt.Sprintf("%064x", i) }
 func authTG(id int64, nonce int) string {
-	now := time.Now()
+	return authTGAt(id, nonce, time.Now())
+}
+func authTGAt(id int64, nonce int, now time.Time) string {
 	payload := map[string]string{"user": fmt.Sprintf(`{"id":%d,"first_name":"Telegram User"}`, id), "query_id": fmt.Sprint(nonce)}
 	q := url.Values{}
 	for k, v := range payload {
@@ -57,6 +59,36 @@ func authTG(id int64, nonce int) string {
 	q.Set("auth_date", strconv.FormatInt(now.Unix(), 10))
 	q.Set("hash", initdata.Sign(payload, authTestBot, now))
 	return q.Encode()
+}
+
+func TestAuthTelegramDevelopmentReuse(t *testing.T) {
+	db, users := userDatabase(t, "telegram_development")
+	conn := sqlx.NewSqlConnFromDB(db)
+	cfg := authlogic.DefaultConfig()
+	cfg.Secret, cfg.BotToken = authTestSecret, authTestBot
+	cfg.TelegramEnabled, cfg.TelegramDevelopment = true, true
+	auth, err := authlogic.New(cfg, users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), transaction.New(db), nil, allowAuth{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	login := authlogic.Intent{Purpose: userlogic.Login}
+	raw := authTGAt(900000001, 1, time.Now().AddDate(-10, 0, 0))
+	first, err := auth.VerifyTelegram(ctx, authRequest(90), raw, "127.0.0.1", login)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, db, "UPDATE auth_operation SET expires_at=UTC_TIMESTAMP(6)-INTERVAL 1 YEAR")
+	for _, request := range []string{authRequest(90), authRequest(91)} {
+		result, err := auth.VerifyTelegram(ctx, request, raw, "127.0.0.1", login)
+		if err != nil || result.User.Id != first.User.Id {
+			t.Fatalf("reusable development login failed: result=%+v err=%v", result, err)
+		}
+	}
+	mustExec(t, db, "UPDATE user SET status='disabled', auth_version=auth_version+1")
+	if _, err = auth.VerifyTelegram(ctx, authRequest(92), raw, "127.0.0.1", login); !errors.Is(err, userlogic.ErrDisabled) {
+		t.Fatal("development login ignored account status", err)
+	}
 }
 func TestAuthEmailAndBinding(t *testing.T) {
 	db, users := userDatabase(t, "auth_flow")

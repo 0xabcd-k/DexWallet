@@ -17,15 +17,16 @@ const (
 )
 
 type Config struct {
-	EmailEnabled     bool       `json:",default=false"`
-	TelegramEnabled  bool       `json:",default=false"`
-	Secret           string     `json:",optional"`
-	BotToken         string     `json:",optional"`
-	SendPerEmail     int        `json:",default=10"`
-	SendPerSource    int        `json:",default=30"`
-	VerifyPerSubject int        `json:",default=30"`
-	VerifyPerSource  int        `json:",default=60"`
-	SMTP             SMTPConfig `json:",optional"`
+	EmailEnabled        bool       `json:",default=false"`
+	TelegramEnabled     bool       `json:",default=false"`
+	TelegramDevelopment bool       `json:",default=false"`
+	Secret              string     `json:",optional"`
+	BotToken            string     `json:",optional"`
+	SendPerEmail        int        `json:",default=10"`
+	SendPerSource       int        `json:",default=30"`
+	VerifyPerSubject    int        `json:",default=30"`
+	VerifyPerSource     int        `json:",default=60"`
+	SMTP                SMTPConfig `json:",optional"`
 }
 
 func (c Config) Check() error {

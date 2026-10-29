@@ -101,6 +101,17 @@ func TestAuthConfiguration(t *testing.T) {
 	if c.Auth.SendPerEmail != 10 || c.Auth.VerifyPerSource != 60 {
 		t.Fatal("rate defaults missing")
 	}
+	c.Auth.TelegramDevelopment = true
+	if err = c.Check(); err != nil {
+		t.Fatal("local Telegram development rejected", err)
+	}
+	for _, change := range []func(*Config){func(c *Config) { c.Environment = "production" }, func(c *Config) { c.Mode = "pro" }} {
+		bad := c
+		change(&bad)
+		if bad.Check() == nil {
+			t.Fatal("Telegram development allowed outside local dev")
+		}
+	}
 	c.Redis.Enabled = false
 	if c.Check() == nil {
 		t.Fatal("auth without Redis allowed")

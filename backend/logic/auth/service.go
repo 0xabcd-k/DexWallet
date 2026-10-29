@@ -129,7 +129,7 @@ func (s *Service) run(ctx context.Context, request string, intent Intent, kind u
 			if existing.InputDigest != input {
 				return ErrRequestConflict
 			}
-			if !s.now().Before(existing.ExpiresAt) {
+			if !s.now().Before(existing.ExpiresAt) && !(s.cfg.TelegramDevelopment && kind == usermodel.IdentityTelegram) {
 				return ErrExpired
 			}
 			if existing.Completed {

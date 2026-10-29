@@ -7,7 +7,9 @@ import { Failure, useAuth } from '../../auth/context';
 import { randomRequestToken, session } from '../../auth/session';
 
 const TELEGRAM_ATTEMPT_KEY = 'dexwallet:user:telegram-attempt';
+const developmentTelegram = import.meta.env.DEV && import.meta.env.DEV_TELEGRAM;
 function loginRequest(fingerprint: string): string {
+  if (developmentTelegram) return randomRequestToken();
   // Persist only the recovery handle, never an additional copy of initData.
   try {
     const saved: unknown = JSON.parse(sessionStorage.getItem(TELEGRAM_ATTEMPT_KEY) ?? 'null');
@@ -42,7 +44,7 @@ export default function Telegram({ purpose, automatic = false, onSuccess }: { pu
     return () => { active.current = false; };
   }, []);
   return <div className="auth-form"><Button block loading={busy} disabled={busy || launch.mode !== 'telegram'} onClick={() => { void submit(); }}>{t(purpose ? 'useTelegramIdentity' : 'signInTelegram')}</Button>
-    <p className="muted">{t(launch.mode === 'telegram' ? 'telegramFreshProof' : 'telegramOpen')}</p>
+    {(!developmentTelegram || launch.mode !== 'telegram') && <p className="muted">{t(launch.mode === 'telegram' ? 'telegramFreshProof' : 'telegramOpen')}</p>}
     {error !== undefined && <Failure error={error} />}
   </div>;
 }

@@ -33,7 +33,7 @@ func TestTelegramValidation(t *testing.T) {
 	now := time.Unix(1800000000, 0)
 	user := `{"id":9007199254740993,"first_name":"Alice"}`
 	raw := signedTelegram(now, user)
-	profile, hash, err := verifyTelegram(raw, testBot, now)
+	profile, hash, err := verifyTelegram(raw, testBot, now, false)
 	if err != nil || profile.TelegramUserID != 9007199254740993 || profile.Username != nil || hash == "" {
 		t.Fatalf("valid profile: %+v %s %v", profile, hash, err)
 	}
@@ -44,18 +44,32 @@ func TestTelegramValidation(t *testing.T) {
 		"oversized": strings.Repeat("x", maxInitDataBytes+1), "newline": raw + "&extra=x%0Ay=z",
 	} {
 		t.Run(name, func(t *testing.T) {
-			if _, _, err := verifyTelegram(input, testBot, now); err == nil {
+			if _, _, err := verifyTelegram(input, testBot, now, false); err == nil {
 				t.Fatal("invalid authorization accepted")
 			}
 		})
 	}
-	if _, _, err := verifyTelegram(raw, "wrong", now); err == nil {
+	if _, _, err := verifyTelegram(raw, "wrong", now, false); err == nil {
 		t.Fatal("wrong bot accepted")
 	}
 	parts := strings.Split(raw, "&")
 	sort.Sort(sort.Reverse(sort.StringSlice(parts)))
-	_, reordered, err := verifyTelegram(strings.Join(parts, "&"), testBot, now)
+	_, reordered, err := verifyTelegram(strings.Join(parts, "&"), testBot, now, false)
 	if err != nil || reordered != hash {
 		t.Fatal("proof digest depends on query order")
+	}
+}
+
+func TestDevelopmentTelegramHasNoAgeLimitButStillVerifiesSignature(t *testing.T) {
+	now := time.Unix(1800000000, 0)
+	raw := signedTelegram(now.AddDate(-10, 0, 0), `{"id":7,"first_name":"Development"}`)
+	if _, _, err := verifyTelegram(raw, testBot, now, false); err == nil {
+		t.Fatal("ordinary authorization accepted expired material")
+	}
+	if _, _, err := verifyTelegram(raw, testBot, now, true); err != nil {
+		t.Fatal("development material expired", err)
+	}
+	if _, _, err := verifyTelegram(raw, "wrong", now, true); err == nil {
+		t.Fatal("development accepted wrong signature")
 	}
 }

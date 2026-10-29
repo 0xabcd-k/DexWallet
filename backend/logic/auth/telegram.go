@@ -16,7 +16,7 @@ import (
 
 const maxInitDataBytes = 16384
 
-func verifyTelegram(raw, bot string, now time.Time) (userlogic.VerifiedTelegram, string, error) {
+func verifyTelegram(raw, bot string, now time.Time, development bool) (userlogic.VerifiedTelegram, string, error) {
 	var empty userlogic.VerifiedTelegram
 	if len(raw) == 0 || len(raw) > maxInitDataBytes || bot == "" {
 		return empty, "", ErrTelegram
@@ -35,7 +35,7 @@ func verifyTelegram(raw, bot string, now time.Time) (userlogic.VerifiedTelegram,
 		return empty, "", ErrTelegram
 	}
 	issued := time.Unix(seconds, 0)
-	if !now.Before(issued.Add(TelegramLifetime)) || issued.After(now.Add(FutureTolerance)) {
+	if (!development && !now.Before(issued.Add(TelegramLifetime))) || issued.After(now.Add(FutureTolerance)) {
 		return empty, "", ErrTelegram
 	}
 	hash := query.Get("hash")
@@ -76,7 +76,7 @@ func (s *Service) VerifyTelegram(ctx context.Context, request, raw, source strin
 	if err = s.limit.Allow(ctx, RateTelegram, "", ip); err != nil {
 		return nil, err
 	}
-	profile, hash, err := verifyTelegram(raw, s.cfg.BotToken, s.now())
+	profile, hash, err := verifyTelegram(raw, s.cfg.BotToken, s.now(), s.cfg.TelegramDevelopment)
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +87,11 @@ func (s *Service) VerifyTelegram(ctx context.Context, request, raw, source strin
 			result, err = s.users.ResolveOrCreateVerifiedTelegramInSession(ctx, session, profile)
 		} else {
 			result, err = s.users.ChangeIdentityInSession(ctx, session, intent.Actor, intent.Purpose, usermodel.IdentityTelegram, "", &profile)
+		}
+		// Local development credentials are reusable; identity changes still use
+		// the normal transaction, actor checks and per-request recovery receipt.
+		if s.cfg.TelegramDevelopment {
+			return result, "", err
 		}
 		return result, s.digest("telegram-proof", hash), err
 	})

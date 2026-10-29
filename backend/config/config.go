@@ -12,6 +12,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/go-sql-driver/mysql"
 	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -85,6 +86,9 @@ func (c Config) Check() error {
 		}
 	}
 	if c.Auth != nil {
+		if c.Auth.TelegramDevelopment && (c.Environment != "local" || c.Mode != service.DevMode) {
+			return fmt.Errorf("TelegramDevelopment requires Environment=local and Mode=dev")
+		}
 		if err := c.Auth.Check(); err != nil {
 			return fmt.Errorf("auth config: %w", err)
 		}
