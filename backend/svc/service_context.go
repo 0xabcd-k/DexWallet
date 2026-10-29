@@ -28,25 +28,32 @@ const (
 	MQDependency    = "rocketmq"
 )
 
-type Dependencies struct {
+// ServiceContext owns shared clients and health checks. API handlers and future
+// background services receive the same instance; only main closes it.
+type ServiceContext struct {
+	Config    config.Config
+	Health    *health.Monitor
 	DB        *sql.DB
 	SQL       sqlx.SqlConn
 	Tx        *transaction.Runner
 	Redis     *redis.Client
 	Producer  rocketmq.Producer
 	mqAdmin   admin.Admin
-	Checks    []health.Check
 	Namespace string
+	checks    []health.Check
+	stopProbe context.CancelFunc
+	probeDone chan struct{}
 	once      sync.Once
 	closeErr  error
 }
 
-// Open owns clients; failed initialization closes all already-created clients.
-func Open(ctx context.Context, c config.Config) (d *Dependencies, err error) {
+// NewServiceContext initializes clients and health checks. Failed startup closes
+// already-created resources; successful startup transfers ownership to the caller.
+func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext, err error) {
 	if err = c.Check(); err != nil {
 		return nil, err
 	}
-	d = &Dependencies{Namespace: c.Namespace()}
+	d = &ServiceContext{Config: c, Namespace: c.Namespace()}
 	defer func() {
 		if err != nil {
 			err = errors.Join(err, d.Close())
@@ -72,10 +79,10 @@ func Open(ctx context.Context, c config.Config) (d *Dependencies, err error) {
 	}
 	d.SQL = sqlx.NewSqlConnFromDB(d.DB)
 	d.Tx = transaction.New(d.DB)
-	d.Checks = append(d.Checks, health.Check{Name: MySQLDependency, Required: true, Run: d.DB.PingContext})
+	d.checks = append(d.checks, health.Check{Name: MySQLDependency, Required: true, Run: d.DB.PingContext})
 	if c.Redis.Enabled {
 		d.Redis = redis.NewClient(&redis.Options{Addr: c.Redis.Address, Password: c.Redis.Password, DB: c.Redis.DB, DialTimeout: c.DependencyTimeout, ReadTimeout: c.DependencyTimeout, WriteTimeout: c.DependencyTimeout, ContextTimeoutEnabled: true, MaxRetries: -1})
-		d.Checks = append(d.Checks, health.Check{Name: RedisDependency, Required: c.Redis.Required, Run: func(ctx context.Context) error { return d.Redis.Ping(ctx).Err() }})
+		d.checks = append(d.checks, health.Check{Name: RedisDependency, Required: c.Redis.Required, Run: func(ctx context.Context) error { return d.Redis.Ping(ctx).Err() }})
 	}
 	if c.RocketMQ.Enabled {
 		setupMQLogging()
@@ -91,7 +98,7 @@ func Open(ctx context.Context, c config.Config) (d *Dependencies, err error) {
 		if err != nil {
 			return d, fmt.Errorf("rocketmq diagnostics: %w", err)
 		}
-		d.Checks = append(d.Checks, health.Check{Name: MQDependency, Required: c.RocketMQ.Required, Run: func(ctx context.Context) error {
+		d.checks = append(d.checks, health.Check{Name: MQDependency, Required: c.RocketMQ.Required, Run: func(ctx context.Context) error {
 			// Read-only nameserver protocol check plus broker transport check, NOT a delivery guarantee.
 			if _, err := d.mqAdmin.FetchAllTopicList(ctx); err != nil {
 				return fmt.Errorf("nameserver: %w", err)
@@ -103,14 +110,27 @@ func Open(ctx context.Context, c config.Config) (d *Dependencies, err error) {
 			return conn.Close()
 		}})
 	}
+	if err = d.startHealth(ctx); err != nil {
+		return d, err
+	}
 	return d, nil
 }
-func (d *Dependencies) RedisKey(parts ...string) string {
+func (d *ServiceContext) RedisKey(parts ...string) string {
 	return d.Namespace + ":" + strings.Join(parts, ":")
 }
-func (d *Dependencies) Topic(name string) string { return d.Namespace + "_" + name }
-func (d *Dependencies) Close() error {
+func (d *ServiceContext) Topic(name string) string { return d.Namespace + "_" + name }
+
+// Close runs after HTTP/background work has drained. Stop probes before closing
+// clients, including when startup failed partway through initialization.
+func (d *ServiceContext) Close() error {
 	d.once.Do(func() {
+		if d.Health != nil {
+			d.Health.Stop()
+		}
+		if d.stopProbe != nil {
+			d.stopProbe()
+			<-d.probeDone
+		}
 		if d.Producer != nil {
 			d.closeErr = errors.Join(d.closeErr, d.Producer.Shutdown())
 		}

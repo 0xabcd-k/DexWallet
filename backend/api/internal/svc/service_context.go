@@ -1,14 +1,9 @@
 // Code scaffolded by goctl. Safe to edit.
+// goctl 1.10.2
+
 package svc
 
-import (
-	"github.com/0xabcd-k/DexWallet/backend/api/internal/config"
-	"github.com/0xabcd-k/DexWallet/backend/health"
-	base "github.com/0xabcd-k/DexWallet/backend/svc"
-)
+import shared "github.com/0xabcd-k/DexWallet/backend/svc"
 
-type ServiceContext struct {
-	Config       config.Config
-	Dependencies *base.Dependencies
-	Health       *health.Monitor
-}
+// Keep goctl's import layout without creating another dependency container.
+type ServiceContext = shared.ServiceContext

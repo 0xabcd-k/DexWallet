@@ -66,6 +66,13 @@ def render(root=ROOT):
              "--dir", str(work / MODEL_OUT), "--style", "go_zero", "--home", str(template)], backend, env)
         generated, scaffold = {}, {}
         platform = backend / "manifest/api/platform/platform.api"
+        # Only production API scaffolds use project adapters; the isolated example
+        # remains a stock goctl contract test. All other templates stay upstream.
+        for name in ("handler.tpl", "context.tpl", "main.tpl"):
+            source = root / "backend/template/api" / name
+            target = template / "api" / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(source.read_text().replace("__API_DIR__", PLATFORM_OUT.relative_to("backend").as_posix()))
         run([str(tool), "api", "go", "--api", str(platform), "--dir", str(work / PLATFORM_OUT),
              "--style", "go_zero", "--home", str(template)], backend, env)
         run([str(tool), "api", "ts", "--api", str(platform), "--dir", str(work / "platform-ts")], backend, env)

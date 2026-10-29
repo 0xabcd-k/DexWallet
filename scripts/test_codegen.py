@@ -2,6 +2,7 @@
 """Behavior checks for the real generator, without MySQL or application services."""
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -20,14 +21,63 @@ class CodegenTests(unittest.TestCase):
 
     def test_repeat_generation_is_identical_and_preserves_handwritten_code(self):
         first, scaffold = generate.render(self.root)
-        second, _ = generate.render(self.root)
+        second, second_scaffold = generate.render(self.root)
         self.assertEqual(first, second)
+        self.assertEqual(scaffold, second_scaffold)
         logic = self.root / generate.API_OUT / "internal/logic/example/echo_logic.go"
         model = self.root / generate.MODEL_OUT / "contract_sample_model.go"
-        before = [logic.read_bytes(), model.read_bytes()]
+        handler = self.root / generate.PLATFORM_OUT / "internal/handler/health/live_handler.go"
+        handler.write_bytes(handler.read_bytes() + b"\n// handwritten extension\n")
+        before = [logic.read_bytes(), model.read_bytes(), handler.read_bytes()]
         generate.synchronize(self.root, first, scaffold)
-        self.assertEqual(before, [logic.read_bytes(), model.read_bytes()])
+        self.assertEqual(before, [logic.read_bytes(), model.read_bytes(), handler.read_bytes()])
         generate.synchronize(self.root, first, scaffold, check=True)
+
+    def test_new_handler_uses_project_errors_without_manual_changes(self):
+        source = self.root / "backend/manifest/api/platform/platform.api"
+        source.write_text(source.read_text() + '''
+type TemplateRequest {
+    Value string `json:"value,options=ready"`
+}
+@server(group: template)
+service platform {
+    @handler check
+    post /template/check (TemplateRequest) returns (HealthResponse)
+}
+''')
+        # Recreate startup and context as well: generated scaffolds must compile
+        # together and use the shared container, including its error handling.
+        (self.root / generate.PLATFORM_OUT / "platform.go").unlink()
+        (self.root / generate.PLATFORM_OUT / "internal/svc/service_context.go").unlink()
+        output, scaffold = generate.render(self.root)
+        generate.synchronize(self.root, output, scaffold)
+        test = self.root / generate.PLATFORM_OUT / "internal/server/generated_handler_test.go"
+        test.write_text('''package server
+
+import (
+    "net/http/httptest"
+    "testing"
+)
+
+func TestGeneratedRequestHandler(t *testing.T) {
+    s, _ := setup(t)
+    ts := httptest.NewServer(s.HTTP.Handler)
+    defer ts.Close()
+    for _, body := range []string{"{", "{}", `{"value":"invalid"}`} {
+        status, value, _ := request(t, ts.Client(), "POST", ts.URL+"/template/check", body)
+        if status != 400 || value["code"] != "INVALID_ARGUMENT" {
+            t.Fatalf("generated handler: status=%d body=%v", status, value)
+        }
+        if _, ok := value["data"]; ok {
+            t.Fatal("parse failure must not include success data")
+        }
+    }
+}
+''')
+        result = subprocess.run(
+            ["go", "test", "./api", "./api/internal/server", "-run", "^TestGeneratedRequestHandler$", "-count=1"],
+            cwd=self.root / "backend", capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_platform_contract_generates_codes_and_preserves_entrypoint(self):
         source = self.root / "backend/manifest/api/platform/platform.api"

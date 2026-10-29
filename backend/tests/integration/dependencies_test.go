@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/config"
-	"github.com/0xabcd-k/DexWallet/backend/health"
 	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	"github.com/0xabcd-k/DexWallet/backend/svc"
 	driver "github.com/go-sql-driver/mysql"
@@ -33,7 +32,7 @@ func TestDependencyClients(t *testing.T) {
 	if err = testenv.CheckLocalDependencies(c.Redis.Address, c.RocketMQ.NameServers, c.RocketMQ.BrokerAddress); err != nil {
 		t.Fatal(err)
 	}
-	d, err := svc.Open(ctx, c)
+	d, err := svc.NewServiceContext(ctx, c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,9 +41,7 @@ func TestDependencyClients(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	monitor := health.New(d.Checks, c.ProbeFreshness)
-	monitor.Refresh(ctx, d.Checks, c.ProbeTimeout, nil)
-	for _, state := range monitor.Snapshot() {
+	for _, state := range d.Health.Snapshot() {
 		if state.Err != nil {
 			t.Fatalf("%s: %v", state.Name, state.Err)
 		}
@@ -61,7 +58,7 @@ func TestDependencyClients(t *testing.T) {
 		t.Fatalf("redis roundtrip: %s %v", value, err)
 	}
 	// No MQ publish/consume here: route/broker diagnostics are not delivery proof.
-	if !monitor.Ready() {
+	if !d.Health.Ready() {
 		t.Fatal("not ready")
 	}
 }
