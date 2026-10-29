@@ -13,7 +13,9 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/config"
 	"github.com/0xabcd-k/DexWallet/backend/health"
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
+	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
+	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	rocketmq "github.com/apache/rocketmq-client-go/v2"
@@ -37,6 +39,7 @@ type ServiceContext struct {
 	Config                config.Config
 	UserIdx               *idcodec.Codec
 	Users                 *userlogic.Service
+	Auth                  *authlogic.Service
 	ModelUser             usermodel.UserModel
 	ModelEmailIdentity    usermodel.EmailIdentityModel
 	ModelTelegramIdentity usermodel.TelegramIdentityModel
@@ -103,6 +106,19 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	if c.Redis.Enabled {
 		d.Redis = redis.NewClient(&redis.Options{Addr: c.Redis.Address, Password: c.Redis.Password, DB: c.Redis.DB, DialTimeout: c.DependencyTimeout, ReadTimeout: c.DependencyTimeout, WriteTimeout: c.DependencyTimeout, ContextTimeoutEnabled: true, MaxRetries: -1})
 		d.checks = append(d.checks, health.Check{Name: RedisDependency, Required: c.Redis.Required, Run: func(ctx context.Context) error { return d.Redis.Ping(ctx).Err() }})
+	}
+	if c.Auth != nil {
+		var sender authlogic.Mailer
+		if c.Auth.EmailEnabled {
+			sender, err = authlogic.NewSMTPMailer(c.Auth.SMTP)
+			if err != nil {
+				return d, err
+			}
+		}
+		d.Auth, err = authlogic.New(*c.Auth, d.Users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), d.Tx, sender, authlogic.NewRedisLimiter(d.Redis, d.Namespace, *c.Auth))
+		if err != nil {
+			return d, err
+		}
 	}
 	if c.RocketMQ.Enabled {
 		setupMQLogging()

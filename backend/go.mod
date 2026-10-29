@@ -6,10 +6,13 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
 	github.com/capitalone/fpe v1.2.1
+	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/redis/go-redis/v9 v9.21.0
 	github.com/shopspring/decimal v1.4.0
+	github.com/telegram-mini-apps/init-data-golang v1.5.0
+	github.com/wneessen/go-mail v0.8.1
 	github.com/zeromicro/go-zero v1.10.3
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/trace v1.40.0
@@ -63,9 +66,10 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	golang.org/x/net v0.50.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/crypto v0.54.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/grpc v1.80.0 // indirect

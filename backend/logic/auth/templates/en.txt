@@ -1,0 +1,2 @@
+DexWallet verification code
+Your verification code is {{.Code}}. It expires in {{.Minutes}} minutes. Do not share it with anyone.

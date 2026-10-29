@@ -9,6 +9,7 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/config"
 	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
+	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/svc"
 	driver "github.com/go-sql-driver/mysql"
 )
@@ -30,12 +31,20 @@ func TestDependencyClients(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.Environment = "integration_" + testRun.ID
+	authConfig := authlogic.DefaultConfig()
+	authConfig.Secret = authTestSecret
+	authConfig.TelegramEnabled = true
+	authConfig.BotToken = authTestBot
+	c.Auth = &authConfig
 	if err = testenv.CheckLocalDependencies(c.Redis.Address, c.RocketMQ.NameServers, c.RocketMQ.BrokerAddress); err != nil {
 		t.Fatal(err)
 	}
 	d, err := svc.NewServiceContext(ctx, c)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if d.Auth == nil {
+		t.Fatal("configured authentication service missing")
 	}
 	defer func() {
 		if err := d.Close(); err != nil {

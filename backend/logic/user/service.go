@@ -129,7 +129,7 @@ func (s *Service) CheckCurrentBindingInSession(ctx context.Context, session sqlx
 	return nil
 }
 
-func retryable(err error) bool {
+func RetryableResolution(err error) bool {
 	var failure *transaction.Failure
 	if errors.As(err, &failure) {
 		return false

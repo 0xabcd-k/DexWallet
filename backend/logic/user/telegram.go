@@ -30,66 +30,16 @@ func (s *Service) ResolveOrCreateVerifiedTelegram(ctx context.Context, profile V
 		}
 		var result Resolved
 		err = s.tx.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-			users := s.users.WithSession(session)
-			identities := s.telegrams.WithSession(session)
-			var u *model.User
-			var e error
-			if owner > 0 {
-				u, e = users.FindForUpdate(ctx, owner)
-			} else {
-				u, e = createUser(ctx, users, initialNickname(profile.FirstName), stringValue(profile.PhotoURL))
+			resolved, e := s.resolveTelegramInSession(ctx, session, profile, hint, owner)
+			if e == nil {
+				result = *resolved
 			}
-			if e != nil {
-				return e
-			}
-			// Insert a missing subject before a locking read to avoid competing
-			// gap locks. A duplicate subject rolls back this candidate user.
-			if hint == nil {
-				_, e = identities.Insert(ctx, &model.TelegramIdentity{TelegramUserId: profile.TelegramUserID, FirstName: profile.FirstName})
-				if e != nil {
-					return insertIdentityError(e)
-				}
-			}
-			// Locking reads see current ownership, even under REPEATABLE READ.
-			identity, e := identities.FindBySubjectForUpdate(ctx, profile.TelegramUserID)
-			if e != nil {
-				return e
-			}
-			if owner > 0 {
-				if !identity.UserId.Valid || identity.UserId.Int64 != owner {
-					return errResolveRace
-				}
-				if u.Status != model.StatusActive {
-					return ErrDisabled
-				}
-			} else {
-				if identity.UserId.Valid {
-					return errResolveRace
-				}
-				if identity.BindingVersion == math.MaxInt64 {
-					return ErrVersionExhausted
-				}
-				identity.UserId = sql.NullInt64{Int64: u.Id, Valid: true}
-				identity.BindingVersion++
-				identity.BoundAt = sql.NullTime{Time: time.Now().UTC(), Valid: true}
-			}
-
-			identity.FirstName = profile.FirstName
-			identity.Username = nullString(profile.Username)
-			identity.LastName = nullString(profile.LastName)
-			identity.PhotoUrl = nullString(profile.PhotoURL)
-			identity.LanguageCode = nullString(profile.LanguageCode)
-			if e = identities.Update(ctx, identity); e != nil {
-				return e
-			}
-
-			result = Resolved{User: u, Binding: Binding{Type: model.IdentityTelegram, IdentityID: identity.Id, UserID: u.Id, Version: identity.BindingVersion}}
-			return nil
+			return e
 		})
 		if err == nil {
 			return &result, nil
 		}
-		if !retryable(err) {
+		if !RetryableResolution(err) {
 			return nil, err
 		}
 		last = err
@@ -121,4 +71,81 @@ func initialNickname(value string) string {
 		runes = runes[:128]
 	}
 	return string(runes)
+}
+
+// ResolveOrCreateVerifiedTelegramInSession participates in the authentication
+// transaction. The caller owns rollback and bounded retry of resolution races.
+func (s *Service) ResolveOrCreateVerifiedTelegramInSession(ctx context.Context, session sqlx.Session, profile VerifiedTelegram) (*Resolved, error) {
+	if session == nil {
+		return nil, ErrInvalidInput
+	}
+	if err := profile.validate(); err != nil {
+		return nil, err
+	}
+	hint, err := s.telegrams.WithSession(session).FindOneByTelegramUserId(ctx, profile.TelegramUserID)
+	if err != nil && !errors.Is(err, model.ErrNotFound) {
+		return nil, err
+	}
+	var owner int64
+	if hint != nil && hint.UserId.Valid {
+		owner = hint.UserId.Int64
+	}
+	return s.resolveTelegramInSession(ctx, session, profile, hint, owner)
+}
+func (s *Service) resolveTelegramInSession(ctx context.Context, session sqlx.Session, profile VerifiedTelegram, hint *model.TelegramIdentity, owner int64) (*Resolved, error) {
+	users := s.users.WithSession(session)
+	identities := s.telegrams.WithSession(session)
+	var u *model.User
+	var e error
+	if owner > 0 {
+		u, e = users.FindForUpdate(ctx, owner)
+	} else {
+		u, e = createUser(ctx, users, initialNickname(profile.FirstName), stringValue(profile.PhotoURL))
+	}
+	if e != nil {
+		return nil, e
+	}
+	// Insert a missing subject before a locking read to avoid competing
+	// gap locks. A duplicate subject rolls back this candidate user.
+	if hint == nil {
+		_, e = identities.Insert(ctx, &model.TelegramIdentity{TelegramUserId: profile.TelegramUserID, FirstName: profile.FirstName})
+		if e != nil {
+			return nil, insertIdentityError(e)
+		}
+	}
+	// Locking reads see current ownership, even under REPEATABLE READ.
+	identity, e := identities.FindBySubjectForUpdate(ctx, profile.TelegramUserID)
+	if e != nil {
+		return nil, e
+	}
+	if owner > 0 {
+		if !identity.UserId.Valid || identity.UserId.Int64 != owner {
+			return nil, errResolveRace
+		}
+		if u.Status != model.StatusActive {
+			return nil, ErrDisabled
+		}
+	} else {
+		if identity.UserId.Valid {
+			return nil, errResolveRace
+		}
+		if identity.BindingVersion == math.MaxInt64 {
+			return nil, ErrVersionExhausted
+		}
+		identity.UserId = sql.NullInt64{Int64: u.Id, Valid: true}
+		identity.BindingVersion++
+		identity.BoundAt = sql.NullTime{Time: time.Now().UTC(), Valid: true}
+	}
+
+	identity.FirstName = profile.FirstName
+	identity.Username = nullString(profile.Username)
+	identity.LastName = nullString(profile.LastName)
+	identity.PhotoUrl = nullString(profile.PhotoURL)
+	identity.LanguageCode = nullString(profile.LanguageCode)
+	if e = identities.Update(ctx, identity); e != nil {
+		return nil, e
+	}
+
+	result := Resolved{User: u, Binding: Binding{Type: model.IdentityTelegram, IdentityID: identity.Id, UserID: u.Id, Version: identity.BindingVersion}}
+	return &result, nil
 }

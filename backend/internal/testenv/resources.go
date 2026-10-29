@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
@@ -33,6 +34,7 @@ type Run struct {
 
 var runID = regexp.MustCompile(`^[a-f0-9]{16}$`)
 var suffix = regexp.MustCompile(`^[a-z0-9_]+$`)
+var redisSuffix = regexp.MustCompile(`^[a-z0-9_:]+$`)
 
 func NewRun() (*Run, error) {
 	c, e := AdminConfig()
@@ -119,6 +121,14 @@ func (r *Run) valid(v Resource) bool {
 		return v.Name == r.Name(v.Kind, "")
 	}
 	prefix := r.Name(v.Kind, "")
+	if v.Kind == "redis" {
+		// redis_rate adds its own fixed prefix. Still require this exact run's
+		// namespace and a bounded key alphabet before recording or deleting.
+		if strings.HasPrefix(v.Name, "rate:") {
+			prefix = "rate:" + prefix
+		}
+		return strings.HasPrefix(v.Name, prefix) && len(v.Name) > len(prefix) && redisSuffix.MatchString(v.Name[len(prefix):])
+	}
 	return len(v.Name) > len(prefix) && v.Name[:len(prefix)] == prefix && suffix.MatchString(v.Name[len(prefix):])
 }
 

@@ -31,60 +31,16 @@ func (s *Service) ResolveOrCreateVerifiedEmail(ctx context.Context, original str
 		}
 		var result Resolved
 		err = s.tx.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-			users := s.users.WithSession(session)
-			identities := s.emails.WithSession(session)
-			var u *model.User
-			var e error
-			if owner > 0 {
-				u, e = users.FindForUpdate(ctx, owner)
-			} else {
-				u, e = createUser(ctx, users, "", "")
+			resolved, e := s.resolveEmailInSession(ctx, session, address, hint, owner)
+			if e == nil {
+				result = *resolved
 			}
-			if e != nil {
-				return e
-			}
-			// Insert a missing subject before a locking read to avoid competing
-			// gap locks. A duplicate subject rolls back this candidate user.
-			if hint == nil {
-				_, e = identities.Insert(ctx, &model.EmailIdentity{EmailAddress: address.Address, EmailLocalPart: address.LocalPart, EmailDomain: address.Domain, EmailOriginal: address.Original})
-				if e != nil {
-					return insertIdentityError(e)
-				}
-			}
-			// Locking reads see current ownership, even under REPEATABLE READ.
-			identity, e := identities.FindBySubjectForUpdate(ctx, address.Address)
-			if e != nil {
-				return e
-			}
-			if owner > 0 {
-				if !identity.UserId.Valid || identity.UserId.Int64 != owner {
-					return errResolveRace
-				}
-				if u.Status != model.StatusActive {
-					return ErrDisabled
-				}
-			} else {
-				if identity.UserId.Valid {
-					return errResolveRace
-				}
-				if identity.BindingVersion == math.MaxInt64 {
-					return ErrVersionExhausted
-				}
-				identity.UserId = sql.NullInt64{Int64: u.Id, Valid: true}
-				identity.BindingVersion++
-				identity.BoundAt = sql.NullTime{Time: time.Now().UTC(), Valid: true}
-				if e = identities.Update(ctx, identity); e != nil {
-					return e
-				}
-			}
-
-			result = Resolved{User: u, Binding: Binding{Type: model.IdentityEmail, IdentityID: identity.Id, UserID: u.Id, Version: identity.BindingVersion}}
-			return nil
+			return e
 		})
 		if err == nil {
 			return &result, nil
 		}
-		if !retryable(err) {
+		if !RetryableResolution(err) {
 			return nil, err
 		}
 		last = err
@@ -93,4 +49,77 @@ func (s *Service) ResolveOrCreateVerifiedEmail(ctx context.Context, original str
 		}
 	}
 	return nil, fmt.Errorf("%w: %w", ErrConflict, last)
+}
+
+// ResolveOrCreateVerifiedEmailInSession participates in the authentication
+// transaction. The caller owns rollback and bounded retry of resolution races.
+func (s *Service) ResolveOrCreateVerifiedEmailInSession(ctx context.Context, session sqlx.Session, address EmailAddress) (*Resolved, error) {
+	if session == nil {
+		return nil, ErrInvalidInput
+	}
+	normalized, err := NormalizeEmail(address.Original)
+	if err != nil {
+		return nil, err
+	}
+	address = normalized
+	hint, err := s.emails.WithSession(session).FindOneByEmailAddress(ctx, address.Address)
+	if err != nil && !errors.Is(err, model.ErrNotFound) {
+		return nil, err
+	}
+	var owner int64
+	if hint != nil && hint.UserId.Valid {
+		owner = hint.UserId.Int64
+	}
+	return s.resolveEmailInSession(ctx, session, address, hint, owner)
+}
+func (s *Service) resolveEmailInSession(ctx context.Context, session sqlx.Session, address EmailAddress, hint *model.EmailIdentity, owner int64) (*Resolved, error) {
+	users := s.users.WithSession(session)
+	identities := s.emails.WithSession(session)
+	var u *model.User
+	var e error
+	if owner > 0 {
+		u, e = users.FindForUpdate(ctx, owner)
+	} else {
+		u, e = createUser(ctx, users, "", "")
+	}
+	if e != nil {
+		return nil, e
+	}
+	// Insert a missing subject before a locking read to avoid competing
+	// gap locks. A duplicate subject rolls back this candidate user.
+	if hint == nil {
+		_, e = identities.Insert(ctx, &model.EmailIdentity{EmailAddress: address.Address, EmailLocalPart: address.LocalPart, EmailDomain: address.Domain, EmailOriginal: address.Original})
+		if e != nil {
+			return nil, insertIdentityError(e)
+		}
+	}
+	// Locking reads see current ownership, even under REPEATABLE READ.
+	identity, e := identities.FindBySubjectForUpdate(ctx, address.Address)
+	if e != nil {
+		return nil, e
+	}
+	if owner > 0 {
+		if !identity.UserId.Valid || identity.UserId.Int64 != owner {
+			return nil, errResolveRace
+		}
+		if u.Status != model.StatusActive {
+			return nil, ErrDisabled
+		}
+	} else {
+		if identity.UserId.Valid {
+			return nil, errResolveRace
+		}
+		if identity.BindingVersion == math.MaxInt64 {
+			return nil, ErrVersionExhausted
+		}
+		identity.UserId = sql.NullInt64{Int64: u.Id, Valid: true}
+		identity.BindingVersion++
+		identity.BoundAt = sql.NullTime{Time: time.Now().UTC(), Valid: true}
+		if e = identities.Update(ctx, identity); e != nil {
+			return nil, e
+		}
+	}
+
+	result := Resolved{User: u, Binding: Binding{Type: model.IdentityEmail, IdentityID: identity.Id, UserID: u.Id, Version: identity.BindingVersion}}
+	return &result, nil
 }

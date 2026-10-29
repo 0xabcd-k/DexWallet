@@ -107,3 +107,16 @@ func TestCleanupFailureRetainsExactResourcesAndCanResume(t *testing.T) {
 	}
 	lock.Close()
 }
+
+func TestRedisRateResourceOwnership(t *testing.T) {
+	run := &Run{ID: "0123456789abcdef"}
+	own := "rate:" + run.Name("redis", "limits") + ":auth:send:source:abcd"
+	if !run.valid(Resource{Kind: "redis", Name: own}) {
+		t.Fatal("owned limiter key rejected")
+	}
+	for _, name := range []string{"rate:dexwallet_integration_ffffffffffffffff:limits:abcd", own + "*", own + "/other", "rate:unrelated:key"} {
+		if run.valid(Resource{Kind: "redis", Name: name}) {
+			t.Fatalf("unowned key accepted: %s", name)
+		}
+	}
+}

@@ -69,3 +69,40 @@ func TestFrameworkConfigBudgets(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthConfiguration(t *testing.T) {
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
+	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
+	c, err := Load("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Auth != nil {
+		t.Fatal("auth should be disabled until explicitly configured")
+	}
+	data, err := os.ReadFile("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(t.TempDir(), "auth.yaml")
+	data = append(data, []byte("\nAuth:\n  TelegramEnabled: true\n")...)
+	if err = os.WriteFile(file, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Load(file); err == nil {
+		t.Fatal("missing auth secrets accepted")
+	}
+	t.Setenv("DEXWALLET_AUTH_SECRET", "test-only-auth-secret-32-characters")
+	t.Setenv("DEXWALLET_TELEGRAM_BOT_TOKEN", "123:fake-token")
+	c, err = Load(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Auth.SendPerEmail != 10 || c.Auth.VerifyPerSource != 60 {
+		t.Fatal("rate defaults missing")
+	}
+	c.Redis.Enabled = false
+	if c.Check() == nil {
+		t.Fatal("auth without Redis allowed")
+	}
+}

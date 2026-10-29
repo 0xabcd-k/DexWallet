@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
+	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/go-sql-driver/mysql"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"
@@ -16,6 +17,7 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
+	Auth              *auth.Config  `json:",optional"`
 	IDSecret          string        `json:",optional"`
 	DependencyTimeout time.Duration `json:",default=3s"`
 	ProbeTimeout      time.Duration `json:",default=1s"`
@@ -58,9 +60,27 @@ func Load(path string) (Config, error) {
 	c.Redis.Password = os.Getenv("DEXWALLET_REDIS_PASSWORD")
 	c.RocketMQ.AccessKey = os.Getenv("DEXWALLET_MQ_ACCESS_KEY")
 	c.RocketMQ.SecretKey = os.Getenv("DEXWALLET_MQ_SECRET_KEY")
+	if c.Auth != nil {
+		c.Auth.Secret = os.Getenv("DEXWALLET_AUTH_SECRET")
+		c.Auth.BotToken = os.Getenv("DEXWALLET_TELEGRAM_BOT_TOKEN")
+		c.Auth.SMTP.Password = os.Getenv("DEXWALLET_SMTP_PASSWORD")
+	}
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if c.Auth != nil {
+		if err := c.Auth.Check(); err != nil {
+			return fmt.Errorf("auth config: %w", err)
+		}
+		if !c.Redis.Enabled {
+			return fmt.Errorf("authentication requires Redis rate limits")
+		}
+		if c.Auth.EmailEnabled {
+			if _, err := auth.NewSMTPMailer(c.Auth.SMTP); err != nil {
+				return err
+			}
+		}
+	}
 	if _, err := idcodec.New(c.IDSecret, idcodec.User); err != nil {
 		return fmt.Errorf("DEXWALLET_ID_SECRET: %w", err)
 	}
