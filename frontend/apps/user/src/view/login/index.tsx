@@ -8,7 +8,7 @@ import './style.less';
 
 export default function Login() {
   const { t } = useTranslation(); const auth = useAuth(); const navigate = useNavigate(); const [params] = useSearchParams();
-  const target = safeDestination(params.get('returnTo'), '/account');
+  const target = safeDestination(params.get('returnTo'), '/settings');
   if (auth.session.credential) return <Navigate to={target} replace />;
   return <section className="auth-page"><p className="eyebrow">DexWallet</p><h1>{t('signIn')}</h1><p className="muted">{t('signInBody')}</p>
     <div className="auth-card"><h2>{t('email')}</h2><EmailForm onSuccess={() => navigate(target, { replace: true })} /></div>

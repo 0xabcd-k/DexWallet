@@ -18,17 +18,15 @@ test('email login, errors, source recovery, profile, reload and logout', async (
   await expect(page.getByRole('alert')).toContainText('invalid or expired');
   await page.getByLabel('Verification code', { exact: true }).fill('123456');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page).toHaveURL(`${base}/#/account`);
+  await expect(page).toHaveURL(`${base}/#/settings`);
   await expect(page.getByText(userIdx, { exact: true })).toBeVisible();
   await page.getByLabel('Nickname', { exact: true }).fill('My product name');
   await page.getByRole('button', { name: 'Save nickname' }).click();
   await expect(page.getByRole('status')).toContainText('has been saved');
   await page.reload(); await expect(page.getByLabel('Nickname')).toHaveValue('My product name');
-  await page.getByRole('link', { name: 'Manage linked identities' }).click();
   await expect(page.getByRole('button', { name: 'Replace', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Unlink', exact: true })).toBeDisabled();
   await page.screenshot({ path: `test-results/identities-${test.info().project.name}.png`, fullPage: true });
-  await page.getByRole('link', { name: 'Return to the previous page' }).click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(`${base}/#/wallet`);
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).token, SESSION_KEY)).toBeNull();
@@ -38,11 +36,13 @@ test('Telegram launch signs in once, explicit logout survives refresh', async ({
   const state = await mockAccount(page);
   await page.goto(`${base}/#${telegramLaunch()}`);
   await expect(page).toHaveURL(`${base}/#/wallet`);
-  await page.getByRole('link', { name: 'Account', exact: true }).click();
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await expect(page.getByText('Telegram Test', { exact: false })).toBeVisible();
   expect(state.tokenRequests).toHaveLength(1);
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await page.reload(); await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(`${base}/#/wallet`);
+  await page.reload(); await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   expect(state.tokenRequests).toHaveLength(1);
 });
 
@@ -65,8 +65,8 @@ test('binding conflict keeps account; success returns to source and new version 
   await page.getByRole('button', { name: 'Send code', exact: true }).click();
   await page.getByLabel('Verification code', { exact: true }).fill('123456');
   await page.getByRole('button', { name: 'Verify and link' }).click();
-  await expect(page).toHaveURL(`${base}/#/account`);
-  await expect(page.getByText('Email · New@example.com')).toBeVisible();
+  await expect(page).toHaveURL(`${base}/#/settings`);
+  await expect(page.getByText('New@example.com')).toBeVisible();
   await page.reload(); await expect(page.getByText(userIdx, { exact: true })).toBeVisible();
 });
 
@@ -80,13 +80,13 @@ test('503 retains credentials, 401 requests login and never follows external ret
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(page.getByText(userIdx, { exact: true })).toBeVisible();
   state.version++;
-  await page.reload(); await expect(page).toHaveURL(/\/login\?/);
+  await page.reload(); await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   await page.goto(`${base}/#/login?returnTo=https%3A%2F%2Fevil.example`);
   await page.getByLabel('Email', { exact: true }).fill('Alice@example.com');
   await page.getByRole('button', { name: 'Send code', exact: true }).click();
   await page.getByLabel('Verification code', { exact: true }).fill('123456');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page).toHaveURL(`${base}/#/account`);
+  await expect(page).toHaveURL(`${base}/#/settings`);
 });
 
 test('late renewal cannot restore logout, and another tab observes logout', async ({ page, context }) => {
@@ -99,7 +99,7 @@ test('late renewal cannot restore logout, and another tab observes logout', asyn
   await page.getByLabel('Nickname').fill('Changed'); await page.getByRole('button', { name: 'Save nickname' }).click();
   await expect(page.getByRole('status')).toContainText('has been saved');
   await page.getByRole('button', { name: 'Sign out', exact: true }).click(); release();
-  await expect(page).toHaveURL(`${base}/#/wallet`); await expect(other).toHaveURL(/\/login\?/);
+  await expect(page).toHaveURL(`${base}/#/wallet`); await expect(other.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).token, SESSION_KEY)).toBeNull();
 });
 
@@ -122,8 +122,8 @@ test('lost replacement response retries the original operation with the original
   await page.getByRole('button', { name: 'Verify and link' }).click();
   await expect(page.getByRole('alert')).toContainText('Unable to connect');
   await page.getByRole('button', { name: 'Verify and link' }).click();
-  await expect(page).toHaveURL(`${base}/#/account`);
-  await expect(page.getByText('Email · Recovered@example.com')).toBeVisible(); expect(calls).toBe(2);
+  await expect(page).toHaveURL(`${base}/#/settings`);
+  await expect(page.getByText('Recovered@example.com')).toBeVisible(); expect(calls).toBe(2);
 });
 
 test('blocked browser storage still allows memory-only email login', async ({ page }) => {
@@ -138,5 +138,5 @@ test('blocked browser storage still allows memory-only email login', async ({ pa
   await page.getByLabel('Verification code', { exact: true }).fill('123456');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByText(userIdx, { exact: true })).toBeVisible();
-  await page.reload(); await expect(page).toHaveURL(/\/login\?/);
+  await page.reload(); await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
 });
