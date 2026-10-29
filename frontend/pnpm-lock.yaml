@@ -74,18 +74,12 @@ importers:
       '@dexwallet/ui-desktop':
         specifier: workspace:*
         version: link:../../packages/ui-desktop
-      antd:
-        specifier: 6.6.8
-        version: 6.6.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
         specifier: 18.3.1
         version: 18.3.1
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
-      react-i18next:
-        specifier: 17.1.9
-        version: 17.1.9(i18next@26.5.11(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       react-router:
         specifier: 7.18.4
         version: 7.18.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -101,18 +95,12 @@ importers:
       '@dexwallet/ui-desktop':
         specifier: workspace:*
         version: link:../../packages/ui-desktop
-      antd:
-        specifier: 6.6.8
-        version: 6.6.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
         specifier: 18.3.1
         version: 18.3.1
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
-      react-i18next:
-        specifier: 17.1.9
-        version: 17.1.9(i18next@26.5.11(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       react-router:
         specifier: 7.18.4
         version: 7.18.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -137,9 +125,6 @@ importers:
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
-      react-i18next:
-        specifier: 17.1.9
-        version: 17.1.9(i18next@26.5.11(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       react-router:
         specifier: 7.18.4
         version: 7.18.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -182,9 +167,6 @@ importers:
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
-      react-i18next:
-        specifier: 17.1.9
-        version: 17.1.9(i18next@26.5.11(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       react-router:
         specifier: 7.18.4
         version: 7.18.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

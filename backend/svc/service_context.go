@@ -19,7 +19,6 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"github.com/go-sql-driver/mysql"
 	"github.com/redis/go-redis/v9"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 const (
@@ -34,7 +33,6 @@ type ServiceContext struct {
 	Config    config.Config
 	Health    *health.Monitor
 	DB        *sql.DB
-	SQL       sqlx.SqlConn
 	Tx        *transaction.Runner
 	Redis     *redis.Client
 	Producer  rocketmq.Producer
@@ -77,7 +75,6 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	if err = d.DB.PingContext(call); err != nil {
 		return d, fmt.Errorf("mysql startup: %w", err)
 	}
-	d.SQL = sqlx.NewSqlConnFromDB(d.DB)
 	d.Tx = transaction.New(d.DB)
 	d.checks = append(d.checks, health.Check{Name: MySQLDependency, Required: true, Run: d.DB.PingContext})
 	if c.Redis.Enabled {
@@ -118,7 +115,6 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 func (d *ServiceContext) RedisKey(parts ...string) string {
 	return d.Namespace + ":" + strings.Join(parts, ":")
 }
-func (d *ServiceContext) Topic(name string) string { return d.Namespace + "_" + name }
 
 // Close runs after HTTP/background work has drained. Stop probes before closing
 // clients, including when startup failed partway through initialization.

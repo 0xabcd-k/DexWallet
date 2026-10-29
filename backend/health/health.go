@@ -45,8 +45,7 @@ func (m *Monitor) Ready() bool {
 	}
 	return true
 }
-func (m *Monitor) Stop()          { m.mu.Lock(); m.stopping = true; m.mu.Unlock() }
-func (m *Monitor) Stopping() bool { m.mu.RLock(); defer m.mu.RUnlock(); return m.stopping }
+func (m *Monitor) Stop() { m.mu.Lock(); m.stopping = true; m.mu.Unlock() }
 func (m *Monitor) Snapshot() []State {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

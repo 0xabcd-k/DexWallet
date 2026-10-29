@@ -78,6 +78,10 @@ def render(root=ROOT):
         run([str(tool), "api", "ts", "--api", str(platform), "--dir", str(work / "platform-ts")], backend, env)
         for file in (work / PLATFORM_OUT).rglob("*"):
             if file.is_file():
+                # Project main/context use the shared config directly. Discard
+                # goctl's unused per-API config instead of recreating an alias.
+                if file == work / PLATFORM_OUT / "internal/config/config.go":
+                    continue
                 target = generated if file.name in ("types.go", "routes.go") else scaffold
                 target[str(file.relative_to(work))] = file.read_bytes()
         generated["frontend/packages/api-contract/src/platform.ts"] = (work / "platform-ts/platformComponents.ts").read_bytes().rstrip(b"\n") + b"\n"

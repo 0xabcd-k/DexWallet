@@ -4,7 +4,6 @@ import { RouterProvider } from 'react-router';
 import { createAppI18n, I18nextProvider } from '@dexwallet/i18n';
 import { appResources } from './locales';
 import { bootstrapTelegram, sessionStorageOrUndefined } from './app/telegram/bootstrap';
-import { LaunchProvider } from './app/telegram/context';
 import { createUserRouter } from './app/router';
 
 const navigation = performance.getEntriesByType('navigation')[0];
@@ -18,5 +17,5 @@ if (context.mode === 'error') {
 } else {
   if (context.source === 'fresh') history.replaceState(null, '', `${location.pathname}${location.search}#/wallet`);
   const router = createUserRouter();
-  createRoot(root).render(<StrictMode><I18nextProvider i18n={i18n}><LaunchProvider.Provider value={context}><RouterProvider router={router} /></LaunchProvider.Provider></I18nextProvider></StrictMode>);
+  createRoot(root).render(<StrictMode><I18nextProvider i18n={i18n}><RouterProvider router={router} /></I18nextProvider></StrictMode>);
 }

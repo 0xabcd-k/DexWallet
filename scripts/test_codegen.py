@@ -31,6 +31,7 @@ class CodegenTests(unittest.TestCase):
         before = [logic.read_bytes(), model.read_bytes(), handler.read_bytes()]
         generate.synchronize(self.root, first, scaffold)
         self.assertEqual(before, [logic.read_bytes(), model.read_bytes(), handler.read_bytes()])
+        self.assertFalse((self.root / generate.PLATFORM_OUT / "internal/config/config.go").exists())
         generate.synchronize(self.root, first, scaffold, check=True)
 
     def test_new_handler_uses_project_errors_without_manual_changes(self):
