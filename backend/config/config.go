@@ -9,6 +9,7 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/go-sql-driver/mysql"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"
@@ -17,13 +18,14 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
-	Auth              *auth.Config  `json:",optional"`
-	IDSecret          string        `json:",optional"`
-	DependencyTimeout time.Duration `json:",default=3s"`
-	ProbeTimeout      time.Duration `json:",default=1s"`
-	ProbeInterval     time.Duration `json:",default=5s"`
-	ProbeFreshness    time.Duration `json:",default=15s"`
-	ShutdownTimeout   time.Duration `json:",default=30s"`
+	Auth              *auth.Config    `json:",optional"`
+	Session           *session.Config `json:",optional"`
+	IDSecret          string          `json:",optional"`
+	DependencyTimeout time.Duration   `json:",default=3s"`
+	ProbeTimeout      time.Duration   `json:",default=1s"`
+	ProbeInterval     time.Duration   `json:",default=5s"`
+	ProbeFreshness    time.Duration   `json:",default=15s"`
+	ShutdownTimeout   time.Duration   `json:",default=30s"`
 	MySQL             MySQL
 	Redis             Redis
 	RocketMQ          RocketMQ
@@ -57,6 +59,9 @@ func Load(path string) (Config, error) {
 	}
 	c.MySQL.DSN = os.Getenv("DEXWALLET_MYSQL_DSN")
 	c.IDSecret = os.Getenv("DEXWALLET_ID_SECRET")
+	if c.Session != nil {
+		c.Session.Secret = os.Getenv("DEXWALLET_TOKEN_SECRET")
+	}
 	c.Redis.Password = os.Getenv("DEXWALLET_REDIS_PASSWORD")
 	c.RocketMQ.AccessKey = os.Getenv("DEXWALLET_MQ_ACCESS_KEY")
 	c.RocketMQ.SecretKey = os.Getenv("DEXWALLET_MQ_SECRET_KEY")
@@ -68,6 +73,17 @@ func Load(path string) (Config, error) {
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if c.Session != nil {
+		if err := c.Session.Check(); err != nil {
+			return err
+		}
+		if c.Auth == nil {
+			return fmt.Errorf("product sessions require authentication configuration")
+		}
+		if c.Session.Secret == c.Auth.Secret {
+			return fmt.Errorf("token and authentication secrets must differ")
+		}
+	}
 	if c.Auth != nil {
 		if err := c.Auth.Check(); err != nil {
 			return fmt.Errorf("auth config: %w", err)

@@ -9,6 +9,10 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/types"
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
+	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
+	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
+	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/zeromicro/go-zero/rest/httpx"
 	"go.opentelemetry.io/otel/trace"
@@ -29,7 +33,11 @@ type description struct {
 }
 
 var descriptions = map[apperror.Code]description{
-	apperror.InvalidArgument: {400, "Invalid argument"}, apperror.Unauthenticated: {401, "Authentication required"}, apperror.PermissionDenied: {403, "Permission denied"}, apperror.NotFound: {404, "Not found"}, apperror.MethodNotAllowed: {405, "Method not allowed"}, apperror.Conflict: {409, "Conflict"}, apperror.Unprocessable: {422, "Request cannot be processed"}, apperror.RateLimited: {429, "Too many requests"}, apperror.InternalError: {500, "Internal error"}, apperror.ServiceUnavailable: {503, "Service unavailable"}, apperror.RequestTimeout: {503, "Request timed out; execution outcome may be unknown"}, apperror.PayloadTooLarge: {413, "Payload too large"},
+	apperror.AuthProofInvalid:        {400, "Invalid or expired authentication proof"},
+	apperror.IdentityOccupied:        {409, "Identity belongs to another account"},
+	apperror.AnotherIdentityRequired: {422, "Bind another identity first"},
+	apperror.IdentityAlreadyBound:    {409, "Identity type already bound; use replace"},
+	apperror.InvalidArgument:         {400, "Invalid argument"}, apperror.Unauthenticated: {401, "Authentication required"}, apperror.PermissionDenied: {403, "Permission denied"}, apperror.NotFound: {404, "Not found"}, apperror.MethodNotAllowed: {405, "Method not allowed"}, apperror.Conflict: {409, "Conflict"}, apperror.Unprocessable: {422, "Request cannot be processed"}, apperror.RateLimited: {429, "Too many requests"}, apperror.InternalError: {500, "Internal error"}, apperror.ServiceUnavailable: {503, "Service unavailable"}, apperror.RequestTimeout: {503, "Request timed out; execution outcome may be unknown"}, apperror.PayloadTooLarge: {413, "Payload too large"},
 }
 
 // ConfigureErrors installs one process-wide stateless adapter. Per-request
@@ -58,6 +66,19 @@ func JSON(ctx context.Context, w http.ResponseWriter, status int, value any) {
 		Error(ctx, w, err)
 		return
 	}
+	// Emit renewal only on successful JSON, after cancellation/marshal checks.
+	// Identity operations carry their own authoritative token; logout never renews.
+	if status >= 200 && status < 300 {
+		switch reply := value.(type) {
+		case *types.TokenResponse:
+			w.Header().Set(session.TokenHeader, reply.Data.AccessToken)
+		case *types.LogoutResponse:
+		default:
+			if a, err := Authorized(ctx); err == nil && a.Renewal != "" {
+				w.Header().Set(session.TokenHeader, a.Renewal)
+			}
+		}
+	}
 	httpx.WriteJsonCtx(ctx, w, status, json.RawMessage(data))
 }
 func Error(ctx context.Context, w http.ResponseWriter, err error) {
@@ -80,6 +101,26 @@ func describeError(err error) (apperror.Code, description) {
 		code = app.Code
 	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 		code = apperror.RequestTimeout
+	case errors.Is(err, usermodel.ErrCacheUnavailable), errors.Is(err, authlogic.ErrUnavailable):
+		code = apperror.ServiceUnavailable
+	case errors.Is(err, session.ErrInvalid), errors.Is(err, userlogic.ErrStaleSession):
+		code = apperror.Unauthenticated
+	case errors.Is(err, userlogic.ErrDisabled):
+		code = apperror.PermissionDenied
+	case errors.Is(err, authlogic.ErrInvalid), errors.Is(err, userlogic.ErrInvalidInput):
+		code = apperror.InvalidArgument
+	case errors.Is(err, authlogic.ErrCode), errors.Is(err, authlogic.ErrTelegram):
+		code = apperror.AuthProofInvalid
+	case errors.Is(err, authlogic.ErrRateLimited):
+		code = apperror.RateLimited
+	case errors.Is(err, userlogic.ErrOccupied):
+		code = apperror.IdentityOccupied
+	case errors.Is(err, userlogic.ErrNeedSecondIdentity):
+		code = apperror.AnotherIdentityRequired
+	case errors.Is(err, userlogic.ErrUseReplace):
+		code = apperror.IdentityAlreadyBound
+	case errors.Is(err, authlogic.ErrReplay), errors.Is(err, authlogic.ErrRequestConflict), errors.Is(err, authlogic.ErrExpired), errors.Is(err, userlogic.ErrBindingChanged), errors.Is(err, userlogic.ErrIdentityUnbound), errors.Is(err, userlogic.ErrConflict):
+		code = apperror.Conflict
 	}
 	d, ok := descriptions[code]
 	if !ok {

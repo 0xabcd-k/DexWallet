@@ -59,6 +59,10 @@ export const errors = {
     UNPROCESSABLE: 'This action cannot be completed in the current state.', RATE_LIMITED: 'Too many requests. Try again later.',
     INTERNAL_ERROR: 'Something went wrong. Please try again.', SERVICE_UNAVAILABLE: 'The service is temporarily unavailable.',
     REQUEST_TIMEOUT: 'The request timed out. Its result may still be pending.', PAYLOAD_TOO_LARGE: 'The submitted content is too large.',
+    AUTH_PROOF_INVALID: 'The verification code or Telegram authorization is invalid or expired.',
+    IDENTITY_OCCUPIED: 'This identity is linked to another account.',
+    ANOTHER_IDENTITY_REQUIRED: 'Link another sign-in method first.',
+    IDENTITY_ALREADY_BOUND: 'This sign-in method is already linked. Use the replacement option.',
   },
   'zh-CN': {
     generic: '操作未完成，请稍后重试。', network: '无法连接，请检查网络。',
@@ -70,6 +74,10 @@ export const errors = {
     UNPROCESSABLE: '当前状态无法执行此操作。', RATE_LIMITED: '请求过于频繁，请稍后再试。',
     INTERNAL_ERROR: '操作未完成，请稍后重试。', SERVICE_UNAVAILABLE: '服务暂时不可用。',
     REQUEST_TIMEOUT: '请求超时，处理结果可能仍在确认中。', PAYLOAD_TOO_LARGE: '提交内容过大。',
+    AUTH_PROOF_INVALID: '验证码或 Telegram 授权无效或已过期。',
+    IDENTITY_OCCUPIED: '该身份已绑定其他账户。',
+    ANOTHER_IDENTITY_REQUIRED: '请先绑定另一种登录方式。',
+    IDENTITY_ALREADY_BOUND: '已绑定该登录方式，请使用换绑功能。',
   },
 };
 export function errorTranslationKey(error: { kind: string; code?: string | undefined }): string {

@@ -17,6 +17,7 @@ import (
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
+	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	rocketmq "github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/admin"
@@ -25,6 +26,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"github.com/zeromicro/go-zero/rest"
 )
 
 const (
@@ -40,6 +42,10 @@ type ServiceContext struct {
 	UserIdx               *idcodec.Codec
 	Users                 *userlogic.Service
 	Auth                  *authlogic.Service
+	Tokens                *session.Tokens
+	AuthTransport         rest.Middleware
+	UserAuth              rest.Middleware
+	IdentityAuth          rest.Middleware
 	ModelUser             usermodel.UserModel
 	ModelEmailIdentity    usermodel.EmailIdentityModel
 	ModelTelegramIdentity usermodel.TelegramIdentityModel
@@ -67,6 +73,12 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.UserIdx, err = idcodec.New(c.IDSecret, idcodec.User)
 	if err != nil {
 		return nil, err
+	}
+	if c.Session != nil {
+		d.Tokens, err = session.New(*c.Session, c.Namespace(), d.UserIdx)
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer func() {
 		if err != nil {

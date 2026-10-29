@@ -6,6 +6,7 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/handler"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/httpapi"
+	"github.com/0xabcd-k/DexWallet/backend/api/internal/middleware"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -41,6 +42,9 @@ func Build(s *svc.ServiceContext) (*rest.Server, *httpapi.Runtime, error) {
 	r.SetNotFoundHandler(fallback(apperror.NotFound))
 	r.SetNotAllowedHandler(fallback(apperror.MethodNotAllowed))
 	app.Use(rt.Work)
+	s.AuthTransport = middleware.NewAuthTransportMiddleware(s).Handle
+	s.UserAuth = middleware.NewUserAuthMiddleware(s).Handle
+	s.IdentityAuth = middleware.NewIdentityAuthMiddleware(s).Handle
 	handler.RegisterHandlers(app, s)
 	return app, rt, nil
 }

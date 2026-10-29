@@ -43,7 +43,7 @@ common() {
   (cd frontend && pnpm typecheck && pnpm test && pnpm build)
 }
 browser() { (cd frontend && pnpm build && pnpm test:e2e); }
-integration() { (cd backend && go run ./tools/testenv run go test -tags=integration ./tests/integration -v -count=1 -timeout=180s); }
+integration() { (cd backend && go run ./tools/testenv run go test -p 1 -tags=integration ./tests/integration ./api/internal/server -v -count=1 -timeout=180s); }
 http() { (cd frontend && pnpm test:integration); }
 if [[ "$scope" == all ]]; then
   for name in common browser integration http; do stage "$name" "$name"; done

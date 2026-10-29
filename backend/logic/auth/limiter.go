@@ -46,7 +46,7 @@ func (l *RedisLimiter) Allow(ctx context.Context, phase RateAction, subject, sou
 		key := l.namespace + ":auth:" + string(phase) + ":" + scope.name + ":" + hex.EncodeToString(hash[:])
 		result, err := l.limiter.Allow(ctx, key, redis_rate.PerHour(scope.rate))
 		if err != nil {
-			return fmt.Errorf("authentication rate store: %w", err)
+			return fmt.Errorf("%w: authentication rate store: %w", ErrUnavailable, err)
 		}
 		if result.Allowed == 0 {
 			return ErrRateLimited

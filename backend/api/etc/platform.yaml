@@ -41,3 +41,6 @@ RocketMQ:
   NameServers:
     - 127.0.0.1:9876
   BrokerAddress: 127.0.0.1:10911
+
+# Public login/JWT requires explicit Auth and Session configuration.
+# See docs/engineering/用户鉴权.md; secrets are injected from environment variables.

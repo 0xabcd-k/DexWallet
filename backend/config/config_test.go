@@ -106,3 +106,38 @@ func TestAuthConfiguration(t *testing.T) {
 		t.Fatal("auth without Redis allowed")
 	}
 }
+
+func TestSessionConfiguration(t *testing.T) {
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
+	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
+	t.Setenv("DEXWALLET_AUTH_SECRET", "test-only-auth-secret-32-characters")
+	t.Setenv("DEXWALLET_TOKEN_SECRET", "")
+	data, err := os.ReadFile("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(t.TempDir(), "session.yaml")
+	data = append(data, []byte("\nAuth: {}\nSession: {}\n")...)
+	if err = os.WriteFile(file, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Load(file); err == nil {
+		t.Fatal("missing token signing secret accepted")
+	}
+	t.Setenv("DEXWALLET_TOKEN_SECRET", "test-only-auth-secret-32-characters")
+	if _, err = Load(file); err == nil {
+		t.Fatal("shared signing/proof secret accepted")
+	}
+	t.Setenv("DEXWALLET_TOKEN_SECRET", "test-only-token-secret-32-characters")
+	c, err := Load(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Session == nil || c.Session.Secret != "test-only-token-secret-32-characters" {
+		t.Fatal("session config not injected")
+	}
+	c.Auth = nil
+	if c.Check() == nil {
+		t.Fatal("public session without auth config accepted")
+	}
+}

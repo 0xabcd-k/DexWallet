@@ -3,8 +3,40 @@
 
 package types
 
+type ChallengeData struct {
+	Challenge string `json:"challenge"`
+	ExpiresAt int64  `json:"expiresAt"`
+}
+
+type ChallengeResponse struct {
+	Code    string        `json:"code,options=OK"`
+	Message string        `json:"message"`
+	Data    ChallengeData `json:"data"`
+	TraceId string        `json:"traceId"`
+}
+
+type CurrentUserData struct {
+	Idx       string `json:"idx"`
+	Nickname  string `json:"nickname"`
+	AvatarUrl string `json:"avatarUrl"`
+}
+
+type CurrentUserResponse struct {
+	Code    string          `json:"code,options=OK"`
+	Message string          `json:"message"`
+	Data    CurrentUserData `json:"data"`
+	TraceId string          `json:"traceId"`
+}
+
+type EmailLoginRequest struct {
+	RequestToken string `json:"requestToken"`
+	Email        string `json:"email"`
+	Challenge    string `json:"challenge"`
+	Code         string `json:"code"`
+}
+
 type ErrorResponse struct {
-	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE"`
+	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND"`
 	Message string `json:"message"`
 	TraceId string `json:"traceId"`
 }
@@ -18,4 +50,58 @@ type HealthResponse struct {
 	Message string     `json:"message"`
 	Data    HealthData `json:"data"`
 	TraceId string     `json:"traceId"`
+}
+
+type IdentityEmailCodeRequest struct {
+	SendEmailRequest
+	Purpose string `json:"purpose,options=bind|replace"`
+}
+
+type IdentityEmailRequest struct {
+	EmailLoginRequest
+	Purpose string `json:"purpose,options=bind|replace"`
+}
+
+type IdentityTelegramRequest struct {
+	TelegramLoginRequest
+	Purpose string `json:"purpose,options=bind|replace"`
+}
+
+type LogoutData struct {
+	LoggedOut bool `json:"loggedOut"`
+}
+
+type LogoutResponse struct {
+	Code    string     `json:"code,options=OK"`
+	Message string     `json:"message"`
+	Data    LogoutData `json:"data"`
+	TraceId string     `json:"traceId"`
+}
+
+type SendEmailRequest struct {
+	Email  string `json:"email"`
+	Locale string `json:"locale,default=en,options=en|zh-CN"`
+}
+
+type TelegramLoginRequest struct {
+	RequestToken string `json:"requestToken"`
+	InitData     string `json:"initData"`
+}
+
+type TokenData struct {
+	AccessToken string `json:"accessToken"`
+	UserIdx     string `json:"userIdx"`
+	ExpiresAt   int64  `json:"expiresAt"`
+}
+
+type TokenResponse struct {
+	Code    string    `json:"code,options=OK"`
+	Message string    `json:"message"`
+	Data    TokenData `json:"data"`
+	TraceId string    `json:"traceId"`
+}
+
+type UnbindRequest struct {
+	RequestToken string `json:"requestToken"`
+	Identity     string `json:"identity,options=email|telegram"`
 }

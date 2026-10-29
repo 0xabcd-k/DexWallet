@@ -1,5 +1,5 @@
 // Package auth validates external credentials and commits their use with the
-// product identity. Public sessions and HTTP authentication belong to phase 2.3.
+// product identity. Product tokens and HTTP authentication live at the API boundary.
 package auth
 
 import (
@@ -32,8 +32,8 @@ var (
 	ErrUnavailable     = errors.New("authentication provider unavailable")
 )
 
-// Result carries the stable operation ID and original event time for phase 2.3
-// to issue/recover one session without treating a retry as new authentication.
+// Result carries the stable operation ID and original event time. Recovery
+// validates this operation before the API issues a product token.
 type Result struct {
 	*userlogic.Resolved
 	OperationID int64

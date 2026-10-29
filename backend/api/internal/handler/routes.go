@@ -6,13 +6,62 @@ package handler
 import (
 	"net/http"
 
+	account "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/account"
+	auth "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/auth"
 	health "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/health"
+	identity "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/identity"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/auth/logout-all",
+					Handler: account.LogoutAllHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/current",
+					Handler: account.CurrentUserHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/identities/email/code",
+					Handler: account.IdentityEmailCodeHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/auth/email/code",
+					Handler: auth.SendEmailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/auth/email/login",
+					Handler: auth.EmailLoginHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/auth/telegram/login",
+					Handler: auth.TelegramLoginHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
 	server.AddRoutes(
 		[]rest.Route{
 			{
@@ -26,5 +75,28 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: health.ReadyHandler(serverCtx),
 			},
 		},
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.IdentityAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/identities/email/verify",
+					Handler: identity.IdentityEmailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/identities/telegram/verify",
+					Handler: identity.IdentityTelegramHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/identities/unbind",
+					Handler: identity.UnbindHandler(serverCtx),
+				},
+			}...,
+		),
 	)
 }

@@ -89,6 +89,9 @@ func (s *Service) SendEmail(ctx context.Context, address, source, locale string,
 	update, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
 	deliveryErr := s.challenges.SetDelivery(update, normalized.Address, challenge, state)
+	if err != nil {
+		err = fmt.Errorf("%w: mail delivery: %w", ErrUnavailable, err)
+	}
 	if err != nil || deliveryErr != nil {
 		return nil, errors.Join(err, deliveryErr)
 	}
