@@ -41,6 +41,24 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/identities",
+					Handler: account.CurrentIdentitiesHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPatch,
+					Path:    "/v1/user/profile",
+					Handler: account.UpdateProfileHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.AuthTransport},
 			[]rest.Route{
 				{

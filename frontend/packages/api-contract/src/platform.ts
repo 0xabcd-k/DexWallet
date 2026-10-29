@@ -50,6 +50,17 @@ export interface HealthResponse {
 	traceId: string
 }
 
+export interface IdentitiesData {
+	identities: Array<IdentitySummary>
+}
+
+export interface IdentitiesResponse {
+	code: 'OK'
+	message: string
+	data: IdentitiesData
+	traceId: string
+}
+
 export interface IdentityEmailCodeRequest {
 	email: string
 	locale: 'en' | 'zh-CN'
@@ -62,6 +73,12 @@ export interface IdentityEmailRequest {
 	challenge: string
 	code: string
 	purpose: 'bind' | 'replace'
+}
+
+export interface IdentitySummary {
+	type: 'email' | 'telegram'
+	subject: string
+	displayName: string
 }
 
 export interface IdentityTelegramRequest {
@@ -107,4 +124,8 @@ export interface TokenResponse {
 export interface UnbindRequest {
 	requestToken: string
 	identity: 'email' | 'telegram'
+}
+
+export interface UpdateProfileRequest {
+	nickname: string
 }

@@ -3,7 +3,7 @@
 - 从 [项目文档](docs/README.md) 开始，当前内容为新版项目定义；`docs/archive/` 是历史依据，不是当前实施规范。
 - 阅读 [开发规范](docs/engineering/开发规范.md) 与 [决议台账](docs/decisions/决议与待落实事项.md)，保留已确认规则与本版方案的区别。
 - 说明、设计、规范、验收统一维护在 `docs/`。修改业务规则时同步相关流程、界面和验收，避免重复定义。
-- 已初始化最小 Go module 与前端 workspace，准备和检查见 [工程结构](docs/engineering/工程结构.md)。已建立隔离契约样例与生成/迁移工具，实际入口见 [契约生成与迁移](docs/engineering/契约生成与迁移.md)；1.3 已建立健康接口、依赖客户端及后端公共基础，启动和验证见 [后端公共基础](docs/engineering/后端公共基础.md)；1.4 三端骨架及前端检查见 [前端公共基础](docs/engineering/前端公共基础.md)；2.1 已建立用户/邮箱/TG model、business 迁移与内部用例，入口见 [用户模型](docs/engineering/用户模型.md)；2.2 内部验证码、Mini App 验签与身份变更见 [用户鉴权](docs/engineering/用户鉴权.md)；2.3 已接通单 JWT、响应头续签、30 秒用户缓存与公开认证 API，前端登录闭环待 2.4。先改源定义，保留手写扩展边界。不得把文档中的概念契约声称为已实现接口。
+- 已初始化最小 Go module 与前端 workspace，准备和检查见 [工程结构](docs/engineering/工程结构.md)。已建立隔离契约样例与生成/迁移工具，实际入口见 [契约生成与迁移](docs/engineering/契约生成与迁移.md)；1.3 已建立健康接口、依赖客户端及后端公共基础，启动和验证见 [后端公共基础](docs/engineering/后端公共基础.md)；1.4 三端骨架及前端检查见 [前端公共基础](docs/engineering/前端公共基础.md)；2.1 已建立用户/邮箱/TG model、business 迁移与内部用例，入口见 [用户模型](docs/engineering/用户模型.md)；2.2 内部验证码、Mini App 验签与身份变更见 [用户鉴权](docs/engineering/用户鉴权.md)；2.3 已接通单 JWT、响应头续签、30 秒用户缓存与公开认证 API，2.4 已接通用户端登录、凭证持久化、账户与身份管理，后台鉴权待 2.5。先改源定义，保留手写扩展边界。不得把文档中的概念契约声称为已实现接口。
 - 工程清单检查：`backend/` 下执行 `go list -m -json`；`frontend/` 下按 `.nvmrc` 切换 Node 后执行 `pnpm install --frozen-lockfile`、`pnpm -r list --depth -1 --json`。
 - 契约检查：`bash scripts/check_contracts.sh`；生成：`python3 scripts/generate.py`。MySQL/Redis/RocketMQ 集成测试使用独立入口，不随普通检查运行。后端补充检查：`go test -race ./...`、`go vet ./...`。
 - 后端共享依赖统一在 `backend/svc/` 的 `ServiceContext` 组装和关闭；API 内的 svc 仅保留 goctl 类型别名。正式 main/handler/context 共性改动先修改 `backend/template/api/`，再生成；已有手写骨架不自动覆盖，细节见契约生成与后端公共基础说明。

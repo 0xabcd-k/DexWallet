@@ -6,7 +6,26 @@ export const appResources = {
     "wallet": "Wallet",
     "rewards": "Rewards",
     "records": "Records",
-    "intro": "Manage your digital life with DexWallet."
+    "intro": "Manage your digital life with DexWallet.",
+
+    "account": "Account", "accountId": "Account ID", "defaultNickname": "DexWallet user", "nickname": "Nickname",
+    "saveProfile": "Save nickname", "profileSaved": "Your nickname has been saved.",
+    "signIn": "Sign in", "signInBody": "Use your email or Telegram to access your account. Your email account can be used without linking Telegram.",
+    "signOut": "Sign out", "signOutAll": "Sign out everywhere", "signOutAllBody": "All devices will need to sign in again. Existing transactions are not cancelled.",
+    "switchAccount": "Switch account", "confirm": "Confirm", "cancel": "Cancel",
+    "email": "Email", "telegram": "Telegram", "verificationCode": "Verification code", "sendCode": "Send code",
+    "codeSent": "A code was sent to {{email}}.", "codeRules": "Use the latest 6-digit code within 5 minutes. Each code allows up to 5 incorrect attempts.",
+    "codeExpired": "This code has expired. Request a new one.", "resendIn": "Resend in {{count}}s", "resendCode": "Send a new code", "changeEmail": "Use a different email",
+    "signInTelegram": "Sign in with Telegram", "telegramOpen": "Open the Telegram Mini App to use Telegram sign-in. Native App authorization is not available yet.",
+    "telegramFreshProof": "If Telegram authorization has expired or was already used, reopen the Mini App for a new authorization.",
+    "memorySession": "Sign-in is kept only on this page because browser storage is unavailable. You may need to sign in again after reopening.",
+    "identities": "Linked identities", "manageIdentities": "Manage linked identities", "notLinked": "Not linked", "link": "Link", "replace": "Replace", "unlink": "Unlink",
+    "linkIdentity": "Link {{identity}}", "replaceIdentity": "Replace {{identity}}", "unlinkIdentity": "Unlink {{identity}}?", "useTelegramIdentity": "Use this Telegram identity", "confirmBinding": "Verify and link",
+    "identityNeeded": "Link {{identity}} to continue", "identityNeededBody": "This action needs this identity. Link it, then return to check your eligibility.",
+    "bindingRules": "Keep at least one sign-in method. Link both email and Telegram before replacing or unlinking either. An identity linked to another account cannot be moved here.",
+    "unlinkWarning": "Use your remaining sign-in method to access this account. Signing in with the unlinked identity may create a new account. Rewards and task usage are not transferred or reset.",
+    "returnToSource": "Return to the previous page"
+
   },
   "zh-CN": {
     "title": "随时掌握你的资产",
@@ -15,6 +34,25 @@ export const appResources = {
     "wallet": "钱包",
     "rewards": "奖励",
     "records": "记录",
-    "intro": "通过 DexWallet 管理你的数字生活。"
+    "intro": "通过 DexWallet 管理你的数字生活。",
+
+    "account": "账户", "accountId": "账户 ID", "defaultNickname": "DexWallet 用户", "nickname": "昵称",
+    "saveProfile": "保存昵称", "profileSaved": "昵称已保存。",
+    "signIn": "登录", "signInBody": "使用邮箱或 Telegram 登录账户。邮箱账户无需先绑定 Telegram。",
+    "signOut": "退出登录", "signOutAll": "退出全部设备", "signOutAllBody": "所有设备都需要重新登录。已提交的交易不会被取消。",
+    "switchAccount": "切换账户", "confirm": "确认", "cancel": "取消",
+    "email": "邮箱", "telegram": "Telegram", "verificationCode": "验证码", "sendCode": "获取验证码",
+    "codeSent": "验证码已发送至 {{email}}。", "codeRules": "请输入最新的 6 位验证码，5 分钟内有效。每个验证码最多允许输错 5 次。",
+    "codeExpired": "验证码已过期，请重新获取。", "resendIn": "{{count}} 秒后重新发送", "resendCode": "发送新验证码", "changeEmail": "更换邮箱",
+    "signInTelegram": "通过 Telegram 登录", "telegramOpen": "请从 Telegram Mini App 打开后使用 Telegram 登录。独立 App 授权尚未开放。",
+    "telegramFreshProof": "若 Telegram 授权已过期或已使用，请重新打开 Mini App 获取新的授权。",
+    "memorySession": "浏览器存储不可用，登录状态仅保留在当前页面；重新打开后可能需要再次登录。",
+    "identities": "已绑定身份", "manageIdentities": "管理绑定身份", "notLinked": "未绑定", "link": "绑定", "replace": "换绑", "unlink": "解绑",
+    "linkIdentity": "绑定{{identity}}", "replaceIdentity": "换绑{{identity}}", "unlinkIdentity": "解绑{{identity}}？", "useTelegramIdentity": "使用本次 Telegram 身份", "confirmBinding": "验证并绑定",
+    "identityNeeded": "请先绑定{{identity}}", "identityNeededBody": "此操作需要该身份。绑定后返回原页面，重新检查参与资格。",
+    "bindingRules": "至少保留一种登录方式。同时绑定邮箱与 Telegram 后，才能换绑或解绑其中一种。已属于其他账户的身份无法转移到当前账户。",
+    "unlinkWarning": "请使用保留的登录方式进入原账户。使用已解绑身份登录可能创建新账户；奖励不会迁移，任务次数不会重置。",
+    "returnToSource": "返回原页面"
+
   }
 };

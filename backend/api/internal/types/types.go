@@ -52,6 +52,17 @@ type HealthResponse struct {
 	TraceId string     `json:"traceId"`
 }
 
+type IdentitiesData struct {
+	Identities []IdentitySummary `json:"identities"`
+}
+
+type IdentitiesResponse struct {
+	Code    string         `json:"code,options=OK"`
+	Message string         `json:"message"`
+	Data    IdentitiesData `json:"data"`
+	TraceId string         `json:"traceId"`
+}
+
 type IdentityEmailCodeRequest struct {
 	SendEmailRequest
 	Purpose string `json:"purpose,options=bind|replace"`
@@ -60,6 +71,12 @@ type IdentityEmailCodeRequest struct {
 type IdentityEmailRequest struct {
 	EmailLoginRequest
 	Purpose string `json:"purpose,options=bind|replace"`
+}
+
+type IdentitySummary struct {
+	Type        string `json:"type,options=email|telegram"`
+	Subject     string `json:"subject"`
+	DisplayName string `json:"displayName"`
 }
 
 type IdentityTelegramRequest struct {
@@ -104,4 +121,8 @@ type TokenResponse struct {
 type UnbindRequest struct {
 	RequestToken string `json:"requestToken"`
 	Identity     string `json:"identity,options=email|telegram"`
+}
+
+type UpdateProfileRequest struct {
+	Nickname string `json:"nickname"`
 }

@@ -110,6 +110,9 @@ importers:
       '@dexwallet/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@dexwallet/api-contract':
+        specifier: workspace:*
+        version: link:../../packages/api-contract
       '@dexwallet/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n

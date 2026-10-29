@@ -77,3 +77,15 @@ describe('API boundary', () => {
     controller.abort(); await expect(pending).rejects.toMatchObject({ kind: 'cancelled' });
   });
 });
+
+it('supplies headers per request and observes renewal only after a valid success', async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(new Response(JSON.stringify(good), { headers: { 'X-Access-Token': 'new-token' } }));
+  const client = createApiClient({ baseUrl: '/api', fetch }); const observed = vi.fn();
+  await client.request('/current', decodeHealth, { headers: { Authorization: 'Bearer private-token' }, onSuccess: headers => observed(headers.get('X-Access-Token')) });
+  expect(new Headers(fetch.mock.calls[0]?.[1]?.headers).get('Authorization')).toBe('Bearer private-token');
+  expect(observed).toHaveBeenCalledWith('new-token');
+  observed.mockClear(); fetch.mockResolvedValue(new Response(JSON.stringify({ ...good, data: {} }), { headers: { 'X-Access-Token': 'must-not-adopt' } }));
+  await expect(client.request('/current', decodeHealth, { onSuccess: observed })).rejects.toMatchObject({ kind: 'protocol' });
+  expect(observed).not.toHaveBeenCalled();
+  expect(new Headers(fetch.mock.calls[1]?.[1]?.headers).has('Authorization')).toBe(false);
+});

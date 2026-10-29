@@ -18,6 +18,8 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 export type Decoder<T> = (value: unknown) => T;
 export interface RequestOptions {
+  headers?: Record<string, string>;
+  onSuccess?: (headers: Headers) => void | Promise<void>;
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
@@ -60,6 +62,7 @@ export function createApiClient(options: ClientOptions) {
       try {
         signal.throwIfAborted();
         const headers = new Headers({ Accept: 'application/json' });
+        for (const [name, value] of Object.entries(request.headers ?? {})) headers.set(name, value);
         const init: RequestInit = { method: request.method ?? 'GET', headers, signal };
         if (request.body !== undefined) {
           headers.set('Content-Type', 'application/json');
@@ -86,11 +89,15 @@ export function createApiClient(options: ClientOptions) {
           throw new ApiError('business', status, String(payload.code), traceId);
         }
         if (!response.ok || !('data' in payload)) throw new ApiError('protocol', status, undefined, traceId);
+        let decoded: T;
         try {
-          return decode(payload);
+          decoded = decode(payload);
         } catch (cause) {
           throw new ApiError('protocol', status, undefined, traceId, { cause });
         }
+        await request.onSuccess?.(response.headers);
+        signal.throwIfAborted();
+        return decoded;
       } catch (cause) {
         const kind = abortKind();
         if (kind) throw new ApiError(kind, status, undefined, traceId, { cause });

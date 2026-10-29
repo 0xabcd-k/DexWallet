@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { mockAccount } from './auth-fixture';
 const health = { code: 'OK', message: 'OK', traceId: 'browser-trace', data: { status: 'live' } };
 for (const [index, app] of ['user', 'merchant', 'admin'].entries()) {
   const base = `http://127.0.0.1:${5173 + index}`;
@@ -109,6 +110,7 @@ function launch(target?: string) {
   return new URLSearchParams({ tgWebAppData: init.toString(), tgWebAppVersion: '8.0', tgWebAppPlatform: 'web', tgWebAppThemeParams: '{}' }).toString();
 }
 test('user: real SDK captures synthetic launch before Hash Router and restores refresh', async ({ page }) => {
+  await mockAccount(page);
   await page.goto(`http://127.0.0.1:5173/#${launch('invite_test')}`);
   await expect(page).toHaveURL('http://127.0.0.1:5173/#/wallet');
   const original = await page.evaluate(() => JSON.parse(sessionStorage.getItem('dexwallet:user:launch') ?? 'null'));

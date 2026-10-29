@@ -16,6 +16,7 @@
     "@dexwallet/api-client": "workspace:*",
     "@dexwallet/i18n": "workspace:*",
     "antd-mobile": "5.43.0",
-    "@tma.js/bridge": "2.3.3"
+    "@tma.js/bridge": "2.3.3",
+    "@dexwallet/api-contract": "workspace:*"
   }
 }

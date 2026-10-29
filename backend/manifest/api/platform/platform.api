@@ -130,3 +130,32 @@ service platform {
     @handler unbind
     post /v1/user/identities/unbind (UnbindRequest) returns (TokenResponse)
 }
+
+
+type (
+    IdentitySummary {
+        Type string `json:"type,options=email|telegram"`
+        Subject string `json:"subject"`
+        DisplayName string `json:"displayName"`
+    }
+    IdentitiesData {
+        Identities []IdentitySummary `json:"identities"`
+    }
+    IdentitiesResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data IdentitiesData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+    UpdateProfileRequest {
+        Nickname string `json:"nickname"`
+    }
+)
+
+@server(group: account middleware: AuthTransport,UserAuth)
+service platform {
+    @handler currentIdentities
+    get /v1/user/identities returns (IdentitiesResponse)
+    @handler updateProfile
+    patch /v1/user/profile (UpdateProfileRequest) returns (CurrentUserResponse)
+}

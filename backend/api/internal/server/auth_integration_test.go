@@ -239,6 +239,18 @@ func TestProductSessionHTTP(t *testing.T) {
 	if err = json.Unmarshal(b, &current); err != nil || current.Idx != claims.Subject || h.Get(session.TokenHeader) != "" {
 		t.Fatal("current user contract", err)
 	}
+	_, b = call("GET", "/v1/user/identities", token, nil, 200, "OK")
+	var identityList types.IdentitiesData
+	if err = json.Unmarshal(b, &identityList); err != nil || len(identityList.Identities) != 1 || identityList.Identities[0].Subject != "Alice@example.com" {
+		t.Fatal("current identities", err)
+	}
+	call("PATCH", "/v1/user/profile", token, map[string]string{"nickname": "   "}, 400, "INVALID_ARGUMENT")
+	call("PATCH", "/v1/user/profile", token, map[string]string{"nickname": strings.Repeat("n", 129)}, 400, "INVALID_ARGUMENT")
+	call("PATCH", "/v1/user/profile", token, map[string]string{"nickname": " Alice Product "}, 200, "OK")
+	_, b = call("GET", "/v1/user/current", token, nil, 200, "OK")
+	if err = json.Unmarshal(b, &current); err != nil || current.Nickname != "Alice Product" || current.Idx != claims.Subject {
+		t.Fatal("profile cache invalidation", err)
+	}
 	oldClaims := *claims
 	oldClaims.IssuedAt = jwt.NewNumericDate(time.Now().Add(-37 * time.Hour))
 	oldClaims.ExpiresAt = jwt.NewNumericDate(oldClaims.IssuedAt.Add(session.Lifetime))
@@ -259,6 +271,10 @@ func TestProductSessionHTTP(t *testing.T) {
 	h, b = call("POST", "/v1/user/identities/email/verify", token, replacement, 200, "OK")
 	changed := decodeToken(h, b)
 	call("GET", "/v1/user/current", token, nil, 401, "UNAUTHENTICATED")
+	_, b = call("GET", "/v1/user/current", changed, nil, 200, "OK")
+	if err = json.Unmarshal(b, &current); err != nil || current.Nickname != "Alice Product" {
+		t.Fatal("identity change overwrote product profile", err)
+	}
 	// A lost success is recoverable with the original old JWT and exact request.
 	h, b = call("POST", "/v1/user/identities/email/verify", token, replacement, 200, "OK")
 	recovered := decodeToken(h, b)
@@ -309,6 +325,8 @@ func TestProductSessionHTTP(t *testing.T) {
 	}
 	call("GET", "/v1/user/current", tgToken, nil, 200, "OK")
 	call("POST", "/v1/user/auth/logout-all", tgToken, nil, 401, "UNAUTHENTICATED")
+	call("PATCH", "/v1/user/profile", tgToken, map[string]string{"nickname": "stale write"}, 401, "UNAUTHENTICATED")
+	call("GET", "/v1/user/identities", tgToken, nil, 401, "UNAUTHENTICATED")
 	tgClaims, _, err := s.Tokens.Parse(tgToken)
 	if err != nil {
 		t.Fatal(err)

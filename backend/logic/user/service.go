@@ -68,27 +68,16 @@ func (s *Service) FindCurrentIdentities(ctx context.Context, id int64) (*Identit
 	if id <= 0 {
 		return nil, ErrInvalidInput
 	}
-	var result Identities
-	err := s.tx.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-		if _, err := s.users.WithSession(session).FindForUpdate(ctx, id); err != nil {
+	var result *Identities
+	err := s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
+		if _, err := s.users.WithSession(tx).FindForUpdate(ctx, id); err != nil {
 			return err
 		}
-		owner := sql.NullInt64{Int64: id, Valid: true}
 		var err error
-		result.Email, err = s.emails.WithSession(session).FindOneByUserId(ctx, owner)
-		if err != nil && !errors.Is(err, model.ErrNotFound) {
-			return err
-		}
-		result.Telegram, err = s.telegrams.WithSession(session).FindOneByUserId(ctx, owner)
-		if err != nil && !errors.Is(err, model.ErrNotFound) {
-			return err
-		}
-		return nil
+		result, err = s.identitiesInSession(ctx, tx, id)
+		return err
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
+	return result, err
 }
 
 // CheckCurrentBindingInSession keeps locks until the outer transaction finishes.
