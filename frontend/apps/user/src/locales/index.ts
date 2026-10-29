@@ -24,6 +24,7 @@ export const appResources = {
     "identityNeeded": "Link {{identity}} to continue", "identityNeededBody": "This action needs this identity. Link it, then return to check your eligibility.",
     "bindingRules": "Keep at least one sign-in method. Link both email and Telegram before replacing or unlinking either. An identity linked to another account cannot be moved here.",
     "unlinkWarning": "Use your remaining sign-in method to access this account. Signing in with the unlinked identity may create a new account. Rewards and task usage are not transferred or reset.",
+    "telegramUnlinkBlocked": "Telegram cannot be unlinked in the Telegram Mini App.",
     "returnToSource": "Return to the previous page"
 
   },
@@ -52,6 +53,7 @@ export const appResources = {
     "identityNeeded": "请先绑定{{identity}}", "identityNeededBody": "此操作需要该身份。绑定后返回原页面，重新检查参与资格。",
     "bindingRules": "至少保留一种登录方式。同时绑定邮箱与 Telegram 后，才能换绑或解绑其中一种。已属于其他账户的身份无法转移到当前账户。",
     "unlinkWarning": "请使用保留的登录方式进入原账户。使用已解绑身份登录可能创建新账户；奖励不会迁移，任务次数不会重置。",
+    "telegramUnlinkBlocked": "Telegram 端不支持解绑 Telegram 身份。",
     "returnToSource": "返回原页面"
 
   }

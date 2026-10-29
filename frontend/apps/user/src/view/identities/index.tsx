@@ -16,9 +16,11 @@ export default function IdentitiesPage() {
   const auth = useAuth(); const { t } = useTranslation(); const [params] = useSearchParams(); const navigate = useNavigate();
   const target = safeDestination(params.get('returnTo'), '/account');
   const required = params.get('required');
+  const telegramUnlinkBlocked = auth.launch.mode === 'telegram';
   const [editing, setEditing] = useState<Editing | undefined>(); const [busy, setBusy] = useState(false); const [error, setError] = useState<unknown>();
   const attempt = useRef<{ input: UnbindRequest; ticket: Session } | undefined>(undefined);
   async function remove(type: IdentitySummary['type']) {
+    if (type === 'telegram' && telegramUnlinkBlocked) return;
     if (!await Dialog.confirm({ title: t('unlinkIdentity', { identity: t(type) }), content: t('unlinkWarning'), confirmText: t('confirm'), cancelText: t('cancel') })) return;
     setBusy(true); setError(undefined);
     if (attempt.current?.input.identity !== type) attempt.current = { input: { requestToken: randomRequestToken(), identity: type }, ticket: session.capture() };
@@ -32,7 +34,8 @@ export default function IdentitiesPage() {
       return <div className="auth-card" key={type}><h2>{t(type)}</h2>
         {identity ? <><p>{identity.displayName || identity.subject}</p>{identity.subject !== identity.displayName && <p className="muted">{identity.subject}</p>}</> : <p>{t('notLinked')}</p>}
         <div className="auth-actions"><Button disabled={busy || !!editing || (!!identity && auth.identities.length < 2)} onClick={() => setEditing({ type, purpose: identity ? 'replace' : 'bind' })}>{t(identity ? 'replace' : 'link')}</Button>
-          {identity && <Button disabled={busy || !!editing || auth.identities.length < 2} onClick={() => { void remove(type); }}>{t('unlink')}</Button>}</div>
+          {identity && <Button disabled={busy || !!editing || auth.identities.length < 2 || (type === 'telegram' && telegramUnlinkBlocked)} onClick={() => { void remove(type); }}>{t('unlink')}</Button>}</div>
+        {identity && type === 'telegram' && telegramUnlinkBlocked && <p className="muted">{t('telegramUnlinkBlocked')}</p>}
       </div>;
     })}
     {editing && <section className="auth-card"><h2>{t(editing.purpose === 'bind' ? 'linkIdentity' : 'replaceIdentity', { identity: t(editing.type) })}</h2>
