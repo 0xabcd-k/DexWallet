@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/0xabcd-k/DexWallet/backend/internal/migration"
@@ -42,6 +43,9 @@ func TestAccountSchemaUpgradeAndConstraints(t *testing.T) {
 	if err = upgraded.QueryRow("SELECT COUNT(*) FROM user_account").Scan(&count); err != nil || count != 0 {
 		t.Fatalf("upgrade eagerly created accounts: %d %v", count, err)
 	}
+	if err = m.Migrate(businessSchemaVersion); err != nil {
+		t.Fatal(err)
+	}
 	fresh, _ := userDatabase(t, "account_fresh")
 	_, _, full, err := testRun.NewDatabase(ctx, "account_full")
 	if err != nil {
@@ -60,9 +64,13 @@ func TestAccountSchemaUpgradeAndConstraints(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, db := range []*sql.DB{fresh, upgraded} {
-		if err = db.QueryRow("SHOW CREATE TABLE user_account").Scan(&table, &got); err != nil || got != want {
+		if err = db.QueryRow("SHOW CREATE TABLE user_account").Scan(&table, &got); err != nil || strings.ReplaceAll(got, "_ascii'", "_utf8mb4'") != want {
 			t.Fatalf("DDL differs: %v\n%s\n%s", err, got, want)
 		}
+	}
+	// Retain the original 3.1 constraint/rollback fixture at version 5.
+	if err = m.Migrate(5); err != nil {
+		t.Fatal(err)
 	}
 	mustExec(t, upgraded, "INSERT INTO user_account(user_id,kind,balance,held_balance) VALUES(1,?,12.34,1.00),(1,?,200,0),(1,?,2.00,0)", model.KindUSD, model.KindTaskPoints, model.KindRewardUSD)
 	for _, tc := range []struct {

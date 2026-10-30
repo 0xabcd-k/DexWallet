@@ -7,6 +7,7 @@ import { safeReturn } from './navigation';
 import Home from '../view/home';
 import Login from '../view/login';
 import Settings from '../view/settings';
+import Holds from '../view/holds';
 import { AuthProvider, RequireAuth } from '../auth/context';
 import type { LaunchContext } from './telegram/bootstrap';
 import '../view/home/style.less';
@@ -26,7 +27,7 @@ function MainLayout() {
 function ChildLayout() {
   const { t } = useTranslation(); const location = useLocation();
   const fallback = location.pathname === '/identities' || location.pathname === '/login' ? '/settings' : '/wallet';
-  return <><header className="mobile-header"><Link to={safeReturn(location.state, fallback)} replace>{t('back')}</Link><strong>{t(location.pathname === '/login' ? 'signIn' : location.pathname === '/identities' ? 'identities' : 'common:settings')}</strong></header><main><Outlet /></main></>;
+  return <><header className="mobile-header"><Link to={safeReturn(location.state, fallback)} replace>{t('back')}</Link><strong>{t(location.pathname === '/holds' ? 'holds' : location.pathname === '/login' ? 'signIn' : location.pathname === '/identities' ? 'identities' : 'common:settings')}</strong></header><main><Outlet /></main></>;
 }
 function IdentityRedirect() {
   const location = useLocation();
@@ -42,6 +43,7 @@ export function createUserRouter(launch: LaunchContext) {
     ] },
     { element: <ChildLayout />, children: [
       { path: '/settings', element: <Settings /> },
+      { path: '/holds', element: <RequireAuth><Holds /></RequireAuth> },
       { path: '/login', element: <Login /> },
       { path: '/account', element: <RequireAuth><Navigate to="/settings" replace /></RequireAuth> },
       { path: '/identities', element: <RequireAuth><IdentityRedirect /></RequireAuth> },

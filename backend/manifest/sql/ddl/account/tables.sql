@@ -31,7 +31,27 @@ CREATE TABLE `ledger_entry` (
     `side` VARCHAR(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     `amount` DECIMAL(36,18) NOT NULL,
     `balance_after` DECIMAL(36,18) NULL,
+    `balance_part` VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_ledger_line` (`voucher_id`, `line_no`),
     KEY `ix_ledger_account_entry` (`account_id`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `account_hold` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `account_id` BIGINT NOT NULL,
+    `business_type` VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `business_id` BIGINT NOT NULL,
+    `amount` DECIMAL(36,18) NOT NULL,
+    `status` VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `hold_voucher_id` BIGINT NOT NULL,
+    `resolved_voucher_id` BIGINT NULL,
+    `reason` VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `resolved_at` DATETIME(6) NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_hold_source` (`business_type`, `business_id`),
+    UNIQUE KEY `uk_hold_voucher` (`hold_voucher_id`),
+    UNIQUE KEY `uk_hold_resolved_voucher` (`resolved_voucher_id`),
+    KEY `ix_hold_account_status` (`account_id`, `status`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

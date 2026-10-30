@@ -18,7 +18,8 @@ type (
 		ListByUserID(context.Context, int64) ([]*UserAccount, error)
 		PrepareCredit(context.Context, int64, string) error
 		FindForUpdate(context.Context, int64, string) (*UserAccount, error)
-		SetBalance(context.Context, int64, decimal.Decimal) error
+		SetBalances(context.Context, int64, decimal.Decimal, decimal.Decimal) error
+		ListHolds(context.Context, int64, string, int64, int) ([]AccountHold, error)
 		ListEntries(context.Context, int64, string, int64, int) ([]StatementEntry, error)
 	}
 

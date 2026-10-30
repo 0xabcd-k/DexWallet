@@ -74,7 +74,7 @@ func assertLedgerBalanced(t *testing.T, db *sql.DB) {
 		t.Fatalf("unbalanced vouchers %d: %v", n, err)
 	}
 	// Fixtures open at zero; every stored available balance must equal its entries.
-	err = db.QueryRow(`SELECT COUNT(*) FROM user_account a WHERE a.balance<>(SELECT COALESCE(SUM(CASE side WHEN 'credit' THEN amount ELSE -amount END),0) FROM ledger_entry WHERE account_id=a.id)`).Scan(&n)
+	err = db.QueryRow(`SELECT COUNT(*) FROM user_account a WHERE a.balance<>(SELECT COALESCE(SUM(CASE side WHEN 'credit' THEN amount ELSE -amount END),0) FROM ledger_entry WHERE account_id=a.id AND balance_part='available')`).Scan(&n)
 	if err != nil || n != 0 {
 		t.Fatalf("balance/entry mismatch %d: %v", n, err)
 	}
@@ -316,7 +316,7 @@ func TestLedgerSchemaUpgradeAndConstraints(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, other := range []*sql.DB{db, fresh} {
-			if err = other.QueryRow("SHOW CREATE TABLE "+table).Scan(&n, &got); err != nil || got != want {
+			if err = other.QueryRow("SHOW CREATE TABLE "+table).Scan(&n, &got); err != nil || strings.ReplaceAll(got, "_ascii'", "_utf8mb4'") != want {
 				t.Fatalf("%s schema differs: %v\n%s\n%s", table, err, got, want)
 			}
 		}

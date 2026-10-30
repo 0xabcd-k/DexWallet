@@ -9,7 +9,7 @@ import { Failure, useAuth } from '../../auth/context';
 import './style.less';
 
 const kindNames: Record<string, string> = { [AccountKind.usd]: 'usdBalance', [AccountKind.reward]: 'rewardCash', [AccountKind.points]: 'taskPoints' };
-const sourceNames: Record<string, string> = { transfer: 'entryTransfer', deposit: 'entryDeposit', reward: 'entryReward' };
+const sourceNames: Record<string, string> = { transfer: 'entryTransfer', deposit: 'entryDeposit', reward: 'entryReward', withdrawal: 'entryWithdrawal', payment: 'entryPayment' };
 
 export default function Records() {
   const auth = useAuth(); const { t } = useTranslation();
@@ -26,7 +26,7 @@ export default function Records() {
       <option value="">{t('allAccounts')}</option>
       {Object.entries(kindNames).map(([value, name]) => <option key={value} value={value}>{t(name)}</option>)}
     </select></label><Button size="small" onClick={() => setRevision(value => value + 1)}>{t('refreshRecords')}</Button></div>
-    <p className="records-note">{t('recordsScope')}</p>
+    <p className="records-note">{t('recordsScope')}</p><Link to="/holds">{t('viewHolds')}</Link>
     <Statement key={`${auth.session.generation}:${kind}:${revision}`} kind={kind} />
   </div>;
 }
@@ -50,10 +50,12 @@ function Statement({ kind }: { kind: string }) {
     <ol className="records-list" aria-label={t('accountEntries')}>
       {state.entries.map(entry => {
         const unit = entry.unit === 'POINT' ? t('pointsUnit') : entry.unit;
+        const reserved = entry.activity === 'held' || entry.activity === 'released';
+        const activityLabel = entry.activity === 'held' ? 'entryHeld' : entry.activity === 'released' ? 'entryReleased' : entry.activity === 'consumed' ? 'entryConsumed' : entry.direction === 'in' ? 'entryIn' : 'entryOut';
         return <li key={entry.idx}><article>
           <div className="record-title"><strong>{t(sourceNames[entry.businessType] ?? 'entryChange')}</strong><span>{t(kindNames[entry.kind]!)}</span></div>
-          <p className={`record-amount record-${entry.direction}`}><span>{t(entry.direction === 'in' ? 'entryIn' : 'entryOut')}</span> {entry.direction === 'in' ? '+' : '−'}{formatAmount(entry.amount, unit)}</p>
-          <dl><dt>{t('entryBalanceAfter')}</dt><dd>{formatAmount(entry.balanceAfter, unit)}</dd>
+          <p className={`record-amount record-${reserved ? 'hold' : entry.direction}`}><span>{t(activityLabel)}</span> {reserved ? '' : entry.direction === 'in' ? '+' : '−'}{formatAmount(entry.amount, unit)}</p>
+          <dl><dt>{t(entry.balancePart === 'held' ? 'entryHeldAfter' : 'entryBalanceAfter')}</dt><dd>{formatAmount(entry.balanceAfter, unit)}</dd>
             <dt>{t('entryBusinessId')}</dt><dd>{entry.businessIdx}</dd>
             <dt>{t('common:time')}</dt><dd><time dateTime={entry.createdAt}>{formatTime(Date.parse(entry.createdAt), i18n.resolvedLanguage === 'zh-CN' ? 'zh-CN' : 'en')}</time></dd></dl>
         </article></li>;

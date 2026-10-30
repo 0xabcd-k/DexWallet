@@ -20,8 +20,8 @@ func (m *customUserAccountModel) FindForUpdate(ctx context.Context, userID int64
 	return &row, err
 }
 
-func (m *customUserAccountModel) SetBalance(ctx context.Context, id int64, balance decimal.Decimal) error {
-	_, err := m.conn.ExecCtx(ctx, "UPDATE user_account SET balance=? WHERE id=?", balance, id)
+func (m *customUserAccountModel) SetBalances(ctx context.Context, id int64, balance, held decimal.Decimal) error {
+	_, err := m.conn.ExecCtx(ctx, "UPDATE user_account SET balance=?,held_balance=? WHERE id=?", balance, held, id)
 	return err
 }
 
@@ -37,12 +37,13 @@ type StatementEntry struct {
 	Side         string          `db:"side"`
 	Amount       decimal.Decimal `db:"amount"`
 	BalanceAfter decimal.Decimal `db:"balance_after"`
+	BalancePart  string          `db:"balance_part"`
 	CreatedAt    time.Time       `db:"created_at"`
 }
 
 func (m *customUserAccountModel) ListEntries(ctx context.Context, userID int64, kind string, before int64, limit int) ([]StatementEntry, error) {
-	query := `SELECT e.id,e.voucher_id,v.business_type,v.business_id,v.action,a.kind,e.unit,e.side,e.amount,e.balance_after,v.created_at
-		FROM user_account a JOIN ledger_entry e ON e.account_id=a.id JOIN ledger_voucher v ON v.id=e.voucher_id WHERE a.user_id=?`
+	query := `SELECT e.id,e.voucher_id,v.business_type,v.business_id,v.action,a.kind,e.unit,e.side,e.amount,e.balance_after,e.balance_part,v.created_at
+		FROM user_account a JOIN ledger_entry e ON e.account_id=a.id JOIN ledger_voucher v ON v.id=e.voucher_id WHERE a.user_id=? AND NOT(e.balance_part='held' AND v.action IN ('hold','release'))`
 	args := []any{userID}
 	if kind != "" {
 		query += " AND a.kind=?"

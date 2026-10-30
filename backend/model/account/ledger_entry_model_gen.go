@@ -48,6 +48,7 @@ type (
 		Side         string              `db:"side"`
 		Amount       decimal.Decimal     `db:"amount"`
 		BalanceAfter decimal.NullDecimal `db:"balance_after"`
+		BalancePart  string              `db:"balance_part"`
 	}
 )
 
@@ -93,14 +94,14 @@ func (m *defaultLedgerEntryModel) FindOneByVoucherIdLineNo(ctx context.Context, 
 }
 
 func (m *defaultLedgerEntryModel) Insert(ctx context.Context, data *LedgerEntry) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?)", m.table, ledgerEntryRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.VoucherId, data.LineNo, data.AccountId, data.SystemCode, data.Unit, data.Side, data.Amount, data.BalanceAfter)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, ledgerEntryRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.VoucherId, data.LineNo, data.AccountId, data.SystemCode, data.Unit, data.Side, data.Amount, data.BalanceAfter, data.BalancePart)
 	return ret, err
 }
 
 func (m *defaultLedgerEntryModel) Update(ctx context.Context, newData *LedgerEntry) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, ledgerEntryRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.VoucherId, newData.LineNo, newData.AccountId, newData.SystemCode, newData.Unit, newData.Side, newData.Amount, newData.BalanceAfter, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.VoucherId, newData.LineNo, newData.AccountId, newData.SystemCode, newData.Unit, newData.Side, newData.Amount, newData.BalanceAfter, newData.BalancePart, newData.Id)
 	return err
 }
 

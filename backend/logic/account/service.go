@@ -9,6 +9,7 @@ import (
 )
 
 type Store interface {
+	ListHolds(context.Context, int64, string, int64, int) ([]model.AccountHold, error)
 	ListByUserID(context.Context, int64) ([]*model.UserAccount, error)
 	ListEntries(context.Context, int64, string, int64, int) ([]model.StatementEntry, error)
 }

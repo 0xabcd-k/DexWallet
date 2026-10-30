@@ -1,9 +1,10 @@
 {
   "generated": {
-    "backend/api/internal/handler/routes.go": "fa5e622f0e30cd5f85d5ab5610d776b2e53e8d91594a44b86caac5d71425888c",
-    "backend/api/internal/types/types.go": "e02951cd2ed8227e6eef63e0e405d2b8ccdd2792dd71686b22726806cfbcc599",
+    "backend/api/internal/handler/routes.go": "e524f5c70b45e2cfd0b2666668f2e8cae4c73b10c6e803da072ea04fa06aeb96",
+    "backend/api/internal/types/types.go": "61572b35594005cdb9b8ef1530b36dc2f6e6614eaf71b9f67c7be5df51c1717a",
     "backend/apperror/codes_gen.go": "c47c3ddcac15fe4e6e7656cc911999dc4dfe95d86d58f3d6cf6d123bb56cb550",
-    "backend/model/account/ledger_entry_model_gen.go": "58abf4534ae0e8666026acbcf64031cc4c6b4ddfc1424499a1c438648d1823eb",
+    "backend/model/account/account_hold_model_gen.go": "655b47b540fb7dad9b6e587dcf64d61741bb6d66353f4ccf23ec531e4ebb4b04",
+    "backend/model/account/ledger_entry_model_gen.go": "9d04c873851e71ec5a318a252a217e855ad2060bec1990715d1ac9cd71f20425",
     "backend/model/account/ledger_voucher_model_gen.go": "10ab96993cfac0c5fa598d9fe7ec83b7301b2c2c76b4a502c00c74eff3e3f60a",
     "backend/model/account/user_account_model_gen.go": "fbe287a19be6b5f5bd4eb9c1c61579d9485ef748c18773e1a92a52313897208c",
     "backend/model/backoffice/admin_user_model_gen.go": "ef0920e6baf0cc1dc653f64ec5e3d3900d8b4cf7ff185540a900c82c5a0a52dc",
@@ -16,12 +17,13 @@
     "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
     "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
     "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c",
-    "frontend/packages/api-contract/src/platform.ts": "512bb82a0a6da7c0aeda890802ebef6743ea42808d7a4c0e4483ec8a5031876c"
+    "frontend/packages/api-contract/src/platform.ts": "deeb82f48f00305d139e76e0b12f2c39cc7aa5559b89d3eabb3f3010e71fd49e"
   },
   "scaffold": [
     "backend/api/etc/platform.yaml",
     "backend/api/internal/handler/account/account_balances_handler.go",
     "backend/api/internal/handler/account/account_entries_handler.go",
+    "backend/api/internal/handler/account/account_holds_handler.go",
     "backend/api/internal/handler/account/current_identities_handler.go",
     "backend/api/internal/handler/account/current_user_handler.go",
     "backend/api/internal/handler/account/identity_email_code_handler.go",
@@ -51,6 +53,7 @@
     "backend/api/internal/handler/identity/unbind_handler.go",
     "backend/api/internal/logic/account/account_balances_logic.go",
     "backend/api/internal/logic/account/account_entries_logic.go",
+    "backend/api/internal/logic/account/account_holds_logic.go",
     "backend/api/internal/logic/account/current_identities_logic.go",
     "backend/api/internal/logic/account/current_user_logic.go",
     "backend/api/internal/logic/account/identity_email_code_logic.go",
@@ -85,6 +88,7 @@
     "backend/api/internal/middleware/userauth_middleware.go",
     "backend/api/internal/svc/service_context.go",
     "backend/api/platform.go",
+    "backend/model/account/account_hold_model.go",
     "backend/model/account/ledger_entry_model.go",
     "backend/model/account/ledger_voucher_model.go",
     "backend/model/account/user_account_model.go",

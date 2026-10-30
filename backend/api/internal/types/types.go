@@ -51,7 +51,41 @@ type AccountEntry struct {
 	Direction    string `json:"direction,options=in|out"`
 	Amount       string `json:"amount"`
 	BalanceAfter string `json:"balanceAfter"`
+	BalancePart  string `json:"balancePart,options=available|held"`
+	Activity     string `json:"activity,options=posted|held|consumed|released"`
 	CreatedAt    string `json:"createdAt"`
+}
+
+type AccountHold struct {
+	Idx                string `json:"idx"`
+	BusinessType       string `json:"businessType"`
+	BusinessIdx        string `json:"businessIdx"`
+	Amount             string `json:"amount"`
+	Unit               string `json:"unit,options=USD"`
+	Status             string `json:"status,options=held|consumed|released"`
+	Reason             string `json:"reason"`
+	HoldVoucherIdx     string `json:"holdVoucherIdx"`
+	ResolvedVoucherIdx string `json:"resolvedVoucherIdx"`
+	CreatedAt          string `json:"createdAt"`
+	ResolvedAt         string `json:"resolvedAt"`
+}
+
+type AccountHoldsData struct {
+	Holds      []AccountHold `json:"holds"`
+	NextCursor string        `json:"nextCursor"`
+}
+
+type AccountHoldsRequest struct {
+	Status string `form:"status,optional,options=held|consumed|released"`
+	Before string `form:"before,optional"`
+	Limit  int    `form:"limit,default=20,range=[1:100]"`
+}
+
+type AccountHoldsResponse struct {
+	Code    string           `json:"code,options=OK"`
+	Message string           `json:"message"`
+	Data    AccountHoldsData `json:"data"`
+	TraceId string           `json:"traceId"`
 }
 
 type BackofficeAccount struct {

@@ -27,9 +27,11 @@ const (
 type BusinessType string
 
 const (
-	BusinessTransfer BusinessType = "transfer"
-	BusinessDeposit  BusinessType = "deposit"
-	BusinessReward   BusinessType = "reward"
+	BusinessTransfer   BusinessType = "transfer"
+	BusinessDeposit    BusinessType = "deposit"
+	BusinessReward     BusinessType = "reward"
+	BusinessWithdrawal BusinessType = "withdrawal"
+	BusinessPayment    BusinessType = "payment"
 )
 
 func (b BusinessType) IDKind() (idcodec.Kind, bool) {
@@ -40,6 +42,10 @@ func (b BusinessType) IDKind() (idcodec.Kind, bool) {
 		return idcodec.Deposit, true
 	case BusinessReward:
 		return idcodec.RewardGrant, true
+	case BusinessWithdrawal:
+		return idcodec.Withdrawal, true
+	case BusinessPayment:
+		return idcodec.Payment, true
 	default:
 		return "", false
 	}
@@ -89,6 +95,8 @@ type Entry struct {
 	System SystemCode
 	Side   Side
 	Amount decimal.Decimal
+	// Only the hold commands may construct a held entry. Zero means available.
+	part string
 }
 
 // Credit and Debit are positive-amount user balance changes within one posting.
@@ -130,6 +138,9 @@ func (p Posting) validate() ([]model.Definition, error) {
 			definition, ok = model.Lookup(line.Kind)
 			ok = ok && line.UserID > 0
 		}
+		if (line.part != "" && line.part != model.BalanceHeld) || (line.part == model.BalanceHeld && (!definition.AllowHeld || line.System != "")) {
+			return nil, fmt.Errorf("%w: entry %d balance part", ErrInvalidPosting, i+1)
+		}
 		if !ok || (line.Side != SideCredit && line.Side != SideDebit) || !line.Amount.IsPositive() {
 			return nil, fmt.Errorf("%w: entry %d target, side or amount", ErrInvalidPosting, i+1)
 		}
@@ -157,6 +168,19 @@ func (p Posting) validate() ([]model.Definition, error) {
 // The business owns authorization, source existence, request deduplication and
 // recovery after an indeterminate commit. No public write endpoint calls Post.
 func (s *Service) Post(ctx context.Context, session sqlx.Session, p Posting) (int64, error) {
+	if p.Source.Action == ActionHold || p.Source.Action == ActionConsume || p.Source.Action == ActionRelease {
+		return 0, fmt.Errorf("%w: reserved hold action", ErrInvalidPosting)
+	}
+	for _, line := range p.Entries {
+		if line.part != "" {
+			return 0, fmt.Errorf("%w: held entries require a hold command", ErrInvalidPosting)
+		}
+	}
+	return s.post(ctx, session, p)
+}
+
+func (s *Service) post(ctx context.Context, session sqlx.Session, p Posting) (voucherID int64, err error) {
+	defer func() { err = classifyWriteError(err) }()
 	if err := transaction.RequireSession(ctx, session); err != nil {
 		return 0, err
 	}
@@ -177,7 +201,7 @@ func (s *Service) Post(ctx context.Context, session sqlx.Session, p Posting) (in
 		}
 		return 0, fmt.Errorf("insert voucher %+v: %w", p.Source, err)
 	}
-	voucherID, err := result.LastInsertId()
+	voucherID, err = result.LastInsertId()
 	if err != nil {
 		return 0, fmt.Errorf("voucher id: %w", err)
 	}
@@ -230,25 +254,31 @@ func (s *Service) Post(ctx context.Context, session sqlx.Session, p Posting) (in
 		entry := &model.LedgerEntry{VoucherId: voucherID, LineNo: int64(i + 1), SystemCode: string(line.System), Unit: definitions[i].Unit, Side: string(line.Side), Amount: line.Amount}
 		if line.System == "" {
 			row := locked[accountKey{line.UserID, line.Kind}]
+			value := &row.Balance
+			entry.BalancePart = model.BalanceAvailable
+			if line.part == model.BalanceHeld {
+				value = &row.HeldBalance
+				entry.BalancePart = model.BalanceHeld
+			}
 			if line.Side == SideDebit {
-				if row.Balance.LessThan(line.Amount) {
-					return 0, fmt.Errorf("%w: account %d available %s, requested %s", ErrInsufficientBalance, row.Id, row.Balance, line.Amount)
+				if value.LessThan(line.Amount) {
+					return 0, fmt.Errorf("%w: account %d %s %s, requested %s", ErrInsufficientBalance, row.Id, entry.BalancePart, value, line.Amount)
 				}
-				row.Balance = row.Balance.Sub(line.Amount)
+				*value = value.Sub(line.Amount)
 			} else {
-				row.Balance = row.Balance.Add(line.Amount)
+				*value = value.Add(line.Amount)
 			}
 			if err := definitions[i].ValidateBalances(row.Balance, row.HeldBalance); err != nil {
 				return 0, fmt.Errorf("%w: account %d: %v", ErrInvalidPosting, row.Id, err)
 			}
 			entry.AccountId = sql.NullInt64{Int64: row.Id, Valid: true}
-			entry.BalanceAfter = decimal.NullDecimal{Decimal: row.Balance, Valid: true}
+			entry.BalanceAfter = decimal.NullDecimal{Decimal: *value, Valid: true}
 		}
 		entries[i] = entry
 	}
 	for _, key := range keys {
 		row := locked[key]
-		if err := accounts.SetBalance(ctx, row.Id, row.Balance); err != nil {
+		if err := accounts.SetBalances(ctx, row.Id, row.Balance, row.HeldBalance); err != nil {
 			return 0, fmt.Errorf("update account %d: %w", row.Id, err)
 		}
 	}

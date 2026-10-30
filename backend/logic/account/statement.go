@@ -14,8 +14,9 @@ const DefaultEntryPageSize = 20
 const MaxEntryPageSize = 100
 
 const (
-	DirectionIn  = "in"
-	DirectionOut = "out"
+	DirectionIn    = "in"
+	DirectionOut   = "out"
+	ActivityPosted = "posted"
 )
 
 type EntryPage struct {
@@ -40,7 +41,7 @@ func (s *Service) Entries(ctx context.Context, userID int64, kind string, before
 	for _, row := range page.Entries {
 		definition, ok := model.Lookup(row.Kind)
 		_, sourceKnown := BusinessType(row.BusinessType).IDKind()
-		if !ok || !sourceKnown || definition.Unit != row.Unit || (Side(row.Side) != SideCredit && Side(row.Side) != SideDebit) || !row.Amount.IsPositive() {
+		if !ok || !sourceKnown || definition.Unit != row.Unit || (Side(row.Side) != SideCredit && Side(row.Side) != SideDebit) || !row.Amount.IsPositive() || (row.BalancePart != model.BalanceAvailable && row.BalancePart != model.BalanceHeld) || (row.BalancePart == model.BalanceHeld && !definition.AllowHeld) {
 			return EntryPage{}, fmt.Errorf("stored ledger entry %d has invalid kind, source, unit, side or amount", row.ID)
 		}
 		for _, value := range []decimal.Decimal{row.Amount, row.BalanceAfter} {
@@ -50,4 +51,19 @@ func (s *Service) Entries(ctx context.Context, userID int64, kind string, before
 		}
 	}
 	return page, nil
+}
+
+// A reservation/release is shown once, on its available leg. The model query
+// omits the paired held leg; consumption remains visible on the held leg.
+func EntryActivity(row model.StatementEntry) string {
+	switch {
+	case row.Action == string(ActionHold):
+		return model.HoldHeld
+	case row.Action == string(ActionRelease):
+		return model.HoldReleased
+	case row.Action == string(ActionConsume) && row.BalancePart == model.BalanceHeld:
+		return model.HoldConsumed
+	default:
+		return ActivityPosted
+	}
 }

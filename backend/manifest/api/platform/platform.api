@@ -111,7 +111,37 @@ type (
         Direction string `json:"direction,options=in|out"`
         Amount string `json:"amount"`
         BalanceAfter string `json:"balanceAfter"`
+        BalancePart string `json:"balancePart,options=available|held"`
+        Activity string `json:"activity,options=posted|held|consumed|released"`
         CreatedAt string `json:"createdAt"`
+    }
+    AccountHoldsRequest {
+        Status string `form:"status,optional,options=held|consumed|released"`
+        Before string `form:"before,optional"`
+        Limit int `form:"limit,default=20,range=[1:100]"`
+    }
+    AccountHold {
+        Idx string `json:"idx"`
+        BusinessType string `json:"businessType"`
+        BusinessIdx string `json:"businessIdx"`
+        Amount string `json:"amount"`
+        Unit string `json:"unit,options=USD"`
+        Status string `json:"status,options=held|consumed|released"`
+        Reason string `json:"reason"`
+        HoldVoucherIdx string `json:"holdVoucherIdx"`
+        ResolvedVoucherIdx string `json:"resolvedVoucherIdx"`
+        CreatedAt string `json:"createdAt"`
+        ResolvedAt string `json:"resolvedAt"`
+    }
+    AccountHoldsData {
+        Holds []AccountHold `json:"holds"`
+        NextCursor string `json:"nextCursor"`
+    }
+    AccountHoldsResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data AccountHoldsData `json:"data"`
+        TraceId string `json:"traceId"`
     }
     AccountEntriesData {
         Entries []AccountEntry `json:"entries"`
@@ -146,6 +176,8 @@ service platform {
 service platform {
     @handler currentUser
     get /v1/user/current returns (CurrentUserResponse)
+    @handler accountHolds
+    get /v1/user/account-holds (AccountHoldsRequest) returns (AccountHoldsResponse)
     @handler accountEntries
     get /v1/user/account-entries (AccountEntriesRequest) returns (AccountEntriesResponse)
     @handler accountBalances

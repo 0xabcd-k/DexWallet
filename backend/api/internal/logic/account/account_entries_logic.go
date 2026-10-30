@@ -62,7 +62,7 @@ func (l *AccountEntriesLogic) AccountEntries(req *types.AccountEntriesRequest) (
 	}
 	data := types.AccountEntriesData{Entries: make([]types.AccountEntry, 0, len(page.Entries))}
 	for _, row := range page.Entries {
-		entry := types.AccountEntry{BusinessType: row.BusinessType, Action: row.Action, Kind: row.Kind, Unit: row.Unit, Direction: accountlogic.DirectionIn, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339Nano)}
+		entry := types.AccountEntry{BalancePart: row.BalancePart, Activity: accountlogic.EntryActivity(row), BusinessType: row.BusinessType, Action: row.Action, Kind: row.Kind, Unit: row.Unit, Direction: accountlogic.DirectionIn, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339Nano)}
 		if accountlogic.Side(row.Side) == accountlogic.SideDebit {
 			entry.Direction = accountlogic.DirectionOut
 		}

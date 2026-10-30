@@ -72,7 +72,7 @@ func (s *statementStore) ListEntries(_ context.Context, id int64, kind string, b
 	return s.entries, s.err
 }
 func TestStatementValidatesFinancialDataAndPreservesErrors(t *testing.T) {
-	row := model.StatementEntry{ID: 9, Kind: model.KindUSD, Unit: model.UnitUSD, Side: string(SideCredit), Amount: decimal.RequireFromString("1.01"), BalanceAfter: decimal.RequireFromString("9007199254740993.01"), BusinessType: string(BusinessDeposit)}
+	row := model.StatementEntry{ID: 9, BalancePart: model.BalanceAvailable, Kind: model.KindUSD, Unit: model.UnitUSD, Side: string(SideCredit), Amount: decimal.RequireFromString("1.01"), BalanceAfter: decimal.RequireFromString("9007199254740993.01"), BusinessType: string(BusinessDeposit)}
 	store := &statementStore{entries: []model.StatementEntry{row, row}}
 	s := New(store)
 	got, err := s.Entries(context.Background(), 7, model.KindUSD, 99, 1)

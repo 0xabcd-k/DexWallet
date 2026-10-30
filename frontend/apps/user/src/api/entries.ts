@@ -12,16 +12,17 @@ export const decodeEntries: Decoder<AccountEntriesData> = value => {
   if (!isRecord(value) || !isRecord(value.data) || !Array.isArray(value.data.entries) || typeof value.data.nextCursor !== 'string') throw new TypeError('Missing statement page');
   const entries = value.data.entries.map((item: unknown): AccountEntry => {
     if (!isRecord(item)) throw new TypeError('Invalid entry');
-    const { idx, voucherIdx, businessType, businessIdx, action, kind, unit, direction, amount, balanceAfter, createdAt } = item;
+    const { idx, voucherIdx, businessType, businessIdx, action, kind, unit, direction, amount, balanceAfter, balancePart, activity, createdAt } = item;
     if (typeof idx !== 'string' || !idx || typeof voucherIdx !== 'string' || typeof businessType !== 'string' ||
         typeof businessIdx !== 'string' || typeof action !== 'string' || typeof kind !== 'string' || typeof unit !== 'string' ||
-        (direction !== 'in' && direction !== 'out') || typeof amount !== 'string' || typeof balanceAfter !== 'string' ||
+        (balancePart !== 'available' && balancePart !== 'held') || (activity !== 'posted' && activity !== 'held' && activity !== 'consumed' && activity !== 'released') || (direction !== 'in' && direction !== 'out') || typeof amount !== 'string' || typeof balanceAfter !== 'string' ||
         typeof createdAt !== 'string' || !Number.isFinite(Date.parse(createdAt))) throw new TypeError('Invalid entry fields');
     const points = kind === AccountKind.points;
     if (!points && kind !== AccountKind.usd && kind !== AccountKind.reward) throw new TypeError('Unknown account kind');
     const pattern = points ? pointsAmount : usdAmount;
     if (unit !== (points ? 'POINT' : 'USD') || !pattern.test(amount) || !/[1-9]/.test(amount) || !pattern.test(balanceAfter)) throw new TypeError('Invalid entry amount or unit');
-    return { idx, voucherIdx, businessType, businessIdx, action, kind, unit, direction, amount, balanceAfter, createdAt };
+    if ((balancePart === 'held' && (kind !== AccountKind.usd || activity !== 'consumed')) || (activity === 'consumed' && (balancePart !== 'held' || direction !== 'out')) || (activity === 'held' && direction !== 'out') || (activity === 'released' && direction !== 'in') || (activity !== 'posted' && kind !== AccountKind.usd)) throw new TypeError('Invalid hold activity');
+    return { idx, voucherIdx, businessType, businessIdx, action, kind, unit, direction, amount, balanceAfter, balancePart, activity, createdAt };
   });
   return { entries, nextCursor: value.data.nextCursor };
 };

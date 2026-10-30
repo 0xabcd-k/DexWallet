@@ -8,11 +8,13 @@ import (
 
 // Persisted codes and units are stable; display names belong to the client.
 const (
-	KindUSD        = "usd_balance"
-	KindRewardUSD  = "reward_usd"
-	KindTaskPoints = "task_points"
-	UnitUSD        = "USD"
-	UnitPoints     = "POINT"
+	KindUSD          = "usd_balance"
+	KindRewardUSD    = "reward_usd"
+	KindTaskPoints   = "task_points"
+	UnitUSD          = "USD"
+	UnitPoints       = "POINT"
+	BalanceAvailable = "available"
+	BalanceHeld      = "held"
 )
 
 type Definition struct {
@@ -52,6 +54,10 @@ func (d Definition) ValidateBalances(balance, held decimal.Decimal) error {
 		if !amount.Equal(amount.Truncate(d.Scale)) {
 			return fmt.Errorf("%s amount exceeds %d decimal places: %s", d.Kind, d.Scale, amount)
 		}
+	}
+	// Every reservation must remain releasable into the available column.
+	if balance.Add(held).GreaterThanOrEqual(amountLimit) {
+		return fmt.Errorf("%s total exceeds available balance capacity", d.Kind)
 	}
 	if !d.AllowHeld && !held.IsZero() {
 		return fmt.Errorf("%s does not support held balance", d.Kind)

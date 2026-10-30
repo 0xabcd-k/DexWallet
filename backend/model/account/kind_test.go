@@ -14,6 +14,8 @@ func TestBalancePrecisionAndRange(t *testing.T) {
 		{"zero", KindUSD, "0", "0", true},
 		{"cents", KindUSD, "9007199254740993.01", "2.09", true},
 		{"maximum", KindUSD, "999999999999999999.99", "0", true},
+		{"maximum split", KindUSD, "999999999999999999.98", "0.01", true},
+		{"release would overflow", KindUSD, "999999999999999999.99", "0.01", false},
 		{"trailing zeroes", KindRewardUSD, "1.2300", "0", true},
 		{"integer points", KindTaskPoints, "999999999999999999", "0", true},
 		{"extra cents", KindUSD, "1.001", "0", false},

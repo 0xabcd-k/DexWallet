@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { envelope, mockAccount, seedSession } from './auth-fixture';
 const base = 'http://127.0.0.1:5173';
-const deposit = { idx: 'entry-2', voucherIdx: 'voucher-2', businessIdx: '01234567890123456', businessType: 'deposit', action: 'post', kind: 'usd_balance', unit: 'USD', direction: 'in', amount: '9007199254740993.01', balanceAfter: '9007199254740993.01', createdAt: '2026-10-30T08:00:00Z' };
+const deposit = { idx: 'entry-2', voucherIdx: 'voucher-2', businessIdx: '01234567890123456', businessType: 'deposit', action: 'post', balancePart: 'available', activity: 'posted', kind: 'usd_balance', unit: 'USD', direction: 'in', amount: '9007199254740993.01', balanceAfter: '9007199254740993.01', createdAt: '2026-10-30T08:00:00Z' };
 const debit = { ...deposit, idx: 'entry-1', voucherIdx: 'voucher-1', businessType: 'transfer', direction: 'out', amount: '5.00', balanceAfter: '9007199254740988.01' };
 const points = { ...deposit, idx: 'points-1', businessType: 'reward', kind: 'task_points', unit: 'POINT', amount: '9007199254740993', balanceAfter: '9007199254740993' };
 test.use({ viewport: { width: 390, height: 844 } });
@@ -99,6 +99,8 @@ test('filter changes and sign-out discard late statement responses', async ({ pa
     await readingSignOut;
     await page.getByRole('link', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+    await expect(page).toHaveURL(`${base}/#/wallet`);
+    await expect(page.getByText('Sign in to view your balances.')).toBeVisible();
     releaseSignOut();
     await page.goto(`${base}/#/records`);
     await expect(page.getByText('Sign in to view your account records.')).toBeVisible();

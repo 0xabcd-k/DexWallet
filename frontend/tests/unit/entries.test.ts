@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { decodeEntries } from '../../apps/user/src/api/entries';
 
-const entry = { idx: 'entry', voucherIdx: 'voucher', businessIdx: 'business', businessType: 'deposit', action: 'post', kind: 'usd_balance', unit: 'USD', direction: 'in', amount: '9007199254740993.01', balanceAfter: '9007199254740993.01', createdAt: '2026-10-30T08:00:00Z' };
+const entry = { idx: 'entry', voucherIdx: 'voucher', businessIdx: 'business', businessType: 'deposit', action: 'post', balancePart: 'available', activity: 'posted', kind: 'usd_balance', unit: 'USD', direction: 'in', amount: '9007199254740993.01', balanceAfter: '9007199254740993.01', createdAt: '2026-10-30T08:00:00Z' };
 const decode = (row: unknown) => decodeEntries({ data: { entries: [row], nextCursor: '' } });
 it('preserves exact statement amounts, direction and cursor without floating point conversion', () => {
   expect(decode(entry).entries[0]).toEqual(entry);

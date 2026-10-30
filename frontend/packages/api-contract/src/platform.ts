@@ -51,7 +51,43 @@ export interface AccountEntry {
 	direction: 'in' | 'out'
 	amount: string
 	balanceAfter: string
+	balancePart: 'available' | 'held'
+	activity: 'posted' | 'held' | 'consumed' | 'released'
 	createdAt: string
+}
+
+export interface AccountHold {
+	idx: string
+	businessType: string
+	businessIdx: string
+	amount: string
+	unit: 'USD'
+	status: 'held' | 'consumed' | 'released'
+	reason: string
+	holdVoucherIdx: string
+	resolvedVoucherIdx: string
+	createdAt: string
+	resolvedAt: string
+}
+
+export interface AccountHoldsData {
+	holds: Array<AccountHold>
+	nextCursor: string
+}
+
+export interface AccountHoldsRequest {
+}
+export interface AccountHoldsRequestParams {
+	status?: string
+	before?: string
+	limit: number
+}
+
+export interface AccountHoldsResponse {
+	code: 'OK'
+	message: string
+	data: AccountHoldsData
+	traceId: string
 }
 
 export interface BackofficeAccount {

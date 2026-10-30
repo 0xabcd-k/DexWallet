@@ -21,6 +21,9 @@ const (
 	Transfer      Kind = "TransferId"
 	Deposit       Kind = "DepositId"
 	RewardGrant   Kind = "RewardGrantId"
+	AccountHold   Kind = "AccountHoldId"
+	Withdrawal    Kind = "WithdrawalId"
+	Payment       Kind = "PaymentId"
 )
 const minDigits = 16
 const maxDigits = 19
