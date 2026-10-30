@@ -12,6 +12,8 @@ import (
 
 var testRun *testenv.Run
 
+const businessSchemaVersion = 5
+
 func TestMain(m *testing.M) {
 	var err error
 	if dir := os.Getenv("DEXWALLET_TEST_RUN_DIR"); dir != "" {

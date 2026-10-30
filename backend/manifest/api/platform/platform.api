@@ -85,6 +85,22 @@ type (
         Data CurrentUserData `json:"data"`
         TraceId string `json:"traceId"`
     }
+    AccountBalance {
+        Kind string `json:"kind"`
+        Unit string `json:"unit"`
+        Balance string `json:"balance"`
+        HeldBalance string `json:"heldBalance"`
+        TotalBalance string `json:"totalBalance"`
+    }
+    AccountBalancesData {
+        Accounts []AccountBalance `json:"accounts"`
+    }
+    AccountBalancesResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data AccountBalancesData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
 
 )
 
@@ -102,6 +118,8 @@ service platform {
 service platform {
     @handler currentUser
     get /v1/user/current returns (CurrentUserResponse)
+    @handler accountBalances
+    get /v1/user/accounts returns (AccountBalancesResponse)
     @handler identityEmailCode
     post /v1/user/identities/email/code (IdentityEmailCodeRequest) returns (ChallengeResponse)
 }

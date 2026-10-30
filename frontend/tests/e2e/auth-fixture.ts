@@ -32,6 +32,11 @@ export async function mockAccount(page: Page) {
     try { const raw = req.headers().authorization?.split(' ')[1]?.split('.')[1]; if (raw) version = JSON.parse(Buffer.from(raw, 'base64url').toString()).auth_version; } catch { /* invalid header */ }
     if (version !== state.version) return fail(401, 'UNAUTHENTICATED');
     if (path === '/v1/user/current') return ok({ idx: userIdx, nickname: state.nickname, avatarUrl: '' });
+    if (path === '/v1/user/accounts') return ok({ accounts: [
+      { kind: 'usd_balance', unit: 'USD', balance: '0.00', heldBalance: '0.00', totalBalance: '0.00' },
+      { kind: 'reward_usd', unit: 'USD', balance: '0.00', heldBalance: '0.00', totalBalance: '0.00' },
+      { kind: 'task_points', unit: 'POINT', balance: '0', heldBalance: '0', totalBalance: '0' },
+    ] });
     if (path === '/v1/user/identities') return ok({ identities: [
       ...(state.email ? [{ type: 'email', subject: state.email, displayName: state.email }] : []),
       ...(state.telegram ? [{ type: 'telegram', subject: '7', displayName: 'Telegram Test' }] : []),

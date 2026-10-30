@@ -7,6 +7,11 @@ export const appResources = {
     "rewards": "Rewards",
     "records": "Records",
     "intro": "Manage your digital life with DexWallet.",
+    "usdBalance": "USD balance", "rewardCash": "Withdrawable rewards", "taskPoints": "Task points", "pointsUnit": "points",
+    "availableBalance": "Available", "heldBalance": "Held", "totalBalance": "Total", "refreshBalances": "Refresh balances",
+    "signInBalances": "Sign in to view your balances.",
+    "walletActionsPending": "Deposits, transfers and payments are not available yet.",
+    "rewardActionsPending": "Tasks, prize draws and reward transfers are not available yet.",
 
     "account": "Account", "preferences": "General", "accountActions": "Account actions", "accountId": "Account ID", "defaultNickname": "DexWallet user", "nickname": "Nickname",
     "saveProfile": "Save nickname", "profileSaved": "Your nickname has been saved.",
@@ -36,6 +41,11 @@ export const appResources = {
     "rewards": "奖励",
     "records": "记录",
     "intro": "通过 DexWallet 管理你的数字生活。",
+    "usdBalance": "美元余额", "rewardCash": "待提现奖励", "taskPoints": "任务积分", "pointsUnit": "积分",
+    "availableBalance": "可用余额", "heldBalance": "占用金额", "totalBalance": "总额", "refreshBalances": "刷新余额",
+    "signInBalances": "登录后查看账户余额。",
+    "walletActionsPending": "充值、转账和支付功能暂未开放。",
+    "rewardActionsPending": "任务、抽奖和奖励转入功能暂未开放。",
 
     "account": "账户信息", "preferences": "通用", "accountActions": "账户操作", "accountId": "账户 ID", "defaultNickname": "DexWallet 用户", "nickname": "昵称",
     "saveProfile": "保存昵称", "profileSaved": "昵称已保存。",

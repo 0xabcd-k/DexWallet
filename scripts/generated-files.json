@@ -1,8 +1,9 @@
 {
   "generated": {
-    "backend/api/internal/handler/routes.go": "bfe293ffbf2259cff1842209d2f7fc539e32e11217e592094c4c8aca994a123a",
-    "backend/api/internal/types/types.go": "9e38821677799562745d2d841c15ff76f0ddd477a2b89cd5ade60eca8df88ca9",
+    "backend/api/internal/handler/routes.go": "6c8ff272e74244a51b179aeaa08869c8021e983c78bd7d0d3dbece6e6d5bdb23",
+    "backend/api/internal/types/types.go": "9194ada80a4b10922a187f4a09ef381047c7deea2a70eaa7b39723118efabbec",
     "backend/apperror/codes_gen.go": "c47c3ddcac15fe4e6e7656cc911999dc4dfe95d86d58f3d6cf6d123bb56cb550",
+    "backend/model/account/user_account_model_gen.go": "fbe287a19be6b5f5bd4eb9c1c61579d9485ef748c18773e1a92a52313897208c",
     "backend/model/backoffice/admin_user_model_gen.go": "ef0920e6baf0cc1dc653f64ec5e3d3900d8b4cf7ff185540a900c82c5a0a52dc",
     "backend/model/backoffice/backoffice_audit_model_gen.go": "b0aae7193a7262ac457e1edeca9fb3caea298f5457a97361fe02f748e0f98630",
     "backend/model/backoffice/merchant_user_model_gen.go": "cae3d2365267248dff497a58a2d71cb2fe116b221510426073f4f59e1be82e84",
@@ -13,10 +14,11 @@
     "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
     "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
     "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c",
-    "frontend/packages/api-contract/src/platform.ts": "4fb355544f83e1900e6903cc64e5a86e4f84a36a42a679b12066e1cd93bd51a8"
+    "frontend/packages/api-contract/src/platform.ts": "11f62d1b44d4b0e841350f9d847ebe5425583665e290622cbc6b57e784fe6d64"
   },
   "scaffold": [
     "backend/api/etc/platform.yaml",
+    "backend/api/internal/handler/account/account_balances_handler.go",
     "backend/api/internal/handler/account/current_identities_handler.go",
     "backend/api/internal/handler/account/current_user_handler.go",
     "backend/api/internal/handler/account/identity_email_code_handler.go",
@@ -44,6 +46,7 @@
     "backend/api/internal/handler/identity/identity_email_handler.go",
     "backend/api/internal/handler/identity/identity_telegram_handler.go",
     "backend/api/internal/handler/identity/unbind_handler.go",
+    "backend/api/internal/logic/account/account_balances_logic.go",
     "backend/api/internal/logic/account/current_identities_logic.go",
     "backend/api/internal/logic/account/current_user_logic.go",
     "backend/api/internal/logic/account/identity_email_code_logic.go",
@@ -78,6 +81,8 @@
     "backend/api/internal/middleware/userauth_middleware.go",
     "backend/api/internal/svc/service_context.go",
     "backend/api/platform.go",
+    "backend/model/account/user_account_model.go",
+    "backend/model/account/vars.go",
     "backend/model/backoffice/admin_user_model.go",
     "backend/model/backoffice/backoffice_audit_model.go",
     "backend/model/backoffice/merchant_user_model.go",

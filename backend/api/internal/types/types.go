@@ -3,6 +3,25 @@
 
 package types
 
+type AccountBalance struct {
+	Kind         string `json:"kind"`
+	Unit         string `json:"unit"`
+	Balance      string `json:"balance"`
+	HeldBalance  string `json:"heldBalance"`
+	TotalBalance string `json:"totalBalance"`
+}
+
+type AccountBalancesData struct {
+	Accounts []AccountBalance `json:"accounts"`
+}
+
+type AccountBalancesResponse struct {
+	Code    string              `json:"code,options=OK"`
+	Message string              `json:"message"`
+	Data    AccountBalancesData `json:"data"`
+	TraceId string              `json:"traceId"`
+}
+
 type BackofficeAccount struct {
 	Idx                string `json:"idx"`
 	Email              string `json:"email"`

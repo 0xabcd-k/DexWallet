@@ -50,7 +50,7 @@ func userDatabase(t *testing.T, label string) (*sql.DB, *userlogic.Service) {
 		t.Fatalf("repeat up: %v", err)
 	}
 	version, dirty, err := m.Version()
-	if err != nil || version != 4 || dirty {
+	if err != nil || version != businessSchemaVersion || dirty {
 		t.Fatalf("version: %d %t %v", version, dirty, err)
 	}
 	conn := sqlx.NewSqlConnFromDB(db)
@@ -114,7 +114,7 @@ func TestUserSchemaAndConstraints(t *testing.T) {
 	}
 	// Business and example histories can coexist without stealing each other's versions.
 	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations_business WHERE version=4 AND dirty=0").Scan(&count); err != nil || count != 1 {
+	if err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations_business WHERE version=? AND dirty=0", businessSchemaVersion).Scan(&count); err != nil || count != 1 {
 		t.Fatalf("business history: %d %v", count, err)
 	}
 	t.Log("full DDL equals migration including foreign keys; unique ownership, NULL owners and case-sensitive addresses verified")
@@ -280,7 +280,7 @@ func TestUserMigrationCLIAndFailureState(t *testing.T) {
 		cmd.Dir = "../.."
 		cmd.Env = append(os.Environ(), "DEXWALLET_MYSQL_DSN="+dsn)
 		output, err := cmd.CombinedOutput()
-		if err != nil || !strings.Contains(string(output), "version=4 dirty=false") {
+		if err != nil || !strings.Contains(string(output), fmt.Sprintf("version=%d dirty=false", businessSchemaVersion)) {
 			t.Fatalf("CLI %s: %v %s", action, err, output)
 		}
 	}
@@ -309,7 +309,7 @@ func TestUserMigrationCLIAndFailureState(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err = os.WriteFile(filepath.Join(dir, "000005_fail.up.sql"), []byte("CREATE TABLE business_partial (id INT); ALTER TABLE missing_business_table ADD COLUMN note INT;"), 0600); err != nil {
+	if err = os.WriteFile(filepath.Join(dir, fmt.Sprintf("%06d_fail.up.sql", businessSchemaVersion+1)), []byte("CREATE TABLE business_partial (id INT); ALTER TABLE missing_business_table ADD COLUMN note INT;"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	m, err := migration.Open(dsn, name, dir, "business")
@@ -318,14 +318,14 @@ func TestUserMigrationCLIAndFailureState(t *testing.T) {
 	}
 	defer m.Close()
 	version, dirty, err := m.Version()
-	if err != nil || version != 4 || dirty {
+	if err != nil || version != businessSchemaVersion || dirty {
 		t.Fatalf("independent version: %d %t %v", version, dirty, err)
 	}
 	if err = m.Up(); err == nil {
 		t.Fatal("expected DDL failure")
 	}
 	version, dirty, err = m.Version()
-	if err != nil || version != 5 || !dirty {
+	if err != nil || version != businessSchemaVersion+1 || !dirty {
 		t.Fatalf("dirty state lost: %d %t %v", version, dirty, err)
 	}
 	var blocked migrate.ErrDirty

@@ -231,6 +231,7 @@ func TestProductSessionHTTP(t *testing.T) {
 	}
 
 	call("GET", "/v1/user/current", "", nil, 401, "UNAUTHENTICATED")
+	call("GET", "/v1/user/accounts", "", nil, 401, "UNAUTHENTICATED")
 	code := send("Alice@EXAMPLE.COM", "", "")
 	input := map[string]string{"email": "Alice@example.com", "challenge": code, "code": mail.code("Alice@example.com")}
 	wrong := map[string]string{}
@@ -252,6 +253,22 @@ func TestProductSessionHTTP(t *testing.T) {
 	var current types.CurrentUserData
 	if err = json.Unmarshal(b, &current); err != nil || current.Idx != claims.Subject || h.Get(session.TokenHeader) != "" {
 		t.Fatal("current user contract", err)
+	}
+	_, b = call("GET", "/v1/user/accounts", token, nil, 200, "OK")
+	var balances types.AccountBalancesData
+	if err = json.Unmarshal(b, &balances); err != nil || len(balances.Accounts) != 3 || balances.Accounts[0].Balance != "0.00" || balances.Accounts[2].Balance != "0" {
+		t.Fatal("initial balances", balances, err)
+	}
+	var accountCount int
+	if err = db.QueryRow("SELECT COUNT(*) FROM user_account").Scan(&accountCount); err != nil || accountCount != 0 {
+		t.Fatal("login/query created accounts", err)
+	}
+	if _, err = db.Exec("INSERT INTO user_account(user_id,kind,balance,held_balance) VALUES(?,'usd_balance','9007199254740993.01','2.09')", id); err != nil {
+		t.Fatal(err)
+	}
+	_, b = call("GET", "/v1/user/accounts?userId=999", token, nil, 200, "OK")
+	if err = json.Unmarshal(b, &balances); err != nil || balances.Accounts[0].TotalBalance != "9007199254740995.10" {
+		t.Fatal("exact balance or authenticated owner lost", balances, err)
 	}
 	_, b = call("GET", "/v1/user/identities", token, nil, 200, "OK")
 	var identityList types.IdentitiesData
@@ -285,6 +302,11 @@ func TestProductSessionHTTP(t *testing.T) {
 	h, b = call("POST", "/v1/user/identities/email/verify", token, replacement, 200, "OK")
 	changed := decodeToken(h, b)
 	call("GET", "/v1/user/current", token, nil, 401, "UNAUTHENTICATED")
+	call("GET", "/v1/user/accounts", token, nil, 401, "UNAUTHENTICATED")
+	_, b = call("GET", "/v1/user/accounts", changed, nil, 200, "OK")
+	if err = json.Unmarshal(b, &balances); err != nil || balances.Accounts[0].Balance != "9007199254740993.01" {
+		t.Fatal("identity replacement changed account", balances, err)
+	}
 	_, b = call("GET", "/v1/user/current", changed, nil, 200, "OK")
 	if err = json.Unmarshal(b, &current); err != nil || current.Nickname != "Alice Product" {
 		t.Fatal("identity change overwrote product profile", err)
@@ -331,6 +353,10 @@ func TestProductSessionHTTP(t *testing.T) {
 		t.Fatal("TG user not independent", err)
 	}
 	call("GET", "/v1/user/current", tgToken, nil, 200, "OK")
+	_, b = call("GET", "/v1/user/accounts", tgToken, nil, 200, "OK")
+	if err = json.Unmarshal(b, &balances); err != nil || balances.Accounts[0].Balance != "0.00" {
+		t.Fatal("TG user saw another user's funds", balances, err)
+	}
 	// An external write without invalidation leaves an accepted short cache window.
 	// Critical writes still reject the stale actor against the locked database row.
 	if _, err = s.DB.ExecContext(ctx, "UPDATE `user` SET auth_version=auth_version+1 WHERE id=?", tgID); err != nil {
@@ -363,6 +389,7 @@ func TestProductSessionHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	call("GET", "/v1/user/current", tgToken, nil, 403, "PERMISSION_DENIED")
+	call("GET", "/v1/user/accounts", tgToken, nil, 403, "PERMISSION_DENIED")
 	// Close only this test client's connection pool, never the shared Redis server.
 	if err = s.Redis.Close(); err != nil {
 		t.Fatal(err)

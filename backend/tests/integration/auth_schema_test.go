@@ -27,7 +27,7 @@ func TestAuthSchemaUpgrade(t *testing.T) {
 	}
 	mustExec(t, db, "INSERT INTO `user`(id,nickname) VALUES(1,'existing')")
 	mustExec(t, db, "INSERT INTO email_identity(email_address,email_local_part,email_domain,email_original,user_id,binding_version) VALUES('old@example.com','old','example.com','old@example.com',1,3)")
-	if err = m.Up(); err != nil {
+	if err = m.Migrate(4); err != nil {
 		t.Fatal(err)
 	}
 	var nickname string
@@ -73,7 +73,7 @@ func TestAuthSchemaUpgrade(t *testing.T) {
 			t.Fatalf("rollback %s: %d %v", table, count, err)
 		}
 	}
-	if err = m.Up(); err != nil {
+	if err = m.Migrate(4); err != nil {
 		t.Fatal(err)
 	}
 	if err = db.QueryRow("SELECT nickname FROM user WHERE id=1").Scan(&nickname); err != nil || nickname != "existing" {
