@@ -11,7 +11,6 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
-	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -103,7 +102,7 @@ func describeError(err error) (apperror.Code, description) {
 		code = app.Code
 	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 		code = apperror.RequestTimeout
-	case errors.Is(err, usermodel.ErrCacheUnavailable), errors.Is(err, authlogic.ErrUnavailable):
+	case errors.Is(err, authlogic.ErrUnavailable):
 		code = apperror.ServiceUnavailable
 	case errors.Is(err, session.ErrInvalid), errors.Is(err, userlogic.ErrStaleSession):
 		code = apperror.Unauthenticated
@@ -121,7 +120,7 @@ func describeError(err error) (apperror.Code, description) {
 		code = apperror.AnotherIdentityRequired
 	case errors.Is(err, userlogic.ErrUseReplace):
 		code = apperror.IdentityAlreadyBound
-	case errors.Is(err, authlogic.ErrReplay), errors.Is(err, authlogic.ErrRequestConflict), errors.Is(err, authlogic.ErrExpired), errors.Is(err, userlogic.ErrBindingChanged), errors.Is(err, userlogic.ErrIdentityUnbound), errors.Is(err, userlogic.ErrConflict):
+	case errors.Is(err, authlogic.ErrReplay), errors.Is(err, userlogic.ErrBindingChanged), errors.Is(err, userlogic.ErrConflict):
 		code = apperror.Conflict
 	}
 	d, ok := descriptions[code]

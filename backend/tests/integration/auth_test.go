@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
-	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
-	"github.com/0xabcd-k/DexWallet/backend/transaction"
+	"github.com/redis/go-redis/v9"
 	initdata "github.com/telegram-mini-apps/init-data-golang"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"os"
 )
 
 type fakeAuthMail struct {
@@ -46,7 +46,6 @@ func (allowAuth) Allow(context.Context, authlogic.RateAction, string, string) er
 const authTestSecret = "test-only-auth-secret-32-characters"
 const authTestBot = "123456:integration-fake-token"
 
-func authRequest(i int) string { return fmt.Sprintf("%064x", i) }
 func authTG(id int64, nonce int) string {
 	return authTGAt(id, nonce, time.Now())
 }
@@ -61,250 +60,253 @@ func authTGAt(id int64, nonce int, now time.Time) string {
 	return q.Encode()
 }
 
+func proofStore(t *testing.T, label string) (*authlogic.Proofs, *redis.Client) {
+	t.Helper()
+	client := redis.NewClient(&redis.Options{Addr: testenv.RedisAddress, Password: os.Getenv("DEXWALLET_REDIS_PASSWORD"), ContextTimeoutEnabled: true, MaxRetries: -1})
+	t.Cleanup(func() { client.Close() })
+	return authlogic.NewProofs(client, testRun.Name("redis", label), authTestSecret), client
+}
+func recordEmailProof(t *testing.T, p *authlogic.Proofs, realm, email string) {
+	t.Helper()
+	for _, key := range []string{p.Key(realm, email), p.Key(realm, email) + ":cooldown"} {
+		if err := testRun.Record("redis", key); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+func recordTelegramProof(t *testing.T, p *authlogic.Proofs, raw string) {
+	t.Helper()
+	q, _ := url.ParseQuery(raw)
+	if err := testRun.Record("redis", p.TelegramKey(q.Get("hash"))); err != nil {
+		t.Fatal(err)
+	}
+}
 func TestAuthTelegramDevelopmentReuse(t *testing.T) {
 	db, users := userDatabase(t, "telegram_development")
-	conn := sqlx.NewSqlConnFromDB(db)
+	p, _ := proofStore(t, "dev_proofs")
 	cfg := authlogic.DefaultConfig()
 	cfg.Secret, cfg.BotToken = authTestSecret, authTestBot
 	cfg.TelegramEnabled, cfg.TelegramDevelopment = true, true
-	auth, err := authlogic.New(cfg, users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), transaction.New(db), nil, allowAuth{})
+	auth, err := authlogic.New(cfg, users, p, nil, allowAuth{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
 	login := authlogic.Intent{Purpose: userlogic.Login}
 	raw := authTGAt(900000001, 1, time.Now().AddDate(-10, 0, 0))
-	first, err := auth.VerifyTelegram(ctx, authRequest(90), raw, "127.0.0.1", login)
+	first, err := auth.VerifyTelegram(ctx, raw, "127.0.0.1", login)
 	if err != nil {
 		t.Fatal(err)
 	}
-	mustExec(t, db, "UPDATE auth_operation SET expires_at=UTC_TIMESTAMP(6)-INTERVAL 1 YEAR")
-	for _, request := range []string{authRequest(90), authRequest(91)} {
-		result, err := auth.VerifyTelegram(ctx, request, raw, "127.0.0.1", login)
+	for i := 0; i < 2; i++ {
+		result, err := auth.VerifyTelegram(ctx, raw, "127.0.0.1", login)
 		if err != nil || result.User.Id != first.User.Id {
-			t.Fatalf("reusable development login failed: result=%+v err=%v", result, err)
+			t.Fatalf("development reuse: %+v %v", result, err)
 		}
 	}
-	mustExec(t, db, "UPDATE user SET status='disabled', auth_version=auth_version+1")
-	if _, err = auth.VerifyTelegram(ctx, authRequest(92), raw, "127.0.0.1", login); !errors.Is(err, userlogic.ErrDisabled) {
-		t.Fatal("development login ignored account status", err)
+	mustExec(t, db, "UPDATE user SET status='disabled',auth_version=auth_version+1")
+	if _, err = auth.VerifyTelegram(ctx, raw, "127.0.0.1", login); !errors.Is(err, userlogic.ErrDisabled) {
+		t.Fatal("development bypassed status", err)
 	}
 }
 func TestAuthEmailAndBinding(t *testing.T) {
-	db, users := userDatabase(t, "auth_flow")
-	conn := sqlx.NewSqlConnFromDB(db)
-	tx := transaction.New(db)
+	_, users := userDatabase(t, "auth_flow")
+	p, client := proofStore(t, "proof_flow")
+	ctx := context.Background()
 	delivery := &fakeAuthMail{codes: map[string]string{}}
 	cfg := authlogic.DefaultConfig()
-	cfg.Secret = authTestSecret
-	cfg.BotToken = authTestBot
-	cfg.EmailEnabled = true
-	cfg.TelegramEnabled = true
-	auth, err := authlogic.New(cfg, users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), tx, delivery, allowAuth{})
+	cfg.Secret, cfg.BotToken = authTestSecret, authTestBot
+	cfg.EmailEnabled, cfg.TelegramEnabled = true, true
+	auth, err := authlogic.New(cfg, users, p, delivery, allowAuth{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.Background()
 	login := authlogic.Intent{Purpose: userlogic.Login}
 	send := func(address string, intent authlogic.Intent) *authlogic.Challenge {
 		t.Helper()
+		recordEmailProof(t, p, "user", address)
 		c, e := auth.SendEmail(ctx, address, "127.0.0.1", "en", intent)
 		if e != nil {
 			t.Fatal(e)
 		}
 		return c
 	}
-	challenge := send("Alice@EXAMPLE.COM", login)
-	if _, err = auth.SendEmail(ctx, "Alice@example.com", "127.0.0.1", "en", login); !errors.Is(err, authlogic.ErrRateLimited) {
-		t.Fatalf("cooldown: %v", err)
+	verify := func(address string, c *authlogic.Challenge, intent authlogic.Intent) (*authlogic.Result, error) {
+		return auth.VerifyEmail(ctx, address, c.Token, delivery.code(address), "127.0.0.1", intent)
 	}
-	wrong := "000000"
-	if delivery.code("Alice@example.com") == wrong {
-		wrong = "111111"
-	}
-	for i := 0; i < 5; i++ {
-		if _, err = auth.VerifyEmail(ctx, authRequest(i+1), "Alice@example.com", challenge.Token, wrong, "127.0.0.1", login); !errors.Is(err, authlogic.ErrCode) {
+	resend := func(address string) {
+		t.Helper()
+		if err := client.Del(ctx, p.Key("user", address)+":cooldown").Err(); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if _, err = auth.VerifyEmail(ctx, authRequest(7), "Alice@example.com", challenge.Token, delivery.code("Alice@example.com"), "127.0.0.1", login); !errors.Is(err, authlogic.ErrCode) {
-		t.Fatal("exhausted challenge accepted", err)
+	tg := func(id int64, nonce int, intent authlogic.Intent) (*authlogic.Result, error) {
+		raw := authTG(id, nonce)
+		recordTelegramProof(t, p, raw)
+		return auth.VerifyTelegram(ctx, raw, "127.0.0.1", intent)
 	}
-	mustExec(t, db, "UPDATE email_challenge SET issued_at=issued_at-INTERVAL 61 SECOND")
+	c := send("Alice@example.com", login)
+	if _, err = auth.SendEmail(ctx, "Alice@EXAMPLE.COM", "127.0.0.1", "en", login); !errors.Is(err, authlogic.ErrRateLimited) {
+		t.Fatal("cooldown", err)
+	}
+	digest, err := client.HGet(ctx, p.Key("user", "Alice@example.com"), "digest").Result()
+	if err != nil || len(digest) != 64 || digest == delivery.code("Alice@example.com") {
+		t.Fatal("plaintext code stored", err)
+	}
+	ttl, err := client.TTL(ctx, p.Key("user", "Alice@example.com")).Result()
+	if err != nil || ttl < 4*time.Minute || ttl > authlogic.CodeLifetime {
+		t.Fatal("proof TTL", ttl, err)
+	}
+	wrong := "000000"
+	if wrong == delivery.code("Alice@example.com") {
+		wrong = "111111"
+	}
+	for i := 0; i < 5; i++ {
+		if _, err = auth.VerifyEmail(ctx, "Alice@example.com", c.Token, wrong, "127.0.0.1", login); !errors.Is(err, authlogic.ErrCode) {
+			t.Fatal(err)
+		}
+	}
+	if _, err = verify("Alice@example.com", c, login); !errors.Is(err, authlogic.ErrCode) {
+		t.Fatal("exhausted proof", err)
+	}
+	resend("Alice@example.com")
 	next := send("Alice@example.com", login)
-	if _, err = auth.VerifyEmail(ctx, authRequest(8), "Alice@example.com", challenge.Token, delivery.code("Alice@example.com"), "127.0.0.1", login); !errors.Is(err, authlogic.ErrCode) {
-		t.Fatal("old challenge accepted", err)
+	if _, err = verify("Alice@example.com", c, login); !errors.Is(err, authlogic.ErrCode) {
+		t.Fatal("old challenge", err)
 	}
-	first, err := auth.VerifyEmail(ctx, authRequest(9), "Alice@example.com", next.Token, delivery.code("Alice@example.com"), "127.0.0.1", login)
+	first, err := verify("Alice@example.com", next, login)
 	if err != nil {
 		t.Fatal(err)
 	}
-	repeat, err := auth.VerifyEmail(ctx, authRequest(9), "Alice@example.com", next.Token, delivery.code("Alice@example.com"), "127.0.0.1", login)
-	if err != nil || repeat.User.Id != first.User.Id || repeat.OperationID != first.OperationID || !repeat.CreatedAt.Equal(first.CreatedAt) {
-		t.Fatalf("receipt: %+v %v", repeat, err)
-	}
-	if _, err = auth.VerifyEmail(ctx, authRequest(10), "Alice@example.com", next.Token, delivery.code("Alice@example.com"), "127.0.0.1", login); !errors.Is(err, authlogic.ErrCode) {
-		t.Fatal("consumed challenge accepted", err)
+	if _, err = verify("Alice@example.com", next, login); !errors.Is(err, authlogic.ErrCode) {
+		t.Fatal("consumed challenge", err)
 	}
 	actor := userlogic.Actor{UserID: first.User.Id, AuthVersion: first.User.AuthVersion}
-	if _, err = auth.Unbind(ctx, authRequest(11), actor, usermodel.IdentityEmail); !errors.Is(err, userlogic.ErrNeedSecondIdentity) {
+	if _, err = auth.Unbind(ctx, actor, usermodel.IdentityEmail); !errors.Is(err, userlogic.ErrNeedSecondIdentity) {
 		t.Fatal("last identity removed", err)
 	}
-	replacement := send("new@example.com", authlogic.Intent{Purpose: userlogic.Replace, Actor: actor})
-	if _, err = auth.VerifyEmail(ctx, authRequest(70), "new@example.com", replacement.Token, delivery.code("new@example.com"), "127.0.0.1", login); !errors.Is(err, authlogic.ErrCode) {
-		t.Fatal("cross-purpose challenge accepted", err)
+	intent := authlogic.Intent{Purpose: userlogic.Replace, Actor: actor}
+	c = send("new@example.com", intent)
+	if _, err = verify("new@example.com", c, login); !errors.Is(err, authlogic.ErrCode) {
+		t.Fatal("cross-purpose proof", err)
 	}
-	if _, err = auth.VerifyEmail(ctx, authRequest(12), "new@example.com", replacement.Token, delivery.code("new@example.com"), "127.0.0.1", authlogic.Intent{Purpose: userlogic.Replace, Actor: actor}); !errors.Is(err, userlogic.ErrNeedSecondIdentity) {
+	if _, err = verify("new@example.com", c, intent); !errors.Is(err, userlogic.ErrNeedSecondIdentity) {
 		t.Fatal("replaced only identity", err)
 	}
-	// Failure rolls back consumption: the same challenge works after adding TG.
-	bound, err := auth.VerifyTelegram(ctx, authRequest(13), authTG(100, 1), "127.0.0.1", authlogic.Intent{Purpose: userlogic.Bind, Actor: actor})
-	if err != nil || bound.User.AuthVersion != actor.AuthVersion {
-		t.Fatalf("add TG: %+v %v", bound, err)
+	if _, err = verify("new@example.com", c, intent); !errors.Is(err, authlogic.ErrCode) {
+		t.Fatal("business failure restored proof", err)
 	}
-	replaced, err := auth.VerifyEmail(ctx, authRequest(12), "new@example.com", replacement.Token, delivery.code("new@example.com"), "127.0.0.1", authlogic.Intent{Purpose: userlogic.Replace, Actor: actor})
+	if _, err = tg(100, 1, authlogic.Intent{Purpose: userlogic.Bind, Actor: actor}); err != nil {
+		t.Fatal(err)
+	}
+	resend("new@example.com")
+	c = send("new@example.com", intent)
+	replaced, err := verify("new@example.com", c, intent)
 	if err != nil || replaced.User.AuthVersion != actor.AuthVersion+1 {
 		t.Fatalf("replace: %+v %v", replaced, err)
 	}
-	if _, err = auth.Unbind(ctx, authRequest(14), actor, usermodel.IdentityEmail); !errors.Is(err, userlogic.ErrStaleSession) {
-		t.Fatal("stale session accepted", err)
+	if _, err = auth.Unbind(ctx, actor, usermodel.IdentityTelegram); !errors.Is(err, userlogic.ErrStaleSession) {
+		t.Fatal("stale actor", err)
 	}
-	recovered, err := auth.VerifyEmail(ctx, authRequest(12), "new@example.com", replacement.Token, delivery.code("new@example.com"), "127.0.0.1", authlogic.Intent{Purpose: userlogic.Replace, Actor: actor})
-	if err != nil || recovered.User.AuthVersion != replaced.User.AuthVersion {
-		t.Fatal("replace receipt failed", err)
-	}
-	other, err := auth.VerifyTelegram(ctx, authRequest(15), authTG(200, 2), "127.0.0.1", login)
+	other, err := tg(200, 2, login)
 	if err != nil {
 		t.Fatal(err)
 	}
 	actor.AuthVersion = replaced.User.AuthVersion
-	if _, err = auth.VerifyTelegram(ctx, authRequest(16), authTG(200, 3), "127.0.0.1", authlogic.Intent{Purpose: userlogic.Replace, Actor: actor}); !errors.Is(err, userlogic.ErrOccupied) {
+	if _, err = tg(200, 3, authlogic.Intent{Purpose: userlogic.Replace, Actor: actor}); !errors.Is(err, userlogic.ErrOccupied) {
 		t.Fatal("identity stolen", err)
 	}
 	check, err := users.FindCurrentIdentities(ctx, other.User.Id)
 	if err != nil || check.Telegram.TelegramUserId != 200 {
 		t.Fatal("other account changed", err)
 	}
-	unbound, err := auth.Unbind(ctx, authRequest(17), actor, usermodel.IdentityTelegram)
+	unbound, err := auth.Unbind(ctx, actor, usermodel.IdentityTelegram)
 	if err != nil || unbound.User.AuthVersion != actor.AuthVersion+1 {
 		t.Fatal("unbind", err)
 	}
-	if _, err = auth.Unbind(ctx, authRequest(17), actor, usermodel.IdentityTelegram); err != nil {
-		t.Fatal("unbind receipt", err)
-	}
-	mustExec(t, db, "UPDATE `user` SET status='disabled' WHERE id=?", first.User.Id)
-	if _, err = auth.Unbind(ctx, authRequest(17), actor, usermodel.IdentityTelegram); !errors.Is(err, userlogic.ErrDisabled) {
-		t.Fatal("disabled receipt accepted", err)
-	}
-	var attempts int
-	var digest string
-	if err = db.QueryRow("SELECT attempts,code_digest FROM email_challenge WHERE email_address='Alice@example.com'").Scan(&attempts, &digest); err != nil || len(digest) != 64 || digest == delivery.code("Alice@example.com") {
-		t.Fatal("plaintext code stored", err)
+	if _, err = auth.Unbind(ctx, actor, usermodel.IdentityTelegram); !errors.Is(err, userlogic.ErrStaleSession) {
+		t.Fatal("old actor replay", err)
 	}
 }
 func TestAuthConcurrencyAndReplay(t *testing.T) {
-	db, users := userDatabase(t, "auth_concurrent")
-	conn := sqlx.NewSqlConnFromDB(db)
+	_, users := userDatabase(t, "auth_concurrent")
+	p, client := proofStore(t, "proof_concurrent")
+	ctx := context.Background()
 	delivery := &fakeAuthMail{codes: map[string]string{}}
 	cfg := authlogic.DefaultConfig()
-	cfg.Secret = authTestSecret
-	cfg.BotToken = authTestBot
-	cfg.EmailEnabled = true
-	cfg.TelegramEnabled = true
-	auth, err := authlogic.New(cfg, users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), transaction.New(db), delivery, allowAuth{})
+	cfg.Secret, cfg.BotToken = authTestSecret, authTestBot
+	cfg.EmailEnabled, cfg.TelegramEnabled = true, true
+	auth, err := authlogic.New(cfg, users, p, delivery, allowAuth{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.Background()
 	login := authlogic.Intent{Purpose: userlogic.Login}
 	raw := authTG(300, 10)
-	var wg sync.WaitGroup
-	results := make(chan *authlogic.Result, 8)
-	failures := make(chan error, 8)
-	start := make(chan struct{})
-	for i := 0; i < 8; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			<-start
-			r, e := auth.VerifyTelegram(ctx, authRequest(30), raw, "127.0.0.1", login)
-			if e != nil {
-				failures <- e
-			} else {
-				results <- r
+	recordTelegramProof(t, p, raw)
+	concurrent := func(work func() error, rejected error) {
+		t.Helper()
+		var wg sync.WaitGroup
+		success := make(chan bool, 8)
+		start := make(chan struct{})
+		for i := 0; i < 8; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-start
+				err := work()
+				if err != nil && !errors.Is(err, rejected) {
+					t.Error(err)
+				}
+				success <- err == nil
+			}()
+		}
+		close(start)
+		wg.Wait()
+		close(success)
+		count := 0
+		for ok := range success {
+			if ok {
+				count++
 			}
-		}()
-	}
-	close(start)
-	wg.Wait()
-	close(results)
-	close(failures)
-	for e := range failures {
-		t.Error(e)
-	}
-	var id int64
-	for r := range results {
-		if id == 0 {
-			id = r.User.Id
 		}
-		if r.User.Id != id {
-			t.Fatal("duplicate registration")
+		if count != 1 {
+			t.Fatalf("consumed %d times", count)
 		}
 	}
-	if _, err = auth.VerifyTelegram(ctx, authRequest(31), raw, "127.0.0.1", login); !errors.Is(err, authlogic.ErrReplay) {
-		t.Fatal("TG replay", err)
-	}
-	if _, err = auth.VerifyTelegram(ctx, authRequest(30), authTG(301, 11), "127.0.0.1", login); !errors.Is(err, authlogic.ErrRequestConflict) {
-		t.Fatal("request reused", err)
-	}
-	challenge, err := auth.SendEmail(ctx, "parallel@example.com", "127.0.0.1", "en", login)
+	concurrent(func() error { _, err := auth.VerifyTelegram(ctx, raw, "127.0.0.1", login); return err }, authlogic.ErrReplay)
+	recordEmailProof(t, p, "user", "parallel@example.com")
+	c, err := auth.SendEmail(ctx, "parallel@example.com", "127.0.0.1", "en", login)
 	if err != nil {
 		t.Fatal(err)
 	}
-	success := make(chan bool, 8)
-	start = make(chan struct{})
-	for i := 0; i < 8; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			<-start
-			_, e := auth.VerifyEmail(ctx, authRequest(i+40), "parallel@example.com", challenge.Token, delivery.code("parallel@example.com"), "127.0.0.1", login)
-			if e != nil && !errors.Is(e, authlogic.ErrCode) {
-				t.Error(e)
-			}
-			success <- e == nil
-		}(i)
-	}
-	close(start)
-	wg.Wait()
-	close(success)
-	total := 0
-	for ok := range success {
-		if ok {
-			total++
-		}
-	}
-	if total != 1 {
-		t.Fatalf("consumed %d times", total)
-	}
-	expired, err := auth.SendEmail(ctx, "expired@example.com", "127.0.0.1", "en", login)
+	concurrent(func() error {
+		_, err := auth.VerifyEmail(ctx, "parallel@example.com", c.Token, delivery.code("parallel@example.com"), "127.0.0.1", login)
+		return err
+	}, authlogic.ErrCode)
+	recordEmailProof(t, p, "user", "expired@example.com")
+	c, err = auth.SendEmail(ctx, "expired@example.com", "127.0.0.1", "en", login)
 	if err != nil {
 		t.Fatal(err)
 	}
-	mustExec(t, db, "UPDATE email_challenge SET expires_at=UTC_TIMESTAMP(6)-INTERVAL 1 SECOND WHERE email_address='expired@example.com'")
-	if _, err = auth.VerifyEmail(ctx, authRequest(60), "expired@example.com", expired.Token, delivery.code("expired@example.com"), "127.0.0.1", login); !errors.Is(err, authlogic.ErrCode) {
-		t.Fatal("expired challenge accepted", err)
+	if err = client.Expire(ctx, p.Key("user", "expired@example.com"), 0).Err(); err != nil {
+		t.Fatal(err)
 	}
-	mustExec(t, db, "UPDATE auth_operation SET expires_at=UTC_TIMESTAMP(6)-INTERVAL 1 SECOND")
-	if _, err = auth.VerifyTelegram(ctx, authRequest(30), raw, "127.0.0.1", login); !errors.Is(err, authlogic.ErrExpired) {
-		t.Fatal("expired receipt accepted", err)
+	if _, err = auth.VerifyEmail(ctx, "expired@example.com", c.Token, delivery.code("expired@example.com"), "127.0.0.1", login); !errors.Is(err, authlogic.ErrCode) {
+		t.Fatal("expired proof", err)
 	}
+	recordEmailProof(t, p, "user", "failed@example.com")
 	delivery.failure = errors.New("SMTP timeout")
 	if _, err = auth.SendEmail(ctx, "failed@example.com", "127.0.0.1", "en", login); !errors.Is(err, delivery.failure) {
 		t.Fatal("mail failure hidden", err)
 	}
-	var status string
-	if err = db.QueryRow("SELECT status FROM email_challenge WHERE email_address='failed@example.com'").Scan(&status); err != nil || status != "failed" {
+	if count, err := client.Exists(ctx, p.Key("user", "failed@example.com")).Result(); err != nil || count != 0 {
 		t.Fatal("failed delivery active", err)
+	}
+	client.Close()
+	if err = p.Verify(ctx, "user", "parallel@example.com", "login:0:0", c.Token, "123456"); !errors.Is(err, authlogic.ErrUnavailable) {
+		t.Fatal("Redis proof validation failed open", err)
+	}
+	if err = p.UseTelegram(ctx, "closed-client"); !errors.Is(err, authlogic.ErrUnavailable) {
+		t.Fatal("Redis replay check failed open", err)
 	}
 }

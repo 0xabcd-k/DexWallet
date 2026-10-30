@@ -6,7 +6,6 @@ import { appResources } from './locales';
 import { bootstrapTelegram, sessionStorageOrUndefined } from './app/telegram/bootstrap';
 import { createUserRouter } from './app/router';
 import { session } from './auth/session';
-import { autoLoginAllowed } from './auth/context';
 
 const navigation = performance.getEntriesByType('navigation')[0];
 const navigationType = navigation instanceof PerformanceNavigationTiming ? navigation.type : 'navigate';
@@ -23,7 +22,7 @@ if (context.mode === 'error') {
   root.textContent = i18n.t('common:startupError');
 } else {
   if (context.source === 'fresh') history.replaceState(null, '', `${location.pathname}${location.search}#/wallet`);
-  if (context.mode === 'telegram' && !session.capture().credential && autoLoginAllowed(context)) {
+  if (context.mode === 'telegram' && !session.capture().credential) {
     const source = location.hash.slice(1);
     history.replaceState(null, '', `${location.pathname}${location.search}#/login?returnTo=${encodeURIComponent(source)}`);
   }

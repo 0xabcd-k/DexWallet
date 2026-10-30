@@ -38,18 +38,11 @@ export function Failure({ error }: { error: unknown }) {
   const { t } = useTranslation();
   return <p role="alert" className="auth-error">{t(errorTranslationKey(error instanceof ApiError ? error : { kind: 'generic' }))}</p>;
 }
-const LOGOUT_LAUNCH_KEY = 'dexwallet:user:logged-out-launch';
-export function autoLoginAllowed(launch: LaunchContext): boolean {
-  try { return sessionStorage.getItem(LOGOUT_LAUNCH_KEY) !== launch.launchId; } catch { return false; }
-}
-export async function signOut(launch: LaunchContext, ticket = session.capture()) {
-  try { sessionStorage.setItem(LOGOUT_LAUNCH_KEY, launch.launchId); } catch { /* Still clear the in-memory session. */ }
-  await session.clear(ticket);
-}
+export async function signOut(ticket = session.capture()) { await session.clear(ticket); }
 export function RequireAuth({ children }: { children: ReactNode }) {
   const auth = useAuth(); const location = useLocation(); const { t } = useTranslation();
   if (!auth.session.credential) return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   if (auth.loading) return <p role="status">{t('common:loading')}</p>;
-  if (auth.error) return <section><Failure error={auth.error} /><Button onClick={auth.refresh}>{t('common:retry')}</Button>{auth.launch.mode !== 'telegram' && <Button onClick={() => { void signOut(auth.launch); }}>{t('signOut')}</Button>}</section>;
+  if (auth.error) return <section><Failure error={auth.error} /><Button onClick={auth.refresh}>{t('common:retry')}</Button>{auth.launch.mode !== 'telegram' && <Button onClick={() => { void signOut(); }}>{t('signOut')}</Button>}</section>;
   return children;
 }

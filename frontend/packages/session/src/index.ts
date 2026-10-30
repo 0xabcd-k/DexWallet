@@ -1,4 +1,4 @@
-import { isRecord } from '@dexwallet/api-client';
+import { ApiError, isRecord, type ApiClient, type Decoder, type RequestOptions } from '@dexwallet/api-client';
 export function randomToken(): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
     b.toString(16).padStart(2, '0'),
@@ -214,4 +214,27 @@ export function createBrowserSession(key: string, audience: string) {
     if (event.key === key || event.key === null) store.sync();
   });
   return store;
+}
+
+// Realm-specific stores keep token audiences and persistence independent.
+export function createSessionRequest(api: ApiClient, session: ReturnType<typeof createSessionStore>, prefix = '') {
+  return async function request<T>(path: string, decode: Decoder<T>, options: RequestOptions = {}, ticket = session.capture()): Promise<T> {
+    if (!ticket.credential) throw new ApiError('business', 401, 'UNAUTHENTICATED');
+    try {
+      const result = await api.request(prefix + path, decode, {
+        ...options,
+        headers: { ...options.headers, Authorization: `Bearer ${ticket.credential.raw}` },
+        onSuccess: async headers => {
+          const raw = headers.get(TOKEN_HEADER);
+          if (raw) await session.renew(ticket, raw);
+          await options.onSuccess?.(headers);
+        },
+      });
+      if (!session.matches(ticket)) throw new ApiError('cancelled');
+      return result;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) await session.clear(ticket, true);
+      throw error;
+    }
+  };
 }

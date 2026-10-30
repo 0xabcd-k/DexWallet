@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { createServer } from 'node:net';
@@ -33,10 +33,16 @@ try {
   const runs = resolve(root, '.tools/http-runs'); await mkdir(runs, { recursive: true, mode: 0o700 });
   const dir = await mkdtemp(resolve(runs, 'run-'));
   console.log(`HTTP evidence: ${dir}`);
-  const config = (await readFile(resolve(root, 'backend/api/etc/platform.yaml'), 'utf8'))
-    .replace('Port: 8888', 'Port: 18888').replace('Environment: local', 'Environment: frontend_test')
-    .replaceAll('Enabled: true', 'Enabled: false');
-  await writeFile(resolve(dir, 'platform.yaml'), config, { mode: 0o600 });
+  const config = {
+    Name: 'dexwallet-http-test', Environment: 'frontend_test', Mode: 'dev', Host: '127.0.0.1', Port: 18888,
+    Log: { ServiceName: 'dexwallet-http-test', Mode: 'console', Encoding: 'json', Level: 'info' },
+    Timeout: 5000, DependencyTimeout: '3s', ProbeTimeout: '1s', ProbeInterval: '5s', ProbeFreshness: '15s',
+    ShutdownTimeout: '30s', MaxConns: 1000, MaxBytes: 1048576,
+    Middlewares: { Breaker: false, Shedding: false, Gunzip: false }, Telemetry: { Sampler: 0 },
+    Shutdown: { WrapUpTime: '1s', WaitTime: '37s' }, MySQL: { DSN: '', MaxOpen: 20, MaxIdle: 5 },
+    Redis: { Enabled: false, Required: false }, RocketMQ: { Enabled: false, Required: false },
+  };
+  await writeFile(resolve(dir, 'platform.json'), JSON.stringify(config), { mode: 0o600 });
   await run('go', ['build', '-o', resolve(dir, 'api'), './api'], resolve(root, 'backend'));
   await run('go', ['build', '-o', resolve(dir, 'testenv'), './tools/testenv'], resolve(root, 'backend'));
   await run('pnpm', ['build'], resolve(root, 'frontend'));

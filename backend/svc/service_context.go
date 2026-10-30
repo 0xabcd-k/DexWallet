@@ -16,7 +16,6 @@ import (
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
-	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
@@ -50,7 +49,6 @@ type ServiceContext struct {
 	Tokens                *session.Tokens
 	AuthTransport         rest.Middleware
 	UserAuth              rest.Middleware
-	IdentityAuth          rest.Middleware
 	ModelUser             usermodel.UserModel
 	ModelEmailIdentity    usermodel.EmailIdentityModel
 	ModelTelegramIdentity usermodel.TelegramIdentityModel
@@ -133,13 +131,13 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 				return d, err
 			}
 		}
-		d.Auth, err = authlogic.New(*c.Auth, d.Users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), d.Tx, sender, authlogic.NewRedisLimiter(d.Redis, d.Namespace, *c.Auth))
+		d.Auth, err = authlogic.New(*c.Auth, d.Users, authlogic.NewProofs(d.Redis, d.Namespace, c.Auth.Secret), sender, authlogic.NewRedisLimiter(d.Redis, d.Namespace, *c.Auth))
 		if err != nil {
 			return d, err
 		}
 	}
 	if c.Backoffice != nil {
-		d.Backoffice, err = backoffice.New(*c.Backoffice, *c.Auth, conn, d.Tx, d.ModelUser, d.UserIdx, d.Redis, d.Namespace, c.IDSecret, sender)
+		d.Backoffice, err = backoffice.New(*c.Backoffice, *c.Auth, conn, d.Tx, d.Users, d.UserIdx, d.Redis, d.Namespace, c.IDSecret, sender)
 		if err != nil {
 			return d, err
 		}

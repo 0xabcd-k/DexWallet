@@ -17,7 +17,7 @@ export async function mockAccount(page: Page) {
     const fail = (status: number, code: string) => route.fulfill({ status, json: { code, message: 'test error', traceId: 'browser-auth-trace' } });
     const ok = (data: unknown) => route.fulfill({ json: envelope(data) });
     const issue = () => {
-      state.tokenRequests.push(input.requestToken ?? '');
+      state.tokenRequests.push(path);
       const raw = browserToken(state.version);
       return route.fulfill({ headers: { 'X-Access-Token': raw, 'Cache-Control': 'no-store' }, json: envelope({ accessToken: raw, userIdx, expiresAt: JSON.parse(Buffer.from(raw.split('.')[1]!, 'base64url').toString()).exp }) });
     };

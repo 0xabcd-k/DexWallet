@@ -208,7 +208,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.IdentityAuth},
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
 			[]rest.Route{
 				{
 					Method:  http.MethodPost,

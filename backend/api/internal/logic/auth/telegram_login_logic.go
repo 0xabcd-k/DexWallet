@@ -30,6 +30,6 @@ func NewTelegramLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Tel
 }
 
 func (l *TelegramLoginLogic) TelegramLogin(req *types.TelegramLoginRequest) (resp *types.TokenResponse, err error) {
-	result, err := l.svcCtx.Auth.VerifyTelegram(l.ctx, req.RequestToken, req.InitData, httpapi.Source(l.ctx), authlogic.Intent{Purpose: userlogic.Login})
+	result, err := l.svcCtx.Auth.VerifyTelegram(l.ctx, req.InitData, httpapi.Source(l.ctx), authlogic.Intent{Purpose: userlogic.Login})
 	return httpapi.TokenReply(l.ctx, l.svcCtx.Tokens, result, err)
 }

@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Button, Dialog } from 'antd-mobile';
 import { useTranslation } from '@dexwallet/i18n';
-import type { IdentitySummary, UnbindRequest } from '@dexwallet/api-contract/platform';
+import type { IdentitySummary } from '@dexwallet/api-contract/platform';
 import { unbind } from '../../api/account';
 import { Failure, useAuth } from '../../auth/context';
-import { randomRequestToken, session, type Session } from '../../auth/session';
+import { session } from '../../auth/session';
 import { safeDestination } from '../../app/navigation';
 import EmailForm from '../login/email-form';
 import Telegram from '../login/telegram';
@@ -19,17 +19,15 @@ export default function IdentitySettings() {
   const returnToSource = params.has('returnTo') && target !== '/settings';
   const inTelegram = auth.launch.mode === 'telegram';
   const [editing, setEditing] = useState<Editing | undefined>(); const [busy, setBusy] = useState(false); const [error, setError] = useState<unknown>();
-  const attempt = useRef<{ input: UnbindRequest; ticket: Session } | undefined>(undefined);
   function complete() {
-    setEditing(undefined); setError(undefined); attempt.current = undefined;
+    setEditing(undefined); setError(undefined);
     if (returnToSource) navigate(target, { replace: true });
   }
   async function remove(type: IdentitySummary['type']) {
     if (type === 'telegram' && inTelegram) return;
     if (!await Dialog.confirm({ title: t('unlinkIdentity', { identity: t(type) }), content: t('unlinkWarning'), confirmText: t('confirm'), cancelText: t('cancel') })) return;
     setBusy(true); setError(undefined);
-    if (attempt.current?.input.identity !== type) attempt.current = { input: { requestToken: randomRequestToken(), identity: type }, ticket: session.capture() };
-    try { await unbind(attempt.current.input, attempt.current.ticket); complete(); }
+    try { await unbind({ identity: type }, session.capture()); complete(); }
     catch (failure) { setError(failure); } finally { setBusy(false); }
   }
   return <section className="settings-section"><h2>{t('identities')}</h2><p className="muted">{t('bindingRules')}</p>

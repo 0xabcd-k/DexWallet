@@ -7,7 +7,6 @@ import {
 } from '@dexwallet/session';
 export {
   TOKEN_HEADER,
-  randomToken as randomRequestToken,
   type Session,
   type Credential,
 } from '@dexwallet/session';

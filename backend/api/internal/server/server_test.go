@@ -75,6 +75,13 @@ func request(t *testing.T, client *http.Client, method, url, body string) (int, 
 		t.Fatal(err)
 	}
 	defer res.Body.Close()
+	if res.StatusCode == http.StatusNotFound || res.StatusCode == http.StatusMethodNotAllowed {
+		body, err := io.ReadAll(res.Body)
+		if err != nil || len(body) == 0 || !strings.HasPrefix(res.Header.Get("Content-Type"), "text/plain") {
+			t.Fatal("standard HTTP fallback", err, res.Header)
+		}
+		return res.StatusCode, nil, res.Header.Get(httpapi.TraceHeader)
+	}
 	var v map[string]any
 	if err = json.NewDecoder(res.Body).Decode(&v); err != nil {
 		t.Fatal(err)
@@ -109,10 +116,10 @@ func TestHTTPExitsAndTrace(t *testing.T) {
 	for _, tc := range []struct {
 		method, path, body, code string
 		status                   int
-	}{{"GET", "/health/live", "", "OK", 200}, {"GET", "/health/ready", "", "OK", 200}, {"GET", "/missing", "", "NOT_FOUND", 404}, {"POST", "/v1/user/auth/logout-all", "", "NOT_FOUND", 404}, {"POST", "/health/live", "", "METHOD_NOT_ALLOWED", 405}, {"GET", "/panic", "", "INTERNAL_ERROR", 500}, {"POST", "/parse", "{", "INVALID_ARGUMENT", 400}, {"POST", "/parse", strings.Repeat("x", 101), "PAYLOAD_TOO_LARGE", 413}, {"GET", "/slow", "", "REQUEST_TIMEOUT", 503}} {
+	}{{"GET", "/health/live", "", "OK", 200}, {"GET", "/health/ready", "", "OK", 200}, {"GET", "/missing", "", "", 404}, {"POST", "/v1/user/auth/logout-all", "", "", 404}, {"POST", "/health/live", "", "", 405}, {"GET", "/panic", "", "INTERNAL_ERROR", 500}, {"POST", "/parse", "{", "INVALID_ARGUMENT", 400}, {"POST", "/parse", strings.Repeat("x", 101), "PAYLOAD_TOO_LARGE", 413}, {"GET", "/slow", "", "REQUEST_TIMEOUT", 503}} {
 		t.Run(tc.path+tc.code, func(t *testing.T) {
 			status, v, id := request(t, ts.Client(), tc.method, ts.URL+tc.path, tc.body)
-			if status != tc.status || v["code"] != tc.code {
+			if status != tc.status || (tc.code != "" && v["code"] != tc.code) {
 				t.Fatalf("%d %v", status, v)
 			}
 			if status >= 400 {

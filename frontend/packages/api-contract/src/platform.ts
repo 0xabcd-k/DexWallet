@@ -131,7 +131,6 @@ export interface CurrentUserResponse {
 }
 
 export interface EmailLoginRequest {
-	requestToken: string
 	email: string
 	challenge: string
 	code: string
@@ -172,7 +171,6 @@ export interface IdentityEmailCodeRequest {
 }
 
 export interface IdentityEmailRequest {
-	requestToken: string
 	email: string
 	challenge: string
 	code: string
@@ -186,7 +184,6 @@ export interface IdentitySummary {
 }
 
 export interface IdentityTelegramRequest {
-	requestToken: string
 	initData: string
 	purpose: 'bind' | 'replace'
 }
@@ -222,7 +219,6 @@ export interface SendEmailRequest {
 }
 
 export interface TelegramLoginRequest {
-	requestToken: string
 	initData: string
 }
 
@@ -240,7 +236,6 @@ export interface TokenResponse {
 }
 
 export interface UnbindRequest {
-	requestToken: string
 	identity: 'email' | 'telegram'
 }
 

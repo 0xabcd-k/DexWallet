@@ -49,8 +49,7 @@ func TokenReply(ctx context.Context, tokens *session.Tokens, r *authlogic.Result
 	if err != nil {
 		return nil, err
 	}
-	// The operation service has already checked the current row/version, including
-	// receipt recovery. Issue from that result, never from an ordinary user cache.
+	// Issue from the completed business operation, not a cached user.
 	raw, claims, err := tokens.Issue(r.User.Id, r.User.AuthVersion)
 	if err != nil {
 		return nil, err

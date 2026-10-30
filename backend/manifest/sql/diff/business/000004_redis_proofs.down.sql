@@ -1,3 +1,4 @@
+-- Temporary authentication state is recreated empty on rollback.
 CREATE TABLE `email_challenge` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `email_address` VARBINARY(512) NOT NULL,
@@ -36,4 +37,18 @@ CREATE TABLE `auth_operation` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_auth_request` (`request_digest`),
     UNIQUE KEY `uk_auth_proof` (`proof_digest`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `backoffice_challenge` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `realm` varchar(16) NOT NULL,
+  `email` varchar(254) NOT NULL,
+  `challenge_token` char(64) NOT NULL DEFAULT '',
+  `code_digest` char(64) NOT NULL DEFAULT '',
+  `auth_version` bigint NOT NULL DEFAULT 0,
+  `status` varchar(16) NOT NULL DEFAULT 'pending',
+  `attempts` bigint NOT NULL DEFAULT 0,
+  `issued_at` datetime(6) NOT NULL,
+  `expires_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_realm_email` (`realm`,`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

@@ -10,13 +10,15 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	auth "github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	model "github.com/0xabcd-k/DexWallet/backend/model/backoffice"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
+	"github.com/0xabcd-k/DexWallet/backend/readcache"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/redis/go-redis/v9"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"github.com/zeromicro/go-zero/core/syncx"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -72,24 +74,24 @@ func Authorized(ctx context.Context) (Authorization, error) {
 type Service struct {
 	store   *store
 	tx      *transaction.Runner
-	users   usermodel.UserModel
+	users   *userlogic.Service
 	UserIdx *idcodec.Codec
 	codecs  map[Realm]*idcodec.Codec
 	tokens  map[Realm]*session.Tokens
 	mail    auth.Mailer
 	limits  map[Realm]auth.Limiter
-	secret  string
+	proofs  *auth.Proofs
 	dummy   []byte
 }
 
-func New(c Config, cfg auth.Config, conn sqlx.SqlConn, tx *transaction.Runner, users usermodel.UserModel, userIdx *idcodec.Codec, client *redis.Client, namespace, idSecret string, mail auth.Mailer) (*Service, error) {
+func New(c Config, cfg auth.Config, conn sqlx.SqlConn, tx *transaction.Runner, users *userlogic.Service, userIdx *idcodec.Codec, client *redis.Client, namespace, idSecret string, mail auth.Mailer) (*Service, error) {
 	if err := c.Check(); err != nil {
 		return nil, err
 	}
 	if client == nil || tx == nil {
 		return nil, auth.ErrUnavailable
 	}
-	s := &Service{store: &store{conn: conn, redis: client, prefix: namespace + accountCachePrefix, flight: syncx.NewSingleFlight()}, tx: tx, users: users, UserIdx: userIdx, codecs: map[Realm]*idcodec.Codec{}, tokens: map[Realm]*session.Tokens{}, mail: mail, limits: map[Realm]auth.Limiter{}, secret: cfg.Secret}
+	s := &Service{store: &store{conn: conn, cache: readcache.New[Account](client), prefix: namespace + accountCachePrefix}, tx: tx, users: users, UserIdx: userIdx, codecs: map[Realm]*idcodec.Codec{}, tokens: map[Realm]*session.Tokens{}, mail: mail, limits: map[Realm]auth.Limiter{}, proofs: auth.NewProofs(client, namespace, cfg.Secret)}
 	for _, r := range []Realm{Admin, Merchant} {
 		kind, secret, aud := idcodec.Admin, c.AdminSecret, session.AdminAudience
 		if r == Merchant {
@@ -162,7 +164,7 @@ func (s *Service) Authenticate(ctx context.Context, r Realm, raw, trace string) 
 	renew, err := t.Renewal(claims, id)
 	return Authorization{Actor: Actor{Realm: r, ID: id, Version: claims.AuthVersion, TraceID: trace}, Account: u, Renewal: renew}, err
 }
-func (s *Service) check(ctx context.Context, m *store, a Actor, management bool) (*Account, error) {
+func (s *Service) check(ctx context.Context, m *store, a Actor, management, lock bool) (*Account, error) {
 	if a.Realm == Super {
 		if management {
 			return nil, nil
@@ -172,7 +174,13 @@ func (s *Service) check(ctx context.Context, m *store, a Actor, management bool)
 	if management && a.Realm != Admin {
 		return nil, apperror.New(apperror.PermissionDenied, nil)
 	}
-	u, err := m.find(ctx, a.Realm, a.ID, true)
+	var u *Account
+	var err error
+	if !lock {
+		u, err = m.cached(ctx, a.Realm, a.ID)
+	} else {
+		u, err = m.find(ctx, a.Realm, a.ID, true)
+	}
 	if errors.Is(err, sqlx.ErrNotFound) {
 		return nil, session.ErrInvalid
 	}
@@ -213,43 +221,38 @@ func (s *Service) audit(ctx context.Context, m *store, a Actor, action string, r
 	_, err := model.NewBackofficeAuditModel(m.conn).Insert(ctx, row)
 	return err
 }
-func (s *Service) failure(ctx context.Context, a Actor, action string, r Realm, u *Account, reason string, cause error) error {
+
+// Login and failed operations are diagnostic; their audit must not replace the result.
+func (s *Service) record(ctx context.Context, a Actor, action string, r Realm, u *Account, reason, result string) {
 	call, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
+	if err := s.audit(call, s.store, a, action, r, u, "", "", reason, result); err != nil {
+		logx.WithContext(ctx).Errorw("backoffice audit failed", logx.Field("action", action), logx.Field("realm", r), logx.Field("cause", err))
+	}
+}
+func (s *Service) failure(ctx context.Context, a Actor, action string, r Realm, u *Account, reason string, cause error) error {
 	result := ResultFailure
 	var txFailure *transaction.Failure
 	if errors.As(cause, &txFailure) && txFailure.Unknown() {
 		result = ResultUnknown
 	}
-	if err := s.audit(call, s.store, a, action, r, u, "", "", reason, result); err != nil {
-		return apperror.New(apperror.ServiceUnavailable, errors.Join(cause, err))
-	}
+	s.record(ctx, a, action, r, u, reason, result)
 	return cause
 }
 func (s *Service) List(ctx context.Context, a Actor, r Realm, page int64) ([]Account, error) {
-	var rows []Account
-	err := s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
-		m := s.store.session(tx)
-		if _, err := s.check(ctx, m, a, true); err != nil {
-			return err
-		}
-		var err error
-		rows, err = m.list(ctx, r, page)
-		return err
-	})
-	return rows, err
+	if _, err := s.check(ctx, s.store, a, true, false); err != nil {
+		return nil, err
+	}
+	return s.store.list(ctx, r, page)
 }
 func (s *Service) Audits(ctx context.Context, a Actor, page int64) ([]model.BackofficeAudit, error) {
 	if page < 1 || page > 1000000 {
 		return nil, apperror.New(apperror.InvalidArgument, nil)
 	}
+	if _, err := s.check(ctx, s.store, a, true, false); err != nil {
+		return nil, err
+	}
 	rows := []model.BackofficeAudit{}
-	err := s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
-		m := s.store.session(tx)
-		if _, err := s.check(ctx, m, a, true); err != nil {
-			return err
-		}
-		return m.conn.QueryRowsCtx(ctx, &rows, "SELECT * FROM backoffice_audit ORDER BY id DESC LIMIT ? OFFSET ?", PageSize, (page-1)*PageSize)
-	})
+	err := s.store.conn.QueryRowsCtx(ctx, &rows, "SELECT * FROM backoffice_audit ORDER BY id DESC LIMIT ? OFFSET ?", PageSize, (page-1)*PageSize)
 	return rows, err
 }

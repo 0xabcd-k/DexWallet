@@ -12,7 +12,6 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
-	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	model "github.com/0xabcd-k/DexWallet/backend/model/user"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/redis/go-redis/v9"
@@ -157,11 +156,11 @@ func TestUserCache(t *testing.T) {
 	}
 	cfg := authlogic.DefaultConfig()
 	cfg.Secret = authTestSecret
-	auth, err := authlogic.New(cfg, users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), tx, nil, allowAuth{})
+	auth, err := authlogic.New(cfg, users, authlogic.NewProofs(client, "unused-proof-store", cfg.Secret), nil, allowAuth{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := auth.Unbind(ctx, authRequest(900), actor, model.IdentityEmail)
+	result, err := auth.Unbind(ctx, actor, model.IdentityEmail)
 	if err != nil || result.User.AuthVersion != 4 {
 		t.Fatalf("unbind: %+v %v", result, err)
 	}
@@ -171,9 +170,8 @@ func TestUserCache(t *testing.T) {
 	if got, err := m.FindOne(ctx, 1); err != nil || got.AuthVersion != 4 {
 		t.Fatalf("auth version cache: %+v %v", got, err)
 	}
-	recovered, err := auth.Unbind(ctx, authRequest(900), actor, model.IdentityEmail)
-	if err != nil || recovered.OperationID != result.OperationID {
-		t.Fatalf("auth recovery: %+v %v", recovered, err)
+	if _, err := auth.Unbind(ctx, actor, model.IdentityEmail); !errors.Is(err, userlogic.ErrStaleSession) {
+		t.Fatal("stale actor accepted", err)
 	}
 
 	if _, err := m.FindOne(ctx, 2); err != nil {
@@ -186,8 +184,8 @@ func TestUserCache(t *testing.T) {
 		t.Fatalf("deleted user cached: %v", err)
 	}
 	client.Close()
-	if _, err := m.FindOne(ctx, 1); !errors.Is(err, model.ErrCacheUnavailable) {
-		t.Fatalf("Redis failure fell through to DB: %v", err)
+	if got, err := m.FindOne(ctx, 1); err != nil || got.AuthVersion != 4 {
+		t.Fatalf("Redis failure did not fall back to DB: %v", err)
 	}
 	// Failed invalidation cannot turn an already committed write into a failure.
 	if err := m.Update(ctx, &model.User{Id: 1, Status: model.StatusActive, AuthVersion: 5}); err != nil {

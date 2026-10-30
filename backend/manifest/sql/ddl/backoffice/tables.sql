@@ -22,20 +22,6 @@ CREATE TABLE `merchant_user` (
   PRIMARY KEY (`id`), UNIQUE KEY `uk_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
-CREATE TABLE `backoffice_challenge` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `realm` varchar(16) NOT NULL,
-  `email` varchar(254) NOT NULL,
-  `challenge_token` char(64) NOT NULL DEFAULT '',
-  `code_digest` char(64) NOT NULL DEFAULT '',
-  `auth_version` bigint NOT NULL DEFAULT 0,
-  `status` varchar(16) NOT NULL DEFAULT 'pending',
-  `attempts` bigint NOT NULL DEFAULT 0,
-  `issued_at` datetime(6) NOT NULL,
-  `expires_at` datetime(6) NOT NULL,
-  PRIMARY KEY (`id`), UNIQUE KEY `uk_realm_email` (`realm`,`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
-
 CREATE TABLE `backoffice_audit` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `actor_realm` varchar(16) NOT NULL,

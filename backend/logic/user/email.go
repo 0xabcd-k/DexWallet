@@ -40,7 +40,7 @@ func (s *Service) ResolveOrCreateVerifiedEmail(ctx context.Context, original str
 		if err == nil {
 			return &result, nil
 		}
-		if !RetryableResolution(err) {
+		if !retryableResolution(err) {
 			return nil, err
 		}
 		last = err
@@ -51,27 +51,6 @@ func (s *Service) ResolveOrCreateVerifiedEmail(ctx context.Context, original str
 	return nil, fmt.Errorf("%w: %w", ErrConflict, last)
 }
 
-// ResolveOrCreateVerifiedEmailInSession participates in the authentication
-// transaction. The caller owns rollback and bounded retry of resolution races.
-func (s *Service) ResolveOrCreateVerifiedEmailInSession(ctx context.Context, session sqlx.Session, address EmailAddress) (*Resolved, error) {
-	if session == nil {
-		return nil, ErrInvalidInput
-	}
-	normalized, err := NormalizeEmail(address.Original)
-	if err != nil {
-		return nil, err
-	}
-	address = normalized
-	hint, err := s.emails.WithSession(session).FindOneByEmailAddress(ctx, address.Address)
-	if err != nil && !errors.Is(err, model.ErrNotFound) {
-		return nil, err
-	}
-	var owner int64
-	if hint != nil && hint.UserId.Valid {
-		owner = hint.UserId.Int64
-	}
-	return s.resolveEmailInSession(ctx, session, address, hint, owner)
-}
 func (s *Service) resolveEmailInSession(ctx context.Context, session sqlx.Session, address EmailAddress, hint *model.EmailIdentity, owner int64) (*Resolved, error) {
 	users := s.users.WithSession(session)
 	identities := s.emails.WithSession(session)

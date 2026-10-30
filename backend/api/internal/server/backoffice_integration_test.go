@@ -15,7 +15,6 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
-	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	shared "github.com/0xabcd-k/DexWallet/backend/svc"
 	"github.com/go-sql-driver/mysql"
@@ -83,11 +82,12 @@ func TestBackofficeHTTP(t *testing.T) {
 	mail := &sessionMail{codes: map[string]string{}}
 	cfg.EmailEnabled = true
 	conn := sqlx.NewSqlConnFromDB(s.DB)
-	s.Auth, err = authlogic.New(cfg, s.Users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), s.Tx, mail, sessionLimit{})
+	proofs := authlogic.NewProofs(s.Redis, s.Namespace, cfg.Secret)
+	s.Auth, err = authlogic.New(cfg, s.Users, proofs, mail, sessionLimit{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Backoffice, err = backoffice.New(*c.Backoffice, cfg, conn, s.Tx, s.ModelUser, s.UserIdx, s.Redis, s.Namespace, c.IDSecret, mail)
+	s.Backoffice, err = backoffice.New(*c.Backoffice, cfg, conn, s.Tx, s.Users, s.UserIdx, s.Redis, s.Namespace, c.IDSecret, mail)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,6 +151,12 @@ func TestBackofficeHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer res.Body.Close()
+		if wantStatus == http.StatusNotFound {
+			if res.StatusCode != wantStatus || !strings.HasPrefix(res.Header.Get("Content-Type"), "text/plain") || len(res.Header.Get(httpapi.TraceHeader)) != 32 || res.Header.Get(session.TokenHeader) != "" {
+				t.Fatal("fallback HTTP contract", res.Status, res.Header)
+			}
+			return res.Header, nil
+		}
 		var envelope struct {
 			Code    string          `json:"code"`
 			Data    json.RawMessage `json:"data"`
@@ -195,6 +201,11 @@ func TestBackofficeHTTP(t *testing.T) {
 	}
 	send := func(realm, email, password string) string {
 		t.Helper()
+		for _, key := range []string{proofs.Key(realm, email), proofs.Key(realm, email) + ":cooldown"} {
+			if err := testRun.Record("redis", key); err != nil {
+				t.Fatal(err)
+			}
+		}
 		_, raw := call("POST", "/v1/"+realm+"/auth/code", "", map[string]string{"email": email, "password": password, "locale": "en"}, 200, "OK")
 		var v types.ChallengeData
 		if err := json.Unmarshal(raw, &v); err != nil {
@@ -275,25 +286,27 @@ func TestBackofficeHTTP(t *testing.T) {
 		}
 	}
 	// Reset revokes even a correct, unconsumed challenge from the earlier version.
-	if _, err = db.Exec("UPDATE backoffice_challenge SET issued_at=UTC_TIMESTAMP(6)-INTERVAL 2 MINUTE WHERE realm='merchant'"); err != nil {
+	if err = s.Redis.Del(ctx, proofs.Key("merchant", merchant.Email)+":cooldown").Err(); err != nil {
 		t.Fatal(err)
 	}
 	proof = send("merchant", merchant.Email, changed)
 	call("POST", "/v1/admin/accounts/reset", token, map[string]string{"realm": "merchant", "idx": merchant.Idx, "password": initial, "reason": "reset"}, 200, "OK")
 	input = map[string]string{"email": merchant.Email, "password": initial, "challenge": proof, "code": mail.code(merchant.Email)}
 	call("POST", "/v1/merchant/auth/login", "", input, 400, "AUTH_PROOF_INVALID")
-	if _, err = db.Exec("UPDATE backoffice_challenge SET issued_at=UTC_TIMESTAMP(6)-INTERVAL 2 MINUTE WHERE realm='merchant'"); err != nil {
+	if err = s.Redis.Del(ctx, proofs.Key("merchant", merchant.Email)+":cooldown").Err(); err != nil {
 		t.Fatal(err)
 	}
 	input["challenge"] = send("merchant", merchant.Email, initial)
 	input["code"] = mail.code(merchant.Email)
-	if _, err = db.Exec("UPDATE backoffice_challenge SET expires_at=UTC_TIMESTAMP(6)-INTERVAL 1 SECOND WHERE realm='merchant'"); err != nil {
+	if err = s.Redis.Expire(ctx, proofs.Key("merchant", merchant.Email), 0).Err(); err != nil {
 		t.Fatal(err)
 	}
 	call("POST", "/v1/merchant/auth/login", "", input, 400, "AUTH_PROOF_INVALID")
-	if _, err = db.Exec("UPDATE backoffice_challenge SET expires_at=UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE WHERE realm='merchant'"); err != nil {
+	if err = s.Redis.Del(ctx, proofs.Key("merchant", merchant.Email)+":cooldown").Err(); err != nil {
 		t.Fatal(err)
 	}
+	input["challenge"] = send("merchant", merchant.Email, initial)
+	input["code"] = mail.code(merchant.Email)
 	input["code"] = "000000"
 	if input["code"] == mail.code(merchant.Email) {
 		input["code"] = "111111"
@@ -345,10 +358,19 @@ func TestBackofficeHTTP(t *testing.T) {
 	if err = db.QueryRow("SELECT COUNT(*) FROM admin_user WHERE status='active'").Scan(&active); err != nil || active != 1 {
 		t.Fatal("last admin invariant", active, err)
 	}
+	// Login audit is best-effort, but successful management audit remains transactional.
+	if err = s.Redis.Del(ctx, proofs.Key("merchant", merchant.Email)+":cooldown").Err(); err != nil {
+		t.Fatal(err)
+	}
+	proof = send("merchant", merchant.Email, initial)
+	input = map[string]string{"email": merchant.Email, "password": initial, "challenge": proof, "code": mail.code(merchant.Email)}
 	// Audit insertion failure rolls back the account mutation, and is not reported as success.
 	if _, err = db.Exec("RENAME TABLE backoffice_audit TO unavailable_audit"); err != nil {
 		t.Fatal(err)
 	}
+	call("POST", "/v1/merchant/auth/login", "", input, 200, "OK")
+	input["password"] = "wrong"
+	call("POST", "/v1/merchant/auth/login", "", input, 400, "AUTH_PROOF_INVALID")
 	_, mutationErr := s.Backoffice.Create(ctx, super, backoffice.Admin, "rollback@example.com", initial, "rollback check")
 	if _, err = db.Exec("RENAME TABLE unavailable_audit TO backoffice_audit"); err != nil {
 		t.Fatal(err)

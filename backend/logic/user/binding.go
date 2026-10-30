@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 
@@ -199,4 +200,43 @@ func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Sess
 		}
 	}
 	return &Resolved{User: u, Binding: Binding{Type: kind, IdentityID: targetID, UserID: u.Id, Version: target.BindingVersion}}, nil
+}
+
+// ChangeIdentity owns the SQL transaction after the external proof was consumed.
+func (s *Service) ChangeIdentity(ctx context.Context, actor Actor, purpose Purpose, kind model.IdentityType, email string, tg *VerifiedTelegram) (*Resolved, error) {
+	var last error
+	for attempt := 0; attempt < resolveAttempts; attempt++ {
+		var result *Resolved
+		err := s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
+			var err error
+			result, err = s.ChangeIdentityInSession(ctx, tx, actor, purpose, kind, email, tg)
+			return err
+		})
+		if err == nil {
+			return result, nil
+		}
+		if !retryableResolution(err) {
+			return nil, err
+		}
+		last = err
+		if err = ctx.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return nil, fmt.Errorf("%w: %w", ErrConflict, last)
+}
+
+// CheckActor is for ordinary reads and code delivery; writes use CheckActorInSession.
+func (s *Service) CheckActor(ctx context.Context, actor Actor) (*model.User, error) {
+	u, err := s.FindUserByID(ctx, actor.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if u.Status != model.StatusActive {
+		return nil, ErrDisabled
+	}
+	if u.AuthVersion != actor.AuthVersion {
+		return nil, ErrStaleSession
+	}
+	return u, nil
 }

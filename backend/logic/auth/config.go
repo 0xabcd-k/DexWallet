@@ -6,14 +6,12 @@ import (
 )
 
 const (
-	CodeLifetime      = 5 * time.Minute
-	ResendInterval    = time.Minute
-	MaxCodeAttempts   = int64(5)
-	TelegramLifetime  = 5 * time.Minute
-	FutureTolerance   = 30 * time.Second
-	OperationLifetime = 5 * time.Minute
-	CodeSpace         = int64(1000000)
-	resolveAttempts   = 3
+	CodeLifetime     = 5 * time.Minute
+	ResendInterval   = time.Minute
+	MaxCodeAttempts  = int64(5)
+	TelegramLifetime = 5 * time.Minute
+	FutureTolerance  = 30 * time.Second
+	CodeSpace        = int64(1000000)
 )
 
 type Config struct {

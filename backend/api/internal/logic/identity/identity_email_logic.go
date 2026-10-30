@@ -34,6 +34,6 @@ func (l *IdentityEmailLogic) IdentityEmail(req *types.IdentityEmailRequest) (res
 	if err != nil {
 		return nil, err
 	}
-	result, err := l.svcCtx.Auth.VerifyEmail(l.ctx, req.RequestToken, req.Email, req.Challenge, req.Code, httpapi.Source(l.ctx), authlogic.Intent{Purpose: userlogic.Purpose(req.Purpose), Actor: a.Actor})
+	result, err := l.svcCtx.Auth.VerifyEmail(l.ctx, req.Email, req.Challenge, req.Code, httpapi.Source(l.ctx), authlogic.Intent{Purpose: userlogic.Purpose(req.Purpose), Actor: a.Actor})
 	return httpapi.TokenReply(l.ctx, l.svcCtx.Tokens, result, err)
 }

@@ -14,8 +14,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
-// Retains bytes past TTL deliberately: the snapshot deadline must protect
-// callers even when an old Redis value is restored or a late read refills it.
 type fakeUserRedis struct {
 	mu                           sync.Mutex
 	data                         map[string]string
@@ -62,64 +60,32 @@ func (f *fakeUserRedis) Del(_ context.Context, keys ...string) *redis.IntCmd {
 	return redis.NewIntResult(int64(len(keys)), nil)
 }
 
-func TestUserCacheFixedFreshnessAndInvalidationFailure(t *testing.T) {
+func TestUserCacheTTLAndCopy(t *testing.T) {
 	ctx := context.Background()
 	r := &fakeUserRedis{}
 	c := NewUserCache(r, "test")
-	now := time.Unix(1800000000, 0)
-	c.now = func() time.Time { return now }
 	calls := 0
-	u := User{Id: 1, Status: StatusActive, AuthVersion: 1}
-	query := func(context.Context, int64) (*User, error) { calls++; copy := u; return &copy, nil }
+	query := func(context.Context, int64) (*User, error) { calls++; return &User{Id: 1, Status: StatusActive}, nil }
 	first, err := c.find(ctx, 1, query)
 	if err != nil || r.ttl != UserCacheTTL {
-		t.Fatalf("first fill: %v TTL=%v", err, r.ttl)
+		t.Fatalf("fill: %v TTL=%v", err, r.ttl)
 	}
 	first.Status = "caller mutation"
-	u.Status = StatusDisabled
-	r.deleteErr = errors.New("delete unavailable")
-	c.invalidate(ctx, 1)
-	for i := 0; i < 29; i++ {
-		now = now.Add(time.Second)
+	for i := 0; i < 10; i++ {
 		got, err := c.find(ctx, 1, query)
 		if err != nil || got.Status != StatusActive {
-			t.Fatalf("cache hit: %+v %v", got, err)
+			t.Fatalf("hit: %+v %v", got, err)
 		}
 	}
 	if calls != 1 || r.sets != 1 {
-		t.Fatalf("hits extended cache or queried DB: %d/%d", calls, r.sets)
+		t.Fatalf("hits extended TTL or queried DB: %d/%d", calls, r.sets)
 	}
-	now = now.Add(time.Second)
-	got, err := c.find(ctx, 1, query)
-	if err != nil || got.Status != StatusDisabled || calls != 2 {
-		t.Fatalf("expiry: %+v %v calls=%d", got, err, calls)
-	}
-}
-
-func TestUserCacheSlowFillDoesNotRestartFreshness(t *testing.T) {
-	r := &fakeUserRedis{}
-	c := NewUserCache(r, "test")
-	now := time.Unix(1800000000, 0)
-	c.now = func() time.Time { return now }
-	calls := 0
-	query := func(context.Context, int64) (*User, error) {
-		calls++
-		if calls == 1 {
-			now = now.Add(29 * time.Second)
-		}
-		return &User{Id: 1, AuthVersion: int64(calls)}, nil
-	}
-	if _, err := c.find(context.Background(), 1, query); err != nil || r.ttl != time.Second {
-		t.Fatalf("slow fill: %v %v", err, r.ttl)
-	}
-	now = now.Add(time.Second)
-	got, err := c.find(context.Background(), 1, query)
-	if err != nil || got.AuthVersion != 2 {
-		t.Fatalf("stale fill extended freshness: %+v %v", got, err)
+	c.invalidate(ctx, 1)
+	if _, err = c.find(ctx, 1, query); err != nil || calls != 2 {
+		t.Fatalf("invalidation: %v calls=%d", err, calls)
 	}
 }
-
-func TestUserCacheErrorsDoNotBecomeMisses(t *testing.T) {
+func TestUserCacheFallbackPreservesDatabaseErrors(t *testing.T) {
 	for _, failure := range []string{"read", "write", "corrupt", "database", "missing"} {
 		t.Run(failure, func(t *testing.T) {
 			r := &fakeUserRedis{}
@@ -134,7 +100,7 @@ func TestUserCacheErrorsDoNotBecomeMisses(t *testing.T) {
 				r.data = map[string]string{c.Key(1): "bad JSON"}
 			}
 			calls := 0
-			_, err := c.find(context.Background(), 1, func(context.Context, int64) (*User, error) {
+			got, err := c.find(context.Background(), 1, func(context.Context, int64) (*User, error) {
 				calls++
 				if failure == "database" {
 					return nil, cause
@@ -144,25 +110,22 @@ func TestUserCacheErrorsDoNotBecomeMisses(t *testing.T) {
 				}
 				return &User{Id: 1}, nil
 			})
-			if err == nil {
-				t.Fatal("failure hidden")
+			if calls != 1 {
+				t.Fatal("cache failure did not query database")
 			}
-			if (failure == "read" || failure == "corrupt") && calls != 0 {
-				t.Fatal("cache failure fell through to database")
-			}
-			if failure == "missing" {
-				if !errors.Is(err, ErrNotFound) {
-					t.Fatal(err)
-				}
-			} else if failure == "database" {
+			switch failure {
+			case "database":
 				if !errors.Is(err, cause) {
 					t.Fatal(err)
 				}
-			} else if !errors.Is(err, ErrCacheUnavailable) {
-				t.Fatal(err)
-			}
-			if len(r.data) != 0 && failure != "corrupt" {
-				t.Fatal("failed result cached")
+			case "missing":
+				if !errors.Is(err, ErrNotFound) {
+					t.Fatal(err)
+				}
+			default:
+				if err != nil || got.Id != 1 {
+					t.Fatalf("fallback: %+v %v", got, err)
+				}
 			}
 		})
 	}

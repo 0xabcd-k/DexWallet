@@ -118,3 +118,17 @@ export function decodeHealth(value: unknown): HealthResponse {
   }
   return { code: value.code, message: value.message, traceId: value.traceId, data: { status: value.data.status } };
 }
+
+// Ordinary display DTOs share generated types. Tokens and monetary/proof data
+// keep their dedicated decoders at the trust boundary.
+export function decodeData<T extends object>(value: unknown): T {
+  if (!isRecord(value) || !isRecord(value.data)) throw new TypeError('Missing data');
+  return value.data as T;
+}
+export function decodeItems<T extends object>(key = 'items'): Decoder<T[]> {
+  return value => {
+    const rows = decodeData<Record<string, unknown>>(value)[key];
+    if (!Array.isArray(rows) || !rows.every(isRecord)) throw new TypeError('Invalid items');
+    return rows as T[];
+  };
+}

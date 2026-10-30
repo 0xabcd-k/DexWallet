@@ -8,11 +8,9 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/httpapi"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/middleware"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
-	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/rest"
-	framework "github.com/zeromicro/go-zero/rest/handler"
 	"github.com/zeromicro/go-zero/rest/httpx"
 	"github.com/zeromicro/go-zero/rest/router"
 )
@@ -35,16 +33,14 @@ func Build(s *svc.ServiceContext) (*rest.Server, *httpapi.Runtime, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	// The default 404 wrapper starts a second trace. Keep our common outer trace.
-	fallback := func(code apperror.Code) http.Handler {
-		return framework.TimeoutHandler(s.Config.RequestDuration())(rt.Work(func(w http.ResponseWriter, r *http.Request) { httpapi.Error(r.Context(), w, apperror.New(code, nil)) }))
-	}
-	r.SetNotFoundHandler(fallback(apperror.NotFound))
-	r.SetNotAllowedHandler(fallback(apperror.MethodNotAllowed))
+	// Fallbacks have no business work or dependencies; use standard HTTP errors.
+	r.SetNotFoundHandler(http.NotFoundHandler())
+	r.SetNotAllowedHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}))
 	app.Use(rt.Work)
 	s.AuthTransport = middleware.NewAuthTransportMiddleware(s).Handle
 	s.UserAuth = middleware.NewUserAuthMiddleware(s).Handle
-	s.IdentityAuth = middleware.NewIdentityAuthMiddleware(s).Handle
 	s.BackofficeTransport = middleware.NewBackofficeTransportMiddleware(s).Handle
 	s.AdminAuth = middleware.NewAdminAuthMiddleware(s).Handle
 	s.MerchantAuth = middleware.NewMerchantAuthMiddleware(s).Handle

@@ -23,14 +23,12 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
-	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	shared "github.com/0xabcd-k/DexWallet/backend/svc"
 	"github.com/go-sql-driver/mysql"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/redis/go-redis/v9"
 	initdata "github.com/telegram-mini-apps/init-data-golang"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -106,8 +104,8 @@ func TestProductSessionHTTP(t *testing.T) {
 	}()
 	mail := &sessionMail{codes: map[string]string{}}
 	cfg.EmailEnabled = true
-	conn := sqlx.NewSqlConnFromDB(s.DB)
-	s.Auth, err = authlogic.New(cfg, s.Users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), s.Tx, mail, sessionLimit{})
+	proofs := authlogic.NewProofs(s.Redis, s.Namespace, cfg.Secret)
+	s.Auth, err = authlogic.New(cfg, s.Users, proofs, mail, sessionLimit{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,6 +150,12 @@ func TestProductSessionHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer res.Body.Close()
+		if wantStatus == http.StatusNotFound {
+			if res.StatusCode != wantStatus || !strings.HasPrefix(res.Header.Get("Content-Type"), "text/plain") || len(res.Header.Get(httpapi.TraceHeader)) != 32 || res.Header.Get(session.TokenHeader) != "" {
+				t.Fatal("fallback HTTP contract", res.Status, res.Header)
+			}
+			return res.Header, nil
+		}
 		var envelope struct {
 			Code    string          `json:"code"`
 			Data    json.RawMessage `json:"data"`
@@ -192,6 +196,12 @@ func TestProductSessionHTTP(t *testing.T) {
 	}
 	send := func(email, token, purpose string) string {
 		t.Helper()
+		normalized, _ := userlogic.NormalizeEmail(email)
+		for _, key := range []string{proofs.Key("user", normalized.Address), proofs.Key("user", normalized.Address) + ":cooldown"} {
+			if err := testRun.Record("redis", key); err != nil {
+				t.Fatal(err)
+			}
+		}
 		path := "/v1/user/auth/email/code"
 		input := map[string]string{"email": email, "locale": "en"}
 		if purpose != "" {
@@ -205,7 +215,6 @@ func TestProductSessionHTTP(t *testing.T) {
 		}
 		return result.Challenge
 	}
-	request := func(n int) string { return fmt.Sprintf("%064x", n) }
 	tg := func(id int64, nonce int) string {
 		now := time.Now()
 		p := map[string]string{"user": fmt.Sprintf(`{"id":%d,"first_name":"Test User"}`, id), "query_id": strconv.Itoa(nonce)}
@@ -215,12 +224,15 @@ func TestProductSessionHTTP(t *testing.T) {
 		}
 		q.Set("auth_date", strconv.FormatInt(now.Unix(), 10))
 		q.Set("hash", initdata.Sign(p, sessionTestBot, now))
+		if err := testRun.Record("redis", proofs.TelegramKey(q.Get("hash"))); err != nil {
+			t.Fatal(err)
+		}
 		return q.Encode()
 	}
 
 	call("GET", "/v1/user/current", "", nil, 401, "UNAUTHENTICATED")
 	code := send("Alice@EXAMPLE.COM", "", "")
-	input := map[string]string{"requestToken": request(1), "email": "Alice@example.com", "challenge": code, "code": mail.code("Alice@example.com")}
+	input := map[string]string{"email": "Alice@example.com", "challenge": code, "code": mail.code("Alice@example.com")}
 	wrong := map[string]string{}
 	for k, v := range input {
 		wrong[k] = v
@@ -266,10 +278,10 @@ func TestProductSessionHTTP(t *testing.T) {
 		t.Fatal("HTTP renewal", err)
 	}
 
-	bind := map[string]string{"requestToken": request(2), "purpose": "bind", "initData": tg(100, 1)}
+	bind := map[string]string{"purpose": "bind", "initData": tg(100, 1)}
 	h, b = call("POST", "/v1/user/identities/telegram/verify", token, bind, 200, "OK")
 	token = decodeToken(h, b)
-	replacement := map[string]string{"requestToken": request(3), "purpose": "replace", "email": "new@example.com", "challenge": send("new@example.com", token, "replace"), "code": mail.code("new@example.com")}
+	replacement := map[string]string{"purpose": "replace", "email": "new@example.com", "challenge": send("new@example.com", token, "replace"), "code": mail.code("new@example.com")}
 	h, b = call("POST", "/v1/user/identities/email/verify", token, replacement, 200, "OK")
 	changed := decodeToken(h, b)
 	call("GET", "/v1/user/current", token, nil, 401, "UNAUTHENTICATED")
@@ -277,25 +289,19 @@ func TestProductSessionHTTP(t *testing.T) {
 	if err = json.Unmarshal(b, &current); err != nil || current.Nickname != "Alice Product" {
 		t.Fatal("identity change overwrote product profile", err)
 	}
-	// A lost success is recoverable with the original old JWT and exact request.
-	h, b = call("POST", "/v1/user/identities/email/verify", token, replacement, 200, "OK")
-	recovered := decodeToken(h, b)
-	recoveredClaims, _, err := s.Tokens.Parse(recovered)
-	if err != nil || recoveredClaims.AuthVersion != claims.AuthVersion+1 {
-		t.Fatal("recovery upgraded incorrectly", err)
-	}
-	call("POST", "/v1/user/identities/unbind", token, map[string]string{"requestToken": request(4), "identity": "telegram"}, 401, "UNAUTHENTICATED")
+	// Consumed proofs and obsolete tokens have no success-recovery bypass.
+	call("POST", "/v1/user/identities/email/verify", token, replacement, 401, "UNAUTHENTICATED")
+	call("POST", "/v1/user/identities/unbind", token, map[string]string{"identity": "telegram"}, 401, "UNAUTHENTICATED")
 	call("POST", "/v1/user/identities/email/code", token, map[string]string{"email": "stale@example.com", "purpose": "replace"}, 401, "UNAUTHENTICATED")
 	replacement["email"] = "different@example.com"
-	call("POST", "/v1/user/identities/email/verify", token, replacement, 409, "CONFLICT")
-	unbind := map[string]string{"requestToken": request(5), "identity": "telegram"}
+	call("POST", "/v1/user/identities/email/verify", token, replacement, 401, "UNAUTHENTICATED")
+	unbind := map[string]string{"identity": "telegram"}
 	h, b = call("POST", "/v1/user/identities/unbind", changed, unbind, 200, "OK")
 	unbound := decodeToken(h, b)
-	h, b = call("POST", "/v1/user/identities/unbind", changed, unbind, 200, "OK")
-	decodeToken(h, b)
-	call("POST", "/v1/user/identities/unbind", unbound, map[string]string{"requestToken": request(6), "identity": "email"}, 422, "ANOTHER_IDENTITY_REQUIRED")
+	call("POST", "/v1/user/identities/unbind", changed, unbind, 401, "UNAUTHENTICATED")
+	call("POST", "/v1/user/identities/unbind", unbound, map[string]string{"identity": "email"}, 422, "ANOTHER_IDENTITY_REQUIRED")
 	// The retired public endpoint neither renews nor changes the current session.
-	// The retained internal capability still invalidates tokens and recovery receipts.
+	// The retained internal capability still invalidates tokens.
 	logoutClaims, _, err := s.Tokens.Parse(unbound)
 	if err != nil {
 		t.Fatal(err)
@@ -318,7 +324,7 @@ func TestProductSessionHTTP(t *testing.T) {
 	call("POST", "/v1/user/identities/unbind", changed, unbind, 401, "UNAUTHENTICATED")
 
 	// TG-only silent login creates an independent product user.
-	h, b = call("POST", "/v1/user/auth/telegram/login", "", map[string]string{"requestToken": request(7), "initData": tg(200, 2)}, 200, "OK")
+	h, b = call("POST", "/v1/user/auth/telegram/login", "", map[string]string{"initData": tg(200, 2)}, 200, "OK")
 	tgToken := decodeToken(h, b)
 	tgClaims, tgID, err := s.Tokens.Parse(tgToken)
 	if err != nil || tgID == id {
@@ -335,7 +341,7 @@ func TestProductSessionHTTP(t *testing.T) {
 		t.Fatal("internal logout all accepted stale actor", err)
 	}
 	call("PATCH", "/v1/user/profile", tgToken, map[string]string{"nickname": "stale write"}, 401, "UNAUTHENTICATED")
-	call("GET", "/v1/user/identities", tgToken, nil, 401, "UNAUTHENTICATED")
+	call("GET", "/v1/user/identities", tgToken, nil, 200, "OK")
 	tgClaims.IssuedAt, tgClaims.ExpiresAt = oldClaims.IssuedAt, oldClaims.ExpiresAt
 	stale, err := jwt.NewWithClaims(jwt.SigningMethodHS256, tgClaims).SignedString([]byte(sessionTestSecret))
 	if err != nil {
@@ -361,5 +367,5 @@ func TestProductSessionHTTP(t *testing.T) {
 	if err = s.Redis.Close(); err != nil {
 		t.Fatal(err)
 	}
-	call("GET", "/v1/user/current", tgToken, nil, 503, "SERVICE_UNAVAILABLE")
+	call("GET", "/v1/user/current", tgToken, nil, 403, "PERMISSION_DENIED")
 }

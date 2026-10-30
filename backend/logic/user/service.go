@@ -18,7 +18,6 @@ var (
 	ErrVersionExhausted = errors.New("identity binding version exhausted")
 	ErrInvalidInput     = errors.New("invalid user input")
 	ErrDisabled         = errors.New("user disabled")
-	ErrIdentityUnbound  = errors.New("identity unbound")
 	ErrBindingChanged   = errors.New("identity binding changed")
 	ErrConflict         = errors.New("identity changed repeatedly; retry authentication")
 	errResolveRace      = errors.New("identity resolution raced")
@@ -62,63 +61,24 @@ func (s *Service) FindUserByID(ctx context.Context, id int64) (*model.User, erro
 	return s.users.FindOne(ctx, id)
 }
 
-// FindCurrentIdentities is a coherent read under the user lock. Absence is nil;
-// database failures and a missing user remain errors.
+// FindCurrentIdentities is a display read. A concurrent binding change is visible on refresh.
 func (s *Service) FindCurrentIdentities(ctx context.Context, id int64) (*Identities, error) {
-	if id <= 0 {
-		return nil, ErrInvalidInput
+	if _, err := s.FindUserByID(ctx, id); err != nil {
+		return nil, err
 	}
-	var result *Identities
-	err := s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
-		if _, err := s.users.WithSession(tx).FindForUpdate(ctx, id); err != nil {
-			return err
-		}
-		var err error
-		result, err = s.identitiesInSession(ctx, tx, id)
-		return err
-	})
-	return result, err
+	owner := sql.NullInt64{Int64: id, Valid: true}
+	email, err := s.emails.FindOneByUserId(ctx, owner)
+	if err != nil && !errors.Is(err, model.ErrNotFound) {
+		return nil, err
+	}
+	tg, err := s.telegrams.FindOneByUserId(ctx, owner)
+	if err != nil && !errors.Is(err, model.ErrNotFound) {
+		return nil, err
+	}
+	return &Identities{Email: email, Telegram: tg}, nil
 }
 
-// CheckCurrentBindingInSession keeps locks until the outer transaction finishes.
-// Multi-user callers must lock the complete user set in ascending ID order first.
-func (s *Service) CheckCurrentBindingInSession(ctx context.Context, session sqlx.Session, b Binding) error {
-	if session == nil || b.UserID <= 0 || b.IdentityID <= 0 || b.Version <= 0 || (b.Type != model.IdentityEmail && b.Type != model.IdentityTelegram) {
-		return ErrInvalidInput
-	}
-	u, err := s.users.WithSession(session).FindForUpdate(ctx, b.UserID)
-	if err != nil {
-		return err
-	}
-	if u.Status != model.StatusActive {
-		return ErrDisabled
-	}
-	var owner sql.NullInt64
-	var version int64
-	switch b.Type {
-	case model.IdentityEmail:
-		identity, e := s.emails.WithSession(session).FindForUpdate(ctx, b.IdentityID)
-		if e != nil {
-			return e
-		}
-		owner, version = identity.UserId, identity.BindingVersion
-	case model.IdentityTelegram:
-		identity, e := s.telegrams.WithSession(session).FindForUpdate(ctx, b.IdentityID)
-		if e != nil {
-			return e
-		}
-		owner, version = identity.UserId, identity.BindingVersion
-	}
-	if !owner.Valid {
-		return ErrIdentityUnbound
-	}
-	if owner.Int64 != b.UserID || version != b.Version {
-		return ErrBindingChanged
-	}
-	return nil
-}
-
-func RetryableResolution(err error) bool {
+func retryableResolution(err error) bool {
 	var failure *transaction.Failure
 	if errors.As(err, &failure) {
 		return false

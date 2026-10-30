@@ -117,16 +117,14 @@ test('late renewal cannot restore logout, and another tab observes logout', asyn
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).token, SESSION_KEY)).toBeNull();
 });
 
-test('lost replacement response retries the original operation with the original token', async ({ page }) => {
+test('lost replacement response requires fresh login and never replays the mutation', async ({ page }) => {
   const state = await mockAccount(page); state.telegram = true; const originalToken = browserToken(); await seedSession(page, originalToken);
-  let originalRequest = ''; let calls = 0;
+  let calls = 0;
   await page.route('**/api/v1/user/identities/email/verify', async route => {
     calls++; const input: Record<string, string> = route.request().postDataJSON();
+    expect(input).not.toHaveProperty('requestToken');
     expect(route.request().headers().authorization).toBe(`Bearer ${originalToken}`);
-    if (calls === 1) { originalRequest = input.requestToken!; state.version++; state.email = input.email!; return route.abort(); }
-    expect(input.requestToken).toBe(originalRequest);
-    const raw = browserToken(state.version); const expiresAt = JSON.parse(Buffer.from(raw.split('.')[1]!, 'base64url').toString()).exp;
-    return route.fulfill({ json: envelope({ accessToken: raw, userIdx, expiresAt }) });
+    state.version++; state.email = input.email!; return route.abort();
   });
   await page.goto(`${base}/#/identities`);
   await page.getByRole('button', { name: 'Replace', exact: true }).first().click();
@@ -134,10 +132,16 @@ test('lost replacement response retries the original operation with the original
   await page.getByRole('button', { name: 'Send code', exact: true }).click();
   await page.getByLabel('Verification code', { exact: true }).fill('123456');
   await page.getByRole('button', { name: 'Verify and link' }).click();
-  await expect(page.getByRole('alert')).toContainText('Unable to connect');
-  await page.getByRole('button', { name: 'Verify and link' }).click();
-  await expect(page).toHaveURL(`${base}/#/settings`);
-  await expect(page.getByText('Recovered@example.com')).toBeVisible(); expect(calls).toBe(2);
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+  expect(calls).toBe(1);
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).token, SESSION_KEY)).toBeNull();
+  await page.getByRole('link', { name: 'Sign in', exact: true }).click();
+  await page.getByLabel('Email', { exact: true }).fill(state.email);
+  await page.getByRole('button', { name: 'Send code', exact: true }).click();
+  await page.getByLabel('Verification code', { exact: true }).fill('123456');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByText('Recovered@example.com')).toBeVisible();
+  expect(calls).toBe(1);
 });
 
 test('blocked browser storage still allows memory-only email login', async ({ page }) => {

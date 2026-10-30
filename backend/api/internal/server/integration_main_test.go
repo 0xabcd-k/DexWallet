@@ -13,6 +13,12 @@ import (
 var testRun *testenv.Run
 
 func TestMain(m *testing.M) {
+	// The lifecycle subprocess uses only fake dependencies; the parent owns the
+	// integration resource journal and lock for real database/Redis tests.
+	if os.Getenv("DEXWALLET_LIFECYCLE_TEST") != "" {
+		os.Exit(m.Run())
+	}
+
 	var err error
 	if dir := os.Getenv("DEXWALLET_TEST_RUN_DIR"); dir != "" {
 		testRun, err = testenv.LoadRun(dir)

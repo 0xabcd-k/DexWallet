@@ -41,12 +41,7 @@ func (s *Service) Create(ctx context.Context, a Actor, r Realm, email, password,
 	u := &Account{Email: email, PasswordHash: hash, Status: usermodel.StatusActive, AuthVersion: 1, MustChangePassword: 1}
 	err = s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
 		m := s.store.session(tx)
-		if r == Admin {
-			if _, err := m.lockAdmins(ctx); err != nil {
-				return err
-			}
-		}
-		if _, err := s.check(ctx, m, a, true); err != nil {
+		if _, err := s.check(ctx, m, a, true, true); err != nil {
 			return err
 		}
 		if err := m.insert(ctx, r, u); err != nil {
@@ -71,13 +66,8 @@ func (s *Service) ChangePassword(ctx context.Context, a Actor, old, password str
 	var u *Account
 	err = s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
 		m := s.store.session(tx)
-		if a.Realm == Admin {
-			if _, err := m.lockAdmins(ctx); err != nil {
-				return err
-			}
-		}
 		var err error
-		u, err = s.check(ctx, m, a, false)
+		u, err = s.check(ctx, m, a, false, true)
 		if err != nil {
 			return err
 		}
@@ -102,30 +92,23 @@ func (s *Service) ChangePassword(ctx context.Context, a Actor, old, password str
 	}
 	return u, nil
 }
-func (s *Service) SetStatus(ctx context.Context, a Actor, r Realm, idx, status, reason string) (*Account, error) {
-	return s.manage(ctx, a, r, idx, status, "", reason)
-}
-func (s *Service) ResetPassword(ctx context.Context, a Actor, r Realm, idx, password, reason string) (*Account, error) {
-	hash, err := passwordHash(password)
-	if err != nil {
-		return nil, err
-	}
-	return s.manage(ctx, a, r, idx, "", hash, reason)
-}
-func (s *Service) manage(ctx context.Context, a Actor, r Realm, idx, status, hash, reason string) (*Account, error) {
-	if !reasonOK(reason) || (hash == "" && status != usermodel.StatusActive && status != usermodel.StatusDisabled) {
-		return nil, apperror.New(apperror.InvalidArgument, nil)
+func (s *Service) target(r Realm, idx, reason string) (int64, error) {
+	if !reasonOK(reason) || (r != Admin && r != Merchant) {
+		return 0, apperror.New(apperror.InvalidArgument, nil)
 	}
 	id, err := s.Decode(r, idx)
 	if err != nil {
-		return nil, apperror.New(apperror.InvalidArgument, err)
+		return 0, apperror.New(apperror.InvalidArgument, err)
 	}
-	if r != Admin && r != Merchant {
+	return id, nil
+}
+func (s *Service) SetStatus(ctx context.Context, a Actor, r Realm, idx, status, reason string) (*Account, error) {
+	if status != usermodel.StatusActive && status != usermodel.StatusDisabled {
 		return nil, apperror.New(apperror.InvalidArgument, nil)
 	}
-	action := ActionStatus
-	if hash != "" {
-		action = ActionReset
+	id, err := s.target(r, idx, reason)
+	if err != nil {
+		return nil, err
 	}
 	var u *Account
 	err = s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
@@ -138,7 +121,7 @@ func (s *Service) manage(ctx context.Context, a Actor, r Realm, idx, status, has
 				return err
 			}
 		}
-		if _, err = s.check(ctx, m, a, true); err != nil {
+		if _, err = s.check(ctx, m, a, true, true); err != nil {
 			return err
 		}
 		u, err = m.find(ctx, r, id, true)
@@ -148,15 +131,8 @@ func (s *Service) manage(ctx context.Context, a Actor, r Realm, idx, status, has
 		if err != nil {
 			return err
 		}
-		before, after := u.Status, status
-		if hash != "" {
-			before, after = "", ""
-			if err = bump(u); err != nil {
-				return err
-			}
-			u.PasswordHash = hash
-			u.MustChangePassword = 1
-		} else if u.Status != status {
+		before := u.Status
+		if before != status {
 			if r == Admin && status == usermodel.StatusDisabled {
 				active := 0
 				for _, row := range admins {
@@ -172,16 +148,61 @@ func (s *Service) manage(ctx context.Context, a Actor, r Realm, idx, status, has
 				return err
 			}
 			u.Status = status
-		} else {
-			return s.audit(ctx, m, a, action, r, u, before, after, reason, ResultSuccess)
+			if err = m.update(ctx, r, u); err != nil {
+				return err
+			}
 		}
+		return s.audit(ctx, m, a, ActionStatus, r, u, before, status, reason, ResultSuccess)
+	})
+	if err != nil {
+		return nil, s.failure(ctx, a, ActionStatus, r, &Account{Id: id}, reason, err)
+	}
+	return u, nil
+}
+func (s *Service) ResetPassword(ctx context.Context, a Actor, r Realm, idx, password, reason string) (*Account, error) {
+	id, err := s.target(r, idx, reason)
+	if err != nil {
+		return nil, err
+	}
+	hash, err := passwordHash(password)
+	if err != nil {
+		return nil, err
+	}
+	var u *Account
+	err = s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
+		m := s.store.session(tx)
+		// Same-table actor/target rows are always locked in ascending ID order.
+		if r == Admin && a.Realm == Admin && id < a.ID {
+			if _, err := m.find(ctx, r, id, true); err != nil {
+				if errors.Is(err, sqlx.ErrNotFound) {
+					return apperror.New(apperror.NotFound, err)
+				}
+				return err
+			}
+		}
+		if _, err := s.check(ctx, m, a, true, true); err != nil {
+			return err
+		}
+		var err error
+		u, err = m.find(ctx, r, id, true)
+		if errors.Is(err, sqlx.ErrNotFound) {
+			return apperror.New(apperror.NotFound, err)
+		}
+		if err != nil {
+			return err
+		}
+		if err = bump(u); err != nil {
+			return err
+		}
+		u.PasswordHash = hash
+		u.MustChangePassword = 1
 		if err = m.update(ctx, r, u); err != nil {
 			return err
 		}
-		return s.audit(ctx, m, a, action, r, u, before, after, reason, ResultSuccess)
+		return s.audit(ctx, m, a, ActionReset, r, u, "", "", reason, ResultSuccess)
 	})
 	if err != nil {
-		return nil, s.failure(ctx, a, action, r, &Account{Id: id}, reason, err)
+		return nil, s.failure(ctx, a, ActionReset, r, &Account{Id: id}, reason, err)
 	}
 	return u, nil
 }
@@ -190,15 +211,10 @@ func (s *Service) ProductUser(ctx context.Context, a Actor, idx string) (*usermo
 	if err != nil {
 		return nil, apperror.New(apperror.InvalidArgument, err)
 	}
-	var u *usermodel.User
-	err = s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
-		if _, err := s.check(ctx, s.store.session(tx), a, true); err != nil {
-			return err
-		}
-		var err error
-		u, err = s.users.WithSession(tx).FindOne(ctx, id)
-		return err
-	})
+	if _, err = s.check(ctx, s.store, a, true, false); err != nil {
+		return nil, err
+	}
+	u, err := s.users.FindUserByID(ctx, id)
 	if errors.Is(err, sqlx.ErrNotFound) {
 		err = apperror.New(apperror.NotFound, err)
 	}
@@ -215,29 +231,14 @@ func (s *Service) SetProductStatus(ctx context.Context, a Actor, idx, status, re
 	var u *usermodel.User
 	err = s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
 		m := s.store.session(tx)
-		if _, err := s.check(ctx, m, a, true); err != nil {
+		if _, err := s.check(ctx, m, a, true, true); err != nil {
 			return err
 		}
-		users := s.users.WithSession(tx)
+		var before string
 		var err error
-		u, err = users.FindForUpdate(ctx, id)
-		if errors.Is(err, sqlx.ErrNotFound) {
-			return apperror.New(apperror.NotFound, err)
-		}
+		u, before, err = s.users.SetStatusInSession(ctx, tx, id, status)
 		if err != nil {
 			return err
-		}
-		before := u.Status
-		if u.Status != status {
-			version := &Account{AuthVersion: u.AuthVersion}
-			if err = bump(version); err != nil {
-				return err
-			}
-			u.AuthVersion = version.AuthVersion
-			u.Status = status
-			if err = users.Update(ctx, u); err != nil {
-				return err
-			}
 		}
 		return s.audit(ctx, m, a, ActionStatus, Product, &Account{Id: id}, before, status, reason, ResultSuccess)
 	})

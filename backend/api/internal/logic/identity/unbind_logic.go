@@ -33,6 +33,6 @@ func (l *UnbindLogic) Unbind(req *types.UnbindRequest) (resp *types.TokenRespons
 	if err != nil {
 		return nil, err
 	}
-	result, err := l.svcCtx.Auth.Unbind(l.ctx, req.RequestToken, a.Actor, usermodel.IdentityType(req.Identity))
+	result, err := l.svcCtx.Auth.Unbind(l.ctx, a.Actor, usermodel.IdentityType(req.Identity))
 	return httpapi.TokenReply(l.ctx, l.svcCtx.Tokens, result, err)
 }

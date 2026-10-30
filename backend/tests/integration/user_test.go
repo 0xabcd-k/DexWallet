@@ -50,7 +50,7 @@ func userDatabase(t *testing.T, label string) (*sql.DB, *userlogic.Service) {
 		t.Fatalf("repeat up: %v", err)
 	}
 	version, dirty, err := m.Version()
-	if err != nil || version != 2 || dirty {
+	if err != nil || version != 4 || dirty {
 		t.Fatalf("version: %d %t %v", version, dirty, err)
 	}
 	conn := sqlx.NewSqlConnFromDB(db)
@@ -114,7 +114,7 @@ func TestUserSchemaAndConstraints(t *testing.T) {
 	}
 	// Business and example histories can coexist without stealing each other's versions.
 	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations_business WHERE version=2 AND dirty=0").Scan(&count); err != nil || count != 1 {
+	if err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations_business WHERE version=4 AND dirty=0").Scan(&count); err != nil || count != 1 {
 		t.Fatalf("business history: %d %v", count, err)
 	}
 	t.Log("full DDL equals migration including foreign keys; unique ownership, NULL owners and case-sensitive addresses verified")
@@ -162,32 +162,9 @@ func TestUserIdentityLifecycle(t *testing.T) {
 	if err != nil || identities.Email != nil || identities.Telegram.Username.Valid || identities.Telegram.PhotoUrl.Valid || identities.Telegram.FirstName != "new external" {
 		t.Fatalf("TG snapshot: %+v %v", identities, err)
 	}
-	check := func(binding userlogic.Binding) error {
-		return transaction.New(db).TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-			return s.CheckCurrentBindingInSession(ctx, session, binding)
-		})
-	}
-	if err = check(first.Binding); err != nil {
-		t.Fatal(err)
-	}
-	// Both tables start at ID 1: a wrong type must not use the other row's owner.
-	wrong := first.Binding
-	wrong.Type = model.IdentityTelegram
-	if err = check(wrong); !errors.Is(err, userlogic.ErrBindingChanged) {
-		t.Fatalf("cross-type binding: %v", err)
-	}
-	mustExec(t, db, "UPDATE email_identity SET user_id=NULL,bound_at=NULL,binding_version=binding_version+1 WHERE id=?", first.Binding.IdentityID)
-	if err = check(first.Binding); !errors.Is(err, userlogic.ErrIdentityUnbound) {
-		t.Fatalf("unbound: %v", err)
-	}
-	// Test-only simulation of the future binding use case under no concurrent writes.
-	mustExec(t, db, "UPDATE email_identity SET user_id=?,bound_at=UTC_TIMESTAMP(6),binding_version=binding_version+1 WHERE id=?", first.User.Id, first.Binding.IdentityID)
-	if err = check(first.Binding); !errors.Is(err, userlogic.ErrBindingChanged) {
-		t.Fatalf("old generation accepted: %v", err)
-	}
 	mustExec(t, db, "UPDATE email_identity SET user_id=NULL,bound_at=NULL,binding_version=binding_version+1 WHERE id=?", first.Binding.IdentityID)
 	rebound, err := s.ResolveOrCreateVerifiedEmail(ctx, "Alice.Tag+one@example.com")
-	if err != nil || rebound.User.Id == first.User.Id || rebound.Binding.IdentityID != first.Binding.IdentityID || rebound.Binding.Version != 5 {
+	if err != nil || rebound.User.Id == first.User.Id || rebound.Binding.IdentityID != first.Binding.IdentityID || rebound.Binding.Version != 3 {
 		t.Fatalf("new owner: %+v %v", rebound, err)
 	}
 	mustExec(t, db, "UPDATE `user` SET status=? WHERE id=?", model.StatusDisabled, rebound.User.Id)
@@ -199,11 +176,6 @@ func TestUserIdentityLifecycle(t *testing.T) {
 	}
 	if _, err = s.FindUserByID(ctx, 99999); !errors.Is(err, model.ErrNotFound) {
 		t.Fatalf("missing user: %v", err)
-	}
-	invalid := first.Binding
-	invalid.Type = "unknown"
-	if err = check(invalid); !errors.Is(err, userlogic.ErrInvalidInput) {
-		t.Fatal(err)
 	}
 	t.Log("email/TG resolution, independent product profile, idx stability, binding generations, disabled state verified")
 }
@@ -263,7 +235,7 @@ func TestUserConcurrentRegistration(t *testing.T) {
 	}
 }
 func TestUserTransactionRollback(t *testing.T) {
-	db, s := userDatabase(t, "user_rollback")
+	db, _ := userDatabase(t, "user_rollback")
 	ctx := context.Background()
 	conn := sqlx.NewSqlConnFromDB(db)
 	sentinel := errors.New("abort coordinated write")
@@ -280,9 +252,6 @@ func TestUserTransactionRollback(t *testing.T) {
 		}
 		_, err = identities.Insert(ctx, &model.EmailIdentity{UserId: sql.NullInt64{Int64: id, Valid: true}, BindingVersion: 1, BoundAt: sql.NullTime{Time: time.Now().UTC(), Valid: true}, EmailAddress: "rollback@example.com", EmailLocalPart: "rollback", EmailDomain: "example.com", EmailOriginal: "rollback@example.com"})
 		if err != nil {
-			return err
-		}
-		if err = s.CheckCurrentBindingInSession(ctx, session, userlogic.Binding{Type: model.IdentityEmail, IdentityID: 1, UserID: id, Version: 1}); err != nil {
 			return err
 		}
 		return sentinel
@@ -311,7 +280,7 @@ func TestUserMigrationCLIAndFailureState(t *testing.T) {
 		cmd.Dir = "../.."
 		cmd.Env = append(os.Environ(), "DEXWALLET_MYSQL_DSN="+dsn)
 		output, err := cmd.CombinedOutput()
-		if err != nil || !strings.Contains(string(output), "version=2 dirty=false") {
+		if err != nil || !strings.Contains(string(output), "version=4 dirty=false") {
 			t.Fatalf("CLI %s: %v %s", action, err, output)
 		}
 	}
@@ -324,21 +293,23 @@ func TestUserMigrationCLIAndFailureState(t *testing.T) {
 	}
 	example.Close()
 	dir := t.TempDir()
-	first, err := os.ReadFile("../../manifest/sql/diff/business/000001_create_user_model.up.sql")
+	sources, err := os.ReadDir("../../manifest/sql/diff/business")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = os.WriteFile(filepath.Join(dir, "000001_create_user_model.up.sql"), first, 0600); err != nil {
-		t.Fatal(err)
+	for _, source := range sources {
+		if !strings.HasSuffix(source.Name(), ".sql") {
+			continue
+		}
+		raw, err := os.ReadFile(filepath.Join("../../manifest/sql/diff/business", source.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(filepath.Join(dir, source.Name()), raw, 0600); err != nil {
+			t.Fatal(err)
+		}
 	}
-	second, err := os.ReadFile("../../manifest/sql/diff/business/000002_create_auth.up.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = os.WriteFile(filepath.Join(dir, "000002_create_auth.up.sql"), second, 0600); err != nil {
-		t.Fatal(err)
-	}
-	if err = os.WriteFile(filepath.Join(dir, "000003_fail.up.sql"), []byte("CREATE TABLE business_partial (id INT); ALTER TABLE missing_business_table ADD COLUMN note INT;"), 0600); err != nil {
+	if err = os.WriteFile(filepath.Join(dir, "000005_fail.up.sql"), []byte("CREATE TABLE business_partial (id INT); ALTER TABLE missing_business_table ADD COLUMN note INT;"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	m, err := migration.Open(dsn, name, dir, "business")
@@ -347,14 +318,14 @@ func TestUserMigrationCLIAndFailureState(t *testing.T) {
 	}
 	defer m.Close()
 	version, dirty, err := m.Version()
-	if err != nil || version != 2 || dirty {
+	if err != nil || version != 4 || dirty {
 		t.Fatalf("independent version: %d %t %v", version, dirty, err)
 	}
 	if err = m.Up(); err == nil {
 		t.Fatal("expected DDL failure")
 	}
 	version, dirty, err = m.Version()
-	if err != nil || version != 3 || !dirty {
+	if err != nil || version != 5 || !dirty {
 		t.Fatalf("dirty state lost: %d %t %v", version, dirty, err)
 	}
 	var blocked migrate.ErrDirty

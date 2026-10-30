@@ -31,13 +31,13 @@ export function AccountActions() {
   const [busy, setBusy] = useState(false); const [error, setError] = useState<unknown>();
   async function leave() {
     setBusy(true); setError(undefined);
-    try { await signOut(auth.launch, auth.session); navigate('/wallet', { replace: true }); }
+    try { await signOut(auth.session); navigate('/wallet', { replace: true }); }
     catch (failure) { setError(failure); } finally { setBusy(false); }
   }
   return <>
     {error !== undefined && <Failure error={error} />}
     <div className="settings-account-actions">
-      <Button disabled={busy} onClick={() => { void signOut(auth.launch).then(() => navigate('/login?manual=1&returnTo=%2Fsettings')); }}>{t('switchAccount')}</Button>
+      <Button disabled={busy} onClick={() => { void signOut().then(() => navigate('/login?manual=1&returnTo=%2Fsettings')); }}>{t('switchAccount')}</Button>
       <Button disabled={busy} onClick={() => { void leave(); }}>{t('signOut')}</Button>
     </div>
   </>;

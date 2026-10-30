@@ -30,6 +30,6 @@ func NewEmailLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *EmailL
 }
 
 func (l *EmailLoginLogic) EmailLogin(req *types.EmailLoginRequest) (resp *types.TokenResponse, err error) {
-	result, err := l.svcCtx.Auth.VerifyEmail(l.ctx, req.RequestToken, req.Email, req.Challenge, req.Code, httpapi.Source(l.ctx), authlogic.Intent{Purpose: userlogic.Login})
+	result, err := l.svcCtx.Auth.VerifyEmail(l.ctx, req.Email, req.Challenge, req.Code, httpapi.Source(l.ctx), authlogic.Intent{Purpose: userlogic.Login})
 	return httpapi.TokenReply(l.ctx, l.svcCtx.Tokens, result, err)
 }

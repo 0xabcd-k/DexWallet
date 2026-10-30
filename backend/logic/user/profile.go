@@ -2,8 +2,6 @@ package user
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"strings"
 
 	model "github.com/0xabcd-k/DexWallet/backend/model/user"
@@ -13,29 +11,10 @@ import (
 const NicknameMaxRunes = 128
 
 func (s *Service) FindIdentitiesForActor(ctx context.Context, actor Actor) (*Identities, error) {
-	var result *Identities
-	err := s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
-		if _, err := s.CheckActorInSession(ctx, tx, actor); err != nil {
-			return err
-		}
-		var err error
-		result, err = s.identitiesInSession(ctx, tx, actor.UserID)
-		return err
-	})
-	return result, err
-}
-
-func (s *Service) identitiesInSession(ctx context.Context, tx sqlx.Session, id int64) (*Identities, error) {
-	owner := sql.NullInt64{Int64: id, Valid: true}
-	email, err := s.emails.WithSession(tx).FindOneByUserId(ctx, owner)
-	if err != nil && !errors.Is(err, model.ErrNotFound) {
+	if _, err := s.CheckActor(ctx, actor); err != nil {
 		return nil, err
 	}
-	telegram, err := s.telegrams.WithSession(tx).FindOneByUserId(ctx, owner)
-	if err != nil && !errors.Is(err, model.ErrNotFound) {
-		return nil, err
-	}
-	return &Identities{Email: email, Telegram: telegram}, nil
+	return s.FindCurrentIdentities(ctx, actor.UserID)
 }
 
 // Profile changes preserve external identity snapshots and authentication version.

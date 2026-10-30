@@ -34,6 +34,6 @@ func (l *IdentityTelegramLogic) IdentityTelegram(req *types.IdentityTelegramRequ
 	if err != nil {
 		return nil, err
 	}
-	result, err := l.svcCtx.Auth.VerifyTelegram(l.ctx, req.RequestToken, req.InitData, httpapi.Source(l.ctx), authlogic.Intent{Purpose: userlogic.Purpose(req.Purpose), Actor: a.Actor})
+	result, err := l.svcCtx.Auth.VerifyTelegram(l.ctx, req.InitData, httpapi.Source(l.ctx), authlogic.Intent{Purpose: userlogic.Purpose(req.Purpose), Actor: a.Actor})
 	return httpapi.TokenReply(l.ctx, l.svcCtx.Tokens, result, err)
 }

@@ -39,7 +39,7 @@ func (s *Service) ResolveOrCreateVerifiedTelegram(ctx context.Context, profile V
 		if err == nil {
 			return &result, nil
 		}
-		if !RetryableResolution(err) {
+		if !retryableResolution(err) {
 			return nil, err
 		}
 		last = err
@@ -73,25 +73,6 @@ func initialNickname(value string) string {
 	return string(runes)
 }
 
-// ResolveOrCreateVerifiedTelegramInSession participates in the authentication
-// transaction. The caller owns rollback and bounded retry of resolution races.
-func (s *Service) ResolveOrCreateVerifiedTelegramInSession(ctx context.Context, session sqlx.Session, profile VerifiedTelegram) (*Resolved, error) {
-	if session == nil {
-		return nil, ErrInvalidInput
-	}
-	if err := profile.validate(); err != nil {
-		return nil, err
-	}
-	hint, err := s.telegrams.WithSession(session).FindOneByTelegramUserId(ctx, profile.TelegramUserID)
-	if err != nil && !errors.Is(err, model.ErrNotFound) {
-		return nil, err
-	}
-	var owner int64
-	if hint != nil && hint.UserId.Valid {
-		owner = hint.UserId.Int64
-	}
-	return s.resolveTelegramInSession(ctx, session, profile, hint, owner)
-}
 func (s *Service) resolveTelegramInSession(ctx context.Context, session sqlx.Session, profile VerifiedTelegram, hint *model.TelegramIdentity, owner int64) (*Resolved, error) {
 	users := s.users.WithSession(session)
 	identities := s.telegrams.WithSession(session)

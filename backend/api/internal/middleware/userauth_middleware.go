@@ -6,6 +6,7 @@ package middleware
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/httpapi"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
@@ -46,4 +47,20 @@ func (m *UserAuthMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(w, r.WithContext(httpapi.WithAuthorization(r.Context(), a)))
 	}
+}
+
+func verifyActor(s *svc.ServiceContext, r *http.Request) (httpapi.Authorization, error) {
+	values := r.Header.Values("Authorization")
+	if len(values) != 1 || len(values[0]) > session.MaxTokenBytes+len("Bearer ") {
+		return httpapi.Authorization{}, session.ErrInvalid
+	}
+	fields := strings.Fields(values[0])
+	if len(fields) != 2 || !strings.EqualFold(fields[0], "Bearer") {
+		return httpapi.Authorization{}, session.ErrInvalid
+	}
+	claims, id, err := s.Tokens.Parse(fields[1])
+	if err != nil {
+		return httpapi.Authorization{}, err
+	}
+	return httpapi.Authorization{Actor: userlogic.Actor{UserID: id, AuthVersion: claims.AuthVersion}, Claims: claims}, nil
 }

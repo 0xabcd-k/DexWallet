@@ -1,13 +1,10 @@
 {
   "generated": {
-    "backend/api/internal/handler/routes.go": "0bacffe0ce560536d5e5f5621d2ac65cc72425f5ef633c6d19d35c99d72b514a",
-    "backend/api/internal/types/types.go": "b9f9539953de0b58e09bb79daf629794ffe423ae1701ef03be748cff115c8d97",
+    "backend/api/internal/handler/routes.go": "bfe293ffbf2259cff1842209d2f7fc539e32e11217e592094c4c8aca994a123a",
+    "backend/api/internal/types/types.go": "9e38821677799562745d2d841c15ff76f0ddd477a2b89cd5ade60eca8df88ca9",
     "backend/apperror/codes_gen.go": "c47c3ddcac15fe4e6e7656cc911999dc4dfe95d86d58f3d6cf6d123bb56cb550",
-    "backend/model/auth/auth_operation_model_gen.go": "57906941e40cb68bdf0ffc900dc29d629b6d9afd0d5f93024d1da66aaa671310",
-    "backend/model/auth/email_challenge_model_gen.go": "a8ad42180a73fe21b43dad672bc4a203b4ee82899b43ce14e9f3cf7830964686",
     "backend/model/backoffice/admin_user_model_gen.go": "ef0920e6baf0cc1dc653f64ec5e3d3900d8b4cf7ff185540a900c82c5a0a52dc",
     "backend/model/backoffice/backoffice_audit_model_gen.go": "b0aae7193a7262ac457e1edeca9fb3caea298f5457a97361fe02f748e0f98630",
-    "backend/model/backoffice/backoffice_challenge_model_gen.go": "3596475738e7ca133df6a0e4d9a64859bf84a3db4b82625f2ab14f642dc65090",
     "backend/model/backoffice/merchant_user_model_gen.go": "cae3d2365267248dff497a58a2d71cb2fe116b221510426073f4f59e1be82e84",
     "backend/model/example/contract_sample_model_gen.go": "4d56eb89d2b1f1d15ac75622840b514b3af11ad0f8d258e788b754df532a9ba2",
     "backend/model/user/email_identity_model_gen.go": "15743791b48062339242e267c54282a0125f1b7b7da612e30c65cd65d5435bac",
@@ -16,7 +13,7 @@
     "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
     "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
     "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c",
-    "frontend/packages/api-contract/src/platform.ts": "532517aba13db9787f7c284ce4899d38308db1d80ccae3c69c15f881e38f3f51"
+    "frontend/packages/api-contract/src/platform.ts": "4fb355544f83e1900e6903cc64e5a86e4f84a36a42a679b12066e1cd93bd51a8"
   },
   "scaffold": [
     "backend/api/etc/platform.yaml",
@@ -77,17 +74,12 @@
     "backend/api/internal/middleware/adminauth_middleware.go",
     "backend/api/internal/middleware/authtransport_middleware.go",
     "backend/api/internal/middleware/backofficetransport_middleware.go",
-    "backend/api/internal/middleware/identityauth_middleware.go",
     "backend/api/internal/middleware/merchantauth_middleware.go",
     "backend/api/internal/middleware/userauth_middleware.go",
     "backend/api/internal/svc/service_context.go",
     "backend/api/platform.go",
-    "backend/model/auth/auth_operation_model.go",
-    "backend/model/auth/email_challenge_model.go",
-    "backend/model/auth/vars.go",
     "backend/model/backoffice/admin_user_model.go",
     "backend/model/backoffice/backoffice_audit_model.go",
-    "backend/model/backoffice/backoffice_challenge_model.go",
     "backend/model/backoffice/merchant_user_model.go",
     "backend/model/backoffice/vars.go",
     "backend/model/example/contract_sample_model.go",

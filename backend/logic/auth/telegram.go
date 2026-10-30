@@ -11,7 +11,6 @@ import (
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
 	initdata "github.com/telegram-mini-apps/init-data-golang"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 const maxInitDataBytes = 16384
@@ -61,7 +60,7 @@ func verifyTelegram(raw, bot string, now time.Time, development bool) (userlogic
 	}
 	return userlogic.VerifiedTelegram{TelegramUserID: profile.ID, FirstName: profile.FirstName, Username: profile.Username, LastName: profile.LastName, PhotoURL: profile.PhotoURL, LanguageCode: profile.LanguageCode}, hash, nil
 }
-func (s *Service) VerifyTelegram(ctx context.Context, request, raw, source string, intent Intent) (*Result, error) {
+func (s *Service) VerifyTelegram(ctx context.Context, raw, source string, intent Intent) (*Result, error) {
 	if !s.cfg.TelegramEnabled {
 		return nil, ErrUnavailable
 	}
@@ -80,19 +79,13 @@ func (s *Service) VerifyTelegram(ctx context.Context, request, raw, source strin
 	if err != nil {
 		return nil, err
 	}
-	return s.run(ctx, request, intent, usermodel.IdentityTelegram, s.digest("telegram", intent, hash), func(ctx context.Context, session sqlx.Session) (*userlogic.Resolved, string, error) {
-		var result *userlogic.Resolved
-		var err error
-		if intent.Purpose == userlogic.Login {
-			result, err = s.users.ResolveOrCreateVerifiedTelegramInSession(ctx, session, profile)
-		} else {
-			result, err = s.users.ChangeIdentityInSession(ctx, session, intent.Actor, intent.Purpose, usermodel.IdentityTelegram, "", &profile)
+	if !s.cfg.TelegramDevelopment {
+		if err = s.proofs.UseTelegram(ctx, hash); err != nil {
+			return nil, err
 		}
-		// Local development credentials are reusable; identity changes still use
-		// the normal transaction, actor checks and per-request recovery receipt.
-		if s.cfg.TelegramDevelopment {
-			return result, "", err
-		}
-		return result, s.digest("telegram-proof", hash), err
-	})
+	}
+	if intent.Purpose == userlogic.Login {
+		return s.users.ResolveOrCreateVerifiedTelegram(ctx, profile)
+	}
+	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityTelegram, "", &profile)
 }

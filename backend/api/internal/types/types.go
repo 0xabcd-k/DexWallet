@@ -126,10 +126,9 @@ type CurrentUserResponse struct {
 }
 
 type EmailLoginRequest struct {
-	RequestToken string `json:"requestToken"`
-	Email        string `json:"email"`
-	Challenge    string `json:"challenge"`
-	Code         string `json:"code"`
+	Email     string `json:"email"`
+	Challenge string `json:"challenge"`
+	Code      string `json:"code"`
 }
 
 type ErrorResponse struct {
@@ -210,8 +209,7 @@ type SendEmailRequest struct {
 }
 
 type TelegramLoginRequest struct {
-	RequestToken string `json:"requestToken"`
-	InitData     string `json:"initData"`
+	InitData string `json:"initData"`
 }
 
 type TokenData struct {
@@ -228,8 +226,7 @@ type TokenResponse struct {
 }
 
 type UnbindRequest struct {
-	RequestToken string `json:"requestToken"`
-	Identity     string `json:"identity,options=email|telegram"`
+	Identity string `json:"identity,options=email|telegram"`
 }
 
 type UpdateProfileRequest struct {

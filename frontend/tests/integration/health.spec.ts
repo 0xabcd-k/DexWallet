@@ -9,7 +9,7 @@ let backend: ChildProcess | undefined;
 async function start() {
   execFileSync(join(dir!, 'testenv'), ['check', 'http'], { stdio: 'pipe' });
   const log = openSync(join(dir!, 'api.log'), 'a', 0o600);
-  try { backend = spawn(join(dir!, 'api'), ['-f', join(dir!, 'platform.yaml')], { stdio: ['ignore', log, log] }); }
+  try { backend = spawn(join(dir!, 'api'), ['-f', join(dir!, 'platform.json')], { stdio: ['ignore', log, log] }); }
   finally { closeSync(log); }
   await expect.poll(async () => {
     if (backend?.exitCode !== null) throw new Error('API exited; inspect the HTTP evidence api.log');
@@ -44,9 +44,11 @@ for (const [index, app] of ['user', 'merchant', 'admin'].entries()) {
       const port = (mode === 'dev' ? 5173 : 4173) + index;
       const route = app === 'user' ? '/#/wallet' : '/overview';
       await page.goto(`http://127.0.0.1:${port}${route}`);
-      await expect(page.getByRole('navigation')).toBeVisible();
+      const ready = app === 'user' ? page.getByRole('navigation') : page.getByLabel('Email', { exact: true });
+      await expect(ready).toBeVisible();
+      if (app !== 'user') await expect(page).toHaveURL(/\/login/);
       await page.reload();
-      await expect(page.getByRole('navigation')).toBeVisible();
+      await expect(ready).toBeVisible();
       for (const endpoint of ['live', 'ready']) {
         const result = await page.evaluate(async endpoint => {
           const response = await fetch(`/api/health/${endpoint}`);
@@ -59,10 +61,10 @@ for (const [index, app] of ['user', 'merchant', 'admin'].entries()) {
       }
       const missing = await page.evaluate(async () => {
         const response = await fetch('/api/does-not-exist');
-        return { status: response.status, type: response.headers.get('content-type'), body: await response.json() };
+        return { status: response.status, type: response.headers.get('content-type'), body: await response.text() };
       });
-      expect(missing.status).toBe(404); expect(missing.type).toContain('application/json');
-      expect(missing.body.code).not.toBe('OK');
+      expect(missing.status).toBe(404); expect(missing.type).toContain('text/plain');
+      expect(missing.body).toContain('404');
       // Prefix matching must not hijack an ordinary SPA route.
       const ordinary = await page.request.get(`http://127.0.0.1:${port}/apix`);
       expect(ordinary.headers()['content-type']).toContain('text/html');

@@ -63,7 +63,6 @@ func TestOrdinaryAuthenticationAndRequestUserReuse(t *testing.T) {
 		{name: "disabled", token: old, status: usermodel.StatusDisabled, version: 7, want: 403, reads: 1},
 		{name: "new version", token: old, status: usermodel.StatusActive, version: 8, want: 401, reads: 1},
 		{name: "missing user", token: raw, err: usermodel.ErrNotFound, want: 401, reads: 1},
-		{name: "cache unavailable", token: raw, err: usermodel.ErrCacheUnavailable, want: 503, reads: 1},
 		{name: "database failure", token: raw, err: errors.New("database-sentinel"), want: 500, reads: 1},
 		{name: "no credential", want: 401, reads: 0},
 		{name: "invalid token", token: "secret-sentinel", want: 401, reads: 0},
