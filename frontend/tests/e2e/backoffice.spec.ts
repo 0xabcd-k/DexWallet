@@ -11,6 +11,7 @@ async function mockBackoffice(page: Page, realm: string) {
     mustChangePassword: true,
     password: 'Temporary-password-123',
     failures: 0,
+    loseCreateReply: false,
     merchants: [] as {
       idx: string;
       email: string;
@@ -99,9 +100,15 @@ async function mockBackoffice(page: Page, realm: string) {
         mustChangePassword: true,
       };
       state.merchants.push(row);
+      if (state.loseCreateReply) return fail(500, 'INTERNAL_ERROR');
       return ok(row);
     }
-    if (path === '/audits') return ok({ items: [] });
+    if (path === '/audits') return ok({ items: [{
+      id: 1, actorRealm: 'admin', actorIdx: userIdx, action: 'change_status',
+      targetRealm: 'merchant', targetIdx: userIdx, targetEmail: 'shop@example.com',
+      beforeValue: 'active', afterValue: 'disabled', reason: 'manual reason',
+      result: 'success', traceId: 'audit-test', createdAt: 1700000000,
+    }] });
     return fail(404, 'NOT_FOUND');
   });
   return state;
@@ -217,3 +224,30 @@ for (const [realm, port] of [
     await expect(page).toHaveURL(`http://127.0.0.1:${port}/settings`);
   });
 }
+
+test('admin: uncertain create result guides verification and audit states follow language', async ({ page }) => {
+  const state = await mockBackoffice(page, 'admin');
+  state.mustChangePassword = false;
+  state.loseCreateReply = true;
+  await page.addInitScript(raw => localStorage.setItem('dexwallet:admin:session',
+    JSON.stringify({ generation: 'seed', token: raw })), token('admin', 1));
+  await page.goto('http://127.0.0.1:5175/accounts');
+  await page.getByRole('button', { name: 'Create merchant account' }).click();
+  await page.getByLabel('Email', { exact: true }).fill('uncertain@example.com');
+  await page.getByLabel('Temporary password').fill('New-password-123');
+  await page.getByLabel('Reason', { exact: true }).fill('onboard');
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Check the current state or sign in again before retrying');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await expect(page.getByRole('cell', { name: 'uncertain@example.com' })).toBeVisible();
+  expect(state.merchants).toHaveLength(1);
+  await page.goto('http://127.0.0.1:5175/audits');
+  await page.getByRole('button', { name: 'Expand row' }).click();
+  await expect(page.getByText('Before: Active', { exact: true })).toBeVisible();
+  await expect(page.getByText('After: Disabled', { exact: true })).toBeVisible();
+  await page.getByRole('combobox').selectOption('zh-CN');
+  await expect(page.getByText('变更前: 正常', { exact: true })).toBeVisible();
+  await expect(page.getByText('变更后: 已禁用', { exact: true })).toBeVisible();
+  await expect(page.getByText('操作原因: manual reason', { exact: true })).toBeVisible();
+});

@@ -52,7 +52,7 @@ func (s *Service) VerifyEmail(ctx context.Context, address, challenge, code, sou
 	}
 	// A consumed code is not restored after a database error. Request a new code.
 	if intent.Purpose == userlogic.Login {
-		return s.users.ResolveOrCreateVerifiedEmail(ctx, email.Original)
+		return s.users.ResolveOrCreateVerifiedEmail(ctx, email)
 	}
-	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityEmail, email.Original, nil)
+	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityEmail, email, nil)
 }

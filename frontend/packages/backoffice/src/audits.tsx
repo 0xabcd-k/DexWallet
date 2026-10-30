@@ -3,7 +3,7 @@ import { useTranslation } from '@dexwallet/i18n';
 import { Button } from 'antd';
 import { useAuth, Failure } from './auth';
 import { Table } from 'antd';
-import type { BackofficeAuditItem } from '@dexwallet/api-contract/platform';
+import type { BackofficeAuditItem, BackofficeAuditRequestParams } from '@dexwallet/api-contract/platform';
 import { decodeAudits } from './client';
 import { Paging } from './paging';
 export function Audits() {
@@ -20,8 +20,9 @@ export function Audits() {
     setBusy(true);
     setError(undefined);
     setRows([]);
+    const params = { page } satisfies BackofficeAuditRequestParams;
     void client
-      .request(`/audits?page=${page}`, decodeAudits, { signal: c.signal })
+      .request(`/audits?page=${params.page}`, decodeAudits, { signal: c.signal })
       .then(
         (v) => {
           if (active) setRows(v);
@@ -38,6 +39,13 @@ export function Audits() {
       c.abort();
     };
   }, [client, page, revision]);
+  const displayValue = (row: BackofficeAuditItem, value: string) => {
+    if (row.action === 'change_status' || row.action === 'create_account') {
+      if (value === 'active') return t('boActive');
+      if (value === 'disabled') return t('boDisabled');
+    }
+    return value || '—';
+  };
   return (
     <section className="desktop-page">
       <h1>{t('boAudits')}</h1>
@@ -74,10 +82,10 @@ export function Audits() {
           expandedRowRender: (r) => (
             <div>
               <p>
-                {t('boBefore')}: {r.beforeValue || '—'}
+                {t('boBefore')}: {displayValue(r, r.beforeValue)}
               </p>
               <p>
-                {t('boAfter')}: {r.afterValue || '—'}
+                {t('boAfter')}: {displayValue(r, r.afterValue)}
               </p>
               <p>
                 {t('boReason')}: {r.reason || '—'}

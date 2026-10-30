@@ -7,6 +7,8 @@ import (
 	"unicode/utf8"
 )
 
+// EmailAddress is produced by NormalizeEmail at the input boundary.
+// Internal callers pass this value unchanged; it does not prove ownership.
 type EmailAddress struct{ Address, LocalPart, Domain, Original string }
 
 // NormalizeEmail preserves the local part exactly; it does not fold provider aliases.

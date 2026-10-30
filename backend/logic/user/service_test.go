@@ -40,7 +40,7 @@ func TestCreateFailureRollsBackCandidateUser(t *testing.T) {
 	m.ExpectQuery("select .* from `user`").WillReturnRows(sqlmock.NewRows(userColumns).AddRow(7, model.StatusActive, "", "", 1, now, now))
 	m.ExpectExec("insert into `email_identity`").WillReturnError(failure)
 	m.ExpectRollback()
-	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), "a@example.com")
+	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), normalizedEmail(t, "a@example.com"))
 	if result != nil || !errors.Is(err, failure) {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
@@ -57,7 +57,7 @@ func TestCommitUnknownIsNotRetriedOrReturnedAsSuccess(t *testing.T) {
 	m.ExpectQuery("select .* from `user`.*for update").WillReturnRows(sqlmock.NewRows(userColumns).AddRow(7, model.StatusActive, "", "", 1, now, now))
 	m.ExpectQuery("select .*email_identity.*for update").WillReturnRows(row())
 	m.ExpectCommit().WillReturnError(failure)
-	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), "a@example.com")
+	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), normalizedEmail(t, "a@example.com"))
 	var txErr *transaction.Failure
 	if result != nil || !errors.As(err, &txErr) || !txErr.Unknown() || !errors.Is(err, failure) {
 		t.Fatalf("result=%+v err=%v", result, err)
@@ -67,7 +67,7 @@ func TestQueryFailureIsNotMissingIdentity(t *testing.T) {
 	s, m := mockService(t)
 	failure := errors.New("read failed")
 	m.ExpectQuery("select .*email_identity.*email_address").WillReturnError(failure)
-	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), "a@example.com")
+	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), normalizedEmail(t, "a@example.com"))
 	if result != nil || !errors.Is(err, failure) {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
@@ -92,8 +92,17 @@ func TestResolutionRechecksOwnerAfterLocking(t *testing.T) {
 			m.ExpectCommit()
 		}
 	}
-	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), "a@example.com")
+	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), normalizedEmail(t, "a@example.com"))
 	if err != nil || result.User.Id != 8 || result.Binding.UserID != 8 {
 		t.Fatalf("stale ownership used: %+v %v", result, err)
 	}
+}
+
+func normalizedEmail(t *testing.T, raw string) EmailAddress {
+	t.Helper()
+	address, err := NormalizeEmail(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return address
 }

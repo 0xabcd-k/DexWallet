@@ -15,6 +15,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
+	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	shared "github.com/0xabcd-k/DexWallet/backend/svc"
 	"github.com/go-sql-driver/mysql"
@@ -266,7 +267,7 @@ func TestBackofficeHTTP(t *testing.T) {
 	if err = s.Redis.Del(ctx, userKey).Err(); err != nil {
 		t.Fatal(err)
 	}
-	product, err := s.Users.ResolveOrCreateVerifiedEmail(ctx, "product@example.com")
+	product, err := s.Users.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, "product@example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -431,4 +432,13 @@ func TestBackofficeHTTP(t *testing.T) {
 		t.Fatal("CLI reset did not revoke/require change", version, required, e)
 	}
 
+}
+
+func normalizedEmail(t *testing.T, raw string) userlogic.EmailAddress {
+	t.Helper()
+	address, err := userlogic.NormalizeEmail(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return address
 }

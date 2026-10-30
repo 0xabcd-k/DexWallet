@@ -3,7 +3,7 @@ import { useTranslation } from '@dexwallet/i18n';
 import { Button, Input, Space } from 'antd';
 import { useAuth, Failure } from './auth';
 import { Select, Table } from 'antd';
-import type { BackofficeAccount } from '@dexwallet/api-contract/platform';
+import type { BackofficeAccount, BackofficeCreateRequest, BackofficeResetRequest, BackofficeStatusRequest, BackofficeListRequestParams } from '@dexwallet/api-contract/platform';
 import { decodeAccounts, decodeAccount, type Realm } from './client';
 import { Paging } from './paging';
 export function Accounts() {
@@ -29,8 +29,9 @@ export function Accounts() {
     setLoading(true);
     setRows([]);
     setError(undefined);
+    const params = { realm, page } satisfies BackofficeListRequestParams;
     void client
-      .request(`/accounts?realm=${realm}&page=${page}`, decodeAccounts, {
+      .request(`/accounts?realm=${params.realm}&page=${params.page}`, decodeAccounts, {
         signal: c.signal,
       })
       .then(
@@ -64,21 +65,14 @@ export function Accounts() {
       if (edit.action === 'create')
         await client.request('/merchants', decodeAccount, {
           method: 'POST',
-          body: { email, password, reason },
+          body: { email, password, reason } satisfies BackofficeCreateRequest,
         });
       else if (edit.row)
         await client.request(`/accounts/${edit.action}`, decodeAccount, {
           method: 'POST',
-          body: {
-            realm,
-            idx: edit.row.idx,
-            reason,
-            ...(edit.action === 'reset'
-              ? { password }
-              : {
-                  status: edit.row.status === 'active' ? 'disabled' : 'active',
-                }),
-          },
+          body: edit.action === 'reset'
+            ? { realm, idx: edit.row.idx, reason, password } satisfies BackofficeResetRequest
+            : { realm, idx: edit.row.idx, reason, status: edit.row.status === 'active' ? 'disabled' : 'active' } satisfies BackofficeStatusRequest,
         });
       open(undefined);
       setRevision((n) => n + 1);

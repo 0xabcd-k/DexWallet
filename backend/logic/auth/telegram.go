@@ -87,5 +87,5 @@ func (s *Service) VerifyTelegram(ctx context.Context, raw, source string, intent
 	if intent.Purpose == userlogic.Login {
 		return s.users.ResolveOrCreateVerifiedTelegram(ctx, profile)
 	}
-	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityTelegram, "", &profile)
+	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityTelegram, userlogic.EmailAddress{}, &profile)
 }

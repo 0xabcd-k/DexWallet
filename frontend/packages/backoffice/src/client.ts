@@ -13,6 +13,7 @@ import {
   type Session,
 } from '@dexwallet/session';
 import type {
+  BackofficeCodeRequest, BackofficeLoginRequest, BackofficeChangePasswordRequest,
   BackofficeAccount,
   BackofficeAuditItem,
   ManagedUserData,
@@ -58,7 +59,7 @@ export function createBackofficeClient(realm: Realm, baseUrl: string) {
     realm,
     session,
     request,
-    sendCode(email: string, password: string, locale: string) {
+    sendCode(email: string, password: string, locale: BackofficeCodeRequest['locale']) {
       return api.request(
         prefix + '/auth/code',
         (v) => {
@@ -68,7 +69,7 @@ export function createBackofficeClient(realm: Realm, baseUrl: string) {
             expiresAt: number(row, 'expiresAt'),
           } satisfies ChallengeData;
         },
-        { method: 'POST', body: { email, password, locale } },
+        { method: 'POST', body: { email, password, locale } satisfies BackofficeCodeRequest },
       );
     },
     async login(
@@ -80,7 +81,7 @@ export function createBackofficeClient(realm: Realm, baseUrl: string) {
     ) {
       const token = await api.request(prefix + '/auth/login', decodeToken, {
         method: 'POST',
-        body: { email, password, challenge, code },
+        body: { email, password, challenge, code, locale: 'en' } satisfies BackofficeLoginRequest,
       });
       if (!(await session.establish(ticket, token.accessToken)))
         throw new ApiError('cancelled');
@@ -90,7 +91,7 @@ export function createBackofficeClient(realm: Realm, baseUrl: string) {
       const token = await request(
         '/password',
         decodeToken,
-        { method: 'POST', body: { oldPassword, password } },
+        { method: 'POST', body: { oldPassword, password } satisfies BackofficeChangePasswordRequest },
         ticket,
       );
       if (!ticket.credential) throw new ApiError('cancelled');

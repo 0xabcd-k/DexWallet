@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from '@dexwallet/i18n';
 import { Button, Input } from 'antd';
 import { useAuth, Failure } from './auth';
-import type { ManagedUserData } from '@dexwallet/api-contract/platform';
+import type { ManagedUserData, ManagedUserStatusRequest, ManagedUserRequestParams } from '@dexwallet/api-contract/platform';
 import { decodeUser } from './client';
 export function Users() {
   const { client } = useAuth();
@@ -17,9 +17,10 @@ export function Users() {
     setError(undefined);
     setUser(undefined);
     try {
+      const params = { idx } satisfies ManagedUserRequestParams;
       setUser(
         await client.request(
-          `/user?idx=${encodeURIComponent(idx)}`,
+          `/user?idx=${encodeURIComponent(params.idx)}`,
           decodeUser,
         ),
       );
@@ -42,7 +43,7 @@ export function Users() {
             idx: user.idx,
             status: user.status === 'active' ? 'disabled' : 'active',
             reason,
-          },
+          } satisfies ManagedUserStatusRequest,
         }),
       );
       setReason('');

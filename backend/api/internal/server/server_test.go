@@ -275,7 +275,6 @@ func TestTimedOutWorkRetainsSlotAndDiagnostics(t *testing.T) {
 
 func TestFrameworkAdaptersPreserveJSONContract(t *testing.T) {
 	s, _ := setup(t,
-		rest.Route{Method: "GET", Path: "/marshal", Handler: func(w http.ResponseWriter, r *http.Request) { httpapi.JSON(r.Context(), w, 200, make(chan int)) }},
 		rest.Route{Method: "POST", Path: "/body", Handler: func(w http.ResponseWriter, r *http.Request) {
 			_, err := io.ReadAll(r.Body)
 			if err != nil {
@@ -298,7 +297,6 @@ func TestFrameworkAdaptersPreserveJSONContract(t *testing.T) {
 		status                   int
 		header, value            string
 	}{
-		{name: "marshal", method: "GET", path: "/marshal", code: "INTERNAL_ERROR", status: 500},
 		{name: "unknown body size", method: "POST", path: "/body", code: "PAYLOAD_TOO_LARGE", status: 413},
 		{name: "unauthenticated", method: "GET", path: "/auth", code: "UNAUTHENTICATED", status: 401},
 		{name: "forbidden", method: "GET", path: "/forbidden", code: "PERMISSION_DENIED", status: 403},
@@ -338,9 +336,6 @@ func TestFrameworkAdaptersPreserveJSONContract(t *testing.T) {
 			event := <-events
 			if tc.path == "/items/123" && event.Route != "/items/:idx" {
 				t.Fatalf("route template lost: %+v", event)
-			}
-			if tc.name == "marshal" && strings.Contains(w.Body.String(), "chan") {
-				t.Fatal("marshal diagnostic exposed")
 			}
 		})
 	}

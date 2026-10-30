@@ -50,14 +50,14 @@ export const common = {
 };
 export const errors = {
   en: {
-    generic: 'Something went wrong. Please try again.', network: 'Unable to connect. Check your connection.',
+    generic: 'Unable to confirm the outcome. Check the current state or sign in again before retrying.', network: 'Unable to connect. Check your connection.',
     timeout: 'The request timed out. Its result may still be pending.', protocol: 'The server returned an unexpected response.',
     http: 'The service is temporarily unavailable.', cancelled: 'Request cancelled.',
     INVALID_ARGUMENT: 'Check the information you entered.', UNAUTHENTICATED: 'Your session has expired.',
     PERMISSION_DENIED: 'You do not have access to this action.', NOT_FOUND: 'The requested item was not found.',
     METHOD_NOT_ALLOWED: 'This action is not supported.', CONFLICT: 'The item has changed. Refresh and check its status.',
     UNPROCESSABLE: 'This action cannot be completed in the current state.', RATE_LIMITED: 'Too many requests. Try again later.',
-    INTERNAL_ERROR: 'Something went wrong. Please try again.', SERVICE_UNAVAILABLE: 'The service is temporarily unavailable.',
+    INTERNAL_ERROR: 'Unable to confirm the outcome. Check the current state or sign in again before retrying.', SERVICE_UNAVAILABLE: 'The service is temporarily unavailable.',
     REQUEST_TIMEOUT: 'The request timed out. Its result may still be pending.', PAYLOAD_TOO_LARGE: 'The submitted content is too large.',
     AUTH_PROOF_INVALID: 'The verification code or Telegram authorization is invalid or expired.',
     IDENTITY_OCCUPIED: 'This identity is linked to another account.',
@@ -65,14 +65,14 @@ export const errors = {
     IDENTITY_ALREADY_BOUND: 'This sign-in method is already linked. Use the replacement option.',
   },
   'zh-CN': {
-    generic: '操作未完成，请稍后重试。', network: '无法连接，请检查网络。',
+    generic: '无法确认操作结果，请先查询状态或重新登录，再决定是否重试。', network: '无法连接，请检查网络。',
     timeout: '请求超时，处理结果可能仍在确认中。', protocol: '服务返回的数据不符合预期。',
     http: '服务暂时不可用。', cancelled: '请求已取消。',
     INVALID_ARGUMENT: '请检查填写的信息。', UNAUTHENTICATED: '登录状态已失效。',
     PERMISSION_DENIED: '你没有此操作的权限。', NOT_FOUND: '未找到所请求的内容。',
     METHOD_NOT_ALLOWED: '暂不支持此操作。', CONFLICT: '内容状态已变化，请刷新后确认。',
     UNPROCESSABLE: '当前状态无法执行此操作。', RATE_LIMITED: '请求过于频繁，请稍后再试。',
-    INTERNAL_ERROR: '操作未完成，请稍后重试。', SERVICE_UNAVAILABLE: '服务暂时不可用。',
+    INTERNAL_ERROR: '无法确认操作结果，请先查询状态或重新登录，再决定是否重试。', SERVICE_UNAVAILABLE: '服务暂时不可用。',
     REQUEST_TIMEOUT: '请求超时，处理结果可能仍在确认中。', PAYLOAD_TOO_LARGE: '提交内容过大。',
     AUTH_PROOF_INVALID: '验证码或 Telegram 授权无效或已过期。',
     IDENTITY_OCCUPIED: '该身份已绑定其他账户。',

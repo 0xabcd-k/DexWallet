@@ -122,7 +122,7 @@ func TestUserSchemaAndConstraints(t *testing.T) {
 func TestUserIdentityLifecycle(t *testing.T) {
 	db, s := userDatabase(t, "user_lifecycle")
 	ctx := context.Background()
-	first, err := s.ResolveOrCreateVerifiedEmail(ctx, " Alice.Tag+one@EXAMPLE.COM ")
+	first, err := s.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, " Alice.Tag+one@EXAMPLE.COM "))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestUserIdentityLifecycle(t *testing.T) {
 		t.Fatal("address fields diverged")
 	}
 	mustExec(t, db, "UPDATE `user` SET nickname='edited',avatar_url='custom' WHERE id=?", first.User.Id)
-	again, err := s.ResolveOrCreateVerifiedEmail(ctx, "Alice.Tag+one@example.com")
+	again, err := s.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, "Alice.Tag+one@example.com"))
 	if err != nil || again.User.Id != first.User.Id || again.User.Nickname != "edited" || again.Binding != first.Binding {
 		t.Fatalf("repeat: %+v %v", again, err)
 	}
@@ -144,7 +144,7 @@ func TestUserIdentityLifecycle(t *testing.T) {
 	if a != b {
 		t.Fatal("idx changed")
 	}
-	lower, err := s.ResolveOrCreateVerifiedEmail(ctx, "alice.Tag+one@example.com")
+	lower, err := s.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, "alice.Tag+one@example.com"))
 	if err != nil || lower.User.Id == first.User.Id {
 		t.Fatalf("case folded: %v", err)
 	}
@@ -163,12 +163,12 @@ func TestUserIdentityLifecycle(t *testing.T) {
 		t.Fatalf("TG snapshot: %+v %v", identities, err)
 	}
 	mustExec(t, db, "UPDATE email_identity SET user_id=NULL,bound_at=NULL,binding_version=binding_version+1 WHERE id=?", first.Binding.IdentityID)
-	rebound, err := s.ResolveOrCreateVerifiedEmail(ctx, "Alice.Tag+one@example.com")
+	rebound, err := s.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, "Alice.Tag+one@example.com"))
 	if err != nil || rebound.User.Id == first.User.Id || rebound.Binding.IdentityID != first.Binding.IdentityID || rebound.Binding.Version != 3 {
 		t.Fatalf("new owner: %+v %v", rebound, err)
 	}
 	mustExec(t, db, "UPDATE `user` SET status=? WHERE id=?", model.StatusDisabled, rebound.User.Id)
-	if result, err := s.ResolveOrCreateVerifiedEmail(ctx, "Alice.Tag+one@example.com"); result != nil || !errors.Is(err, userlogic.ErrDisabled) {
+	if result, err := s.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, "Alice.Tag+one@example.com")); result != nil || !errors.Is(err, userlogic.ErrDisabled) {
 		t.Fatalf("disabled: %+v %v", result, err)
 	}
 	if _, err = s.FindUserByID(ctx, rebound.User.Id); err != nil {
@@ -196,7 +196,7 @@ func TestUserConcurrentRegistration(t *testing.T) {
 				var result *userlogic.Resolved
 				var err error
 				if kind == model.IdentityEmail {
-					result, err = s.ResolveOrCreateVerifiedEmail(ctx, "race@example.com")
+					result, err = s.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, "race@example.com"))
 				} else {
 					result, err = s.ResolveOrCreateVerifiedTelegram(ctx, userlogic.VerifiedTelegram{TelegramUserID: 42, FirstName: "race"})
 				}

@@ -49,7 +49,7 @@ export function Login() {
       const next = await client.sendCode(
         email,
         password,
-        i18n.resolvedLanguage ?? 'en',
+        i18n.resolvedLanguage === 'zh-CN' ? 'zh-CN' : 'en',
       );
       setChallenge(next);
       setCode('');

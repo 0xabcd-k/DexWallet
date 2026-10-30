@@ -49,7 +49,7 @@ func (s *Service) CheckActorInSession(ctx context.Context, session sqlx.Session,
 
 // ChangeIdentityInSession only accepts authenticated actors and verified targets.
 // It never authenticates a caller from the supplied numeric actor ID.
-func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Session, actor Actor, purpose Purpose, kind model.IdentityType, email string, tg *VerifiedTelegram) (*Resolved, error) {
+func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Session, actor Actor, purpose Purpose, kind model.IdentityType, address EmailAddress, tg *VerifiedTelegram) (*Resolved, error) {
 	if session == nil || (purpose != Bind && purpose != Replace && purpose != Unbind) || (kind != model.IdentityEmail && kind != model.IdentityTelegram) {
 		return nil, ErrInvalidInput
 	}
@@ -91,10 +91,6 @@ func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Sess
 	if purpose != Unbind {
 		switch kind {
 		case model.IdentityEmail:
-			address, err := NormalizeEmail(email)
-			if err != nil {
-				return nil, err
-			}
 			target, err := emails.FindOneByEmailAddress(ctx, address.Address)
 			if errors.Is(err, model.ErrNotFound) {
 				result, err := emails.Insert(ctx, &model.EmailIdentity{EmailAddress: address.Address, EmailLocalPart: address.LocalPart, EmailDomain: address.Domain, EmailOriginal: address.Original})
@@ -203,13 +199,13 @@ func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Sess
 }
 
 // ChangeIdentity owns the SQL transaction after the external proof was consumed.
-func (s *Service) ChangeIdentity(ctx context.Context, actor Actor, purpose Purpose, kind model.IdentityType, email string, tg *VerifiedTelegram) (*Resolved, error) {
+func (s *Service) ChangeIdentity(ctx context.Context, actor Actor, purpose Purpose, kind model.IdentityType, address EmailAddress, tg *VerifiedTelegram) (*Resolved, error) {
 	var last error
 	for attempt := 0; attempt < resolveAttempts; attempt++ {
 		var result *Resolved
 		err := s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
 			var err error
-			result, err = s.ChangeIdentityInSession(ctx, tx, actor, purpose, kind, email, tg)
+			result, err = s.ChangeIdentityInSession(ctx, tx, actor, purpose, kind, address, tg)
 			return err
 		})
 		if err == nil {

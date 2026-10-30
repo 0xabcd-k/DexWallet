@@ -103,7 +103,7 @@ func TestAccountSchemaUpgradeAndConstraints(t *testing.T) {
 func TestAccountQueryLifecycleAndExactStorage(t *testing.T) {
 	db, users := userDatabase(t, "account_query")
 	ctx := context.Background()
-	email, err := users.ResolveOrCreateVerifiedEmail(ctx, "account@example.com")
+	email, err := users.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, "account@example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func TestAccountQueryLifecycleAndExactStorage(t *testing.T) {
 	if err != nil || other[0].Balance != "0.00" {
 		t.Fatal("cross-user balance", other, err)
 	}
-	if _, err = users.ResolveOrCreateVerifiedEmail(ctx, "account@example.com"); err != nil {
+	if _, err = users.ResolveOrCreateVerifiedEmail(ctx, normalizedEmail(t, "account@example.com")); err != nil {
 		t.Fatal(err)
 	}
 	got, err = accounts.List(ctx, email.User.Id)

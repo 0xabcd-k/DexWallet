@@ -12,13 +12,9 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
-// ResolveOrCreateVerifiedEmail requires server-verified authentication input.
+// ResolveOrCreateVerifiedEmail requires a normalized address with server-verified ownership.
 // It resolves current ownership only; this is not a binding or account-merge API.
-func (s *Service) ResolveOrCreateVerifiedEmail(ctx context.Context, original string) (*Resolved, error) {
-	address, err := NormalizeEmail(original)
-	if err != nil {
-		return nil, err
-	}
+func (s *Service) ResolveOrCreateVerifiedEmail(ctx context.Context, address EmailAddress) (*Resolved, error) {
 	var last error
 	for attempt := 0; attempt < resolveAttempts; attempt++ {
 		hint, err := s.emails.FindOneByEmailAddress(ctx, address.Address)

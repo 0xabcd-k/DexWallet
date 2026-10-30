@@ -147,7 +147,7 @@ func TestUserCache(t *testing.T) {
 	actor := userlogic.Actor{UserID: 1, AuthVersion: 3}
 	for _, kind := range []model.IdentityType{model.IdentityEmail, model.IdentityTelegram} {
 		err = tx.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-			_, err := users.ChangeIdentityInSession(ctx, session, actor, userlogic.Bind, kind, "cache@example.com", &userlogic.VerifiedTelegram{TelegramUserID: 12345, FirstName: "Cache"})
+			_, err := users.ChangeIdentityInSession(ctx, session, actor, userlogic.Bind, kind, normalizedEmail(t, "cache@example.com"), &userlogic.VerifiedTelegram{TelegramUserID: 12345, FirstName: "Cache"})
 			return err
 		})
 		if err != nil {
@@ -195,4 +195,13 @@ func TestUserCache(t *testing.T) {
 	if err := db.QueryRowContext(ctx, "SELECT auth_version FROM `user` WHERE id=1").Scan(&version); err != nil || version != 5 {
 		t.Fatalf("write outcome lost: %d %v", version, err)
 	}
+}
+
+func normalizedEmail(t *testing.T, raw string) userlogic.EmailAddress {
+	t.Helper()
+	address, err := userlogic.NormalizeEmail(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return address
 }

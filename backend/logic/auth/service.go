@@ -76,5 +76,5 @@ func sourceIP(value string) (string, error) {
 }
 
 func (s *Service) Unbind(ctx context.Context, actor userlogic.Actor, kind usermodel.IdentityType) (*Result, error) {
-	return s.users.ChangeIdentity(ctx, actor, userlogic.Unbind, kind, "", nil)
+	return s.users.ChangeIdentity(ctx, actor, userlogic.Unbind, kind, userlogic.EmailAddress{}, nil)
 }

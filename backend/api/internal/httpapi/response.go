@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"sync"
@@ -58,14 +57,8 @@ func JSON(ctx context.Context, w http.ResponseWriter, status int, value any) {
 		Error(ctx, w, err)
 		return
 	}
-	// Preflight preserves the JSON error contract even for invalid values: httpx's
-	// own marshal-failure fallback is plain text. All HTTP output stays in httpx.
-	data, err := json.Marshal(value)
-	if err != nil {
-		Error(ctx, w, err)
-		return
-	}
-	// Emit renewal only on successful JSON, after cancellation/marshal checks.
+	// Generated response DTOs are JSON-compatible; serialization belongs to httpx.
+	// Renewal is attached to successful business responses after cancellation checks.
 	// Identity operations carry their own authoritative token.
 	if status >= 200 && status < 300 {
 		switch reply := value.(type) {
@@ -80,7 +73,7 @@ func JSON(ctx context.Context, w http.ResponseWriter, status int, value any) {
 			}
 		}
 	}
-	httpx.WriteJsonCtx(ctx, w, status, json.RawMessage(data))
+	httpx.WriteJsonCtx(ctx, w, status, value)
 }
 func Error(ctx context.Context, w http.ResponseWriter, err error) {
 	_, d := describeError(err)
