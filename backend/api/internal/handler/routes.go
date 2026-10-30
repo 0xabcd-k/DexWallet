@@ -8,6 +8,7 @@ import (
 
 	account "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/account"
 	auth "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/auth"
+	backoffice "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/backoffice"
 	health "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/health"
 	identity "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/identity"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
@@ -70,6 +71,121 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/v1/user/auth/telegram/login",
 					Handler: auth.TelegramLoginHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.BackofficeTransport},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/auth/code",
+					Handler: backoffice.AdminCodeHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/auth/login",
+					Handler: backoffice.AdminLoginHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.BackofficeTransport, serverCtx.AdminAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/current",
+					Handler: backoffice.AdminCurrentHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/password",
+					Handler: backoffice.AdminPasswordHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.BackofficeTransport},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/merchant/auth/code",
+					Handler: backoffice.MerchantCodeHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/merchant/auth/login",
+					Handler: backoffice.MerchantLoginHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.BackofficeTransport, serverCtx.MerchantAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/merchant/current",
+					Handler: backoffice.MerchantCurrentHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/merchant/password",
+					Handler: backoffice.MerchantPasswordHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.BackofficeTransport, serverCtx.AdminAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/accounts",
+					Handler: backoffice.BackofficeAccountsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/accounts/reset",
+					Handler: backoffice.BackofficeResetHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/accounts/status",
+					Handler: backoffice.BackofficeStatusHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/audits",
+					Handler: backoffice.BackofficeAuditsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/merchants",
+					Handler: backoffice.CreateMerchantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/user",
+					Handler: backoffice.ManagedUserHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/user/status",
+					Handler: backoffice.ManagedUserStatusHandler(serverCtx),
 				},
 			}...,
 		),

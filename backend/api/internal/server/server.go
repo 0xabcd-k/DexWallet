@@ -45,6 +45,9 @@ func Build(s *svc.ServiceContext) (*rest.Server, *httpapi.Runtime, error) {
 	s.AuthTransport = middleware.NewAuthTransportMiddleware(s).Handle
 	s.UserAuth = middleware.NewUserAuthMiddleware(s).Handle
 	s.IdentityAuth = middleware.NewIdentityAuthMiddleware(s).Handle
+	s.BackofficeTransport = middleware.NewBackofficeTransportMiddleware(s).Handle
+	s.AdminAuth = middleware.NewAdminAuthMiddleware(s).Handle
+	s.MerchantAuth = middleware.NewMerchantAuthMiddleware(s).Handle
 	handler.RegisterHandlers(app, s)
 	return app, rt, nil
 }

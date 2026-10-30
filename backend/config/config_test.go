@@ -152,3 +152,30 @@ func TestSessionConfiguration(t *testing.T) {
 		t.Fatal("public session without auth config accepted")
 	}
 }
+
+func TestBackofficeIndependentSecrets(t *testing.T) {
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
+	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
+	t.Setenv("DEXWALLET_AUTH_SECRET", strings.Repeat("h", 32))
+	t.Setenv("DEXWALLET_TOKEN_SECRET", strings.Repeat("s", 32))
+	t.Setenv("DEXWALLET_ADMIN_TOKEN_SECRET", strings.Repeat("a", 32))
+	t.Setenv("DEXWALLET_MERCHANT_TOKEN_SECRET", strings.Repeat("m", 32))
+	raw, err := os.ReadFile("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(t.TempDir(), "config.yaml")
+	if err = os.WriteFile(file, append(raw, []byte("\nAuth: {}\nSession: {}\nBackoffice: {}\n")...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, secret := range []string{c.Auth.Secret, c.Session.Secret, c.Backoffice.MerchantSecret, "short"} {
+		c.Backoffice.AdminSecret = secret
+		if c.Check() == nil {
+			t.Fatal("invalid/shared secret accepted")
+		}
+	}
+}

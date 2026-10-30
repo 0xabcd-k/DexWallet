@@ -17,7 +17,8 @@
     "@dexwallet/i18n": "workspace:*",
     "antd-mobile": "5.43.0",
     "@tma.js/bridge": "2.3.3",
-    "@dexwallet/api-contract": "workspace:*"
+    "@dexwallet/api-contract": "workspace:*",
+    "@dexwallet/session": "workspace:*"
   },
   "devDependencies": {
     "@noble/hashes": "2.0.1"

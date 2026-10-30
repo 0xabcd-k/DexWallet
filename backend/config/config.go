@@ -9,6 +9,7 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/go-sql-driver/mysql"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -19,14 +20,15 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
-	Auth              *auth.Config    `json:",optional"`
-	Session           *session.Config `json:",optional"`
-	IDSecret          string          `json:",optional"`
-	DependencyTimeout time.Duration   `json:",default=3s"`
-	ProbeTimeout      time.Duration   `json:",default=1s"`
-	ProbeInterval     time.Duration   `json:",default=5s"`
-	ProbeFreshness    time.Duration   `json:",default=15s"`
-	ShutdownTimeout   time.Duration   `json:",default=30s"`
+	Backoffice        *backoffice.Config `json:",optional"`
+	Auth              *auth.Config       `json:",optional"`
+	Session           *session.Config    `json:",optional"`
+	IDSecret          string             `json:",optional"`
+	DependencyTimeout time.Duration      `json:",default=3s"`
+	ProbeTimeout      time.Duration      `json:",default=1s"`
+	ProbeInterval     time.Duration      `json:",default=5s"`
+	ProbeFreshness    time.Duration      `json:",default=15s"`
+	ShutdownTimeout   time.Duration      `json:",default=30s"`
 	MySQL             MySQL
 	Redis             Redis
 	RocketMQ          RocketMQ
@@ -63,6 +65,10 @@ func Load(path string) (Config, error) {
 	if c.Session != nil {
 		c.Session.Secret = os.Getenv("DEXWALLET_TOKEN_SECRET")
 	}
+	if c.Backoffice != nil {
+		c.Backoffice.AdminSecret = os.Getenv("DEXWALLET_ADMIN_TOKEN_SECRET")
+		c.Backoffice.MerchantSecret = os.Getenv("DEXWALLET_MERCHANT_TOKEN_SECRET")
+	}
 	c.Redis.Password = os.Getenv("DEXWALLET_REDIS_PASSWORD")
 	c.RocketMQ.AccessKey = os.Getenv("DEXWALLET_MQ_ACCESS_KEY")
 	c.RocketMQ.SecretKey = os.Getenv("DEXWALLET_MQ_SECRET_KEY")
@@ -74,6 +80,19 @@ func Load(path string) (Config, error) {
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if c.Backoffice != nil {
+		if err := c.Backoffice.Check(); err != nil {
+			return err
+		}
+		if c.Auth == nil || !c.Redis.Enabled {
+			return fmt.Errorf("backoffice requires Auth and Redis")
+		}
+		for _, secret := range []string{c.Backoffice.AdminSecret, c.Backoffice.MerchantSecret} {
+			if secret == c.Auth.Secret || (c.Session != nil && secret == c.Session.Secret) {
+				return fmt.Errorf("backoffice token secrets must be independent of product/auth secrets")
+			}
+		}
+	}
 	if c.Session != nil {
 		if err := c.Session.Check(); err != nil {
 			return err

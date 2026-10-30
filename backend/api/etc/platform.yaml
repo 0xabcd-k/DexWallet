@@ -44,3 +44,7 @@ RocketMQ:
 
 # Public login/JWT requires explicit Auth and Session configuration.
 # See docs/engineering/用户鉴权.md; secrets are injected from environment variables.
+
+# Backoffice is opt-in: add Backoffice: {} and configure Auth/SMTP.
+# DEXWALLET_ADMIN_TOKEN_SECRET and DEXWALLET_MERCHANT_TOKEN_SECRET must be independent.
+# See docs/engineering/后台鉴权.md for super and migration instructions.

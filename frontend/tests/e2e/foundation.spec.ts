@@ -34,7 +34,8 @@ for (const [index, app] of ['user', 'merchant', 'admin'].entries()) {
     await page.goto(`${base}${prefix}/missing`);
     await expect(page.getByText('Page not found', { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Home', exact: true }).click();
-    await expect(page.getByRole('navigation')).toBeVisible();
+    if (app === 'user') await expect(page.getByRole('navigation')).toBeVisible();
+    else await expect(page.getByRole('heading', { name: app === 'admin' ? 'Platform sign in' : 'Merchant sign in' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: `test-results/${app}-${test.info().project.name}.png`, fullPage: true });
   });
@@ -44,7 +45,8 @@ for (const [index, app] of ['user', 'merchant', 'admin'].entries()) {
     await expect(page.getByText('Page not found', { exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Development checks' })).toHaveCount(0);
     await page.getByRole('link', { name: 'Home', exact: true }).click();
-    await expect(page.getByRole('navigation')).toBeVisible();
+    if (app === 'user') await expect(page.getByRole('navigation')).toBeVisible();
+    else await expect(page.getByRole('heading', { name: app === 'admin' ? 'Platform sign in' : 'Merchant sign in' })).toBeVisible();
   });
 }
 test('user: direct child link has a safe fallback and invalid pagination is normalized', async ({ page }) => {

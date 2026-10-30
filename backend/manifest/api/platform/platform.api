@@ -149,3 +149,156 @@ service platform {
     @handler updateProfile
     patch /v1/user/profile (UpdateProfileRequest) returns (CurrentUserResponse)
 }
+
+// Backoffice accounts use independent tables, credentials and audiences.
+type (
+    BackofficeCodeRequest {
+        SendEmailRequest
+        Password string `json:"password"`
+    }
+    BackofficeLoginRequest {
+        BackofficeCodeRequest
+        Challenge string `json:"challenge"`
+        Code string `json:"code"`
+    }
+    BackofficeAccount {
+        Idx string `json:"idx"`
+        Email string `json:"email"`
+        Status string `json:"status,options=active|disabled"`
+        MustChangePassword bool `json:"mustChangePassword"`
+    }
+    BackofficeAccountResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        TraceId string `json:"traceId"`
+        Data BackofficeAccount `json:"data"`
+    }
+    BackofficeAccountsData {
+        Items []BackofficeAccount `json:"items"`
+    }
+    BackofficeAccountsResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        TraceId string `json:"traceId"`
+        Data BackofficeAccountsData `json:"data"`
+    }
+    BackofficeListRequest {
+        Realm string `form:"realm,default=merchant,options=admin|merchant"`
+        Page int64 `form:"page,default=1,range=[1:1000000]"`
+    }
+    BackofficeChangePasswordRequest {
+        OldPassword string `json:"oldPassword"`
+        Password string `json:"password"`
+    }
+    BackofficeCreateRequest {
+        Email string `json:"email"`
+        Password string `json:"password"`
+        Reason string `json:"reason"`
+    }
+    BackofficeStatusRequest {
+        Realm string `json:"realm,options=admin|merchant"`
+        Idx string `json:"idx"`
+        Status string `json:"status,options=active|disabled"`
+        Reason string `json:"reason"`
+    }
+    BackofficeResetRequest {
+        Realm string `json:"realm,options=admin|merchant"`
+        Idx string `json:"idx"`
+        Password string `json:"password"`
+        Reason string `json:"reason"`
+    }
+    ManagedUserRequest {
+        Idx string `form:"idx"`
+    }
+    ManagedUserStatusRequest {
+        Idx string `json:"idx"`
+        Status string `json:"status,options=active|disabled"`
+        Reason string `json:"reason"`
+    }
+    ManagedUserData {
+        Idx string `json:"idx"`
+        Nickname string `json:"nickname"`
+        Status string `json:"status,options=active|disabled"`
+    }
+    ManagedUserResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        TraceId string `json:"traceId"`
+        Data ManagedUserData `json:"data"`
+    }
+    BackofficeAuditRequest {
+        Page int64 `form:"page,default=1,range=[1:1000000]"`
+    }
+    BackofficeAuditItem {
+        Id int64 `json:"id"`
+        ActorRealm string `json:"actorRealm"`
+        ActorIdx string `json:"actorIdx"`
+        Action string `json:"action"`
+        TargetRealm string `json:"targetRealm"`
+        TargetIdx string `json:"targetIdx"`
+        TargetEmail string `json:"targetEmail"`
+        BeforeValue string `json:"beforeValue"`
+        AfterValue string `json:"afterValue"`
+        Reason string `json:"reason"`
+        Result string `json:"result"`
+        TraceId string `json:"traceId"`
+        CreatedAt int64 `json:"createdAt"`
+    }
+    BackofficeAuditData {
+        Items []BackofficeAuditItem `json:"items"`
+    }
+    BackofficeAuditResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        TraceId string `json:"traceId"`
+        Data BackofficeAuditData `json:"data"`
+    }
+)
+
+@server(group: backoffice middleware: BackofficeTransport)
+service platform {
+    @handler adminCode
+    post /v1/admin/auth/code (BackofficeCodeRequest) returns (ChallengeResponse)
+    @handler adminLogin
+    post /v1/admin/auth/login (BackofficeLoginRequest) returns (TokenResponse)
+}
+@server(group: backoffice middleware: BackofficeTransport,AdminAuth)
+service platform {
+    @handler adminCurrent
+    get /v1/admin/current returns (BackofficeAccountResponse)
+    @handler adminPassword
+    post /v1/admin/password (BackofficeChangePasswordRequest) returns (TokenResponse)
+}
+
+@server(group: backoffice middleware: BackofficeTransport)
+service platform {
+    @handler merchantCode
+    post /v1/merchant/auth/code (BackofficeCodeRequest) returns (ChallengeResponse)
+    @handler merchantLogin
+    post /v1/merchant/auth/login (BackofficeLoginRequest) returns (TokenResponse)
+}
+@server(group: backoffice middleware: BackofficeTransport,MerchantAuth)
+service platform {
+    @handler merchantCurrent
+    get /v1/merchant/current returns (BackofficeAccountResponse)
+    @handler merchantPassword
+    post /v1/merchant/password (BackofficeChangePasswordRequest) returns (TokenResponse)
+}
+
+@server(group: backoffice middleware: BackofficeTransport,AdminAuth)
+service platform {
+    @handler backofficeAccounts
+    get /v1/admin/accounts (BackofficeListRequest) returns (BackofficeAccountsResponse)
+    @handler createMerchant
+    post /v1/admin/merchants (BackofficeCreateRequest) returns (BackofficeAccountResponse)
+    @handler backofficeStatus
+    post /v1/admin/accounts/status (BackofficeStatusRequest) returns (BackofficeAccountResponse)
+    @handler backofficeReset
+    post /v1/admin/accounts/reset (BackofficeResetRequest) returns (BackofficeAccountResponse)
+    @handler managedUser
+    get /v1/admin/user (ManagedUserRequest) returns (ManagedUserResponse)
+    @handler managedUserStatus
+    post /v1/admin/user/status (ManagedUserStatusRequest) returns (ManagedUserResponse)
+    @handler backofficeAudits
+    get /v1/admin/audits (BackofficeAuditRequest) returns (BackofficeAuditResponse)
+}

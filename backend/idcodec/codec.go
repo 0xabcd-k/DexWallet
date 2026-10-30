@@ -12,7 +12,11 @@ import (
 
 type Kind string
 
-const User Kind = "UserId"
+const (
+	User     Kind = "UserId"
+	Admin    Kind = "AdminId"
+	Merchant Kind = "MerchantId"
+)
 const minDigits = 16
 const maxDigits = 19
 

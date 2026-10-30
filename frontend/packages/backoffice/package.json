@@ -1,0 +1,23 @@
+{
+  "name": "@dexwallet/backoffice",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "antd": "6.6.8",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router": "7.18.4",
+    "@dexwallet/i18n": "workspace:*",
+    "@dexwallet/api-client": "workspace:*",
+    "@dexwallet/api-contract": "workspace:*",
+    "@dexwallet/session": "workspace:*",
+    "@dexwallet/ui-desktop": "workspace:*"
+  }
+}

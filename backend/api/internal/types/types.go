@@ -3,6 +3,103 @@
 
 package types
 
+type BackofficeAccount struct {
+	Idx                string `json:"idx"`
+	Email              string `json:"email"`
+	Status             string `json:"status,options=active|disabled"`
+	MustChangePassword bool   `json:"mustChangePassword"`
+}
+
+type BackofficeAccountResponse struct {
+	Code    string            `json:"code,options=OK"`
+	Message string            `json:"message"`
+	TraceId string            `json:"traceId"`
+	Data    BackofficeAccount `json:"data"`
+}
+
+type BackofficeAccountsData struct {
+	Items []BackofficeAccount `json:"items"`
+}
+
+type BackofficeAccountsResponse struct {
+	Code    string                 `json:"code,options=OK"`
+	Message string                 `json:"message"`
+	TraceId string                 `json:"traceId"`
+	Data    BackofficeAccountsData `json:"data"`
+}
+
+type BackofficeAuditData struct {
+	Items []BackofficeAuditItem `json:"items"`
+}
+
+type BackofficeAuditItem struct {
+	Id          int64  `json:"id"`
+	ActorRealm  string `json:"actorRealm"`
+	ActorIdx    string `json:"actorIdx"`
+	Action      string `json:"action"`
+	TargetRealm string `json:"targetRealm"`
+	TargetIdx   string `json:"targetIdx"`
+	TargetEmail string `json:"targetEmail"`
+	BeforeValue string `json:"beforeValue"`
+	AfterValue  string `json:"afterValue"`
+	Reason      string `json:"reason"`
+	Result      string `json:"result"`
+	TraceId     string `json:"traceId"`
+	CreatedAt   int64  `json:"createdAt"`
+}
+
+type BackofficeAuditRequest struct {
+	Page int64 `form:"page,default=1,range=[1:1000000]"`
+}
+
+type BackofficeAuditResponse struct {
+	Code    string              `json:"code,options=OK"`
+	Message string              `json:"message"`
+	TraceId string              `json:"traceId"`
+	Data    BackofficeAuditData `json:"data"`
+}
+
+type BackofficeChangePasswordRequest struct {
+	OldPassword string `json:"oldPassword"`
+	Password    string `json:"password"`
+}
+
+type BackofficeCodeRequest struct {
+	SendEmailRequest
+	Password string `json:"password"`
+}
+
+type BackofficeCreateRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Reason   string `json:"reason"`
+}
+
+type BackofficeListRequest struct {
+	Realm string `form:"realm,default=merchant,options=admin|merchant"`
+	Page  int64  `form:"page,default=1,range=[1:1000000]"`
+}
+
+type BackofficeLoginRequest struct {
+	BackofficeCodeRequest
+	Challenge string `json:"challenge"`
+	Code      string `json:"code"`
+}
+
+type BackofficeResetRequest struct {
+	Realm    string `json:"realm,options=admin|merchant"`
+	Idx      string `json:"idx"`
+	Password string `json:"password"`
+	Reason   string `json:"reason"`
+}
+
+type BackofficeStatusRequest struct {
+	Realm  string `json:"realm,options=admin|merchant"`
+	Idx    string `json:"idx"`
+	Status string `json:"status,options=active|disabled"`
+	Reason string `json:"reason"`
+}
+
 type ChallengeData struct {
 	Challenge string `json:"challenge"`
 	ExpiresAt int64  `json:"expiresAt"`
@@ -82,6 +179,29 @@ type IdentitySummary struct {
 type IdentityTelegramRequest struct {
 	TelegramLoginRequest
 	Purpose string `json:"purpose,options=bind|replace"`
+}
+
+type ManagedUserData struct {
+	Idx      string `json:"idx"`
+	Nickname string `json:"nickname"`
+	Status   string `json:"status,options=active|disabled"`
+}
+
+type ManagedUserRequest struct {
+	Idx string `form:"idx"`
+}
+
+type ManagedUserResponse struct {
+	Code    string          `json:"code,options=OK"`
+	Message string          `json:"message"`
+	TraceId string          `json:"traceId"`
+	Data    ManagedUserData `json:"data"`
+}
+
+type ManagedUserStatusRequest struct {
+	Idx    string `json:"idx"`
+	Status string `json:"status,options=active|disabled"`
+	Reason string `json:"reason"`
 }
 
 type SendEmailRequest struct {

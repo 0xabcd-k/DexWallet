@@ -57,3 +57,11 @@ func TokenReply(ctx context.Context, tokens *session.Tokens, r *authlogic.Result
 	}
 	return &types.TokenResponse{Code: SuccessCode, Message: "OK", TraceId: TraceID(ctx), Data: types.TokenData{AccessToken: raw, UserIdx: claims.Subject, ExpiresAt: claims.ExpiresAt.Unix()}}, nil
 }
+
+// WithRenewal carries only a transport token, never a product-user authorization.
+type renewalKey struct{}
+
+func WithRenewal(ctx context.Context, raw string) context.Context {
+	return context.WithValue(ctx, renewalKey{}, raw)
+}
+func renewal(ctx context.Context) string { raw, _ := ctx.Value(renewalKey{}).(string); return raw }

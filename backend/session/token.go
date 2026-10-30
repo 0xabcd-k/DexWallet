@@ -1,4 +1,4 @@
-// Package session implements the product-user JWT policy; it stores no sessions.
+// Package session implements the audience-isolated JWT policy; it stores no sessions.
 package session
 
 import (
@@ -10,14 +10,16 @@ import (
 )
 
 const (
-	Lifetime      = 72 * time.Hour
-	RenewBefore   = Lifetime / 2
-	Audience      = "product-user"
-	TokenHeader   = "X-Access-Token"
-	MaxTokenBytes = 4096
+	Lifetime         = 72 * time.Hour
+	RenewBefore      = Lifetime / 2
+	Audience         = "product-user"
+	AdminAudience    = "admin-user"
+	MerchantAudience = "merchant-user"
+	TokenHeader      = "X-Access-Token"
+	MaxTokenBytes    = 4096
 )
 
-var ErrInvalid = errors.New("invalid or expired product token")
+var ErrInvalid = errors.New("invalid or expired token")
 
 type Config struct {
 	Secret string `json:",optional"`
@@ -36,20 +38,28 @@ type Claims struct {
 }
 
 type Tokens struct {
-	secret []byte
-	issuer string
-	idx    *idcodec.Codec
-	now    func() time.Time
+	secret   []byte
+	issuer   string
+	audience string
+	idx      *idcodec.Codec
+	now      func() time.Time
 }
 
 func New(c Config, issuer string, idx *idcodec.Codec) (*Tokens, error) {
+	return NewForAudience(c, issuer, idx, Audience)
+}
+
+func NewForAudience(c Config, issuer string, idx *idcodec.Codec, audience string) (*Tokens, error) {
+	if audience != Audience && audience != AdminAudience && audience != MerchantAudience {
+		return nil, errors.New("invalid token audience")
+	}
 	if err := c.Check(); err != nil {
 		return nil, err
 	}
 	if issuer == "" || idx == nil {
 		return nil, errors.New("token issuer and idx codec required")
 	}
-	return &Tokens{secret: []byte(c.Secret), issuer: issuer, idx: idx, now: time.Now}, nil
+	return &Tokens{secret: []byte(c.Secret), issuer: issuer, audience: audience, idx: idx, now: time.Now}, nil
 }
 
 func (s *Tokens) Issue(id, version int64) (string, *Claims, error) {
@@ -62,7 +72,7 @@ func (s *Tokens) Issue(id, version int64) (string, *Claims, error) {
 	}
 	now := s.now().Truncate(time.Second)
 	c := &Claims{RegisteredClaims: jwt.RegisteredClaims{Issuer: s.issuer, Subject: idx,
-		Audience: jwt.ClaimStrings{Audience}, IssuedAt: jwt.NewNumericDate(now), ExpiresAt: jwt.NewNumericDate(now.Add(Lifetime))}, AuthVersion: version}
+		Audience: jwt.ClaimStrings{s.audience}, IssuedAt: jwt.NewNumericDate(now), ExpiresAt: jwt.NewNumericDate(now.Add(Lifetime))}, AuthVersion: version}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, c).SignedString(s.secret)
 	return token, c, err
 }
@@ -80,7 +90,7 @@ func (s *Tokens) Parse(raw string) (*Claims, int64, error) {
 		return nil, 0, ErrInvalid
 	}
 	now := s.now()
-	if c.Issuer != s.issuer || len(c.Audience) != 1 || c.Audience[0] != Audience || c.AuthVersion <= 0 ||
+	if c.Issuer != s.issuer || len(c.Audience) != 1 || c.Audience[0] != s.audience || c.AuthVersion <= 0 ||
 		c.IssuedAt == nil || c.ExpiresAt == nil || c.IssuedAt.Unix() <= 0 || c.IssuedAt.After(now) ||
 		!now.Before(c.ExpiresAt.Time) || c.ExpiresAt.Sub(c.IssuedAt.Time) != Lifetime ||
 		(c.NotBefore != nil && now.Before(c.NotBefore.Time)) {

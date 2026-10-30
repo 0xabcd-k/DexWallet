@@ -73,6 +73,9 @@ func JSON(ctx context.Context, w http.ResponseWriter, status int, value any) {
 		case *types.TokenResponse:
 			w.Header().Set(session.TokenHeader, reply.Data.AccessToken)
 		default:
+			if raw := renewal(ctx); raw != "" {
+				w.Header().Set(session.TokenHeader, raw)
+			}
 			if a, err := Authorized(ctx); err == nil && a.Renewal != "" {
 				w.Header().Set(session.TokenHeader, a.Renewal)
 			}

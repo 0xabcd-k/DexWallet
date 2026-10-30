@@ -122,3 +122,31 @@ func TestRejectInvalidClaimsAndSigningScope(t *testing.T) {
 		}
 	}
 }
+
+// Even accidental signing-key reuse must not allow cross-surface tokens.
+func TestAudienceIsolation(t *testing.T) {
+	idx, err := idcodec.New("test-only-key123", idcodec.User)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tokens []*Tokens
+	for _, aud := range []string{Audience, AdminAudience, MerchantAudience} {
+		s, err := NewForAudience(Config{Secret: strings.Repeat("s", 32)}, "test", idx, aud)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tokens = append(tokens, s)
+	}
+	for i, issuer := range tokens {
+		raw, _, err := issuer.Issue(1, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for j, verifier := range tokens {
+			_, _, err := verifier.Parse(raw)
+			if (err == nil) != (i == j) {
+				t.Fatalf("issuer %d verifier %d: %v", i, j, err)
+			}
+		}
+	}
+}

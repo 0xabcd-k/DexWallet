@@ -14,6 +14,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/health"
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
@@ -39,6 +40,10 @@ const (
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
 	Config                config.Config
+	Backoffice            *backoffice.Service
+	BackofficeTransport   rest.Middleware
+	AdminAuth             rest.Middleware
+	MerchantAuth          rest.Middleware
 	UserIdx               *idcodec.Codec
 	Users                 *userlogic.Service
 	Auth                  *authlogic.Service
@@ -120,8 +125,8 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 		d.checks = append(d.checks, health.Check{Name: RedisDependency, Required: c.Redis.Required, Run: func(ctx context.Context) error { return d.Redis.Ping(ctx).Err() }})
 	}
 	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx)
+	var sender authlogic.Mailer
 	if c.Auth != nil {
-		var sender authlogic.Mailer
 		if c.Auth.EmailEnabled {
 			sender, err = authlogic.NewSMTPMailer(c.Auth.SMTP)
 			if err != nil {
@@ -129,6 +134,12 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 			}
 		}
 		d.Auth, err = authlogic.New(*c.Auth, d.Users, authmodel.NewEmailChallengeModel(conn), authmodel.NewAuthOperationModel(conn), d.Tx, sender, authlogic.NewRedisLimiter(d.Redis, d.Namespace, *c.Auth))
+		if err != nil {
+			return d, err
+		}
+	}
+	if c.Backoffice != nil {
+		d.Backoffice, err = backoffice.New(*c.Backoffice, *c.Auth, conn, d.Tx, d.ModelUser, d.UserIdx, d.Redis, d.Namespace, c.IDSecret, sender)
 		if err != nil {
 			return d, err
 		}
