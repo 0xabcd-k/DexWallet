@@ -21,11 +21,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
 			[]rest.Route{
 				{
-					Method:  http.MethodPost,
-					Path:    "/v1/user/auth/logout-all",
-					Handler: account.LogoutAllHandler(serverCtx),
-				},
-				{
 					Method:  http.MethodGet,
 					Path:    "/v1/user/current",
 					Handler: account.CurrentUserHandler(serverCtx),

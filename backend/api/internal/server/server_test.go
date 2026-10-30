@@ -109,7 +109,7 @@ func TestHTTPExitsAndTrace(t *testing.T) {
 	for _, tc := range []struct {
 		method, path, body, code string
 		status                   int
-	}{{"GET", "/health/live", "", "OK", 200}, {"GET", "/health/ready", "", "OK", 200}, {"GET", "/missing", "", "NOT_FOUND", 404}, {"POST", "/health/live", "", "METHOD_NOT_ALLOWED", 405}, {"GET", "/panic", "", "INTERNAL_ERROR", 500}, {"POST", "/parse", "{", "INVALID_ARGUMENT", 400}, {"POST", "/parse", strings.Repeat("x", 101), "PAYLOAD_TOO_LARGE", 413}, {"GET", "/slow", "", "REQUEST_TIMEOUT", 503}} {
+	}{{"GET", "/health/live", "", "OK", 200}, {"GET", "/health/ready", "", "OK", 200}, {"GET", "/missing", "", "NOT_FOUND", 404}, {"POST", "/v1/user/auth/logout-all", "", "NOT_FOUND", 404}, {"POST", "/health/live", "", "METHOD_NOT_ALLOWED", 405}, {"GET", "/panic", "", "INTERNAL_ERROR", 500}, {"POST", "/parse", "{", "INVALID_ARGUMENT", 400}, {"POST", "/parse", strings.Repeat("x", 101), "PAYLOAD_TOO_LARGE", 413}, {"GET", "/slow", "", "REQUEST_TIMEOUT", 503}} {
 		t.Run(tc.path+tc.code, func(t *testing.T) {
 			status, v, id := request(t, ts.Client(), tc.method, ts.URL+tc.path, tc.body)
 			if status != tc.status || v["code"] != tc.code {

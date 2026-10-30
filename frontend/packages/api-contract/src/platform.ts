@@ -87,17 +87,6 @@ export interface IdentityTelegramRequest {
 	purpose: 'bind' | 'replace'
 }
 
-export interface LogoutData {
-	loggedOut: boolean
-}
-
-export interface LogoutResponse {
-	code: 'OK'
-	message: string
-	data: LogoutData
-	traceId: string
-}
-
 export interface SendEmailRequest {
 	email: string
 	locale: 'en' | 'zh-CN'

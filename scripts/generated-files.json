@@ -1,7 +1,7 @@
 {
   "generated": {
-    "backend/api/internal/handler/routes.go": "c539b267cad64256115b090c74266e5298df702c28cce5b29a9a9e3ae693447a",
-    "backend/api/internal/types/types.go": "0824701a19e6462da9b84530a13721dde7d36f60a71469412dd8c6a846474df7",
+    "backend/api/internal/handler/routes.go": "6084a6236b51f88bc9c7c0f3364292260d2f54120049e43395e2e968a512400e",
+    "backend/api/internal/types/types.go": "9ba8937fbc6e2800e88ab7f78b68dc0cd4147a377eaf390e0981eebaf8a9d184",
     "backend/apperror/codes_gen.go": "c47c3ddcac15fe4e6e7656cc911999dc4dfe95d86d58f3d6cf6d123bb56cb550",
     "backend/model/auth/auth_operation_model_gen.go": "57906941e40cb68bdf0ffc900dc29d629b6d9afd0d5f93024d1da66aaa671310",
     "backend/model/auth/email_challenge_model_gen.go": "a8ad42180a73fe21b43dad672bc4a203b4ee82899b43ce14e9f3cf7830964686",
@@ -12,14 +12,13 @@
     "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
     "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
     "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c",
-    "frontend/packages/api-contract/src/platform.ts": "82454b33f75b71e20f4b86dd6d80905a7ee3fa127f7c590b7da4273b2467181e"
+    "frontend/packages/api-contract/src/platform.ts": "af36ee4a94902fa3bbfe249d4f228f319539c8b7c733ea537e434d2e65ae6b47"
   },
   "scaffold": [
     "backend/api/etc/platform.yaml",
     "backend/api/internal/handler/account/current_identities_handler.go",
     "backend/api/internal/handler/account/current_user_handler.go",
     "backend/api/internal/handler/account/identity_email_code_handler.go",
-    "backend/api/internal/handler/account/logout_all_handler.go",
     "backend/api/internal/handler/account/update_profile_handler.go",
     "backend/api/internal/handler/auth/email_login_handler.go",
     "backend/api/internal/handler/auth/send_email_handler.go",
@@ -32,7 +31,6 @@
     "backend/api/internal/logic/account/current_identities_logic.go",
     "backend/api/internal/logic/account/current_user_logic.go",
     "backend/api/internal/logic/account/identity_email_code_logic.go",
-    "backend/api/internal/logic/account/logout_all_logic.go",
     "backend/api/internal/logic/account/update_profile_logic.go",
     "backend/api/internal/logic/auth/email_login_logic.go",
     "backend/api/internal/logic/auth/send_email_logic.go",

@@ -88,15 +88,7 @@ type (
         Data CurrentUserData `json:"data"`
         TraceId string `json:"traceId"`
     }
-    LogoutData {
-        LoggedOut bool `json:"loggedOut"`
-    }
-    LogoutResponse {
-        Code string `json:"code,options=OK"`
-        Message string `json:"message"`
-        Data LogoutData `json:"data"`
-        TraceId string `json:"traceId"`
-    }
+
 )
 
 @server(group: auth middleware: AuthTransport)
@@ -113,8 +105,6 @@ service platform {
 service platform {
     @handler currentUser
     get /v1/user/current returns (CurrentUserResponse)
-    @handler logoutAll
-    post /v1/user/auth/logout-all returns (LogoutResponse)
     @handler identityEmailCode
     post /v1/user/identities/email/code (IdentityEmailCodeRequest) returns (ChallengeResponse)
 }

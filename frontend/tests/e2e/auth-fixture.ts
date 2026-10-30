@@ -46,7 +46,6 @@ export async function mockAccount(page: Page) {
       return issue();
     }
     if (path.endsWith('/unbind')) { state.version++; if (input.identity === 'email') state.email = ''; else state.telegram = false; return issue(); }
-    if (path.endsWith('/logout-all')) { state.version++; return ok({ loggedOut: true }); }
     return fail(404, 'NOT_FOUND');
   });
   return state;

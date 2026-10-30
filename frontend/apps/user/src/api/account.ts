@@ -81,7 +81,3 @@ export async function unbind(input: UnbindRequest, ticket: Session) {
   checkIdentityToken(ticket, result);
   if (!await session.establish(ticket, result.accessToken)) throw new ApiError('cancelled');
 }
-export async function logoutAll(ticket = session.capture()) {
-  await userRequest('/v1/user/auth/logout-all', value => { if (data(value).loggedOut !== true) throw new TypeError('Invalid logout'); }, { method: 'POST' }, ticket);
-  await session.clear(ticket);
-}

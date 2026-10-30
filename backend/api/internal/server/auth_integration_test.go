@@ -22,6 +22,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/internal/migration"
 	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	authmodel "github.com/0xabcd-k/DexWallet/backend/model/auth"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	shared "github.com/0xabcd-k/DexWallet/backend/svc"
@@ -165,7 +166,8 @@ func TestProductSessionHTTP(t *testing.T) {
 		if envelope.TraceId != res.Header.Get(httpapi.TraceHeader) || len(envelope.TraceId) != 32 {
 			t.Fatal("trace contract lost")
 		}
-		if res.Header.Get("Cache-Control") != "no-store" {
+		// Removed routes use the common 404 handler, outside AuthTransport.
+		if wantStatus != http.StatusNotFound && res.Header.Get("Cache-Control") != "no-store" {
 			t.Fatal("authentication response cacheable")
 		}
 		if wantStatus != 200 && res.Header.Get(session.TokenHeader) != "" {
@@ -292,7 +294,8 @@ func TestProductSessionHTTP(t *testing.T) {
 	h, b = call("POST", "/v1/user/identities/unbind", changed, unbind, 200, "OK")
 	decodeToken(h, b)
 	call("POST", "/v1/user/identities/unbind", unbound, map[string]string{"requestToken": request(6), "identity": "email"}, 422, "ANOTHER_IDENTITY_REQUIRED")
-	// Logging out all cannot renew and invalidates both the token and recovery receipt.
+	// The retired public endpoint neither renews nor changes the current session.
+	// The retained internal capability still invalidates tokens and recovery receipts.
 	logoutClaims, _, err := s.Tokens.Parse(unbound)
 	if err != nil {
 		t.Fatal(err)
@@ -303,9 +306,13 @@ func TestProductSessionHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h, _ = call("POST", "/v1/user/auth/logout-all", logoutToken, nil, 200, "OK")
+	h, _ = call("POST", "/v1/user/auth/logout-all", logoutToken, nil, 404, "NOT_FOUND")
 	if h.Get(session.TokenHeader) != "" {
-		t.Fatal("logout renewed")
+		t.Fatal("retired endpoint renewed")
+	}
+	call("GET", "/v1/user/current", unbound, nil, 200, "OK")
+	if err = s.Users.LogoutAll(ctx, userlogic.Actor{UserID: id, AuthVersion: logoutClaims.AuthVersion}); err != nil {
+		t.Fatal("internal logout all", err)
 	}
 	call("GET", "/v1/user/current", unbound, nil, 401, "UNAUTHENTICATED")
 	call("POST", "/v1/user/identities/unbind", changed, unbind, 401, "UNAUTHENTICATED")
@@ -313,7 +320,7 @@ func TestProductSessionHTTP(t *testing.T) {
 	// TG-only silent login creates an independent product user.
 	h, b = call("POST", "/v1/user/auth/telegram/login", "", map[string]string{"requestToken": request(7), "initData": tg(200, 2)}, 200, "OK")
 	tgToken := decodeToken(h, b)
-	_, tgID, err := s.Tokens.Parse(tgToken)
+	tgClaims, tgID, err := s.Tokens.Parse(tgToken)
 	if err != nil || tgID == id {
 		t.Fatal("TG user not independent", err)
 	}
@@ -324,13 +331,11 @@ func TestProductSessionHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	call("GET", "/v1/user/current", tgToken, nil, 200, "OK")
-	call("POST", "/v1/user/auth/logout-all", tgToken, nil, 401, "UNAUTHENTICATED")
+	if err = s.Users.LogoutAll(ctx, userlogic.Actor{UserID: tgID, AuthVersion: tgClaims.AuthVersion}); !errors.Is(err, userlogic.ErrStaleSession) {
+		t.Fatal("internal logout all accepted stale actor", err)
+	}
 	call("PATCH", "/v1/user/profile", tgToken, map[string]string{"nickname": "stale write"}, 401, "UNAUTHENTICATED")
 	call("GET", "/v1/user/identities", tgToken, nil, 401, "UNAUTHENTICATED")
-	tgClaims, _, err := s.Tokens.Parse(tgToken)
-	if err != nil {
-		t.Fatal(err)
-	}
 	tgClaims.IssuedAt, tgClaims.ExpiresAt = oldClaims.IssuedAt, oldClaims.ExpiresAt
 	stale, err := jwt.NewWithClaims(jwt.SigningMethodHS256, tgClaims).SignedString([]byte(sessionTestSecret))
 	if err != nil {

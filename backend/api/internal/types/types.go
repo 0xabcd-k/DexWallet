@@ -84,17 +84,6 @@ type IdentityTelegramRequest struct {
 	Purpose string `json:"purpose,options=bind|replace"`
 }
 
-type LogoutData struct {
-	LoggedOut bool `json:"loggedOut"`
-}
-
-type LogoutResponse struct {
-	Code    string     `json:"code,options=OK"`
-	Message string     `json:"message"`
-	Data    LogoutData `json:"data"`
-	TraceId string     `json:"traceId"`
-}
-
 type SendEmailRequest struct {
 	Email  string `json:"email"`
 	Locale string `json:"locale,default=en,options=en|zh-CN"`

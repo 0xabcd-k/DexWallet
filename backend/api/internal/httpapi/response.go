@@ -67,12 +67,11 @@ func JSON(ctx context.Context, w http.ResponseWriter, status int, value any) {
 		return
 	}
 	// Emit renewal only on successful JSON, after cancellation/marshal checks.
-	// Identity operations carry their own authoritative token; logout never renews.
+	// Identity operations carry their own authoritative token.
 	if status >= 200 && status < 300 {
 		switch reply := value.(type) {
 		case *types.TokenResponse:
 			w.Header().Set(session.TokenHeader, reply.Data.AccessToken)
-		case *types.LogoutResponse:
 		default:
 			if a, err := Authorized(ctx); err == nil && a.Renewal != "" {
 				w.Header().Set(session.TokenHeader, a.Renewal)

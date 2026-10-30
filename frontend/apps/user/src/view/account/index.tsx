@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Button, Dialog, Input } from 'antd-mobile';
+import { Button, Input } from 'antd-mobile';
 import { useTranslation } from '@dexwallet/i18n';
-import { logoutAll, updateProfile } from '../../api/account';
+import { updateProfile } from '../../api/account';
 import { Failure, signOut, useAuth } from '../../auth/context';
 import '../login/style.less';
 
@@ -29,18 +29,16 @@ export function AccountProfile() {
 export function AccountActions() {
   const auth = useAuth(); const { t } = useTranslation(); const navigate = useNavigate();
   const [busy, setBusy] = useState(false); const [error, setError] = useState<unknown>();
-  async function leave(all: boolean) {
-    if (all && !await Dialog.confirm({ title: t('signOutAll'), content: t('signOutAllBody'), confirmText: t('confirm'), cancelText: t('cancel') })) return;
+  async function leave() {
     setBusy(true); setError(undefined);
-    try { if (all) await logoutAll(auth.session); await signOut(auth.launch, auth.session); navigate('/wallet', { replace: true }); }
+    try { await signOut(auth.launch, auth.session); navigate('/wallet', { replace: true }); }
     catch (failure) { setError(failure); } finally { setBusy(false); }
   }
   return <>
     {error !== undefined && <Failure error={error} />}
     <div className="settings-account-actions">
       <Button disabled={busy} onClick={() => { void signOut(auth.launch).then(() => navigate('/login?manual=1&returnTo=%2Fsettings')); }}>{t('switchAccount')}</Button>
-      <Button disabled={busy} onClick={() => { void leave(false); }}>{t('signOut')}</Button>
-      <Button disabled={busy} onClick={() => { void leave(true); }}>{t('signOutAll')}</Button>
+      <Button disabled={busy} onClick={() => { void leave(); }}>{t('signOut')}</Button>
     </div>
   </>;
 }

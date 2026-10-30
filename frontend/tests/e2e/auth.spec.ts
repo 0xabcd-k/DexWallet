@@ -28,7 +28,7 @@ test('email login, errors, source recovery, profile, reload and logout', async (
   await expect(page.getByRole('button', { name: 'Unlink', exact: true })).toBeDisabled();
   await page.screenshot({ path: `test-results/identities-${test.info().project.name}.png`, fullPage: true });
   await expect(page.getByRole('button', { name: 'Switch account', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Sign out everywhere', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign out everywhere', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(`${base}/#/wallet`);
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).token, SESSION_KEY)).toBeNull();

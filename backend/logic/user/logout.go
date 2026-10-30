@@ -7,7 +7,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
-// LogoutAll checks the latest actor under a row lock, including when ordinary
+// LogoutAll is retained for future internal use; no public API currently exposes it.
+// It checks the latest actor under a row lock, including when ordinary
 // request authentication accepted a briefly stale cache entry.
 func (s *Service) LogoutAll(ctx context.Context, actor Actor) error {
 	return s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
