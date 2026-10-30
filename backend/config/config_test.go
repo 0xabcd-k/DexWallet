@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/0xabcd-k/DexWallet/backend/background"
 )
 
 func TestEnvironmentInjectionAndValidation(t *testing.T) {
@@ -177,5 +179,42 @@ func TestBackofficeIndependentSecrets(t *testing.T) {
 		if c.Check() == nil {
 			t.Fatal("invalid/shared secret accepted")
 		}
+	}
+}
+
+func TestBackgroundRequiresMQAndFitsDrainBudget(t *testing.T) {
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
+	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
+	c, err := Load("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Background != nil {
+		t.Fatal("background must require explicit configuration")
+	}
+	data, err := os.ReadFile("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "background.yaml")
+	if err = os.WriteFile(path, append(data, []byte("\nBackground: {}\n")...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	c, err = Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Background == nil || *c.Background != background.Defaults() {
+		t.Fatal("explicit background configuration did not load defaults", c.Background)
+	}
+	c.RocketMQ.Enabled = false
+	if c.Check() == nil {
+		t.Fatal("background accepted disabled MQ")
+	}
+	c.RocketMQ.Enabled = true
+	c.Background.OperationTimeout = c.ShutdownTimeout + time.Second
+	c.Background.LeaseDuration = 2 * c.Background.OperationTimeout
+	if c.Check() == nil {
+		t.Fatal("background exceeded drain budget")
 	}
 }

@@ -511,7 +511,7 @@ func TestTransferSchemaUpgradeAndHistoryGuard(t *testing.T) {
 	if _, err = db.Exec("INSERT INTO transfer_order(sender_id,recipient_id,request_key,amount) VALUES(1,2,'schema_key_012345',10)"); err == nil {
 		t.Fatal("duplicate request accepted")
 	}
-	if err = m.Migrate(7); err == nil || !strings.Contains(err.Error(), "transfer_rollback_guard") {
+	if err = m.Migrate(7); err == nil || !strings.Contains(err.Error(), "rollback_guard") {
 		t.Fatal("history erased", err)
 	}
 	found, err := s.FindByRequest(ctx, transferActor(1), order.RequestKey)

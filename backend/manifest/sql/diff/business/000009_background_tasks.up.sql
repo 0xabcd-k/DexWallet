@@ -1,0 +1,58 @@
+CREATE TABLE `event_outbox` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `kind` VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `business_id` BIGINT NOT NULL,
+    `version` BIGINT NOT NULL,
+    `payload` LONGTEXT NOT NULL,
+    `state` VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'ready',
+    `attempts` BIGINT NOT NULL DEFAULT 0,
+    `generation` BIGINT NOT NULL DEFAULT 0,
+    `next_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `lease_until` DATETIME(6) NULL,
+    `last_error` TEXT NOT NULL,
+    `retry_reason` TEXT NOT NULL,
+    `retry_operator` VARCHAR(128) NOT NULL DEFAULT '',
+    `retried_at` DATETIME(6) NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `completed_at` DATETIME(6) NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_event_source` (`kind`, `business_id`, `version`),
+    KEY `ix_event_due` (`state`, `next_at`, `id`),
+    KEY `ix_event_lease` (`state`, `lease_until`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `background_task` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `event_id` BIGINT NOT NULL,
+    `handler` VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `state` VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'ready',
+    `attempts` BIGINT NOT NULL DEFAULT 0,
+    `generation` BIGINT NOT NULL DEFAULT 0,
+    `next_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `lease_until` DATETIME(6) NULL,
+    `last_error` TEXT NOT NULL,
+    `retry_reason` TEXT NOT NULL,
+    `retry_operator` VARCHAR(128) NOT NULL DEFAULT '',
+    `retried_at` DATETIME(6) NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `completed_at` DATETIME(6) NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_task_event_handler` (`event_id`, `handler`),
+    KEY `ix_task_due` (`handler`, `state`, `next_at`, `id`),
+    KEY `ix_task_lease` (`handler`, `state`, `lease_until`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+ALTER TABLE `event_outbox`
+    ADD CONSTRAINT `ck_event_source` CHECK (`business_id` > 0 AND `version` > 0 AND `kind` <> '' AND JSON_VALID(`payload`)),
+    ADD CONSTRAINT `ck_event_attempts` CHECK (`attempts` >= 0 AND `generation` >= `attempts`),
+    ADD CONSTRAINT `ck_event_state` CHECK (`state` IN ('ready', 'running', 'published', 'dead')),
+    ADD CONSTRAINT `ck_event_lease` CHECK ((`state` = 'running') = (`lease_until` IS NOT NULL)),
+    ADD CONSTRAINT `ck_event_complete` CHECK ((`state` = 'published') = (`completed_at` IS NOT NULL));
+
+ALTER TABLE `background_task`
+    ADD CONSTRAINT `fk_task_event` FOREIGN KEY (`event_id`) REFERENCES `event_outbox` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+    ADD CONSTRAINT `ck_task_handler` CHECK (`handler` <> ''),
+    ADD CONSTRAINT `ck_task_attempts` CHECK (`attempts` >= 0 AND `generation` >= `attempts`),
+    ADD CONSTRAINT `ck_task_state` CHECK (`state` IN ('ready', 'running', 'succeeded', 'dead', 'blocked')),
+    ADD CONSTRAINT `ck_task_lease` CHECK ((`state` = 'running') = (`lease_until` IS NOT NULL)),
+    ADD CONSTRAINT `ck_task_complete` CHECK ((`state` = 'succeeded') = (`completed_at` IS NOT NULL));

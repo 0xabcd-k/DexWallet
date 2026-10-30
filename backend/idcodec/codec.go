@@ -13,17 +13,19 @@ import (
 type Kind string
 
 const (
-	User          Kind = "UserId"
-	Admin         Kind = "AdminId"
-	Merchant      Kind = "MerchantId"
-	LedgerEntry   Kind = "LedgerEntryId"
-	LedgerVoucher Kind = "LedgerVoucherId"
-	Transfer      Kind = "TransferId"
-	Deposit       Kind = "DepositId"
-	RewardGrant   Kind = "RewardGrantId"
-	AccountHold   Kind = "AccountHoldId"
-	Withdrawal    Kind = "WithdrawalId"
-	Payment       Kind = "PaymentId"
+	User           Kind = "UserId"
+	Admin          Kind = "AdminId"
+	Merchant       Kind = "MerchantId"
+	LedgerEntry    Kind = "LedgerEntryId"
+	LedgerVoucher  Kind = "LedgerVoucherId"
+	Transfer       Kind = "TransferId"
+	Event          Kind = "EventId"
+	BackgroundTask Kind = "BackgroundTaskId"
+	Deposit        Kind = "DepositId"
+	RewardGrant    Kind = "RewardGrantId"
+	AccountHold    Kind = "AccountHoldId"
+	Withdrawal     Kind = "WithdrawalId"
+	Payment        Kind = "PaymentId"
 )
 const minDigits = 16
 const maxDigits = 19

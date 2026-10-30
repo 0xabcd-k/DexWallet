@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/0xabcd-k/DexWallet/backend/background"
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
@@ -20,6 +21,7 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
+	Background        *background.Config `json:",optional"`
 	Backoffice        *backoffice.Config `json:",optional"`
 	Auth              *auth.Config       `json:",optional"`
 	Session           *session.Config    `json:",optional"`
@@ -80,6 +82,14 @@ func Load(path string) (Config, error) {
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if c.Background != nil {
+		if err := c.Background.Check(); err != nil {
+			return err
+		}
+		if !c.RocketMQ.Enabled || c.Background.OperationTimeout > c.ShutdownTimeout {
+			return fmt.Errorf("background requires RocketMQ and an operation timeout within the shutdown drain budget")
+		}
+	}
 	if c.Backoffice != nil {
 		if err := c.Backoffice.Check(); err != nil {
 			return err

@@ -95,10 +95,16 @@ func (r *Run) save() error {
 }
 func (r *Run) Name(kind, label string) string {
 	if kind == "retry" {
-		return "%RETRY%" + r.Name("group", "consumer")
+		if label == "" {
+			label = "consumer"
+		}
+		return "%RETRY%" + r.Name("group", label)
 	}
 	if kind == "dlq" {
-		return "%DLQ%" + r.Name("group", "consumer")
+		if label == "" {
+			label = "consumer"
+		}
+		return "%DLQ%" + r.Name("group", label)
 	}
 	if kind == "database" {
 		return DatabasePrefix + r.ID + "_" + label
@@ -118,7 +124,11 @@ func (r *Run) valid(v Resource) bool {
 		return false
 	}
 	if v.Kind == "retry" || v.Kind == "dlq" {
-		return v.Name == r.Name(v.Kind, "")
+		prefix := "%RETRY%"
+		if v.Kind == "dlq" {
+			prefix = "%DLQ%"
+		}
+		return strings.HasPrefix(v.Name, prefix) && r.valid(Resource{Kind: "group", Name: strings.TrimPrefix(v.Name, prefix)})
 	}
 	prefix := r.Name(v.Kind, "")
 	if v.Kind == "redis" {

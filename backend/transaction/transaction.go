@@ -76,8 +76,14 @@ type sqlTx struct {
 func (t sqlTx) Commit() error   { return t.raw.Commit() }
 func (t sqlTx) Rollback() error { return t.raw.Rollback() }
 func New(db *sql.DB) *Runner {
+	return NewWithIsolation(db, sql.LevelDefault)
+}
+
+// NewWithIsolation keeps the same ownership/failure semantics for the task
+// queue's READ COMMITTED claims. Business writers continue to use New.
+func NewWithIsolation(db *sql.DB, isolation sql.IsolationLevel) *Runner {
 	return &Runner{begin: func(ctx context.Context) (tx, error) {
-		t, err := db.BeginTx(ctx, nil)
+		t, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: isolation})
 		if err != nil {
 			return nil, err
 		}

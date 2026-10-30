@@ -48,3 +48,7 @@ RocketMQ:
 # Backoffice is opt-in: add Backoffice: {} and configure Auth/SMTP.
 # DEXWALLET_ADMIN_TOKEN_SECRET and DEXWALLET_MERCHANT_TOKEN_SECRET must be independent.
 # See docs/engineering/后台鉴权.md for super and migration instructions.
+
+# After explicit business migration 9 and topic provisioning, enable the publisher:
+# Background: {}
+# Business task handlers are registered in code when their channels are implemented.

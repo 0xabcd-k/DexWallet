@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0xabcd-k/DexWallet/backend/background"
 	"github.com/0xabcd-k/DexWallet/backend/config"
 	"github.com/0xabcd-k/DexWallet/backend/health"
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
@@ -42,6 +43,7 @@ const (
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
 	Config                config.Config
+	Background            *background.Runtime
 	Backoffice            *backoffice.Service
 	BackofficeTransport   rest.Middleware
 	AdminAuth             rest.Middleware
@@ -190,6 +192,16 @@ func (d *ServiceContext) RedisKey(parts ...string) string {
 // clients, including when startup failed partway through initialization.
 func (d *ServiceContext) Close() error {
 	d.once.Do(func() {
+		if d.Background != nil {
+			d.Background.Stop()
+			ctx, cancel := context.WithTimeout(context.Background(), d.Config.ShutdownTimeout)
+			err := d.Background.Wait(ctx)
+			cancel()
+			if err != nil {
+				d.closeErr = fmt.Errorf("background did not drain; dependencies retained until process exit: %w", err)
+				return
+			}
+		}
 		if d.Health != nil {
 			d.Health.Stop()
 		}

@@ -120,3 +120,17 @@ func TestRedisRateResourceOwnership(t *testing.T) {
 		}
 	}
 }
+
+func TestBackgroundConsumerResourcesStayWithinRun(t *testing.T) {
+	run := &Run{ID: "0123456789abcdef"}
+	for _, kind := range []string{"retry", "dlq"} {
+		if !run.valid(Resource{Kind: kind, Name: run.Name(kind, "background_tasks_v1")}) {
+			t.Fatal("owned background group rejected")
+		}
+		for _, name := range []string{"%RETRY%dexwallet_production_background_tasks_v1", "%DLQ%dexwallet_integration_ffffffffffffffff_background_tasks_v1", "%RETRY%dexwallet_integration_0123456789abcdef_bad/target"} {
+			if run.valid(Resource{Kind: kind, Name: name}) {
+				t.Fatal("cross-run resource accepted", name)
+			}
+		}
+	}
+}

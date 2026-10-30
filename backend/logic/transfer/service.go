@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 
+	"github.com/0xabcd-k/DexWallet/backend/event"
 	"github.com/0xabcd-k/DexWallet/backend/logic/account"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	accountmodel "github.com/0xabcd-k/DexWallet/backend/model/account"
@@ -201,6 +202,9 @@ func (s *Service) submit(ctx context.Context, session sqlx.Session, actor userlo
 	}
 	if err = orders.Complete(ctx, order.Id, voucher); err != nil {
 		return nil, fmt.Errorf("complete transfer %d: %w", order.Id, err)
+	}
+	if err = event.Append(ctx, session, event.TransferCompleted, order.Id, event.TransferVersion, event.Transfer{SenderID: actor.UserID, RecipientID: request.RecipientID, VoucherID: voucher, Amount: request.Amount.StringFixed(2), Unit: accountmodel.UnitUSD}); err != nil {
+		return nil, fmt.Errorf("append transfer %d event: %w", order.Id, err)
 	}
 	return orders.FindOne(ctx, order.Id)
 }

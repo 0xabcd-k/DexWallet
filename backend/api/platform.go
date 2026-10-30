@@ -48,8 +48,28 @@ func run() (err error) {
 	if err = ctx.Err(); err != nil {
 		return err
 	}
+	if err = svcCtx.StartBackground(ctx); err != nil {
+		return err
+	}
+	if err = ctx.Err(); err != nil {
+		return err
+	}
+	var backgroundErr error
+	if svcCtx.Background != nil {
+		proc.AddWrapUpListener(svcCtx.Background.Stop)
+		proc.AddShutdownListener(func() {
+			svcCtx.Background.Stop()
+			drain, cancel := context.WithTimeout(context.Background(), c.ShutdownTimeout)
+			defer cancel()
+			backgroundErr = svcCtx.Background.Wait(drain)
+			if backgroundErr != nil {
+				logx.Errorf("background drain: %v", backgroundErr)
+			}
+		})
+	}
 	logx.Infow("starting api", logx.Field("host", c.Host), logx.Field("port", c.Port), logx.Field("environment", c.Environment))
-	return server.Start(app, rt)
+	err = server.Start(app, rt)
+	return errors.Join(err, backgroundErr)
 }
 
 func main() {
