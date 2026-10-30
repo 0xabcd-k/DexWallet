@@ -16,6 +16,7 @@ import (
 	accountlogic "github.com/0xabcd-k/DexWallet/backend/logic/account"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
+	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	accountmodel "github.com/0xabcd-k/DexWallet/backend/model/account"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
@@ -48,6 +49,7 @@ type ServiceContext struct {
 	UserIdx               *idcodec.Codec
 	Users                 *userlogic.Service
 	Accounts              *accountlogic.Service
+	Transfers             *transferlogic.Service
 	Auth                  *authlogic.Service
 	Tokens                *session.Tokens
 	AuthTransport         rest.Middleware
@@ -120,6 +122,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.ModelUser = usermodel.NewUserModel(conn)
 	d.ModelUserAccount = accountmodel.NewUserAccountModel(conn)
 	d.Accounts = accountlogic.New(d.ModelUserAccount)
+	d.Transfers = transferlogic.New(conn, d.Tx, d.Accounts)
 	d.ModelEmailIdentity = usermodel.NewEmailIdentityModel(conn)
 	d.ModelTelegramIdentity = usermodel.NewTelegramIdentityModel(conn)
 	d.checks = append(d.checks, health.Check{Name: MySQLDependency, Required: true, Run: d.DB.PingContext})

@@ -17,6 +17,7 @@ MODEL_OUT = Path("backend/model/example")
 USER_MODEL_OUT = Path("backend/model/user")
 BACKOFFICE_MODEL_OUT = Path("backend/model/backoffice")
 ACCOUNT_MODEL_OUT = Path("backend/model/account")
+TRANSFER_MODEL_OUT = Path("backend/model/transfer")
 TS_OUT = Path("frontend/packages/api-contract/src/example.ts")
 REGISTRY = Path("scripts/generated-files.json")
 
@@ -64,7 +65,7 @@ def render(root=ROOT):
         run([str(tool), "api", "go", "--api", str(api), "--dir", str(work / API_OUT),
              "--style", "go_zero", "--home", str(template)], backend, env)
         run([str(tool), "api", "ts", "--api", str(api), "--dir", str(work / "ts")], backend, env)
-        for source, output in (("examples/contract_sample.sql", MODEL_OUT), ("user/tables.sql", USER_MODEL_OUT), ("backoffice/tables.sql", BACKOFFICE_MODEL_OUT), ("account/tables.sql", ACCOUNT_MODEL_OUT)):
+        for source, output in (("examples/contract_sample.sql", MODEL_OUT), ("user/tables.sql", USER_MODEL_OUT), ("backoffice/tables.sql", BACKOFFICE_MODEL_OUT), ("account/tables.sql", ACCOUNT_MODEL_OUT), ("transfer/tables.sql", TRANSFER_MODEL_OUT)):
             run([str(tool), "model", "mysql", "ddl", "--src",
                  str(backend / "manifest/sql/ddl" / source), "--dir", str(work / output),
                  "--style", "go_zero", "--home", str(template)], backend, env)
@@ -101,7 +102,7 @@ def render(root=ROOT):
                 rel = file.relative_to(work)
                 target = generated if file.name in ("types.go", "routes.go") else scaffold
                 target[str(rel)] = file.read_bytes()
-        for folder in (MODEL_OUT, USER_MODEL_OUT, BACKOFFICE_MODEL_OUT, ACCOUNT_MODEL_OUT):
+        for folder in (MODEL_OUT, USER_MODEL_OUT, BACKOFFICE_MODEL_OUT, ACCOUNT_MODEL_OUT, TRANSFER_MODEL_OUT):
             for file in (work / folder).glob("*.go"):
                 target = generated if file.name.endswith("_gen.go") else scaffold
                 target[str(file.relative_to(work))] = file.read_bytes()
