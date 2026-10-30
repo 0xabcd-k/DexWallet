@@ -358,6 +358,7 @@ func TestProductSessionHTTP(t *testing.T) {
 		t.Fatal("TG user saw another user's funds", balances, err)
 	}
 	// An external write without invalidation leaves an accepted short cache window.
+	checkLedgerHTTP(t, s, tgID, id, tgToken, call)
 	// Critical writes still reject the stale actor against the locked database row.
 	if _, err = s.DB.ExecContext(ctx, "UPDATE `user` SET auth_version=auth_version+1 WHERE id=?", tgID); err != nil {
 		t.Fatal(err)
@@ -390,6 +391,7 @@ func TestProductSessionHTTP(t *testing.T) {
 	}
 	call("GET", "/v1/user/current", tgToken, nil, 403, "PERMISSION_DENIED")
 	call("GET", "/v1/user/accounts", tgToken, nil, 403, "PERMISSION_DENIED")
+	call("GET", "/v1/user/account-entries", tgToken, nil, 403, "PERMISSION_DENIED")
 	// Close only this test client's connection pool, never the shared Redis server.
 	if err = s.Redis.Close(); err != nil {
 		t.Fatal(err)

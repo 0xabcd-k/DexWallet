@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 
+	"github.com/shopspring/decimal"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
@@ -15,6 +16,10 @@ type (
 		userAccountModel
 		WithSession(session sqlx.Session) UserAccountModel
 		ListByUserID(context.Context, int64) ([]*UserAccount, error)
+		PrepareCredit(context.Context, int64, string) error
+		FindForUpdate(context.Context, int64, string) (*UserAccount, error)
+		SetBalance(context.Context, int64, decimal.Decimal) error
+		ListEntries(context.Context, int64, string, int64, int) ([]StatementEntry, error)
 	}
 
 	customUserAccountModel struct {

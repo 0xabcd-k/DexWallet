@@ -41,7 +41,17 @@ type tx interface {
 	Rollback() error
 }
 type activeTransaction struct{}
+type transactionSession struct{}
 type commitCallbacks map[string]func()
+
+// RequireSession prevents funds writers from using an autocommit connection or
+// another transaction alongside the caller's business writes.
+func RequireSession(ctx context.Context, session sqlx.Session) error {
+	if session == nil || ctx.Value(transactionSession{}) != session {
+		return errors.New("operation requires the caller's transaction.Runner session")
+	}
+	return nil
+}
 
 // AfterCommit registers best-effort cache invalidation after the outer commit.
 // It also runs after an indeterminate commit, since the write may have succeeded.
@@ -98,6 +108,7 @@ func (r *Runner) TransactCtx(ctx context.Context, fn func(context.Context, sqlx.
 		}
 	}()
 	callbacks := make(commitCallbacks)
+	ctx = context.WithValue(ctx, transactionSession{}, sqlx.Session(t))
 	if err = fn(context.WithValue(ctx, activeTransaction{}, callbacks), t); err == nil {
 		err = ctx.Err()
 	}

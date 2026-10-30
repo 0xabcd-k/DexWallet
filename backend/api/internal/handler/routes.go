@@ -23,6 +23,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
+					Path:    "/v1/user/account-entries",
+					Handler: account.AccountEntriesHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
 					Path:    "/v1/user/accounts",
 					Handler: account.AccountBalancesHandler(serverCtx),
 				},

@@ -23,6 +23,10 @@ func (s *accountStore) ListByUserID(_ context.Context, id int64) ([]*model.UserA
 	return s.rows, s.err
 }
 
+func (s *accountStore) ListEntries(context.Context, int64, string, int64, int) ([]model.StatementEntry, error) {
+	return nil, s.err
+}
+
 func TestListBalancesReadsOnceAndFillsOnlyMissingKinds(t *testing.T) {
 	store := &accountStore{}
 	s := New(store)

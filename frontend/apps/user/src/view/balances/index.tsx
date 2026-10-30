@@ -45,6 +45,7 @@ function AccountBalances({ section }: { section: 'wallet' | 'rewards' }) {
         <p className="balance-value">{formatAmount(account.balance, unit)}</p>
         {isUSD && <dl><dt>{t('heldBalance')}</dt><dd>{formatAmount(account.heldBalance, unit)}</dd>
           <dt>{t('totalBalance')}</dt><dd>{formatAmount(account.totalBalance, unit)}</dd></dl>}
+        <Link to={`/records?kind=${encodeURIComponent(account.kind)}`}>{t('viewAccountEntries')}</Link>
       </section>;
     })}
     <Button className="balance-refresh" size="small" onClick={refresh}>{t('refreshBalances')}</Button>

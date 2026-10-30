@@ -9,3 +9,29 @@ CREATE TABLE `user_account` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_account_kind` (`user_id`, `kind`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `ledger_voucher` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `business_type` VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `business_id` BIGINT NOT NULL,
+    `action` VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `original_voucher_id` BIGINT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_ledger_source` (`business_type`, `business_id`, `action`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `ledger_entry` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `voucher_id` BIGINT NOT NULL,
+    `line_no` INT NOT NULL,
+    `account_id` BIGINT NULL,
+    `system_code` VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+    `unit` VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `side` VARCHAR(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `amount` DECIMAL(36,18) NOT NULL,
+    `balance_after` DECIMAL(36,18) NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_ledger_line` (`voucher_id`, `line_no`),
+    KEY `ix_ledger_account_entry` (`account_id`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

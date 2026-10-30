@@ -95,6 +95,34 @@ type (
     AccountBalancesData {
         Accounts []AccountBalance `json:"accounts"`
     }
+    AccountEntriesRequest {
+        Kind string `form:"kind,optional,options=usd_balance|reward_usd|task_points"`
+        Before string `form:"before,optional"`
+        Limit int `form:"limit,default=20,range=[1:100]"`
+    }
+    AccountEntry {
+        Idx string `json:"idx"`
+        VoucherIdx string `json:"voucherIdx"`
+        BusinessType string `json:"businessType"`
+        BusinessIdx string `json:"businessIdx"`
+        Action string `json:"action"`
+        Kind string `json:"kind"`
+        Unit string `json:"unit"`
+        Direction string `json:"direction,options=in|out"`
+        Amount string `json:"amount"`
+        BalanceAfter string `json:"balanceAfter"`
+        CreatedAt string `json:"createdAt"`
+    }
+    AccountEntriesData {
+        Entries []AccountEntry `json:"entries"`
+        NextCursor string `json:"nextCursor"`
+    }
+    AccountEntriesResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data AccountEntriesData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
     AccountBalancesResponse {
         Code string `json:"code,options=OK"`
         Message string `json:"message"`
@@ -118,6 +146,8 @@ service platform {
 service platform {
     @handler currentUser
     get /v1/user/current returns (CurrentUserResponse)
+    @handler accountEntries
+    get /v1/user/account-entries (AccountEntriesRequest) returns (AccountEntriesResponse)
     @handler accountBalances
     get /v1/user/accounts returns (AccountBalancesResponse)
     @handler identityEmailCode

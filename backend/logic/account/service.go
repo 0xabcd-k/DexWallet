@@ -10,6 +10,7 @@ import (
 
 type Store interface {
 	ListByUserID(context.Context, int64) ([]*model.UserAccount, error)
+	ListEntries(context.Context, int64, string, int64, int) ([]model.StatementEntry, error)
 }
 
 type Service struct{ accounts Store }

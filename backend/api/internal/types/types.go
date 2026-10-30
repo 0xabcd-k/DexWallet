@@ -22,6 +22,38 @@ type AccountBalancesResponse struct {
 	TraceId string              `json:"traceId"`
 }
 
+type AccountEntriesData struct {
+	Entries    []AccountEntry `json:"entries"`
+	NextCursor string         `json:"nextCursor"`
+}
+
+type AccountEntriesRequest struct {
+	Kind   string `form:"kind,optional,options=usd_balance|reward_usd|task_points"`
+	Before string `form:"before,optional"`
+	Limit  int    `form:"limit,default=20,range=[1:100]"`
+}
+
+type AccountEntriesResponse struct {
+	Code    string             `json:"code,options=OK"`
+	Message string             `json:"message"`
+	Data    AccountEntriesData `json:"data"`
+	TraceId string             `json:"traceId"`
+}
+
+type AccountEntry struct {
+	Idx          string `json:"idx"`
+	VoucherIdx   string `json:"voucherIdx"`
+	BusinessType string `json:"businessType"`
+	BusinessIdx  string `json:"businessIdx"`
+	Action       string `json:"action"`
+	Kind         string `json:"kind"`
+	Unit         string `json:"unit"`
+	Direction    string `json:"direction,options=in|out"`
+	Amount       string `json:"amount"`
+	BalanceAfter string `json:"balanceAfter"`
+	CreatedAt    string `json:"createdAt"`
+}
+
 type BackofficeAccount struct {
 	Idx                string `json:"idx"`
 	Email              string `json:"email"`

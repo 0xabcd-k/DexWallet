@@ -20,6 +20,40 @@ export interface AccountBalancesResponse {
 	traceId: string
 }
 
+export interface AccountEntriesData {
+	entries: Array<AccountEntry>
+	nextCursor: string
+}
+
+export interface AccountEntriesRequest {
+}
+export interface AccountEntriesRequestParams {
+	kind?: string
+	before?: string
+	limit: number
+}
+
+export interface AccountEntriesResponse {
+	code: 'OK'
+	message: string
+	data: AccountEntriesData
+	traceId: string
+}
+
+export interface AccountEntry {
+	idx: string
+	voucherIdx: string
+	businessType: string
+	businessIdx: string
+	action: string
+	kind: string
+	unit: string
+	direction: 'in' | 'out'
+	amount: string
+	balanceAfter: string
+	createdAt: string
+}
+
 export interface BackofficeAccount {
 	idx: string
 	email: string

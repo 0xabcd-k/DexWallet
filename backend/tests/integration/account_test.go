@@ -35,7 +35,7 @@ func TestAccountSchemaUpgradeAndConstraints(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustExec(t, upgraded, "INSERT INTO user(id,nickname) VALUES(1,'existing')")
-	if err = m.Up(); err != nil {
+	if err = m.Migrate(5); err != nil {
 		t.Fatal(err)
 	}
 	var count int
