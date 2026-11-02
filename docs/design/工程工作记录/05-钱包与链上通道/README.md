@@ -23,3 +23,5 @@
 [Solflare + Devnet USDC](5.1-用户钱包接入/07SolanaUSDC代付与账户费用验证.md) 进一步完成新建/复用收款 ATA、网络费与存储押金核对、真实拒绝和即时重放；依然属于提前技术验证。
 
 [MetaMask + Base Sepolia USDC](5.1-用户钱包接入/08BaseUSDC授权与代付实转验证.md) 已完成真实 EIP-712 授权、用户零 ETH、平台代付与到账核对；该记录同时保留测试 ETH 跨网备资、权限问题与重放证据，区分 confirmed 和 finalized。
+
+[MetaMask + Base Sepolia ETH](5.1-用户钱包接入/09BaseETH授权与代付验证.md) 已完成零 ETH 智能账户启用及费用核对，但应用高级权限返回 4100，平台 ETH 付款仍未通过；首次启用与业务付款分别记录。
