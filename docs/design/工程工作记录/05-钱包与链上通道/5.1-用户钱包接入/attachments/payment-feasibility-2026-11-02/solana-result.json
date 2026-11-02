@@ -1,0 +1,74 @@
+{
+  "observedAt": "2026-11-02T05:16:54.474Z",
+  "endpoint": "https://api.devnet.solana.com",
+  "scope": "SDK keys, not an external wallet",
+  "addresses": {
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+    "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"
+  },
+  "checks": {
+    "sol": {
+      "userOnlyAccepted": true,
+      "sponsorSignatureRequired": true,
+      "backendCanComplete": true,
+      "changedAmountRejected": true,
+      "changedRecipientRejected": true
+    },
+    "spl": {
+      "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      "localTransferCheckedSignaturePassed": true,
+      "tokenTransferBroadcast": false
+    }
+  },
+  "version": {
+    "feature-set": 3993424257,
+    "solana-core": "4.4.0-beta.1"
+  },
+  "block": {
+    "blockhash": "HCNUBvqgh8LnPcudGQNLQYMUgJmeS5HujRuvjGsqYEyu",
+    "lastValidBlockHeight": 504915088
+  },
+  "feeLamports": 10000,
+  "balances": {
+    "user": 0,
+    "sponsor": 0,
+    "recipient": 0
+  },
+  "airdropError": "curl 22: curl: (22) The requested URL returned error: 410;  {\"jsonrpc\":\"2.0\",\"error\":{\"code\": 410,\"message\":\"The RPC faucet is closed on this cluster. Request test SOL at https://faucet.solana.com\"}, \"id\": 1 } \r\n",
+  "simulation": {
+    "context": {
+      "apiVersion": "4.4.0-beta.1",
+      "slot": 517747008
+    },
+    "value": {
+      "accounts": null,
+      "err": "AccountNotFound",
+      "fee": null,
+      "innerInstructions": null,
+      "loadedAccountsDataSize": 0,
+      "loadedAddresses": {
+        "readonly": [],
+        "writable": []
+      },
+      "logs": [],
+      "postBalances": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "postTokenBalances": [],
+      "preBalances": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "preTokenBalances": [],
+      "replacementBlockhash": null,
+      "returnData": null,
+      "unitsConsumed": 0
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "observedAt": "2026-11-02T05:57:35.296Z",
+  "scope": "Offline SDK only; no wallet app or chain execution",
+  "networkGlobalId": -3,
+  "wallet": "kQC_PkTqgxHnimDR5nswOt2pF0zThC63_Bak1XqhpRD9gK6y",
+  "checks": {
+    "signedInternalOpcode": true,
+    "localSignatureVerified": true,
+    "changedAmountRejected": true
+  },
+  "broadcast": false
+}

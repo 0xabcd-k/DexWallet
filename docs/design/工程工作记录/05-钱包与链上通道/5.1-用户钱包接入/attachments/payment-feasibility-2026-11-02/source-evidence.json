@@ -1,0 +1,50 @@
+[
+  {
+    "wallet": "Tonkeeper Android",
+    "version": "v26.06.2_1299",
+    "file": "apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/walletkit/WalletKitTonConnect.kt",
+    "url": "https://github.com/tonkeeper/android/blob/v26.06.2_1299/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/walletkit/WalletKitTonConnect.kt",
+    "sha256": "51295576321d91db3265aef04de8ba5397b7e1da98a7a0b69e143a1f3caa7beb",
+    "evidenceKind": "source inspection, not runtime response"
+  },
+  {
+    "wallet": "Tonkeeper Android",
+    "version": "v26.06.2_1299",
+    "file": "apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/tonconnect/bridge/JsonBuilder.kt",
+    "url": "https://github.com/tonkeeper/android/blob/v26.06.2_1299/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/tonconnect/bridge/JsonBuilder.kt",
+    "sha256": "6416fa834dc1bbf35791a26c0ed438b366ede4d28bb14344e1dfdd521cc4eb15",
+    "evidenceKind": "source inspection, not runtime response"
+  },
+  {
+    "wallet": "Tonkeeper Android",
+    "version": "v26.06.2_1299",
+    "file": "apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/tonconnect/bridge/model/BridgeMethod.kt",
+    "url": "https://github.com/tonkeeper/android/blob/v26.06.2_1299/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/tonconnect/bridge/model/BridgeMethod.kt",
+    "sha256": "3519fb7bc9361dc68e9a0a78138c81cd23b2d03cc0abfe80f0a7b9e370b94fae",
+    "evidenceKind": "source inspection, not runtime response"
+  },
+  {
+    "wallet": "My Wallet shared TON Connect adapter",
+    "version": "v26.10.7",
+    "file": "src/api/dappProtocols/adapters/tonConnect/utils.ts",
+    "url": "https://github.com/mytonwallet-org/mytonwallet/blob/v26.10.7/src/api/dappProtocols/adapters/tonConnect/utils.ts",
+    "sha256": "df0f37b3b737973f4907565f2d2794eadfb5d10ef0d21e872aa94956d25b392f",
+    "evidenceKind": "source inspection, not runtime response"
+  },
+  {
+    "wallet": "My Wallet shared TON Connect adapter",
+    "version": "v26.10.7",
+    "file": "src/api/dappProtocols/adapters/tonConnect/index.ts",
+    "url": "https://github.com/mytonwallet-org/mytonwallet/blob/v26.10.7/src/api/dappProtocols/adapters/tonConnect/index.ts",
+    "sha256": "53d162f99988dd4f81f886b95c693dc9b40e93422981a7e864341bf847ec8752",
+    "evidenceKind": "source inspection, not runtime response"
+  },
+  {
+    "wallet": "My Wallet shared TON Connect adapter",
+    "version": "v26.10.7",
+    "file": "src/api/dappProtocols/adapters/tonConnect/identity.ts",
+    "url": "https://github.com/mytonwallet-org/mytonwallet/blob/v26.10.7/src/api/dappProtocols/adapters/tonConnect/identity.ts",
+    "sha256": "e8bd995d35232f5f18b6cfa89bda1551f32cc3771fefdf1f3784d7204825da25",
+    "evidenceKind": "source inspection, not runtime response"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-11-02T05:20:35.658Z",
+  "endpoint": "https://nile.trongrid.io",
+  "scope": "SDK signature and live block reference, no external wallet or broadcast",
+  "addresses": {
+    "user": "TNmT6ifwwY5ov8uRDZApCc2Z4a6SaHCMG6",
+    "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+  },
+  "block": {
+    "height": 72353325,
+    "id": "000000000450062d37d4beef13c976e3eb877c4d5523d78ac2a7c0925bacd94d",
+    "timestamp": 1793596833000
+  },
+  "checks": {
+    "signatureRecoveredUser": true,
+    "modifiedJsonAmountRejected": true,
+    "modifiedJsonRecipientRejected": true,
+    "signedTxID": "84332556672be801a0a18a83ef5c9394cfeba79e32249f3692c79215d641ed5d",
+    "transactionOwner": "418c606966c13446f2b233ff4ce85027f9dee3c821",
+    "separateFeePayerPresent": false
+  },
+  "accountResources": {}
+}

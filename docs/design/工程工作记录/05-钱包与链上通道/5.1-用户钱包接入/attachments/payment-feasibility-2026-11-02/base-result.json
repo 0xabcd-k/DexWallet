@@ -1,0 +1,25 @@
+{
+  "observedAt": "2026-11-02T05:20:35.617Z",
+  "endpoint": "https://base-sepolia-rpc.publicnode.com",
+  "scope": "SDK EOA signature and read-only contract checks; no external wallet or broadcast",
+  "addresses": {
+    "user": "0xecd14F7586f5053CECae148Ae26309C2277D86A8",
+    "sponsor": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
+  },
+  "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "checks": {
+    "signatureValid": true,
+    "changedAmountRejected": true,
+    "changedRecipientRejected": true,
+    "changedChainRejected": true,
+    "changedContractRejected": true,
+    "deployedDomainAndTypeMatch": true
+  },
+  "contract": {
+    "name": "USDC",
+    "version": "2",
+    "decimals": 6,
+    "DOMAIN_SEPARATOR": "0x71f17a3b2ff373b803d70a5a07c046c1a2bc8e89c09ef722fcb047abe94c9818",
+    "TRANSFER_WITH_AUTHORIZATION_TYPEHASH": "0x7c7c6cdb67a18743f49ec6fa9b35f50d52ed05cbed4cc592e13b44501c1a2267"
+  }
+}

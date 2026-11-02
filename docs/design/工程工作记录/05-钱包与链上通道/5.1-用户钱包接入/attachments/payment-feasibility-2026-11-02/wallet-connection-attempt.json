@@ -1,0 +1,25 @@
+{
+  "scope": "Real SDK bridge response; no successful wallet connection",
+  "events": [
+    {
+      "observedAt": "2026-11-02T05:46:51.680Z",
+      "type": "loaded",
+      "value": {
+        "sdkVersion": "5.0.0",
+        "injectedKeys": []
+      },
+      "page": "http://127.0.0.1:18791/?android=1",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"
+    },
+    {
+      "observedAt": "2026-11-02T05:46:55.621Z",
+      "type": "connection-error",
+      "value": {
+        "name": "ManifestNotFoundError",
+        "message": "[TON_CONNECT_SDK_ERROR] ManifestNotFoundError: Manifest not found. Make sure you added `tonconnect-manifest.json` to the root of your app or passed correct manifestUrl. See more https://github.com/ton-connect/docs/blob/main/requests-responses.md#app-manifest\nApp manifest not found"
+      },
+      "page": "http://127.0.0.1:18791/?android=1",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"
+    }
+  ]
+}
