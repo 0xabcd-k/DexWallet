@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Base Sepolia USDC authorization probe</title>
+<style>body{font:16px sans-serif;max-width:850px;margin:30px auto;padding:20px}button{padding:12px;margin:5px}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style>
+<h1>Base Sepolia USDC — dedicated test accounts</h1>
+<p>Authorize 0.01 official test USDC to the fixed platform account. The platform broadcasts and pays ETH fees. User ETH must remain zero.</p>
+<button id="connect">Connect MetaMask</button><button id="reconnect">Renew wallet permissions</button><button id="sign" disabled>Sign USDC authorization</button><button id="submit" disabled>Platform submit</button><pre id="result"></pre>
+<script>
+window.baseProbe = { last: null };
+const show = value => { window.baseProbe.last = value; document.querySelector('#result').textContent = JSON.stringify(value, null, 2); };
+async function api(path, body) {
+  const response = await fetch(path, body ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) } : undefined);
+  const value = await response.json(); if (!response.ok) throw new Error(value.error); return value;
+}
+let account, order;
+function run(fn) { return async () => { try { await fn(); } catch (error) { show({ error:error.message, code:error.code }); } }; }
+document.querySelector('#connect').onclick = run(async () => {
+  const config = await api('/config');
+  [account] = await ethereum.request({method:'eth_requestAccounts'});
+  if (account.toLowerCase() !== config.addresses.user.toLowerCase()) throw new Error('Wrong test wallet');
+  // Add/switch testnet using the wallet's own confirmation UI.
+  try { await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x14a34'}]}); }
+  catch (error) {
+    if (error.code !== 4902) throw error;
+    await ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:'0x14a34',chainName:'Base Sepolia',nativeCurrency:{name:'Ether',symbol:'ETH',decimals:18},rpcUrls:['https://base-sepolia-rpc.publicnode.com'],blockExplorerUrls:['https://sepolia.basescan.org']}]});
+    await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x14a34'}]});
+  }
+  const chainId = await ethereum.request({method:'eth_chainId'});
+  if (Number(chainId) !== config.chainId) throw new Error('Wrong chain');
+  show({connected:true,account,chainId}); document.querySelector('#sign').disabled = false;
+});
+document.querySelector('#reconnect').onclick = run(async () => {
+  await ethereum.request({method:'wallet_revokePermissions',params:[{eth_accounts:{}}]});
+  document.querySelector('#sign').disabled = true;
+  document.querySelector('#submit').disabled = true;
+  await document.querySelector('#connect').onclick();
+});
+document.querySelector('#sign').onclick = run(async () => {
+  const config = await api('/config');
+  order = await api('/prepare',{user:config.addresses.user});
+  const signature = await ethereum.request({method:'eth_signTypedData_v4',params:[account,JSON.stringify(order.typed)]});
+  const result = await api('/validate',{reference:order.reference,signature});
+  show(result); document.querySelector('#submit').disabled = false;
+});
+document.querySelector('#submit').onclick = run(async () => show(await api('/submit',{reference:order.reference})));
+</script></html>

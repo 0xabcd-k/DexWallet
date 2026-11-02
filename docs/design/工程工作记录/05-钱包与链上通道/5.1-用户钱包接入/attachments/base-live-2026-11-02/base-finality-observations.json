@@ -1,0 +1,8 @@
+{
+  "targetReceiptBlock": 53543602,
+  "observedAt": "2026-11-02T15:07:03.971Z",
+  "directRpcFinalizedBlock": 53545673,
+  "immediatelyFollowingServiceFinalizedBlock": 53543524,
+  "serviceStatus": "confirmed",
+  "outcome": "Final export refused the older response; read-only recheck required. No replacement payment."
+}

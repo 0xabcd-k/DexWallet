@@ -123,4 +123,4 @@ node scripts/payment_probe/solana-usdc-audit.mjs
 
 HTTP 冒烟确认 USDC 场景标识正确、已签名订单不能被重新创建、密钥路径 404、外部 Origin 被拒绝；默认 SOL 模式与上一笔最终回执检查通过。探针 JS/Python 语法、文档链接、差异检查通过；27 个本轮文件未发现本机已知测试私钥、助记词或密码，两笔链上签名均与保留记录匹配。bigint-buffer 沿用纯 JS 回退提示，未影响这些检查。测试服务、浏览器与 REPL 均已关闭，本机钱包资料和证据保留。未重跑无关业务集成测试。
 
-当前已有 Solflare 扩展的 SOL 与 USDC 测试网实转依据。此前建议继续 Base Sepolia USDC，但用户于同日因测试币获取门槛与成本取消该验证，并将 Base 移出首版，见 [范围决议](../../../../decisions/决议与待落实事项.md)。后续只在 TON、Solana、TRON 的首版范围内推进。Solana USDT、其他钱包、用户零 SOL、完整报价体验、未知广播结果恢复及业务账本入账仍各有独立验收，不能用本轮成功替代。
+当前已有 Solflare 扩展的 SOL 与 USDC 测试网实转依据。此前建议继续 Base Sepolia USDC；用户同日曾因测试币获取门槛暂停，随后取得测试 ETH 并明确恢复 Base 需求及验证，见 [范围决议](../../../../decisions/决议与待落实事项.md)。后续按恢复后的四链九组合范围推进。Solana USDT、其他钱包、用户零 SOL、完整报价体验、未知广播结果恢复及业务账本入账仍各有独立验收，不能用本轮成功替代。

@@ -1,0 +1,32 @@
+[
+  {
+    "name": "config",
+    "status": 200,
+    "body": "{\n  \"addresses\": {\n    \"user\": \"0xecd14F7586f5053CECae148Ae26309C2277D86A8\",\n    \"sponsor\": \"0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA\",\n    \"recipient\": \"0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA\"\n  },\n  \"chainId\": 84532,\n  \"token\": \"0x036CbD53842c5426634e7929541eC2318f3dCF7e\"\n}"
+  },
+  {
+    "name": "private key path",
+    "status": 404,
+    "body": ""
+  },
+  {
+    "name": "unexpected origin",
+    "status": 400,
+    "body": "{\n  \"error\": \"Unexpected request origin\\n+ actual - expected\\n\\n+ 'https://example.org'\\n- 'http://127.0.0.1:18793'\\n       ^\\n\"\n}"
+  },
+  {
+    "name": "wrong account",
+    "status": 400,
+    "body": "{\n  \"error\": \"Wrong test account\\n+ actual - expected\\n\\n+ '0x0000000000000000000000000000000000000000'\\n- '0xecd14F7586f5053CECae148Ae26309C2277D86A8'\\n\"\n}"
+  },
+  {
+    "name": "signed order cannot be replaced",
+    "status": 400,
+    "body": "{\n  \"error\": \"Inspect the existing signed authorization before preparing another\"\n}"
+  },
+  {
+    "name": "wrong order reference",
+    "status": 400,
+    "body": "{\n  \"error\": \"Order reference mismatch\\n+ actual - expected\\n\\n+ 'unrelated'\\n- '93ec7037-898c-4382-87e7-19b4737f5b14'\\n\"\n}"
+  }
+]

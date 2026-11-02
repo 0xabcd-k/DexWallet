@@ -1,0 +1,15 @@
+{
+  "extensionId": "nkbihfbeogaeaoehlefnkodbefgpgknn",
+  "version": "13.55.0.0",
+  "manifestVersion": 3,
+  "size": 25312092,
+  "crxSha256": "eb1a5411307ebd7e88ea4bd41164964aa3fc3f0416fdfd8714e2029b9ec5ade6",
+  "developerSignatureVerified": true,
+  "proofs": [
+    {
+      "proofType": 2,
+      "publicKeySha256": "da187514e6040e47b45dae31456f6adde21084ecca5b568ec1499bc388ef1423"
+    }
+  ],
+  "manifestKeyPresent": false
+}

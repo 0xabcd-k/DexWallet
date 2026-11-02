@@ -1,0 +1,10 @@
+{
+  "observedAt": "2026-11-02T14:13:58.474Z",
+  "wallet": "MetaMask",
+  "version": "13.55.0.0",
+  "connection": {
+    "connected": true,
+    "account": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+    "chainId": "0x14a34"
+  }
+}

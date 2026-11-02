@@ -1,0 +1,7 @@
+{
+  "observedAt": "2026-11-02T14:15:08.965Z",
+  "error": {
+    "error": "The requested account and/or method has not been authorized by the user.",
+    "code": 4100
+  }
+}

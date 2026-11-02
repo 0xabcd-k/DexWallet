@@ -4,7 +4,7 @@
 
 阶段范围、依赖和完成条件以工作清单为准；每项当前状态维护在其讨论记录中。
 
-2026-11-02 用户将 Base 移出首版并停止验证。当前范围为 Mini App 的 TON/USDT，以及独立 App 的 TON、Solana、TRON 三链七组合，详见 [项目总览](../../../product/01项目总览.md)；以下 Base 证据只作历史参考。
+2026-11-02 用户短暂暂停 Base 后，因已取得测试 ETH 明确恢复需求与验证。当前范围为 Mini App 的 TON/USDT，以及独立 App 的 TON、Base、Solana、TRON 四链九组合，详见 [项目总览](../../../product/01项目总览.md)；每组仍按真实验证证据开放。
 
 | 编号 | 工作项 | 开发记录 |
 | --- | --- | --- |
@@ -21,3 +21,5 @@
 后续 [Solflare + Solana Devnet SOL 实转](5.1-用户钱包接入/06Solana钱包代付实转验证.md) 已完成钱包单签、平台代付与最终到账；其他链币、钱包及正式账本入账仍待验证。
 
 [Solflare + Devnet USDC](5.1-用户钱包接入/07SolanaUSDC代付与账户费用验证.md) 进一步完成新建/复用收款 ATA、网络费与存储押金核对、真实拒绝和即时重放；依然属于提前技术验证。
+
+[MetaMask + Base Sepolia USDC](5.1-用户钱包接入/08BaseUSDC授权与代付实转验证.md) 已完成真实 EIP-712 授权、用户零 ETH、平台代付与到账核对；该记录同时保留测试 ETH 跨网备资、权限问题与重放证据，区分 confirmed 和 finalized。

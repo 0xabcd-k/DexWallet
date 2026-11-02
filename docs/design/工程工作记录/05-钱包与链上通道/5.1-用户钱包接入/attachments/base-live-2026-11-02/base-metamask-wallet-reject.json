@@ -1,0 +1,137 @@
+{
+  "observedAt": "2026-11-02T14:42:29.619Z",
+  "wallet": "MetaMask",
+  "version": "13.55.0.0",
+  "rejected": {
+    "error": "User rejected the request.",
+    "code": 4001
+  },
+  "state": {
+    "reference": "a73ebef5-990a-41f6-9f4a-2c758b1bb1af",
+    "status": "prepared",
+    "addresses": {
+      "user": "0xecd14F7586f5053CECae148Ae26309C2277D86A8",
+      "sponsor": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA",
+      "recipient": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
+    },
+    "typed": {
+      "domain": {
+        "name": "USDC",
+        "version": "2",
+        "chainId": 84532,
+        "verifyingContract": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+      },
+      "types": {
+        "EIP712Domain": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "string"
+          },
+          {
+            "name": "chainId",
+            "type": "uint256"
+          },
+          {
+            "name": "verifyingContract",
+            "type": "address"
+          }
+        ],
+        "TransferWithAuthorization": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "validAfter",
+            "type": "uint256"
+          },
+          {
+            "name": "validBefore",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "bytes32"
+          }
+        ]
+      },
+      "primaryType": "TransferWithAuthorization",
+      "message": {
+        "from": "0xecd14F7586f5053CECae148Ae26309C2277D86A8",
+        "to": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA",
+        "value": "10000",
+        "validAfter": "1793630402",
+        "validBefore": "1793632203",
+        "nonce": "0x503c30ec292d704f9ca4709ab0595f30b7fd05699de5b1a59cdc81026d0ffb73"
+      }
+    },
+    "typedDataHash": "0x5f8d6417e1b22a79008a0b8f621011a3aac597645d3335a7f9a308783ae5b6fa",
+    "preparedAt": "2026-11-02T14:40:06.455Z",
+    "preparation": {
+      "block": {
+        "baseFeePerGas": "0x4c4b40",
+        "blobGasUsed": "0x8c074",
+        "difficulty": "0x0",
+        "excessBlobGas": "0x0",
+        "extraData": "0x01000003e80000000f00000000004c4b40",
+        "gasLimit": "0x7270e00",
+        "gasUsed": "0xc4ea5",
+        "hash": "0x7d85b62b1a09ba4bd08e077c16342ee601f9a1c4b17dd0bf0caa860af702e5be",
+        "logsBloom": "0x8000000040000000004000000000008000000000400000000000080000000001200800001400288000000009000000000000201000400000411102c00002200000000010001000000030000c810004000060002000001000000000000200800000004000020808000004000000000800000000000800000200000014020000000040020008000000100088000000100000020020000110001000002010008000000000000040200000402000000080000000000008000080020002000a00041000000042000820400001080000900000202400000008000410000000000020004042000008000000000210000000000000101100000000000000080002000000",
+        "miner": "0x4200000000000000000000000000000000000011",
+        "mixHash": "0x8420b84a5092afef35132d958accedf4aa099cb6969560ec449363b5de37bd09",
+        "nonce": "0x0000000000000000",
+        "number": "0x330ff13",
+        "parentBeaconBlockRoot": "0xa439d22992ad36298321e01085c0299472647612430f660408a14c7cc8d64227",
+        "parentHash": "0xa0761058755da70873618295dbce356e28f231c4fbe49a3e1ef072e1a2da2680",
+        "receiptsRoot": "0x29ef9a4b69e4ee98497e39d89a614108539f791600bd7bbf123a9e880c7bc47a",
+        "requestsHash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+        "size": "0x12f8",
+        "stateRoot": "0x02d553bda231a37fe469a3eb2cec987280c55dcd2f9047ab670c1209297cbee5",
+        "timestamp": "0x6ae8a0c3",
+        "timestampMs": "0x1a19cb3fcd8",
+        "transactions": [
+          "0x43a79d1542039ffe18bce18a78e464096bf2e1682f63a586229e078896abba43",
+          "0x4e9038f4fde0f106391e01db684e679aeea1011035abe560ae7f8a4a990d2298",
+          "0x9dcffdb02d8ee2938e5f98d12b63fd0428e3f2b1a00b0761f49d33e794d3f2a7",
+          "0x52e0f6978b8a46cb9bf96e0e99cd9dad84e012bd658f8a0aabd674d3deed9af2",
+          "0xacf1b62e53ff66e532a80992fd753cfce6a658fd8acff8dbd01e480ae4ea6686",
+          "0x4a9a48f7ac2ff5e9cc64e7edeb0a9d8792021a2882f4e61064d0ba5306ce7958"
+        ],
+        "transactionsRoot": "0xa5e5cd2455cdd8f80a91ac48987e45ac0c30e70ebfe93683464f062c04b56d81",
+        "uncles": [],
+        "withdrawals": [],
+        "withdrawalsRoot": "0x44a3d3074b7ee05840219b3ccd9335955c58b671ef02814e670942500ad049b7"
+      },
+      "balances": {
+        "user": {
+          "ethWei": "0",
+          "usdcAtomic": "20000000"
+        },
+        "sponsor": {
+          "ethWei": "1000000000000000",
+          "usdcAtomic": "0"
+        }
+      },
+      "contract": {
+        "name": "USDC",
+        "version": "2",
+        "decimals": 6,
+        "separator": "0x71f17a3b2ff373b803d70a5a07c046c1a2bc8e89c09ef722fcb047abe94c9818"
+      }
+    }
+  }
+}
