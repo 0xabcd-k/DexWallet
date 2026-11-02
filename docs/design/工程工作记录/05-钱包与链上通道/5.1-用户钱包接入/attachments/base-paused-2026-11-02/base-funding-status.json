@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-11-02T12:02:30.404Z",
+  "block": "0x3304662",
+  "addresses": {
+    "user": "0xecd14F7586f5053CECae148Ae26309C2277D86A8",
+    "sponsor": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA",
+    "recipient": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
+  },
+  "balances": {
+    "user": {
+      "ethWei": "0",
+      "usdcAtomic": "20000000"
+    },
+    "sponsor": {
+      "ethWei": "0",
+      "usdcAtomic": "0"
+    }
+  }
+}
