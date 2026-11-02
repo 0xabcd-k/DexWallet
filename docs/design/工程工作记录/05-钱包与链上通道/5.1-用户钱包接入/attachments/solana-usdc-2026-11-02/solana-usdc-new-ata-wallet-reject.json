@@ -1,0 +1,50 @@
+{
+  "startedAt": "2026-11-02T10:37:08.912Z",
+  "mode": "--reject",
+  "probeName": "solana-usdc-new-ata",
+  "wallet": "Solflare",
+  "version": "2.41.1",
+  "networkSetting": "Devnet",
+  "connection": {
+    "connected": true,
+    "wallet": "solflare",
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "signTransactionAvailable": true
+  },
+  "rejection": "Transaction cancelled",
+  "serverAfterRejection": {
+    "reference": "dce9b406-eb44-4cac-ad91-0e8c9ddabbae",
+    "preparedAt": "2026-11-02T10:37:13.988Z",
+    "network": "solana-devnet",
+    "asset": "USDC",
+    "probeCase": "solana-usdc-new-ata",
+    "addresses": {
+      "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+      "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+      "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"
+    },
+    "tokenAccounts": {
+      "user": "78j9szZm4GTNojYZG2WKKc1BGZJX1wJQnf537Tsq2Tu5",
+      "recipient": "J7PRVxqgPXaXQ9dvZuetPR6UdXFrbEKo7rSzfqS8Yr4o"
+    },
+    "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "amountAtomic": "10000",
+    "decimals": 6,
+    "accountSnapshot": {
+      "observedAt": "2026-11-02T10:37:13.439Z",
+      "slot": 517827139,
+      "sourceAmount": "20000000",
+      "recipientAmount": "0",
+      "recipientExists": false,
+      "rentLamports": 1488440
+    },
+    "estimatedAtaRentLamports": 1488440,
+    "blockhash": "BDX81F1pdMQDH5YD8zHiNp3Qm9k5YQantjVfobJrhm5H",
+    "lastValidBlockHeight": 504994464,
+    "unsigned": "AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgEFCbtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRbINmRMPbD4rmkUsH8uafC3HzCh5jO6pH6kXZNMmBDXP45hASF/tKqYynk9CsjjiWzWRPfzznLsILaFuwHLLmoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7RCyzkSFX8TqTPQE0KC0DK1/+zQGi2/G3eQYI3wAup163vqs+GdFtRa6Y7NeQSu59L6vNdhDHawZuTq++KjiejJclj04kifG7PRApFI4NgwtaE5na/xCEBI572Nvp+FkG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqZfJ5YlIOLXP2lz1tOkPGbn+iLz8gJwT4LSGzwveFo6YAgcGAAMGBQQIAQEIBAIFAwEKDBAnAAAAAAAABg==",
+    "messageSha256": "41773fa3ba79e8ec7ed51235910230f52042982bad5b0638f5431d9a2fb4b938",
+    "status": "prepared"
+  },
+  "completedAt": "2026-11-02T10:37:15.085Z"
+}

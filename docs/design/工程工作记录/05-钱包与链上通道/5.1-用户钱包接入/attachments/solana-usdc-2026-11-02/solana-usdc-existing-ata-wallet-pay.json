@@ -1,0 +1,68 @@
+{
+  "startedAt": "2026-11-02T10:50:05.490Z",
+  "mode": "--pay",
+  "probeName": "solana-usdc-existing-ata",
+  "wallet": "Solflare",
+  "version": "2.41.1",
+  "restoredPageCount": 1,
+  "networkSetting": "Devnet",
+  "connection": {
+    "connected": true,
+    "wallet": "solflare",
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "signTransactionAvailable": true
+  },
+  "walletSettlingMs": 15000,
+  "securityPreview": "Loading\nDexWallet Devnet Test\nTransaction\nlanguage\nDexWallet Devnet payment probe\n127.0.0.1:18792\nSecurity check failed\n\nWe couldn’t verify this transaction due to a server error. Only sign transactions on sites you trust.\n\nI trust this site\n\nReject\nApprove",
+  "userSigned": {
+    "reference": "7e2984de-567b-4da4-b225-a7a55d88a34d",
+    "preparedAt": "2026-11-02T10:50:26.365Z",
+    "network": "solana-devnet",
+    "asset": "USDC",
+    "probeCase": "solana-usdc-existing-ata",
+    "addresses": {
+      "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+      "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+      "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"
+    },
+    "tokenAccounts": {
+      "user": "78j9szZm4GTNojYZG2WKKc1BGZJX1wJQnf537Tsq2Tu5",
+      "recipient": "J7PRVxqgPXaXQ9dvZuetPR6UdXFrbEKo7rSzfqS8Yr4o"
+    },
+    "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "amountAtomic": "10000",
+    "decimals": 6,
+    "accountSnapshot": {
+      "observedAt": "2026-11-02T10:50:25.691Z",
+      "slot": 517830428,
+      "sourceAmount": "19990000",
+      "recipientAmount": "10000",
+      "recipientExists": true,
+      "rentLamports": 1488440
+    },
+    "estimatedAtaRentLamports": 0,
+    "blockhash": "E5xR1CQKLgijivDvARWoinyTBfy9v4XgesQf7NB4u6cZ",
+    "lastValidBlockHeight": 504997731,
+    "unsigned": "AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgEFCbtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRbINmRMPbD4rmkUsH8uafC3HzCh5jO6pH6kXZNMmBDXP45hASF/tKqYynk9CsjjiWzWRPfzznLsILaFuwHLLmoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7RCyzkSFX8TqTPQE0KC0DK1/+zQGi2/G3eQYI3wAup163vqs+GdFtRa6Y7NeQSu59L6vNdhDHawZuTq++KjiejJclj04kifG7PRApFI4NgwtaE5na/xCEBI572Nvp+FkG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqcJs6PCN+jkLgR9csQZD7fVuvNNRwD301CIpHiLnL3eSAgcGAAMGBQQIAQEIBAIFAwEKDBAnAAAAAAAABg==",
+    "messageSha256": "becf9c719520d908c152e17bfd9c2b006ecea8efb777cbb3165e0a65886cc0a9",
+    "status": "validated",
+    "userSignature": "kdmHm9ek2b9ES3hHo7Gth2Au8HcL64zj1V7eWcoHxVnuq1vgECiU3rRaiquVY4H2hJBr75ec3eiFbmcY7mj3y47",
+    "returnedMessageSha256": "becf9c719520d908c152e17bfd9c2b006ecea8efb777cbb3165e0a65886cc0a9",
+    "walletSignedAt": "2026-11-02T10:50:29.148Z"
+  },
+  "submission": {
+    "signature": "3Wbx2643dTmDTrYQhSbbcXTV27KZVNW2cGUMppCp24U1Uv5PMKU3NiHPjCFyq3K9N9LB15NvDvixqxMTbXbuePcz",
+    "submittedAt": "2026-11-02T10:50:32.021Z"
+  },
+  "immediateReplay": {
+    "httpStatus": 400,
+    "error": "{\"code\":-32002,\"message\":\"Transaction simulation failed: This transaction has already been processed\",\"data\":{\"accounts\":null,\"err\":\"AlreadyProcessed\",\"fee\":null,\"innerInstructions\":null,\"loadedAccountsDataSize\":0,\"loadedAddresses\":null,\"logs\":[],\"postBalances\":null,\"postTokenBalances\":null,\"preBalances\":null,\"preTokenBalances\":null,\"replacementBlockhash\":null,\"returnData\":null,\"unitsConsumed\":0}}"
+  },
+  "repeatedSubmit": {
+    "httpStatus": 200,
+    "reusedSubmission": true,
+    "signature": "3Wbx2643dTmDTrYQhSbbcXTV27KZVNW2cGUMppCp24U1Uv5PMKU3NiHPjCFyq3K9N9LB15NvDvixqxMTbXbuePcz"
+  },
+  "completedAt": "2026-11-02T10:50:33.739Z"
+}

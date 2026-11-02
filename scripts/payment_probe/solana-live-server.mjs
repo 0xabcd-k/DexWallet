@@ -7,6 +7,17 @@ import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
 import { rpc } from './rpc.mjs';
 import { DEVNET_ENDPOINT, MAX_FEE_LAMPORTS, digest, prepareOrder, validateUserTransaction, verifyReceipt } from './solana-live-core.mjs';
+import { inspectUsdcAccounts, prepareUsdcOrder, verifyUsdcReceipt } from './solana-usdc-core.mjs';
+
+const usdc = process.argv.includes('--usdc');
+const existingAta = process.argv.includes('--existing-ata');
+assert(process.argv.slice(2).every(arg => ['--usdc', '--existing-ata'].includes(arg)), 'Unknown probe option');
+assert(!existingAta || usdc, '--existing-ata requires --usdc');
+const probeName = usdc ? (existingAta ? 'solana-usdc-existing-ata' : 'solana-usdc-new-ata') : 'solana-live';
+const checkReceipt = usdc ? verifyUsdcReceipt : verifyReceipt;
+const paymentDescription = usdc
+  ? `Dedicated test accounts only. Payment: 0.01 Circle Devnet USDC. Platform pays network fees and recipient ATA creation deposit. Case: ${existingAta ? 'existing ATA' : 'new ATA'}.`
+  : 'Dedicated test accounts only. Payment: 0.000001 SOL (1000 lamports). Platform pays network fees.';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const output = resolve(here, '../../.tools/payment-feasibility');
@@ -14,7 +25,7 @@ const output = resolve(here, '../../.tools/payment-feasibility');
 const sponsor = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(await readFile(`${output}/solana-sponsor-only.json`, 'utf8'))));
 const addresses = JSON.parse(await readFile(`${output}/solana-live-addresses.json`, 'utf8'));
 assert.equal(addresses.sponsor, sponsor.publicKey.toBase58());
-const statePath = `${output}/solana-live-state.json`;
+const statePath = `${output}/${probeName}-state.json`;
 let state = null;
 try { state = JSON.parse(await readFile(statePath, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
 const save = async () => {
@@ -34,7 +45,7 @@ async function refresh() {
   if (status?.err) { state.status = 'failed'; await save(); throw new Error(`Chain rejected transaction: ${JSON.stringify(status.err)}`); }
   if (status && ['confirmed', 'finalized'].includes(status.confirmationStatus)) {
     const receipt = await rpc(DEVNET_ENDPOINT, 'getTransaction', [state.signature, { commitment: 'confirmed', encoding: 'json', maxSupportedTransactionVersion: 0 }]);
-    state.receiptCheck = verifyReceipt(state, receipt);
+    state.receiptCheck = checkReceipt(state, receipt);
     state.receipt = receipt;
     state.status = status.confirmationStatus;
     state.confirmedAt ??= new Date().toISOString();
@@ -46,8 +57,9 @@ async function handleAction(path, body) {
   if (path === '/prepare') {
     assert.equal(body.user, addresses.user, 'Only the configured dedicated test account is allowed');
     assert(!state?.signature, 'A signed submission already exists; inspect it before preparing another payment');
+    const snapshot = usdc ? await inspectUsdcAccounts(addresses) : null;
     const block = (await rpc(DEVNET_ENDPOINT, 'getLatestBlockhash', [{ commitment: 'confirmed' }])).value;
-    state = prepareOrder(addresses, block);
+    state = usdc ? prepareUsdcOrder(addresses, block, snapshot, existingAta) : prepareOrder(addresses, block);
     await save();
   } else if (path === '/validate') {
     assert(state && !state.signature, 'No unsigned order available');
@@ -103,13 +115,19 @@ const server = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://127.0.0.1:18792').pathname;
   try {
     if (req.method === 'GET') {
+      if (path === '/config') {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ probeName, asset: usdc ? 'USDC' : 'SOL', paymentDescription, addresses })); return;
+      }
       if (path === '/state') {
         if (!mutating) { mutating = true; try { await refresh(); } finally { mutating = false; } }
         res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(publicState())); return;
       }
       const files = { '/': ['solana-live.html', 'text/html'], '/client.js': ['solana-live-client.js', 'application/javascript'], '/web3.js': ['node_modules/@solana/web3.js/lib/index.iife.min.js', 'application/javascript'] };
       if (!files[path]) { res.writeHead(404).end(); return; }
-      res.setHeader('Content-Type', files[path][1]); res.end(await readFile(resolve(here, files[path][0]))); return;
+      const file = await readFile(resolve(here, files[path][0]));
+      res.setHeader('Content-Type', files[path][1]);
+      res.end(path === '/' ? file.toString().replace('__PAYMENT_DESCRIPTION__', paymentDescription) : file); return;
     }
     if (req.method !== 'POST') { res.writeHead(405).end(); return; }
     if (req.headers.origin && req.headers.origin !== 'http://127.0.0.1:18792') throw new Error('Unexpected request origin');
@@ -126,4 +144,4 @@ const server = createServer(async (req, res) => {
     res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: error.message }));
   }
 });
-server.listen(18792, '127.0.0.1', () => console.log('Solana Devnet probe on http://127.0.0.1:18792; fixed test account and 1000 lamports only'));
+server.listen(18792, '127.0.0.1', () => console.log(`${probeName} on http://127.0.0.1:18792; ${paymentDescription}`));

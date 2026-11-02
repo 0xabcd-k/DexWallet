@@ -1,0 +1,7 @@
+{
+  "observedAt": "2026-11-02T10:33:43.595Z",
+  "httpStatus": 400,
+  "result": {
+    "error": "Test user needs Circle Devnet USDC from the official faucet"
+  }
+}

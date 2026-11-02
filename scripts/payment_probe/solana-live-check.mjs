@@ -3,6 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { rpc } from './rpc.mjs';
 import { DEVNET_ENDPOINT, verifyReceipt } from './solana-live-core.mjs';
+import { verifyUsdcReceipt } from './solana-usdc-core.mjs';
 
 const base = 'http://127.0.0.1:18792';
 const output = fileURLToPath(new URL('../../.tools/payment-feasibility/', import.meta.url));
@@ -25,12 +26,19 @@ for (let attempt = 0; attempt < 20 && state.status !== 'finalized'; attempt++) {
   state = await get();
 }
 assert.equal(state.status, 'finalized', 'Finalization pending; inspect the existing transaction');
-verifyReceipt(state, state.receipt);
-await writeFile(`${output}/solana-live-public-result.json`, JSON.stringify(state, null, 2));
+const usdc = state.asset === 'USDC';
+const probeName = usdc ? state.probeCase : 'solana-live';
+assert(['solana-live', 'solana-usdc-new-ata', 'solana-usdc-existing-ata'].includes(probeName));
+(usdc ? verifyUsdcReceipt : verifyReceipt)(state, state.receipt);
+await writeFile(`${output}/${probeName}-public-result.json`, JSON.stringify(state, null, 2));
 if (replayRequested) {
   async function balances() {
-    const { value } = await rpc(DEVNET_ENDPOINT, 'getMultipleAccounts', [Object.values(state.addresses), { commitment: 'confirmed', encoding: 'base64' }]);
-    return Object.fromEntries(Object.keys(state.addresses).map((role, index) => [role, value[index].lamports]));
+    const entries = Object.entries(state.addresses);
+    if (usdc) entries.push(['userAta', state.tokenAccounts.user], ['recipientAta', state.tokenAccounts.recipient]);
+    const { value } = await rpc(DEVNET_ENDPOINT, 'getMultipleAccounts', [entries.map(([, address]) => address), { commitment: 'confirmed', encoding: 'jsonParsed' }]);
+    return Object.fromEntries(entries.map(([role], index) => [role, {
+      lamports: value[index].lamports, tokenAmount: value[index].data?.parsed?.info?.tokenAmount?.amount,
+    }]));
   }
   const before = await balances();
   const repeated = await post('/submit', state.reference);
@@ -46,10 +54,10 @@ if (replayRequested) {
     balancesUnchanged: JSON.stringify(before) === JSON.stringify(after),
   };
   // Preserve failures as failures; an expired replay is not proof of accepted network deduplication.
-  await writeFile(`${output}/solana-live-replay.json`, JSON.stringify(evidence, null, 2));
+  await writeFile(`${output}/${probeName}-replay.json`, JSON.stringify(evidence, null, 2));
   assert.deepEqual(after, before);
   if (replay.httpStatus === 200) assert.equal(replay.body.replaySignature, state.signature);
-  else assert.match(replay.body.error ?? '', /BlockhashNotFound/, 'Unexpected replay rejection');
+  else assert.match(replay.body.error ?? '', /BlockhashNotFound|AlreadyProcessed/, 'Unexpected replay rejection');
   console.log(JSON.stringify(evidence, null, 2));
 }
 console.log(JSON.stringify({ signature: state.signature, status: state.status, receiptCheck: state.receiptCheck }, null, 2));

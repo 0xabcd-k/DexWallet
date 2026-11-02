@@ -1,0 +1,9 @@
+{
+  "observedAt": "2026-11-02T10:29:39.045Z",
+  "url": "https://faucet.circle.com/",
+  "network": "Solana Devnet",
+  "asset": "USDC",
+  "address": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+  "requestedAmount": "20",
+  "result": "We detect unusual traffic from your request. Please verify that you are not a bot and submit again."
+}

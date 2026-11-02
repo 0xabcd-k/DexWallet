@@ -1,0 +1,37 @@
+[
+  {
+    "sourceFile": "solana-usdc-existing-ata-wallet-pay-rpc-ssl-error.json",
+    "startedAt": "2026-11-02T10:44:57.418Z",
+    "probeCase": "solana-usdc-existing-ata",
+    "error": "curl 35: curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to api.devnet.solana.com:443; ",
+    "restoredPageCount": null
+  },
+  {
+    "sourceFile": "solana-usdc-existing-ata-wallet-pay-rpc-timeout-2.json",
+    "startedAt": "2026-11-02T10:42:42.329Z",
+    "probeCase": "solana-usdc-existing-ata",
+    "error": "curl 28: curl: (28) SSL connection timeout; ",
+    "restoredPageCount": null
+  },
+  {
+    "sourceFile": "solana-usdc-existing-ata-wallet-pay-rpc-timeout-3.json",
+    "startedAt": "2026-11-02T10:46:55.002Z",
+    "probeCase": "solana-usdc-existing-ata",
+    "error": "curl 28: curl: (28) SSL connection timeout; ",
+    "restoredPageCount": 1
+  },
+  {
+    "sourceFile": "solana-usdc-existing-ata-wallet-pay-rpc-timeout.json",
+    "startedAt": "2026-11-02T10:41:36.698Z",
+    "probeCase": "solana-usdc-existing-ata",
+    "error": "curl 28: curl: (28) SSL connection timeout; ",
+    "restoredPageCount": null
+  },
+  {
+    "sourceFile": "solana-usdc-new-ata-wallet-pay-rpc-timeout.json",
+    "startedAt": "2026-11-02T10:38:04.236Z",
+    "probeCase": "solana-usdc-new-ata",
+    "error": "curl 28: curl: (28) SSL connection timeout; ",
+    "restoredPageCount": null
+  }
+]

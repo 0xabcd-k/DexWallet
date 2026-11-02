@@ -1,0 +1,30 @@
+{
+  "observedAt": "2026-11-02T10:41:03.253Z",
+  "signature": "4KyfkNqosDFzAd4sAQwmGEtqEmmGZmp7hHFs8BNz5Za5TpuL9rREueodng2L1wNvpJgzmdhBdSkk2BQFxpqLf7pf",
+  "slot": 517828095,
+  "matchesSingleReceipt": true,
+  "observed": {
+    "user": {
+      "address": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+      "lamports": 4999000
+    },
+    "sponsor": {
+      "address": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+      "lamports": 4992486560
+    },
+    "recipient": {
+      "address": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+      "lamports": 1001000
+    },
+    "userAta": {
+      "address": "78j9szZm4GTNojYZG2WKKc1BGZJX1wJQnf537Tsq2Tu5",
+      "lamports": 1488440,
+      "tokenAmountAtomic": "19990000"
+    },
+    "recipientAta": {
+      "address": "J7PRVxqgPXaXQ9dvZuetPR6UdXFrbEKo7rSzfqS8Yr4o",
+      "lamports": 1488440,
+      "tokenAmountAtomic": "10000"
+    }
+  }
+}
