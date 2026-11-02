@@ -1,0 +1,36 @@
+{
+  "observedAt": "2026-11-02T08:21:08.378Z",
+  "version": "26.36.0",
+  "scope": "Unmodified official extension in isolated Chromium",
+  "injectedProvider": true,
+  "accountInitialization": "not completed",
+  "connectResult": {
+    "error": "Unexpected error"
+  },
+  "apiResponses": [
+    {
+      "path": "/user/v1/users/:test-user/profile",
+      "status": 403
+    },
+    {
+      "path": "/user/v1/users/:test-user/wallet-storage",
+      "status": 403
+    },
+    {
+      "path": "/user/v2/users/:test-user/wallet-accounts",
+      "status": 403
+    },
+    {
+      "path": "/user/v1/users/:test-user/wallet-storage",
+      "status": 403
+    },
+    {
+      "path": "/user/v1/users/:test-user/wallet-storage",
+      "status": 403
+    },
+    {
+      "path": "/user/v1/users/:test-user/wallet-storage",
+      "status": 403
+    }
+  ]
+}

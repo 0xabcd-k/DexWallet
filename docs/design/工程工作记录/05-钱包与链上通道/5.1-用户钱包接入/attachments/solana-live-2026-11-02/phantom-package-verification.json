@@ -1,0 +1,15 @@
+{
+  "extensionId": "bfnaelmomeimhlpmgjnjophhpkkoljpa",
+  "version": "26.36.0",
+  "manifestVersion": 3,
+  "size": 18940156,
+  "crxSha256": "e7eb550bd42282a4df0713e99d193c8829ff4e8f5f426c665451408e90a5f6a4",
+  "developerSignatureVerified": true,
+  "proofs": [
+    {
+      "proofType": 2,
+      "publicKeySha256": "15d04bcec48c7bfc69d9ef77faaeb9f0208f30a151df62abdac0a98f0e2182b8"
+    }
+  ],
+  "manifestKeyPresent": true
+}

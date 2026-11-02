@@ -1,0 +1,102 @@
+{
+  "scope": "Test account preparation, not the wallet payment",
+  "observedAt": "2026-11-02T08:07:37.355Z",
+  "addresses": {
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+    "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"
+  },
+  "balancesBefore": {
+    "user": 0,
+    "sponsor": 5000000000,
+    "recipient": 0
+  },
+  "funding": {
+    "user": 5000000,
+    "recipient": 1000000
+  },
+  "blockhash": "5nr9TGENKgPWMVAuxrpd8jTjAKi4pF89roPDnhYtPMZF",
+  "lastValidBlockHeight": 504957422,
+  "signature": "2EzHUktER9SWu72ejKHCpf9WcW2kqTzqJ8zHo6jdGpG7nR7bqq1iDFGhcBN3vNqKj77m77i2yvAg2ipNJh4XNBx",
+  "receipt": {
+    "blockTime": 1793606858,
+    "meta": {
+      "computeUnitsConsumed": 300,
+      "costUnits": 1934,
+      "err": null,
+      "fee": 5000,
+      "innerInstructions": [],
+      "loadedAddresses": {
+        "readonly": [],
+        "writable": []
+      },
+      "logMessages": [
+        "Program 11111111111111111111111111111111 invoke [1]",
+        "Program 11111111111111111111111111111111 success",
+        "Program 11111111111111111111111111111111 invoke [1]",
+        "Program 11111111111111111111111111111111 success"
+      ],
+      "postBalances": [
+        4993995000,
+        1000000,
+        5000000,
+        1
+      ],
+      "postTokenBalances": [],
+      "preBalances": [
+        5000000000,
+        0,
+        0,
+        1
+      ],
+      "preTokenBalances": [],
+      "rewards": [],
+      "status": {
+        "Ok": null
+      }
+    },
+    "slot": 517789725,
+    "transaction": {
+      "message": {
+        "accountKeys": [
+          "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+          "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+          "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+          "11111111111111111111111111111111"
+        ],
+        "header": {
+          "numReadonlySignedAccounts": 0,
+          "numReadonlyUnsignedAccounts": 1,
+          "numRequiredSignatures": 1
+        },
+        "instructions": [
+          {
+            "accounts": [
+              0,
+              2
+            ],
+            "data": "3Bxs4BcPoFZBeRb5",
+            "programIdIndex": 3,
+            "stackHeight": 1
+          },
+          {
+            "accounts": [
+              0,
+              1
+            ],
+            "data": "3Bxs4Bc3VYuGVB19",
+            "programIdIndex": 3,
+            "stackHeight": 1
+          }
+        ],
+        "recentBlockhash": "5nr9TGENKgPWMVAuxrpd8jTjAKi4pF89roPDnhYtPMZF"
+      },
+      "signatures": [
+        "2EzHUktER9SWu72ejKHCpf9WcW2kqTzqJ8zHo6jdGpG7nR7bqq1iDFGhcBN3vNqKj77m77i2yvAg2ipNJh4XNBx"
+      ]
+    },
+    "transactionIndex": 15,
+    "version": "legacy"
+  },
+  "confirmationStatus": "finalized"
+}

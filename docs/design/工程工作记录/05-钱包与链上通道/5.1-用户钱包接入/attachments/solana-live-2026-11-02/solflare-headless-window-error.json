@@ -1,0 +1,13 @@
+{
+  "observedAt": "2026-11-02T08:46:02.096Z",
+  "connectError": {
+    "code": 4001,
+    "message": "Connection rejected"
+  },
+  "diagnosticPopupError": "Invalid value for bounds. Bounds must be at least 50% within visible screen space.",
+  "browserViewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "resolution": "Restart with viewport matching the headless screen, without modifying the wallet"
+}

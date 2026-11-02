@@ -1,0 +1,15 @@
+{
+  "extensionId": "bhhhlbepdkbapadjdnnojkbgioiodbic",
+  "version": "2.41.1",
+  "manifestVersion": 3,
+  "size": 46811208,
+  "crxSha256": "e7294201cc7cfcabb428761f7bd8a750119967f717eabddc92bdb2067a35d546",
+  "developerSignatureVerified": true,
+  "proofs": [
+    {
+      "proofType": 2,
+      "publicKeySha256": "1777b14f3a10f0393dde9a168e8e3182dbf08d8f87562558a918ec16af4e5802"
+    }
+  ],
+  "manifestKeyPresent": false
+}

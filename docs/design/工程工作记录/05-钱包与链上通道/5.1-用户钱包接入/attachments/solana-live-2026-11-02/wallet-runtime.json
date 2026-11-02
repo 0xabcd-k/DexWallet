@@ -1,0 +1,27 @@
+{
+  "observedAt": "2026-11-02T09:10:08.495Z",
+  "wallet": "Solflare",
+  "version": "2.41.1",
+  "officialExtensionId": "bhhhlbepdkbapadjdnnojkbgioiodbic",
+  "runtimeExtensionId": "jpglbfkabnemhpbebjhpjafgpkakdcfi",
+  "installation": "Official CRX3 developer proof verified, extracted unmodified; no manifest key, runtime ID derived from local path",
+  "browser": "Playwright 1.64.1 bundled Chromium 156.0.8078.4, isolated persistent profile, headless",
+  "network": "Solana Devnet",
+  "signingInterface": "window.solflare.signTransaction(legacyTransaction)",
+  "walletSignatureOnly": true,
+  "backendReadsUserSecret": false,
+  "backendMessageBytesUnchanged": true,
+  "serverPreparedFeePayer": true,
+  "backendCoSignedSimulatedAndBroadcast": true,
+  "walletSecurityPreview": {
+    "status": "server error",
+    "display": "Security check failed",
+    "action": "Selected the wallet-provided I trust this site checkbox for the fixed localhost test and approved",
+    "limitation": "No successful wallet security preview or production UX acceptance"
+  },
+  "confirmation": "finalized",
+  "scope": "SOL transfer to a pre-funded recipient; no SPL tokens, ledger credit, mobile wallet or other wallet result",
+  "memoUsed": false,
+  "businessReference": "39753cfc-1b33-4a9a-a098-6c26bb9bf78d",
+  "transaction": "3uechSmrGT1Axu3zhxVj6URgbMgoLXLyzSd1rS2EnJ88LpRRfMkB8ahZ4Csh13o6VzFmiyoAnHmmoMQ2yYxv5FJn"
+}

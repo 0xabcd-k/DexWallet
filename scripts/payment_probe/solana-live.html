@@ -1,0 +1,15 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DexWallet Devnet payment probe</title>
+<style>body{font:18px sans-serif;margin:30px;max-width:900px}button{padding:12px;margin:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}</style>
+<h1>Solana Devnet payment probe</h1>
+<p>Dedicated test accounts only. Payment: 0.000001 SOL (1000 lamports). Platform pays network fees.</p>
+<label>Wallet <select id="wallet"><option value="solflare">Solflare</option><option value="phantom">Phantom</option></select></label>
+<button id="connect">Connect wallet</button>
+<button id="sign" disabled>Sign only in wallet</button>
+<button id="submit" disabled>Submit via platform</button>
+<button id="status">Check chain result</button>
+<pre id="result"></pre>
+<script src="/web3.js"></script>
+<script src="/client.js"></script>
