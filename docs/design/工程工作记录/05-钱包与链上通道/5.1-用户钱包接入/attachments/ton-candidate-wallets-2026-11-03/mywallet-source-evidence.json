@@ -1,0 +1,11 @@
+{
+  "source": "https://github.com/mytonwallet-org/mytonwallet/blob/v26.10.7/src/api/dappProtocols/adapters/tonConnect/utils.ts",
+  "sha256": "df0f37b3b737973f4907565f2d2794eadfb5d10ef0d21e872aa94956d25b392f",
+  "observedAt": "2026-11-03T18:28:00.646309+00:00",
+  "methods": [
+    "sendTransaction",
+    "signData",
+    "disconnect"
+  ],
+  "signMessageDispatcherFound": false
+}

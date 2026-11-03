@@ -1,0 +1,45 @@
+{
+  "wallet": "My Wallet",
+  "version": "26.10.7",
+  "observedAt": "2026-11-03T18:31:10.785Z",
+  "connection": {
+    "device": {
+      "platform": "android",
+      "appName": "MyTonWallet",
+      "appVersion": "26.10.7",
+      "maxProtocolVersion": 2,
+      "features": [
+        "SendTransaction",
+        {
+          "name": "SendTransaction",
+          "maxMessages": 255
+        },
+        {
+          "name": "SignData",
+          "types": [
+            "text",
+            "binary",
+            "cell"
+          ]
+        }
+      ]
+    },
+    "provider": "http",
+    "account": {
+      "address": "0:46875202b7c7c7077f16d488cb0cdcd06399cf5a5437b3b909bdf4c12f0d967e",
+      "chain": "-239",
+      "walletStateInit": "te6ccsECFgEAArEAAAUAEgAXABwAjgCTAJgAnQCsALsAwADOANkA6ADsAP4BdAH0AkECfAKGArECATQBFQEU/wD0pBP0vPLICwICASADDgIBSAQFAtzQINdJwSCRW49jINcLHyCCEGV4dG69IYIQc2ludL2wkl8D4IIQZXh0brqOtIAg1yEB0HTXIfpAMPpE+Cj6RDBYvZFb4O1E0IEBQdch9AWDB/QOb6ExkTDhgEDXIXB/2zzgMSDXSYECgLmRMOBw4hEQAgEgBg0CASAHCgIBbggJABmtznaiaEAg65Drhf/AABmvHfaiaEAQ65DrhY/AAgFICwwAF7Ml+1E0HHXIdcLH4AARsmL7UTQ1woAgABm+Xw9qJoQICg65D6AsAQLyDwEeINcLH4IQc2lnbrry4Ip/EAHmjvDtou37IYMI1yICgwjXIyCAINch0x/TH9Mf7UTQ0gDTHyDTH9P/1woACvkBQMz5EJoolF8K2zHh8sCH3wKzUAew8tCEUSW68uCFUDa68uCG+CO78tCIIpL4AN4BpH/IygDLHwHPFsntVCCS+A/ecNs82BED9u2i7fsC9AQhbpJsIY5MAiHXOTBwlCHHALOOLQHXKCB2HkNsINdJwAjy4JMg10rAAvLgkyDXHQbHEsIAUjCw8tCJ10zXOTABpOhsEoQHu/Lgk9dKwADy4JPtVeLSAAHAAJFb4OvXLAgUIJFwlgHXLAgcEuJSELHjDyDXShITFACWAfpAAfpE+Cj6RDBYuvLgke1E0IEBQdcY9AUEnX/IygBABIMH9FPy4IuOFAODB/Rb8uCMItcKACFuAbOw8tCQ4shQA88WEvQAye1UAHIw1ywIJI4tIfLgktIA7UTQ0gBRE7ry0I9UUDCRMZwBgQFA1yHXCgDy4I7iyMoAWM8Wye1Uk/LAjeIAEJNb2zHh10zQAFGAAAAAP///iJrUL7VjC0PG2F+6OmIq2WWzJiSndy6YeQw6D8lyPW5uIAlKDt8=",
+      "publicKey": "35a85f6ac616878db0bf7474c455b2cb664c494eee5d30f218741f92e47adcdc"
+    }
+  },
+  "capabilityResult": {
+    "type": "sign-unsupported",
+    "value": {
+      "reason": "Connected wallet did not advertise SignMessage"
+    },
+    "page": "http://127.0.0.1:18791/?manifestOrigin=https%3A%2F%2Fpopulations-pubmed-milton-arch.trycloudflare.com",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"
+  },
+  "paymentRequested": false,
+  "broadcast": false
+}

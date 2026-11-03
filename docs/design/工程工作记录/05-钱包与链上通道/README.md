@@ -45,3 +45,5 @@
 [Rabby 与 Backpack 钱包验证](5.1-用户钱包接入/19Rabby与Backpack钱包验证.md) 已完成 Rabby 的 Base USDC 和 Backpack 的 Solana SOL、USDC、自建 USDT 替身共四笔真实钱包代付，均 finalized。Rabby 本版高级执行接口返回不支持，原生 ETH 未通过；两款钱包的测试网资产预览限制、版本、原包哈希、拒绝及重放证据单列保留。
 
 [候选钱包兼容与阻塞](5.1-用户钱包接入/20候选钱包兼容与阻塞记录.md) 补充 OKX 的 Base USDC 支付及最终确认边界，并保留 Trust、TokenPocket、Bitget、Coinbase 和 Phantom 的实际连接、签名预检与测试网络阻塞。当前失败组合不随其他钱包自动通过。
+
+[TON 候选钱包与当前覆盖汇总](5.1-用户钱包接入/21TON候选钱包能力与覆盖汇总.md) 补齐 My Wallet Android 26.10.7 的真实能力响应（缺少 SignMessage），汇总四链九组合的证据边界；Telegram 自托管钱包仍待用户完成仅连接检查。
