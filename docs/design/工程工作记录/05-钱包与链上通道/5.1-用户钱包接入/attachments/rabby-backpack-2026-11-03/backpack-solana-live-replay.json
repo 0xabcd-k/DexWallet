@@ -1,0 +1,37 @@
+{
+  "observedAt": "2026-11-03T16:55:35.718Z",
+  "reference": "4bd373a5-d50a-412c-93f8-73b22e54d604",
+  "signature": "62BDTcRNuzyT1EZg8fb9QYRBXr45TEaQTXa7jDok8eNbN2JWikGcBC4T7qXdLQSnF4ToqaTgZp68Pf5vDALGvMkU",
+  "before": {
+    "user": {
+      "lamports": 4998000
+    },
+    "sponsor": {
+      "lamports": 4988382880
+    },
+    "recipient": {
+      "lamports": 1002000
+    }
+  },
+  "after": {
+    "user": {
+      "lamports": 4998000
+    },
+    "sponsor": {
+      "lamports": 4988382880
+    },
+    "recipient": {
+      "lamports": 1002000
+    }
+  },
+  "repeatedSubmit": {
+    "httpStatus": 200,
+    "reusedSubmission": true,
+    "signature": "62BDTcRNuzyT1EZg8fb9QYRBXr45TEaQTXa7jDok8eNbN2JWikGcBC4T7qXdLQSnF4ToqaTgZp68Pf5vDALGvMkU"
+  },
+  "replay": {
+    "httpStatus": 400,
+    "error": "{\"code\":-32002,\"message\":\"Transaction simulation failed: Blockhash not found\",\"data\":{\"accounts\":null,\"err\":\"BlockhashNotFound\",\"fee\":null,\"innerInstructions\":null,\"loadedAccountsDataSize\":0,\"loadedAddresses\":null,\"logs\":[],\"postBalances\":null,\"postTokenBalances\":null,\"preBalances\":null,\"preTokenBalances\":null,\"replacementBlockhash\":null,\"returnData\":null,\"unitsConsumed\":0}}"
+  },
+  "balancesUnchanged": true
+}

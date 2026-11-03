@@ -1,0 +1,24 @@
+[
+  {
+    "wallet": "rabby",
+    "version": "0.94.14",
+    "extensionId": "acmacodkjbdgmoleebolmdjonilkdbch",
+    "officialDownloadPage": "https://rabby.io/",
+    "sha256": "819badd93963634b83d1701869054e51e0b26cd6602ba2eefc2d1306cd3de084",
+    "size": 17021686,
+    "crx3DeveloperSignatureVerified": true,
+    "manifestKeyPresent": false,
+    "runtimeExtensionId": "miljhiilebclnmoocaiibkmocepdakjb"
+  },
+  {
+    "wallet": "backpack",
+    "version": "0.10.219",
+    "extensionId": "aflkmfhebedbjioipglgcbcmnbpgliof",
+    "officialDownloadPage": "https://backpack.app/",
+    "sha256": "dfe0a35ffab357a25309840c9065fb6c050dc3050b5c4d02051b26a2efad3301",
+    "size": 26957958,
+    "crx3DeveloperSignatureVerified": true,
+    "manifestKeyPresent": false,
+    "runtimeExtensionId": "kjbagojhkhkajkbjnlljmicaoabocebm"
+  }
+]

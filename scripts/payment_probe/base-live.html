@@ -3,7 +3,7 @@
 <style>body{font:16px sans-serif;max-width:850px;margin:30px auto;padding:20px}button{padding:12px;margin:5px}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style>
 <h1>Base Sepolia USDC — dedicated test accounts</h1>
 <p>Authorize 0.01 official test USDC to the fixed platform account. The platform broadcasts and pays ETH fees. User ETH must remain zero.</p>
-<button id="connect">Connect MetaMask</button><button id="reconnect">Renew wallet permissions</button><button id="sign" disabled>Sign USDC authorization</button><button id="submit" disabled>Platform submit</button><pre id="result"></pre>
+<button id="connect">Connect test wallet</button><button id="reconnect">Renew wallet permissions</button><button id="sign" disabled>Sign USDC authorization</button><button id="submit" disabled>Platform submit</button><pre id="result"></pre>
 <script>
 window.baseProbe = { last: null };
 const show = value => { window.baseProbe.last = value; document.querySelector('#result').textContent = JSON.stringify(value, null, 2); };
@@ -20,7 +20,9 @@ document.querySelector('#connect').onclick = run(async () => {
   // Add/switch testnet using the wallet's own confirmation UI.
   try { await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x14a34'}]}); }
   catch (error) {
-    if (error.code !== 4902) throw error;
+    const rabbyUnknownChain = ethereum.isRabby && error.code === -32603
+      && error.message.includes('Unrecognized chain ID "0x14a34"');
+    if (error.code !== 4902 && !rabbyUnknownChain) throw error;
     await ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:'0x14a34',chainName:'Base Sepolia',nativeCurrency:{name:'Ether',symbol:'ETH',decimals:18},rpcUrls:['https://base-sepolia-rpc.publicnode.com'],blockExplorerUrls:['https://sepolia.basescan.org']}]});
     await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x14a34'}]});
   }

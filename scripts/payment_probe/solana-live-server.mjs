@@ -15,9 +15,14 @@ const fixture = process.argv.includes('--usdt-fixture');
 assert(!(usdc && fixture), 'Choose one token probe');
 const token = usdc ? USDC : fixture ? USDT_FIXTURE : null;
 const existingAta = process.argv.includes('--existing-ata');
-assert(process.argv.slice(2).every(arg => ['--usdc', '--usdt-fixture', '--existing-ata'].includes(arg)), 'Unknown probe option');
+const walletOption = process.argv.slice(2).filter(arg => arg.startsWith('--wallet='));
+assert(walletOption.length <= 1);
+const wallet = walletOption[0]?.slice('--wallet='.length) ?? 'solflare';
+assert(['solflare', 'phantom', 'backpack', 'okx'].includes(wallet), 'Unknown test wallet');
+assert(process.argv.slice(2).every(arg => ['--usdc', '--usdt-fixture', '--existing-ata', ...walletOption].includes(arg)), 'Unknown probe option');
 assert(!existingAta || token, '--existing-ata requires a token probe');
-const probeName = token ? `${token.probePrefix}-${existingAta ? 'existing' : 'new'}-ata` : 'solana-live';
+const assetCase = token ? `${token.probePrefix}-${existingAta ? 'existing' : 'new'}-ata` : 'solana-live';
+const probeName = wallet === 'solflare' ? assetCase : `${wallet}-${assetCase}`;
 const checkReceipt = token ? (order, receipt) => verifyTokenReceipt(order, receipt, token) : verifyReceipt;
 const paymentDescription = token
   ? `Dedicated test accounts only. Payment: 0.01 ${token.description}. Platform pays network fees and recipient ATA creation deposit. Case: ${existingAta ? 'existing ATA' : 'new ATA'}.`
@@ -121,7 +126,7 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET') {
       if (path === '/config') {
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ probeName, asset: token?.symbol ?? 'SOL', paymentDescription, addresses })); return;
+        res.end(JSON.stringify({ probeName, wallet, asset: token?.symbol ?? 'SOL', paymentDescription, addresses })); return;
       }
       if (path === '/state') {
         if (!mutating) { mutating = true; try { await refresh(); } finally { mutating = false; } }

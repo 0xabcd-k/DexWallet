@@ -1,0 +1,53 @@
+{
+  "observedAt": "2026-11-03T17:16:36.789Z",
+  "reference": "b5e44cd0-523b-48ab-b515-6857a4a4df89",
+  "signature": "5YqN1vKnbxPC4LR5YPWEzSXAhJcPa1fNfSZUpiNM1hm25HBBMTjzjW8KmkicRuy5Bx5D8WWt8K1mUfgNMbFHNnrF",
+  "before": {
+    "user": {
+      "lamports": 4998000
+    },
+    "sponsor": {
+      "lamports": 4988372880
+    },
+    "recipient": {
+      "lamports": 1002000
+    },
+    "userAta": {
+      "lamports": 1488440,
+      "tokenAmount": "19970000"
+    },
+    "recipientAta": {
+      "lamports": 1488440,
+      "tokenAmount": "30000"
+    }
+  },
+  "after": {
+    "user": {
+      "lamports": 4998000
+    },
+    "sponsor": {
+      "lamports": 4988372880
+    },
+    "recipient": {
+      "lamports": 1002000
+    },
+    "userAta": {
+      "lamports": 1488440,
+      "tokenAmount": "19970000"
+    },
+    "recipientAta": {
+      "lamports": 1488440,
+      "tokenAmount": "30000"
+    }
+  },
+  "repeatedSubmit": {
+    "httpStatus": 200,
+    "reusedSubmission": true,
+    "signature": "5YqN1vKnbxPC4LR5YPWEzSXAhJcPa1fNfSZUpiNM1hm25HBBMTjzjW8KmkicRuy5Bx5D8WWt8K1mUfgNMbFHNnrF"
+  },
+  "replay": {
+    "httpStatus": 400,
+    "error": "{\"code\":-32002,\"message\":\"Transaction simulation failed: Blockhash not found\",\"data\":{\"accounts\":null,\"err\":\"BlockhashNotFound\",\"fee\":null,\"innerInstructions\":null,\"loadedAccountsDataSize\":0,\"loadedAddresses\":null,\"logs\":[],\"postBalances\":null,\"postTokenBalances\":null,\"preBalances\":null,\"preTokenBalances\":null,\"replacementBlockhash\":null,\"returnData\":null,\"unitsConsumed\":0}}"
+  },
+  "balancesUnchanged": true
+}

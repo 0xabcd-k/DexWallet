@@ -41,3 +41,5 @@
 [Solana USDT 代付机制验证](5.1-用户钱包接入/17SolanaUSDT代付机制验证.md) 已完成正式 mint 只读核对、主网 / Devnet Token Program 代码哈希比对，以及自建 Devnet 测试币的两笔真实钱包代付。首次 ATA 存储押金、再次复用、冻结拒绝和重放均有证据；不是 Tether 官方测试币或主网 USDT 实转，Solflare 在线预览服务错误仍待解决。
 
 [TRON 完整资源代付验证](5.1-用户钱包接入/18TRON完整资源代付验证.md) 已使用与 Nile USDT 相同 runtime 的自建测试币，完成同一笔付款的 14,650 Energy 与 345 Bandwidth 全部由平台委托承担。用户前后为零 TRX，原钱包签名、固化、到账与重复广播拒绝均有证据；官方资产和正常金额预览仍单独待验。用户已要求连续验证剩余链币及候选钱包，不在每一项完成后等待再次确认。
+
+[Rabby 与 Backpack 钱包验证](5.1-用户钱包接入/19Rabby与Backpack钱包验证.md) 已完成 Rabby 的 Base USDC 和 Backpack 的 Solana SOL、USDC、自建 USDT 替身共四笔真实钱包代付，均 finalized。Rabby 本版高级执行接口返回不支持，原生 ETH 未通过；两款钱包的测试网资产预览限制、版本、原包哈希、拒绝及重放证据单列保留。

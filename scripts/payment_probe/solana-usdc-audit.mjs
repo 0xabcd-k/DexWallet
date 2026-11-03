@@ -36,5 +36,7 @@ for (const [position, [role, address]] of entries.entries()) {
 }
 const result = { observedAt: new Date().toISOString(), signature: state.signature, slot: accounts.context.slot, matchesSingleReceipt: true, observed };
 const output = fileURLToPath(new URL('../../.tools/payment-feasibility/', import.meta.url));
-await writeFile(`${output}/${state.probeCase}-balance-audit.json`, JSON.stringify(result, null, 2));
+const config = await (await fetch('http://127.0.0.1:18792/config')).json();
+assert.equal(config.probeName, config.wallet === 'solflare' ? state.probeCase : `${config.wallet}-${state.probeCase}`);
+await writeFile(`${output}/${config.probeName}-balance-audit.json`, JSON.stringify(result, null, 2));
 console.log(JSON.stringify(result, null, 2));

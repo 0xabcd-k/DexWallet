@@ -28,8 +28,11 @@ for (let attempt = 0; attempt < 20 && state.status !== 'finalized'; attempt++) {
 }
 assert.equal(state.status, 'finalized', 'Finalization pending; inspect the existing transaction');
 const token = state.asset ? probeToken(state.asset) : null;
-const probeName = token ? state.probeCase : 'solana-live';
-assert(['solana-live', ...(token ? [`${token.probePrefix}-new-ata`, `${token.probePrefix}-existing-ata`] : [])].includes(probeName));
+const config = await (await fetch(base + '/config')).json();
+const assetCase = token ? state.probeCase : 'solana-live';
+assert(['solana-live', ...(token ? [`${token.probePrefix}-new-ata`, `${token.probePrefix}-existing-ata`] : [])].includes(assetCase));
+const probeName = config.wallet === 'solflare' ? assetCase : `${config.wallet}-${assetCase}`;
+assert.equal(config.probeName, probeName);
 if (token) verifyTokenReceipt(state, state.receipt, token);
 else verifyReceipt(state, state.receipt);
 await writeFile(`${output}/${probeName}-public-result.json`, JSON.stringify(state, null, 2));

@@ -14,5 +14,7 @@ state = await audit.json();
 assert(audit.ok, json(state));
 assert.equal(state.status, 'finalized');
 assert(state.audit.usedAuthorizationRejected && state.receiptCheck.userZeroEthPreserved && state.receiptCheck.sponsorFeeVerified);
-await writeFile(`${root}/base-live-public-result.json`, json(state) + '\n');
+const config = await (await fetch(base + '/config')).json();
+assert(['base-live', 'base-rabby-usdc', 'base-okx-usdc', 'base-coinbase-usdc'].includes(config.probeName));
+await writeFile(`${root}/${config.probeName}-public-result.json`, json(state) + '\n');
 console.log(json({ status: state.status, txHash: state.txHash, receiptCheck: state.receiptCheck, audit: state.audit }));

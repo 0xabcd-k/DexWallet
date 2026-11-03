@@ -14,7 +14,8 @@ function action(id, handler) {
 }
 action('connect', async () => {
   const wallet = document.getElementById('wallet').value;
-  const provider = wallet === 'phantom' ? window.phantom?.solana : window.solflare;
+  const provider = ({ phantom: window.phantom?.solana, solflare: window.solflare,
+    backpack: window.backpack, okx: window.okxwallet?.solana })[wallet];
   if (!provider) throw new Error(`${wallet} injected provider not detected`);
   await provider.connect();
   if (!provider.publicKey) throw new Error(`${wallet} connection was not approved or could not open`);

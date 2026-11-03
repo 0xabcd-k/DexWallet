@@ -8,12 +8,16 @@ import { rpc } from './rpc.mjs';
 import { CHAIN_ID, ENDPOINT, TOKEN, ORACLE, AMOUNT, MAX_FEE_WEI, abi, oracleAbi, domain, domainTypes, json, prepareOrder, validateAuthorization, verifyReceipt, verifyBalances } from './base-live-core.mjs';
 
 const root = fileURLToPath(new URL('../../.tools/payment-feasibility/', import.meta.url));
+const wallet = process.argv[2]?.slice('--wallet='.length) ?? 'metamask';
+assert(process.argv.length <= 3 && (!process.argv[2] || process.argv[2].startsWith('--wallet=')));
+assert(['metamask', 'rabby', 'okx', 'coinbase'].includes(wallet), 'Unknown test wallet');
+const probeName = wallet === 'metamask' ? 'base-live' : `base-${wallet}-usdc`;
 // The serving process never reads the user's key. That key is imported into the original wallet UI separately.
 const sponsor = privateKeyToAccount(JSON.parse(await readFile(`${root}/base-sponsor-only.json`, 'utf8')));
 const addresses = JSON.parse(await readFile(`${root}/base-live-addresses.json`, 'utf8'));
 assert.equal(addresses.sponsor, sponsor.address);
 const origin = 'http://127.0.0.1:18793';
-const statePath = `${root}/base-live-state.json`;
+const statePath = `${root}/${probeName}-state.json`;
 const request = (method, params = []) => rpc(ENDPOINT, method, params, { direct: true });
 let state = null, busy = false;
 try { state = JSON.parse(await readFile(statePath, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -157,7 +161,7 @@ const server = createServer(async (req, res) => {
       res.setHeader('Content-Type', 'text/html'); res.end(await readFile(new URL('./base-live.html', import.meta.url))); return;
     }
     res.setHeader('Content-Type', 'application/json');
-    if (req.method === 'GET' && path === '/config') { res.end(json({ addresses, chainId: CHAIN_ID, token: TOKEN })); return; }
+    if (req.method === 'GET' && path === '/config') { res.end(json({ addresses, chainId: CHAIN_ID, token: TOKEN, wallet, probeName })); return; }
     assert(!busy, 'Another probe action is in progress'); busy = true;
     try {
       if (req.method === 'GET' && path === '/state') { await refresh(); res.end(json(visible())); return; }

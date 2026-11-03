@@ -1,0 +1,79 @@
+{
+  "wallet": "Backpack",
+  "version": "0.10.219",
+  "startedAt": "2026-11-03T16:53:46.132Z",
+  "network": "https://api.devnet.solana.com",
+  "connection": {
+    "connected": true,
+    "wallet": "backpack",
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "signTransactionAvailable": true
+  },
+  "popoutOpenedInTab": true,
+  "rejectPreview": "This wallet may be compromised. Do not deposit funds.\nLearn More\nView only wallet\nSpending Wallet\nOrdinals Wallet\nTrezor can't be used in popup mode. Click here to pop out.\nCustom Rpc: https://api.devnet.solana.com\n🎒\nImported Wallet 1\nTokens\nDeFi\nNFTs\nActivity\nPortfolio\nSwap\nExplore\n🎒\nAccount 1\nWallets\nReorder Wallets\nSolana\nMy Account\nPreferences\nBug Report\nLock\nAbout Backpack\nSolana\nRPC Connection\nCustom\nExplorer\nOrb\nConfirmation Commitment\nConfirmed\nRPC Connection\nBackpack Default RPC\nCustom\nConfirm Transaction\nSimulation not supported\n\nSimulation is not supported on custom RPCs.\nSOL\nTransaction preview\nImported Wallet 1\n9ucc...UVGf\nSend\n0 SOL\nDcfKLi...xBQkPN\nSend\n0.00001 SOL\n7Njq3p...yTg7A5\nReceive\n0 SOL\nTransaction priority\nAuto\nFast\nTurbo\nCustom\nRequested by\n127.0.0.1:18792\nDexWallet Devnet payment probe\nAuto-approve transaction signing\nDefault is disabled, safer. When enabled, auto-approves transaction signing for 24h.\nImported Wallet 1\n9ucc...UVGf\nSolana\nDeny\nApprove",
+  "rejection": {
+    "error": "Approval Denied"
+  },
+  "signPreview": "This wallet may be compromised. Do not deposit funds.\nLearn More\nView only wallet\nSpending Wallet\nOrdinals Wallet\nTrezor can't be used in popup mode. Click here to pop out.\nCustom Rpc: https://api.devnet.solana.com\n🎒\nImported Wallet 1\nTokens\nDeFi\nNFTs\nActivity\nPortfolio\nSwap\nExplore\n🎒\nAccount 1\nWallets\nReorder Wallets\nSolana\nMy Account\nPreferences\nBug Report\nLock\nAbout Backpack\nSolana\nRPC Connection\nCustom\nExplorer\nOrb\nConfirmation Commitment\nConfirmed\nRPC Connection\nBackpack Default RPC\nCustom\nConfirm Transaction\nSimulation not supported\n\nSimulation is not supported on custom RPCs.\nSOL\nTransaction preview\nImported Wallet 1\n9ucc...UVGf\nSend\n0 SOL\nDcfKLi...xBQkPN\nSend\n0.00001 SOL\n7Njq3p...yTg7A5\nReceive\n0 SOL\nTransaction priority\nAuto\nFast\nTurbo\nCustom\nRequested by\n127.0.0.1:18792\nDexWallet Devnet payment probe\nAuto-approve transaction signing\nDefault is disabled, safer. When enabled, auto-approves transaction signing for 24h.\nImported Wallet 1\n9ucc...UVGf\nSolana\nDeny\nApprove",
+  "signatureValidated": true,
+  "submission": {
+    "reference": "4bd373a5-d50a-412c-93f8-73b22e54d604",
+    "preparedAt": "2026-11-03T16:54:22.053Z",
+    "network": "solana-devnet",
+    "addresses": {
+      "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+      "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+      "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"
+    },
+    "amountLamports": 1000,
+    "blockhash": "DQNAuSXKnqAr21aZqQ8bK74nYgPq8sQUbsu8BQUGcqoY",
+    "lastValidBlockHeight": 505445103,
+    "unsigned": "AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgABBLtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRet76rPhnRbUWumOzXkErufS+rzXYQx2sGbk6vvio4ngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuEiKIfa/UDAFTDN/RaSKMoi7rF4iq9D8jkbr4w/CMFMBAwIBAgwCAAAA6AMAAAAAAAA=",
+    "messageSha256": "f919fa86971f67c4eb10eca85bf3cc4f7639285a887f26104421d2d2cbb9b0b7",
+    "status": "submitted",
+    "userSignature": "5QuEzfuGT9uCVCpnRmmLJ3ytrh3KAXtbba6mwou551MPPYsHgcJEST3ihuF7jL9DXQhP2d4ziZ9PLhW9UAE7vXhu",
+    "returnedMessageSha256": "f919fa86971f67c4eb10eca85bf3cc4f7639285a887f26104421d2d2cbb9b0b7",
+    "walletSignedAt": "2026-11-03T16:54:40.490Z",
+    "simulation": {
+      "context": {
+        "apiVersion": "4.4.0-beta.1",
+        "slot": 518282424
+      },
+      "value": {
+        "accounts": null,
+        "err": null,
+        "fee": 10000,
+        "innerInstructions": null,
+        "loadedAccountsDataSize": 270,
+        "loadedAddresses": {
+          "readonly": [],
+          "writable": []
+        },
+        "logs": [
+          "Program 11111111111111111111111111111111 invoke [1]",
+          "Program 11111111111111111111111111111111 success"
+        ],
+        "postBalances": [
+          4988382880,
+          4998000,
+          1002000,
+          1
+        ],
+        "postTokenBalances": [],
+        "preBalances": [
+          4988392880,
+          4999000,
+          1001000,
+          1
+        ],
+        "preTokenBalances": [],
+        "replacementBlockhash": null,
+        "returnData": null,
+        "unitsConsumed": 150
+      }
+    },
+    "estimatedFeeLamports": 10000,
+    "signature": "62BDTcRNuzyT1EZg8fb9QYRBXr45TEaQTXa7jDok8eNbN2JWikGcBC4T7qXdLQSnF4ToqaTgZp68Pf5vDALGvMkU",
+    "submittedAt": "2026-11-03T16:54:45.606Z"
+  }
+}
