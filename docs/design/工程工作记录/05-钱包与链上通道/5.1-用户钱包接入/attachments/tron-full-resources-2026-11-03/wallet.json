@@ -1,0 +1,317 @@
+{
+  "observedAt": "2026-11-03T16:52:00.713Z",
+  "mode": "--sign-metadata",
+  "asset": "usdt-resource",
+  "walletVersion": "4.11.2",
+  "addresses": {
+    "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+  },
+  "networkFailures": [
+    {
+      "endpoint": "/api/wallet/v2/assetList",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/banners",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/approve/list",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/search",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/search",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/approve/list",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/banners",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/assetList",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/search",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/search",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/transfer/account",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/gasFree/check",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/ga",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/dapp/v2/dapp",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/banners",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/assetList",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/approve/list",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    }
+  ],
+  "accounts": [
+    "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio"
+  ],
+  "network": {
+    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "fullNode": "https://nile.trongrid.io",
+    "solidityNode": "https://nile.trongrid.io"
+  },
+  "txID": "82734cb0e229e0f5c8fe3716fd8ccee522e49a603afa1a1e6654f52cc49f2182",
+  "amountPreviewTimedOut": true,
+  "preview": "127.0.0.1 is requesting Nile Test TRON Nile Testnet Send 10,000 undefined Token precision error. Data is calculated based on 0 as the token precision. Please verify before proceeding. Details Metadata From TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio Nile Test To TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH Contract Called TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn User Consumption (Est.) Resources 345 Bandwidth + 14,650 Energy View Total Consumptions Reject Sign",
+  "metadataPreview": "127.0.0.1 is requesting\nNile Test\nTRON Nile Testnet\nSend\n10,000 undefined\n\nToken precision error. Data is calculated based on 0 as the token precision. Please verify before proceeding.\n\nDetails\nMetadata\nContract method\ntransfer(address,uint256)\nto:\nTPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH\nvalue:\n10000\nHex Data\n0a02ac132208722079455de45a8740a09cb8939a345aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a15412461517cf642358c8c0650b2cbccee4c31e16d7d121541f4a3c077a1ccb67b13d58e4756f70a2098d5f2f52244a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e5938405000000000000000000000000000000000000000000000000000000000000271070e0adca929a349001c0c39307\nReject\nSign",
+  "reviewedUsingRawMetadata": true,
+  "humanAmountPreviewCorrect": false,
+  "rejection": {
+    "ok": false,
+    "error": "Confirmation declined by user"
+  },
+  "signature": {
+    "signatureVerified": true,
+    "bandwidthEstimate": 345
+  },
+  "signedNotBroadcast": true
+}

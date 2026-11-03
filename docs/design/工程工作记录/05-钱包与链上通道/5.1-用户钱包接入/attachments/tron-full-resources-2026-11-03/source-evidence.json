@@ -1,0 +1,20 @@
+[
+  {
+    "file": "tron-Wallet-reference.java",
+    "url": "https://github.com/tronprotocol/java-tron/blob/develop/framework/src/main/java/org/tron/core/Wallet.java",
+    "sha256": "886e0185d60fe96894e02b72dd1854bf827e199d182ed5cff7aa314e778ed3a6",
+    "observedDateUTC": "2026-11-03"
+  },
+  {
+    "file": "tron-AccountCapsule-reference.java",
+    "url": "https://github.com/tronprotocol/java-tron/blob/develop/chainbase/src/main/java/org/tron/core/capsule/AccountCapsule.java",
+    "sha256": "ae095621144ada230fe2d8dd73249d5d381c410b6ee0016407bfe26b910baabf",
+    "observedDateUTC": "2026-11-03"
+  },
+  {
+    "file": "tron-Parameter-reference.java",
+    "url": "https://github.com/tronprotocol/java-tron/blob/develop/common/src/main/java/org/tron/core/config/Parameter.java",
+    "sha256": "0f5cc3485aaa8e9958a59136b6333def84d39ba8f1903309e0333913dbbf61a9",
+    "observedDateUTC": "2026-11-03"
+  }
+]

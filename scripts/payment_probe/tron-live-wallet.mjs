@@ -9,12 +9,17 @@ import { post } from './rpc.mjs';
 import { ENDPOINT, checkTransfer, verifyWalletSignature } from './tron-live-core.mjs';
 import { USDT, AMOUNT_UNITS, checkTransfer as checkUSDTTransfer, verifySignature as verifyUSDTSignature } from './tron-usdt-core.mjs';
 import { checkCall, verifySignature as verifyEnergySignature } from './tron-energy-core.mjs';
+import { FIXTURE_SYMBOL } from './tron-resource-core.mjs';
 
 const mode = process.argv[2] ?? '--inspect';
 const asset = process.argv[3] ?? 'trx';
-assert(process.argv.length <= 4 && ['--inspect', '--sign', '--sign-metadata'].includes(mode) && ['trx', 'usdt', 'energy'].includes(asset));
-assert(mode !== '--sign-metadata' || asset === 'usdt', 'Metadata inspection is limited to this known Nile USDT probe');
-const probe = asset === 'energy' ? { prefix: 'tron-energy', amount: 'Energy resource probe; no token transfer',
+assert(process.argv.length <= 4 && ['--inspect', '--sign', '--sign-metadata'].includes(mode) && ['trx', 'usdt', 'energy', 'usdt-resource'].includes(asset));
+const tokenPayment = ['usdt', 'usdt-resource'].includes(asset);
+assert(mode !== '--sign-metadata' || tokenPayment, 'Metadata inspection requires a known Nile token probe');
+const probe = asset === 'usdt-resource' ? { prefix: 'tron-resource', amount: `0.01 ${FIXTURE_SYMBOL}`,
+  check: tx => checkUSDTTransfer(tx, state.addresses, state.token),
+  verify: (order, tx, now) => verifyUSDTSignature(order, tx, now, state.token) }
+  : asset === 'energy' ? { prefix: 'tron-energy', amount: 'Energy resource probe; no token transfer',
   check: tx => checkCall(tx, state.addresses, state.contractAddress), verify: (_order, tx, now) => verifyEnergySignature(state, tx, now) }
   : asset === 'usdt' ? { prefix: 'tron-usdt', amount: '0.01 USDT', check: checkUSDTTransfer, verify: verifyUSDTSignature }
   : { prefix: 'tron-live', amount: '0.001 TRX', check: checkTransfer, verify: verifyWalletSignature };
@@ -36,7 +41,8 @@ const server = createServer((req, res) => {
     res.writeHead(404); res.end(); return;
   }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-  const intent = asset === 'energy' ? 'Call the dedicated Energy test contract; no token transfer.' : `${probe.amount} to the platform test address.`;
+  const intent = asset === 'usdt-resource' ? `${probe.amount} to the platform test address. Self-issued same-code test token, NOT Tether USDT.`
+    : asset === 'energy' ? 'Call the dedicated Energy test contract; no token transfer.' : `${probe.amount} to the platform test address.`;
   res.end(`<!doctype html><title>TRON Nile signing probe</title><h1>Dedicated Nile test</h1><p>${intent} Wallet signs only; backend validates and broadcasts separately.</p>`);
 });
 await new Promise((resolve, reject) => { server.once('error', reject); server.listen(18795, '127.0.0.1', resolve); });
@@ -107,14 +113,14 @@ try {
       assert(notice, 'No original wallet signature popup');
       await notice.getByText('Sign', { exact: true }).waitFor();
       if (asset === 'energy') await notice.getByText('Metadata', { exact: true }).waitFor();
-      if (asset === 'usdt') {
+      if (tokenPayment) {
         try { await notice.waitForFunction(amount => document.body.innerText.replace(/\s+/g, ' ').includes(amount), probe.amount, { timeout: 20000 }); }
         catch { evidence.amountPreviewTimedOut = true; }
       }
       const preview = (await notice.locator('body').innerText()).replace(/\s+/g, ' ');
       evidence.preview = preview;
       await notice.screenshot({ path: `${prefix}-${decision.toLowerCase()}.png` });
-      if (asset === 'energy' || (asset === 'usdt' && !preview.includes(probe.amount))) {
+      if (asset === 'energy' || (tokenPayment && !preview.includes(probe.amount))) {
         await notice.getByText('Metadata', { exact: true }).click();
         evidence.metadataPreview = await notice.locator('body').innerText();
         await notice.screenshot({ path: `${prefix}-metadata.png` });
@@ -126,7 +132,7 @@ try {
         assert(evidence.metadataPreview.includes('probe()'));
         assert(evidence.metadataPreview.includes(state.order.unsigned.raw_data_hex), 'Wallet metadata differs from prepared bytes');
       } else if (mode === '--sign-metadata' && !preview.includes(probe.amount)) {
-        assert(preview.includes('Token precision error') && preview.includes(USDT));
+        assert(preview.includes('Token precision error') && preview.includes(asset === 'usdt-resource' ? state.token : USDT));
         const metadata = evidence.metadataPreview;
         assert(metadata.includes('transfer(address,uint256)') && metadata.includes(state.addresses.sponsor));
         assert(metadata.includes(`value:\n${AMOUNT_UNITS}`));
