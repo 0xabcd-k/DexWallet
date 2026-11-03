@@ -1,0 +1,720 @@
+{
+  "observedAt": "2026-11-03T09:10:15.091Z",
+  "network": "Nile",
+  "token": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+  "walletVersion": "4.11.2",
+  "addresses": {
+    "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+  },
+  "orderReference": "3f032940-c3fa-4932-99a2-b5e30bcd0d06",
+  "amountUnits": "10000",
+  "payment": {
+    "txID": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006",
+    "signed": {
+      "visible": false,
+      "txID": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006",
+      "raw_data_hex": "0a02868c2208f2789a9d051641c64098a2d3859a345aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a15412461517cf642358c8c0650b2cbccee4c31e16d7d121541eca9bc828a3005b9a3b909f2cc5c2a54794de05f2244a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e5938405000000000000000000000000000000000000000000000000000000000000271070d8b3e5849a349001c0c39307",
+      "raw_data": {
+        "contract": [
+          {
+            "parameter": {
+              "value": {
+                "data": "a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e59384050000000000000000000000000000000000000000000000000000000000002710",
+                "owner_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                "contract_address": "41eca9bc828a3005b9a3b909f2cc5c2a54794de05f"
+              },
+              "type_url": "type.googleapis.com/protocol.TriggerSmartContract"
+            },
+            "type": "TriggerSmartContract"
+          }
+        ],
+        "ref_block_bytes": "868c",
+        "ref_block_hash": "f2789a9d051641c6",
+        "expiration": 1793697567000,
+        "timestamp": 1793695767000,
+        "fee_limit": 15000000
+      },
+      "signature": [
+        "c4ae9e8dfc27902f951caf6261d33c61948b7194aaa7bbef21d3083c9c1f41584cb0c748ceb30a729071604a8ddf2889d3ce9041df85d947f5cc67189106c6e91B"
+      ]
+    },
+    "before": {
+      "observedAt": "2026-11-03T09:00:53.841Z",
+      "user": {
+        "trxSun": 0,
+        "tokenUnits": "1000000000",
+        "resources": {
+          "freeNetLimit": 600,
+          "NetUsed": 247,
+          "NetLimit": 315,
+          "assetNetUsed": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "assetNetLimit": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "TotalNetLimit": 43200000000,
+          "TotalNetWeight": 68453576909,
+          "TotalEnergyLimit": 180000000000,
+          "TotalEnergyWeight": 2449949071
+        }
+      },
+      "sponsor": {
+        "trxSun": 17132000,
+        "tokenUnits": "0",
+        "resources": {
+          "freeNetUsed": 228,
+          "freeNetLimit": 600,
+          "NetUsed": 253,
+          "NetLimit": 302,
+          "assetNetUsed": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "assetNetLimit": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "TotalNetLimit": 43200000000,
+          "TotalNetWeight": 68453576909,
+          "tronPowerLimit": 980,
+          "TotalEnergyLimit": 180000000000,
+          "TotalEnergyWeight": 2449949071
+        }
+      },
+      "originResources": {
+        "freeNetUsed": 422,
+        "freeNetLimit": 600,
+        "NetUsed": 4816,
+        "NetLimit": 5082,
+        "assetNetUsed": [
+          {
+            "key": "1000002",
+            "value": 0
+          },
+          {
+            "key": "1000045",
+            "value": 0
+          },
+          {
+            "key": "1000344",
+            "value": 0
+          },
+          {
+            "key": "1000323",
+            "value": 0
+          },
+          {
+            "key": "1005416",
+            "value": 0
+          },
+          {
+            "key": "1000016",
+            "value": 0
+          },
+          {
+            "key": "1004910",
+            "value": 0
+          },
+          {
+            "key": "1004995",
+            "value": 0
+          },
+          {
+            "key": "1004886",
+            "value": 0
+          },
+          {
+            "key": "1000254",
+            "value": 0
+          },
+          {
+            "key": "1005400",
+            "value": 0
+          },
+          {
+            "key": "1000617",
+            "value": 0
+          },
+          {
+            "key": "1000606",
+            "value": 0
+          },
+          {
+            "key": "1007415",
+            "value": 0
+          },
+          {
+            "key": "1004916",
+            "value": 0
+          },
+          {
+            "key": "1005083",
+            "value": 0
+          },
+          {
+            "key": "1007412",
+            "value": 0
+          },
+          {
+            "key": "1007445",
+            "value": 0
+          },
+          {
+            "key": "1004882",
+            "value": 0
+          },
+          {
+            "key": "1004891",
+            "value": 0
+          },
+          {
+            "key": "1005086",
+            "value": 0
+          },
+          {
+            "key": "1005085",
+            "value": 0
+          },
+          {
+            "key": "1000082",
+            "value": 0
+          }
+        ],
+        "assetNetLimit": [
+          {
+            "key": "1000344",
+            "value": 0
+          },
+          {
+            "key": "1000323",
+            "value": 100
+          },
+          {
+            "key": "1005416",
+            "value": 10000
+          },
+          {
+            "key": "1000016",
+            "value": 0
+          },
+          {
+            "key": "1004910",
+            "value": 1000000
+          },
+          {
+            "key": "1004995",
+            "value": 1000
+          },
+          {
+            "key": "1004886",
+            "value": 0
+          },
+          {
+            "key": "1000045",
+            "value": 1000
+          },
+          {
+            "key": "1000254",
+            "value": 0
+          },
+          {
+            "key": "1000002",
+            "value": 1000
+          },
+          {
+            "key": "1005400",
+            "value": 0
+          },
+          {
+            "key": "1000617",
+            "value": 0
+          },
+          {
+            "key": "1000606",
+            "value": 0
+          },
+          {
+            "key": "1007415",
+            "value": 0
+          },
+          {
+            "key": "1004916",
+            "value": 0
+          },
+          {
+            "key": "1005083",
+            "value": 100
+          },
+          {
+            "key": "1007412",
+            "value": 0
+          },
+          {
+            "key": "1007445",
+            "value": 0
+          },
+          {
+            "key": "1004882",
+            "value": 10000
+          },
+          {
+            "key": "1004891",
+            "value": 0
+          },
+          {
+            "key": "1005086",
+            "value": 100
+          },
+          {
+            "key": "1005085",
+            "value": 100
+          },
+          {
+            "key": "1000082",
+            "value": 0
+          }
+        ],
+        "TotalNetLimit": 43200000000,
+        "TotalNetWeight": 68453576909,
+        "tronPowerUsed": 1670535,
+        "tronPowerLimit": 1670535,
+        "EnergyUsed": 63748880,
+        "EnergyLimit": 77458126,
+        "TotalEnergyLimit": 180000000000,
+        "TotalEnergyWeight": 2449949071
+      },
+      "contract": {
+        "address": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+        "origin": "TKGRE6oiU3rEzasue4MsB6sCXXSTx9BAe3",
+        "userPercent": 0,
+        "originEnergyLimit": 1000000000
+      }
+    },
+    "simulation": {
+      "raw": {
+        "transaction": {
+          "raw_data": {
+            "ref_block_bytes": "875e",
+            "ref_block_hash": "4cd07135a3b449ea",
+            "expiration": 1793696511000,
+            "contract": [
+              {
+                "parameter": {
+                  "value": {
+                    "owner_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                    "contract_address": "41eca9bc828a3005b9a3b909f2cc5c2a54794de05f",
+                    "data": "a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e59384050000000000000000000000000000000000000000000000000000000000002710"
+                  },
+                  "type_url": "type.googleapis.com/protocol.TriggerSmartContract"
+                },
+                "type": "TriggerSmartContract"
+              }
+            ],
+            "timestamp": 1793696453145
+          },
+          "ret": [
+            {}
+          ],
+          "raw_data_hex": "0a02875e22084cd07135a3b449ea4098e892859a345aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a15412461517cf642358c8c0650b2cbccee4c31e16d7d121541eca9bc828a3005b9a3b909f2cc5c2a54794de05f2244a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e593840500000000000000000000000000000000000000000000000000000000000027107099a48f859a34",
+          "txID": "5cc96213de24284c8082be5459cba4e44b2735f899cb7a3e84ec57be1af16dcf",
+          "visible": false
+        },
+        "constant_result": [
+          "0000000000000000000000000000000000000000000000000000000000000000"
+        ],
+        "result": {
+          "result": true
+        },
+        "energy_used": 29650,
+        "logs": [
+          {
+            "address": "eca9bc828a3005b9a3b909f2cc5c2a54794de05f",
+            "topics": [
+              "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0000000000000000000000002461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "000000000000000000000000913e6da20b97589625ae499b6eb17941e5938405"
+            ],
+            "data": "0000000000000000000000000000000000000000000000000000000000002710"
+          }
+        ]
+      },
+      "energy": 29650
+    },
+    "signature": {
+      "signatureVerified": true,
+      "bandwidthEstimate": 345
+    },
+    "resources": {
+      "energyEstimate": 29650,
+      "bandwidthEstimate": 345,
+      "availableOriginEnergy": 13709246,
+      "availableFreeBandwidth": 600,
+      "availableStakedBandwidth": 68,
+      "expectedEnergySource": "token_deployer",
+      "expectedBandwidthSource": "user_free_quota"
+    },
+    "status": "solidified",
+    "broadcast": {
+      "result": true,
+      "txid": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006"
+    },
+    "info": {
+      "id": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006",
+      "blockNumber": 72386419,
+      "blockTimeStamp": 1793696460000,
+      "contractResult": [
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "contract_address": "41eca9bc828a3005b9a3b909f2cc5c2a54794de05f",
+      "receipt": {
+        "origin_energy_usage": 29650,
+        "energy_usage_total": 29650,
+        "net_usage": 345,
+        "result": "SUCCESS"
+      },
+      "log": [
+        {
+          "address": "eca9bc828a3005b9a3b909f2cc5c2a54794de05f",
+          "topics": [
+            "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+            "0000000000000000000000002461517cf642358c8c0650b2cbccee4c31e16d7d",
+            "000000000000000000000000913e6da20b97589625ae499b6eb17941e5938405"
+          ],
+          "data": "0000000000000000000000000000000000000000000000000000000000002710"
+        }
+      ]
+    },
+    "transaction": {
+      "raw_data": {
+        "ref_block_bytes": "868c",
+        "ref_block_hash": "f2789a9d051641c6",
+        "expiration": 1793697567000,
+        "contract": [
+          {
+            "parameter": {
+              "value": {
+                "owner_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                "contract_address": "41eca9bc828a3005b9a3b909f2cc5c2a54794de05f",
+                "data": "a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e59384050000000000000000000000000000000000000000000000000000000000002710"
+              },
+              "type_url": "type.googleapis.com/protocol.TriggerSmartContract"
+            },
+            "type": "TriggerSmartContract"
+          }
+        ],
+        "timestamp": 1793695767000,
+        "fee_limit": 15000000
+      },
+      "signature": [
+        "c4ae9e8dfc27902f951caf6261d33c61948b7194aaa7bbef21d3083c9c1f41584cb0c748ceb30a729071604a8ddf2889d3ce9041df85d947f5cc67189106c6e91b"
+      ],
+      "ret": [
+        {
+          "contractRet": "SUCCESS"
+        }
+      ],
+      "raw_data_hex": "0a02868c2208f2789a9d051641c64098a2d3859a345aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a15412461517cf642358c8c0650b2cbccee4c31e16d7d121541eca9bc828a3005b9a3b909f2cc5c2a54794de05f2244a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e5938405000000000000000000000000000000000000000000000000000000000000271070d8b3e5849a349001c0c39307",
+      "txID": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006"
+    },
+    "after": {
+      "observedAt": "2026-11-03T09:02:00.257Z",
+      "user": {
+        "trxSun": 0,
+        "tokenUnits": "999990000",
+        "resources": {
+          "freeNetUsed": 344,
+          "freeNetLimit": 600,
+          "NetUsed": 247,
+          "NetLimit": 315,
+          "assetNetUsed": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "assetNetLimit": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "TotalNetLimit": 43200000000,
+          "TotalNetWeight": 68453576909,
+          "TotalEnergyLimit": 180000000000,
+          "TotalEnergyWeight": 2449949071
+        }
+      },
+      "sponsor": {
+        "trxSun": 17132000,
+        "tokenUnits": "10000",
+        "resources": {
+          "freeNetUsed": 228,
+          "freeNetLimit": 600,
+          "NetUsed": 253,
+          "NetLimit": 302,
+          "assetNetUsed": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "assetNetLimit": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "TotalNetLimit": 43200000000,
+          "TotalNetWeight": 68453576909,
+          "tronPowerLimit": 980,
+          "TotalEnergyLimit": 180000000000,
+          "TotalEnergyWeight": 2449949071
+        }
+      },
+      "originResources": {
+        "freeNetUsed": 422,
+        "freeNetLimit": 600,
+        "NetUsed": 4811,
+        "NetLimit": 5082,
+        "assetNetUsed": [
+          {
+            "key": "1000002",
+            "value": 0
+          },
+          {
+            "key": "1000045",
+            "value": 0
+          },
+          {
+            "key": "1000344",
+            "value": 0
+          },
+          {
+            "key": "1000323",
+            "value": 0
+          },
+          {
+            "key": "1005416",
+            "value": 0
+          },
+          {
+            "key": "1000016",
+            "value": 0
+          },
+          {
+            "key": "1004910",
+            "value": 0
+          },
+          {
+            "key": "1004995",
+            "value": 0
+          },
+          {
+            "key": "1004886",
+            "value": 0
+          },
+          {
+            "key": "1000254",
+            "value": 0
+          },
+          {
+            "key": "1005400",
+            "value": 0
+          },
+          {
+            "key": "1000617",
+            "value": 0
+          },
+          {
+            "key": "1000606",
+            "value": 0
+          },
+          {
+            "key": "1007415",
+            "value": 0
+          },
+          {
+            "key": "1004916",
+            "value": 0
+          },
+          {
+            "key": "1005083",
+            "value": 0
+          },
+          {
+            "key": "1007412",
+            "value": 0
+          },
+          {
+            "key": "1007445",
+            "value": 0
+          },
+          {
+            "key": "1004882",
+            "value": 0
+          },
+          {
+            "key": "1004891",
+            "value": 0
+          },
+          {
+            "key": "1005086",
+            "value": 0
+          },
+          {
+            "key": "1005085",
+            "value": 0
+          },
+          {
+            "key": "1000082",
+            "value": 0
+          }
+        ],
+        "assetNetLimit": [
+          {
+            "key": "1000344",
+            "value": 0
+          },
+          {
+            "key": "1000323",
+            "value": 100
+          },
+          {
+            "key": "1005416",
+            "value": 10000
+          },
+          {
+            "key": "1000016",
+            "value": 0
+          },
+          {
+            "key": "1004910",
+            "value": 1000000
+          },
+          {
+            "key": "1004995",
+            "value": 1000
+          },
+          {
+            "key": "1004886",
+            "value": 0
+          },
+          {
+            "key": "1000045",
+            "value": 1000
+          },
+          {
+            "key": "1000254",
+            "value": 0
+          },
+          {
+            "key": "1000002",
+            "value": 1000
+          },
+          {
+            "key": "1005400",
+            "value": 0
+          },
+          {
+            "key": "1000617",
+            "value": 0
+          },
+          {
+            "key": "1000606",
+            "value": 0
+          },
+          {
+            "key": "1007415",
+            "value": 0
+          },
+          {
+            "key": "1004916",
+            "value": 0
+          },
+          {
+            "key": "1005083",
+            "value": 100
+          },
+          {
+            "key": "1007412",
+            "value": 0
+          },
+          {
+            "key": "1007445",
+            "value": 0
+          },
+          {
+            "key": "1004882",
+            "value": 10000
+          },
+          {
+            "key": "1004891",
+            "value": 0
+          },
+          {
+            "key": "1005086",
+            "value": 100
+          },
+          {
+            "key": "1005085",
+            "value": 100
+          },
+          {
+            "key": "1000082",
+            "value": 0
+          }
+        ],
+        "TotalNetLimit": 43200000000,
+        "TotalNetWeight": 68453576909,
+        "tronPowerUsed": 1670535,
+        "tronPowerLimit": 1670535,
+        "EnergyUsed": 63913471,
+        "EnergyLimit": 77458126,
+        "TotalEnergyLimit": 180000000000,
+        "TotalEnergyWeight": 2449949071
+      },
+      "contract": {
+        "address": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+        "origin": "TKGRE6oiU3rEzasue4MsB6sCXXSTx9BAe3",
+        "userPercent": 0,
+        "originEnergyLimit": 1000000000
+      }
+    },
+    "checks": {
+      "tokenTransferVerified": true,
+      "userTrxUnchanged": true,
+      "sponsorTrxUnchanged": true,
+      "energy": {
+        "total": 29650,
+        "caller": 0,
+        "origin": 29650,
+        "burnedSun": 0,
+        "originPaidAll": true
+      },
+      "bandwidthUsed": 345,
+      "bandwidthSource": "user_free_quota",
+      "platformEnergySponsorshipProven": false
+    }
+  },
+  "replay": {
+    "observedAt": "2026-11-03T09:02:36.354Z",
+    "response": {
+      "code": "DUP_TRANSACTION_ERROR",
+      "message": "447570207472616e73616374696f6e2e",
+      "txid": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006"
+    },
+    "balancesUnchanged": true
+  }
+}

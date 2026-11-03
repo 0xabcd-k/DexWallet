@@ -1,0 +1,11 @@
+{
+  "observedAt": "2026-11-03T08:59:13.713Z",
+  "newProviderResult": {
+    "code": 4200,
+    "message": "Unknown method called"
+  },
+  "legacyProvider": "tronLink.request",
+  "preview": "Add Asset\nAre you sure to add the following asset to the asset list on TronLink's homepage?\nInvalid Asset\n--\nTXYZopYRdj...3kM5VkAeBf\nCannot be added\nView in Explorer >>\nPlease check whether the contract address or token ID is correct\nCancel\nAdd",
+  "token": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+  "added": false
+}

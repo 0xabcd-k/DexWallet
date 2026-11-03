@@ -7,20 +7,25 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { post } from './rpc.mjs';
 import { ENDPOINT, checkTransfer, verifyWalletSignature } from './tron-live-core.mjs';
+import { USDT, AMOUNT_UNITS, checkTransfer as checkUSDTTransfer, verifySignature as verifyUSDTSignature } from './tron-usdt-core.mjs';
 
 const mode = process.argv[2] ?? '--inspect';
-assert(process.argv.length <= 3 && ['--inspect', '--sign'].includes(mode));
+const asset = process.argv[3] ?? 'trx';
+assert(process.argv.length <= 4 && ['--inspect', '--sign', '--sign-metadata'].includes(mode) && ['trx', 'usdt'].includes(asset));
+assert(mode !== '--sign-metadata' || asset === 'usdt', 'Metadata inspection is limited to this known Nile USDT probe');
+const probe = asset === 'usdt' ? { prefix: 'tron-usdt', amount: '0.01 USDT', check: checkUSDTTransfer, verify: verifyUSDTSignature }
+  : { prefix: 'tron-live', amount: '0.001 TRX', check: checkTransfer, verify: verifyWalletSignature };
 const root = fileURLToPath(new URL('../../.tools/payment-feasibility/', import.meta.url));
 const extension = `${root}/tronlink-extension`;
 const manifest = JSON.parse(await readFile(`${extension}/manifest.json`, 'utf8'));
 assert.equal(manifest.version, '4.11.2', 'Recheck original wallet UI after upgrades');
-const state = JSON.parse(await readFile(`${root}/tron-live-state.json`, 'utf8'));
-const evidence = { observedAt: new Date().toISOString(), mode, walletVersion: manifest.version, addresses: state.addresses };
-const prefix = `${root}/tronlink-${mode.slice(2)}-${new Date().toISOString().replaceAll(':', '-')}`;
+const state = JSON.parse(await readFile(`${root}/${probe.prefix}-state.json`, 'utf8'));
+const evidence = { observedAt: new Date().toISOString(), mode, asset, walletVersion: manifest.version, addresses: state.addresses };
+const prefix = `${root}/tronlink-${asset}-${mode.slice(2)}-${new Date().toISOString().replaceAll(':', '-')}`;
 const query = (method, body) => post(`${ENDPOINT}/wallet/${method}`, body, { direct: true });
-if (mode === '--sign') {
+if (mode !== '--inspect') {
   assert(state.order && !state.payment, 'Inspect the existing payment before requesting another signature');
-  checkTransfer(state.order.unsigned, state.addresses);
+  probe.check(state.order.unsigned, state.addresses);
   assert(Date.now() < state.order.unsigned.raw_data.expiration, 'Prepared transaction has expired');
 }
 const server = createServer((req, res) => {
@@ -28,17 +33,28 @@ const server = createServer((req, res) => {
     res.writeHead(404); res.end(); return;
   }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-  res.end('<!doctype html><title>TRON Nile signing probe</title><h1>Dedicated Nile test</h1><p>0.001 test TRX to the platform test address. Wallet signs only; backend validates and broadcasts separately.</p>');
+  res.end(`<!doctype html><title>TRON Nile signing probe</title><h1>Dedicated Nile test</h1><p>${probe.amount} to the platform test address. Wallet signs only; backend validates and broadcasts separately.</p>`);
 });
 await new Promise((resolve, reject) => { server.once('error', reject); server.listen(18795, '127.0.0.1', resolve); });
 let context;
 try {
   context = await chromium.launchPersistentContext(`${root}/tronlink-profile`, {
     channel: 'chromium', headless: true, locale: 'en-US', viewport: { width: 900, height: 800 },
-    proxy: { server: 'http://127.0.0.1:7890', bypass: '127.0.0.1,localhost,nile.trongrid.io,api.nileex.io' },
+    proxy: { server: 'http://127.0.0.1:7890', bypass: '127.0.0.1,localhost,nile.trongrid.io,api.nileex.io,nileapi.tronscan.org,niletest.tronlink.org' },
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
   });
   context.setDefaultTimeout(15000);
+  evidence.networkFailures = [];
+  context.on('requestfailed', request => {
+    const url = new URL(request.url());
+    evidence.networkFailures.push({ endpoint: url.origin + url.pathname, error: request.failure()?.errorText });
+  });
+  context.on('response', response => {
+    if (response.status() >= 400) {
+      const url = new URL(response.url());
+      evidence.networkFailures.push({ endpoint: url.origin + url.pathname, status: response.status() });
+    }
+  });
   const worker = context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker');
   const origin = `chrome-extension://${new URL(worker.url()).hostname}`;
   const home = await context.newPage();
@@ -59,7 +75,7 @@ try {
     fullNode: window.tron.tronWeb.fullNode.host, solidityNode: window.tron.tronWeb.solidityNode.host }));
   assert.equal(evidence.network.address, state.addresses.user);
   assert.equal(evidence.network.fullNode, ENDPOINT); assert.equal(evidence.network.solidityNode, ENDPOINT);
-  if (mode === '--sign') {
+  if (mode !== '--inspect') {
     evidence.txID = state.order.unsigned.txID;
     for (const decision of ['Reject', 'Sign']) {
       assert(!(await query('gettransactionbyid', { value: evidence.txID })).txID, 'Transaction was already broadcast');
@@ -76,10 +92,28 @@ try {
       }
       assert(notice, 'No original wallet signature popup');
       await notice.getByText('Sign', { exact: true }).waitFor();
-      const preview = await notice.locator('body').innerText();
-      for (const expected of ['TRON Nile Testnet', '0.001 TRX', state.addresses.user, state.addresses.sponsor]) assert(preview.includes(expected), `Missing wallet preview: ${expected}`);
+      if (asset === 'usdt') {
+        try { await notice.waitForFunction(amount => document.body.innerText.replace(/\s+/g, ' ').includes(amount), probe.amount, { timeout: 20000 }); }
+        catch { evidence.amountPreviewTimedOut = true; }
+      }
+      const preview = (await notice.locator('body').innerText()).replace(/\s+/g, ' ');
       evidence.preview = preview;
       await notice.screenshot({ path: `${prefix}-${decision.toLowerCase()}.png` });
+      if (asset === 'usdt' && !preview.includes(probe.amount)) {
+        await notice.getByText('Metadata', { exact: true }).click();
+        evidence.metadataPreview = await notice.locator('body').innerText();
+        await notice.screenshot({ path: `${prefix}-metadata.png` });
+      }
+      for (const expected of ['TRON Nile Testnet', state.addresses.user, state.addresses.sponsor]) assert(preview.includes(expected), `Missing wallet preview: ${expected}`);
+      if (mode === '--sign-metadata' && !preview.includes(probe.amount)) {
+        assert(preview.includes('Token precision error') && preview.includes(USDT));
+        const metadata = evidence.metadataPreview;
+        assert(metadata.includes('transfer(address,uint256)') && metadata.includes(state.addresses.sponsor));
+        assert(metadata.includes(`value:\n${AMOUNT_UNITS}`));
+        assert(metadata.includes(state.order.unsigned.raw_data_hex), 'Wallet metadata differs from exact prepared bytes');
+        evidence.reviewedUsingRawMetadata = true;
+        evidence.humanAmountPreviewCorrect = false;
+      } else assert(preview.includes(probe.amount), `Missing wallet preview: ${probe.amount}`);
       await notice.getByText(decision, { exact: true }).click();
       await app.waitForFunction(() => window.signResult !== null);
       const result = await app.evaluate(() => window.signResult);
@@ -88,8 +122,8 @@ try {
         evidence.rejection = result;
       } else {
         assert(result.ok, 'Wallet did not sign');
-        evidence.signature = verifyWalletSignature(state.order, result.value, Date.now());
-        await writeFile(`${root}/tron-live-wallet-signed.json`, JSON.stringify(result.value, null, 2) + '\n', { mode: 0o600 });
+        evidence.signature = probe.verify(state.order, result.value, Date.now());
+        await writeFile(`${root}/${probe.prefix}-wallet-signed.json`, JSON.stringify(result.value, null, 2) + '\n', { mode: 0o600 });
       }
       assert(!(await query('gettransactionbyid', { value: evidence.txID })).txID, 'Wallet unexpectedly broadcast');
     }

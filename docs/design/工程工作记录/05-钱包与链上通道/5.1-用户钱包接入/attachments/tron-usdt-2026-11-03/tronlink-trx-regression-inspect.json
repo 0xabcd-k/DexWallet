@@ -1,0 +1,36 @@
+{
+  "observedAt": "2026-11-03T09:10:12.243Z",
+  "mode": "--inspect",
+  "asset": "trx",
+  "walletVersion": "4.11.2",
+  "addresses": {
+    "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+  },
+  "networkFailures": [
+    {
+      "endpoint": "https://niletest.tronlink.org/api/web/v1/tronweb",
+      "error": "net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "endpoint": "https://niletest.tronlink.org/api/web/v1/tronweb",
+      "error": "net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "endpoint": "https://niletest.tronlink.org/api/web/v1/banners",
+      "error": "net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "endpoint": "https://niletest.tronlink.org/api/wallet/v2/approve/list",
+      "error": "net::ERR_CONNECTION_REFUSED"
+    }
+  ],
+  "accounts": [
+    "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio"
+  ],
+  "network": {
+    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "fullNode": "https://nile.trongrid.io",
+    "solidityNode": "https://nile.trongrid.io"
+  }
+}
