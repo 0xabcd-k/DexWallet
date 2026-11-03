@@ -1,0 +1,29 @@
+{
+  "status": "verified-from-public-evidence",
+  "network": "TON testnet",
+  "transactionHashes": {
+    "dispatch": "9e065e64ea49ba4819b1c306716d33cc236af7229fb85b8a5d310ae3e0f85696",
+    "payment": "a25829c06947349c89015789b193c4a08e2702f538fa144595f265d9f76ffba4",
+    "receipt": "53d778fb27fe4ed339ba2514b5f3938964dcbc48b6b88a66fdea326cf5e25e98"
+  },
+  "masterchainBlock": 95524260,
+  "observedMasterchainHead": 95536956,
+  "messageLinksVerified": 2,
+  "executionSuccesses": 3,
+  "negativeCases": 8,
+  "replayRejectedBeforeExpiry": true,
+  "nanotons": {
+    "principal": "10000000",
+    "relayAttached": "3000000",
+    "dispatchCost": "704508",
+    "executionCost": "422427",
+    "receiptCost": "36401",
+    "networkCost": "1163336",
+    "surplusRetainedByUser": "2577573",
+    "platformSponsorship": "3740909",
+    "userNetDeduction": "7422427",
+    "receiptNetCredit": "9963599",
+    "fundingCost": "980004",
+    "initializationCost": "1072338"
+  }
+}

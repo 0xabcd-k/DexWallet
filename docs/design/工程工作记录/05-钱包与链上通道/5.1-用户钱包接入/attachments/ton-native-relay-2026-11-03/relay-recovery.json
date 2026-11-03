@@ -1,0 +1,106 @@
+{
+  "observedAt": "2026-11-03T12:52:10.579Z",
+  "platformSeqno": 1,
+  "wireValidUntil": 1793710322,
+  "now": 1793710330,
+  "platformBalance": "1949019995",
+  "attempts": [
+    {
+      "observedAt": "2026-11-03T12:50:02.518Z",
+      "name": "relay",
+      "before": {
+        "observedAt": "2026-11-03T12:50:00.500Z",
+        "platform": {
+          "address": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+          "state": "active",
+          "balance": "1949019995",
+          "seqno": 1,
+          "lastTransaction": {
+            "lt": "107310348000001",
+            "hash": "WBJXtcGrZAjHS0kHjaCTkbASNS6ZZkezNvjyGlA0aaI="
+          }
+        },
+        "user": {
+          "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+          "state": "active",
+          "balance": "48927662",
+          "seqno": 1,
+          "lastTransaction": {
+            "lt": "107311004000003",
+            "hash": "DZxweHnAagscTLqQXJu2i6/xGw5sXMwqXcRFWaifwpo="
+          }
+        }
+      },
+      "authorization": {
+        "validUntil": 1793710426,
+        "seqno": 1,
+        "bodyHash": "daae3488f1d708994f68e9f517e042530da81a264f35fd2725ea6c1f289843cd",
+        "amount": "10000000",
+        "relayValue": "3000000"
+      },
+      "platformBodyHash": "8cb6cf0ef6f4ca26bd63880592e93c254c4c0d42b05903a35e38b28e35ebbb5e",
+      "externalHash": "7a29f6926fdd1a5dbebb3ddb44e163fdeff7bfb57f847b3c38b3bace7adbe385",
+      "status": "prepared"
+    },
+    {
+      "observedAt": "2026-11-03T12:53:01.868Z",
+      "name": "relay",
+      "before": {
+        "observedAt": "2026-11-03T12:53:00.290Z",
+        "platform": {
+          "address": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+          "state": "active",
+          "balance": "1949019995",
+          "seqno": 1,
+          "lastTransaction": {
+            "lt": "107310348000001",
+            "hash": "WBJXtcGrZAjHS0kHjaCTkbASNS6ZZkezNvjyGlA0aaI="
+          }
+        },
+        "user": {
+          "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+          "state": "active",
+          "balance": "48927662",
+          "seqno": 1,
+          "lastTransaction": {
+            "lt": "107311004000003",
+            "hash": "DZxweHnAagscTLqQXJu2i6/xGw5sXMwqXcRFWaifwpo="
+          }
+        }
+      },
+      "authorization": {
+        "validUntil": 1793710426,
+        "seqno": 1,
+        "bodyHash": "daae3488f1d708994f68e9f517e042530da81a264f35fd2725ea6c1f289843cd",
+        "amount": "10000000",
+        "relayValue": "3000000"
+      },
+      "platformBodyHash": "a43fe826d74deb5329fe6463637052bfac9c74158d69947337bac1a67230ca7e",
+      "externalHash": "e6815f3e0404d8a22681385fe6eef9dfb9a8b94a645f74de5a78a1297ee328b1",
+      "status": "prepared"
+    }
+  ],
+  "beforeSuccessfulRelay": {
+    "observedAt": "2026-11-03T12:57:06.100Z",
+    "platform": {
+      "address": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+      "state": "active",
+      "balance": "1949019995",
+      "seqno": 1,
+      "lastTransaction": {
+        "lt": "107310348000001",
+        "hash": "WBJXtcGrZAjHS0kHjaCTkbASNS6ZZkezNvjyGlA0aaI="
+      }
+    },
+    "user": {
+      "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+      "state": "active",
+      "balance": "48927662",
+      "seqno": 1,
+      "lastTransaction": {
+        "lt": "107311004000003",
+        "hash": "DZxweHnAagscTLqQXJu2i6/xGw5sXMwqXcRFWaifwpo="
+      }
+    }
+  }
+}

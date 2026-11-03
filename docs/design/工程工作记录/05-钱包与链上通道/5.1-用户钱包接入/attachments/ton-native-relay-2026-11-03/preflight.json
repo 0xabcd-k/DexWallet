@@ -1,0 +1,45 @@
+{
+  "observedAt": "2026-11-03T12:57:05.877Z",
+  "captureAt": "2026-11-03T12:56:38.052Z",
+  "realWallet": {
+    "platform": "android",
+    "appName": "Tonkeeper",
+    "appVersion": "26.10.4",
+    "maxProtocolVersion": 2,
+    "features": [
+      "SendTransaction",
+      {
+        "name": "SignData",
+        "types": [
+          "text",
+          "binary",
+          "cell"
+        ]
+      },
+      {
+        "name": "SendTransaction",
+        "maxMessages": 255
+      },
+      {
+        "name": "SignMessage",
+        "maxMessages": 255
+      }
+    ]
+  },
+  "signatureVerified": true,
+  "seqno": 1,
+  "validUntil": 1793710834,
+  "requestedValidUntil": 1793710834,
+  "bodyHash": "47d4beb88f0c02a62dbad28a2fbed2903bafdd2a657b14b308eb03dc54068671",
+  "rejectedCases": [
+    "wrong network",
+    "changed requested amount",
+    "changed requested recipient",
+    "changed requested deadline",
+    "changed relay destination",
+    "modified signed message",
+    "stale seqno",
+    "expired authorization"
+  ],
+  "broadcast": false
+}

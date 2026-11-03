@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-11-03T12:48:01.914Z",
+  "platform": {
+    "address": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+    "state": "active",
+    "balance": "1949019995",
+    "seqno": 1,
+    "lastTransaction": {
+      "lt": "107310348000001",
+      "hash": "WBJXtcGrZAjHS0kHjaCTkbASNS6ZZkezNvjyGlA0aaI="
+    }
+  },
+  "user": {
+    "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+    "state": "active",
+    "balance": "48927662",
+    "seqno": 1,
+    "lastTransaction": {
+      "lt": "107311004000003",
+      "hash": "DZxweHnAagscTLqQXJu2i6/xGw5sXMwqXcRFWaifwpo="
+    }
+  }
+}
