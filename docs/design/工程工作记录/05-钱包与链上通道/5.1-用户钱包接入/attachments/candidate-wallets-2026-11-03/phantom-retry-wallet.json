@@ -1,0 +1,74 @@
+{
+  "wallet": "Phantom",
+  "version": "26.36.0",
+  "observedAt": "2026-11-03T18:18:07.996Z",
+  "connectionResult": "Solana Devnet payment probe\n\nDedicated test accounts only. Payment: 0.000001 SOL (1000 lamports). Platform pays network fees.\n\nWallet \nSolflare\nPhantom\nBackpack\nOKX\n Connect wallet Sign only in wallet Submit via platform Check chain result\n{\n  \"error\": \"Unexpected error\"\n}",
+  "httpFailures": [
+    {
+      "url": "https://api.phantom.app/currency_exchange/v1/rates",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/user/v1/users/<test-user>/wallet-storage",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/cash/v1/users/<test-user>/cash-account",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/user/v1/users/<test-user>/profile",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/user/v2/users/<test-user>/wallet-accounts",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/swap/v2/perp/trending-markets",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/swap/v2/perp/fungible-to-perp-map",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/user/v2/users/<test-user>/wallet-accounts",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/swap/v2/perp/trending-markets",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/user/v2/users/<test-user>/wallet-accounts",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/swap/v2/perp/trending-markets",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/user/v2/users/<test-user>/wallet-accounts",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/swap/v2/perp/trending-markets",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/portal/v1/public-apps",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/currency_exchange/v1/rates",
+      "status": 403
+    },
+    {
+      "url": "https://api.phantom.app/user/v1/users/<test-user>/wallet-storage",
+      "status": 403
+    }
+  ],
+  "signatureRequested": false,
+  "broadcast": false
+}

@@ -1,0 +1,9 @@
+{
+  "purpose": "Preserve verified CRX developer extension identity in unpacked Chromium; original UI selected QA with path-derived ID",
+  "onlyChangedFile": "manifest.json",
+  "addedField": "key",
+  "publicKeySha256": "7d50dade254e51336289dc7d5da3d003255f9d584523539f5f3a25cb7952747d",
+  "originalManifestSha256": "42825ada1e9e1f80a662ea1cf555c96c6c412e04cb62d811a03818dab43d1b5f",
+  "adjustedManifestSha256": "6a4102a301a1091a853db92ffe2a7ae15336f988c3cdeeb8db1b423c7110891c",
+  "executableFilesChanged": false
+}

@@ -1,0 +1,26 @@
+{
+  "wallet": "TokenPocket",
+  "version": "2.20.1",
+  "networkSwitch": {
+    "code": 4200,
+    "message": "Unsupported method"
+  },
+  "observedAt": "2026-11-03T18:02:27.348Z",
+  "preview": "Transaction\nhttp://127.0.0.1:18792\nTriggerSmartContract\nDetails\nData\nCurrent\nTron\nInitiating Wallet\nTDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio\nAccount1\nContract Called\nTXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf\nNetwork Fee\n0.34 TRX\n≈ $0.11\nReject\nConfirm",
+  "dataPreview": "Transaction\nhttp://127.0.0.1:18792\nTriggerSmartContract\nDetails\nData\n[{\"parameter\":{\"value\":{\"data\":\"a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e59384050000000000000000000000000000000000000000000000000000000000002710\",\"owner_address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\",\"contract_address\":\"41eca9bc828a3005b9a3b909f2cc5c2a54794de05f\"},\"type_url\":\"type.googleapis.com/protocol.TriggerSmartContract\"},\"type\":\"TriggerSmartContract\"}]\nReject\nConfirm",
+  "rejection": {
+    "ok": false,
+    "error": {
+      "message": "Signature Rejected",
+      "code": 4001
+    }
+  },
+  "blocker": "Transaction\nhttp://127.0.0.1:18792\nTriggerSmartContract\nDetails\nData\n[{\"parameter\":{\"value\":{\"data\":\"a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e59384050000000000000000000000000000000000000000000000000000000000002710\",\"owner_address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\",\"contract_address\":\"41eca9bc828a3005b9a3b909f2cc5c2a54794de05f\"},\"type_url\":\"type.googleapis.com/protocol.TriggerSmartContract\"},\"type\":\"TriggerSmartContract\"}]\nInsufficient Balance\nReject\nConfirm",
+  "customNode": {
+    "host": "https://trx.mytokenpocket.vip",
+    "observedAt": "2026-11-03T18:14:27.070Z"
+  },
+  "customNodePreview": "Transaction\nhttp://127.0.0.1:18792\nTriggerSmartContract\nDetails\nData\nCurrent\nTron\nInitiating Wallet\nTDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio\nAccount1\nContract Called\nTXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf\nNetwork Fee\n1.91 TRX\n≈ $0.62\nEnergy Rental\nPay with USDT\nReject\nConfirm",
+  "customNodeBlocker": "Transaction\nhttp://127.0.0.1:18792\nTriggerSmartContract\nDetails\nData\n[{\"parameter\":{\"value\":{\"data\":\"a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e59384050000000000000000000000000000000000000000000000000000000000002710\",\"owner_address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\",\"contract_address\":\"41eca9bc828a3005b9a3b909f2cc5c2a54794de05f\"},\"type_url\":\"type.googleapis.com/protocol.TriggerSmartContract\"},\"type\":\"TriggerSmartContract\"}]\nInsufficient Balance\nReject\nConfirm",
+  "finalDisposition": "Original custom Nile node selected, provider still reports mainnet; signature confirmation remains Insufficient Balance. No signature returned or broadcast."
+}

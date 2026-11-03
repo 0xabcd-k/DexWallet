@@ -1,0 +1,16 @@
+{
+  "wallet": "OKX",
+  "version": "4.22.2",
+  "connected": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+  "solanaMainnetPreview": "Insufficient native token balance. Add funds and try again.\nConfirm Send\n127.0.0.1:18792\nNetwork\nSolana\nNetwork fee\n--\nWallet used\n9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf\nPrivate key - 9ucco3...UVGf\nReject\nConfirm",
+  "confirmDisabled": true,
+  "rejection": {
+    "error": "Request Signature: User denied request signature."
+  },
+  "devnetSwitch": {
+    "ok": false,
+    "code": -32603,
+    "message": "Unable to add this SVM chain as it's not supported by OKX Wallet."
+  },
+  "observedAt": "2026-11-03T17:50:18.099Z"
+}

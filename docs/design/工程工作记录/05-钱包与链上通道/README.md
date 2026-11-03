@@ -43,3 +43,5 @@
 [TRON 完整资源代付验证](5.1-用户钱包接入/18TRON完整资源代付验证.md) 已使用与 Nile USDT 相同 runtime 的自建测试币，完成同一笔付款的 14,650 Energy 与 345 Bandwidth 全部由平台委托承担。用户前后为零 TRX，原钱包签名、固化、到账与重复广播拒绝均有证据；官方资产和正常金额预览仍单独待验。用户已要求连续验证剩余链币及候选钱包，不在每一项完成后等待再次确认。
 
 [Rabby 与 Backpack 钱包验证](5.1-用户钱包接入/19Rabby与Backpack钱包验证.md) 已完成 Rabby 的 Base USDC 和 Backpack 的 Solana SOL、USDC、自建 USDT 替身共四笔真实钱包代付，均 finalized。Rabby 本版高级执行接口返回不支持，原生 ETH 未通过；两款钱包的测试网资产预览限制、版本、原包哈希、拒绝及重放证据单列保留。
+
+[候选钱包兼容与阻塞](5.1-用户钱包接入/20候选钱包兼容与阻塞记录.md) 补充 OKX 的 Base USDC 支付及最终确认边界，并保留 Trust、TokenPocket、Bitget、Coinbase 和 Phantom 的实际连接、签名预检与测试网络阻塞。当前失败组合不随其他钱包自动通过。

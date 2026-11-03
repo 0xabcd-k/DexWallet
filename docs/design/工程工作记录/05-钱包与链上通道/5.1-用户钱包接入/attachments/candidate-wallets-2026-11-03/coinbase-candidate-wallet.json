@@ -1,0 +1,86 @@
+{
+  "wallet": "Coinbase Wallet",
+  "version": "3.151.0",
+  "runtimeId": "chrome-extension://hnfanknocfeofbddgcijnmhnfnkdnaad",
+  "observedAt": "2026-11-03T18:16:47.208Z",
+  "identityAdjustment": "Only manifest.key restored from verified CRX developer public key; executable files unchanged",
+  "capabilities": {
+    "ok": false,
+    "message": "this request method is not supported",
+    "code": -32603
+  },
+  "diagnostics": {
+    "errors": [
+      {
+        "url": "https://as.coinbase.com/metrics",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "https://as.coinbase.com/metrics",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "https://as.coinbase.com/amp",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "https://as.coinbase.com/metrics",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "https://as.coinbase.com/metrics",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "https://as.coinbase.com/amp",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "https://as.coinbase.com/metrics",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "responses": [
+      {
+        "url": "https://api.wallet.coinbase.com/rpc/v2/collectibles/getUserCollectionList",
+        "status": 404
+      },
+      {
+        "url": "https://api.wallet.coinbase.com/rpc/v2/collectibles/getUserCollectionList",
+        "status": 404
+      },
+      {
+        "url": "https://api.wallet.coinbase.com/rpc/v2/collectibles/getUserCollectionList",
+        "status": 404
+      },
+      {
+        "url": "https://api.wallet.coinbase.com/rpc/v2/collectibles/getUserCollectionList",
+        "status": 404
+      },
+      {
+        "url": "https://api.wallet.coinbase.com/rpc/v2/collectibles/getUserCollectionList",
+        "status": 404
+      },
+      {
+        "url": "https://api.wallet.coinbase.com/rpc/v2/collectibles/getUserCollectionList",
+        "status": 404
+      },
+      {
+        "url": "https://api.wallet.coinbase.com/rpc/v2/collectibles/getUserCollectionList",
+        "status": 404
+      },
+      {
+        "url": "https://chain-proxy.wallet.coinbase.com/",
+        "status": 400
+      }
+    ],
+    "console": []
+  },
+  "connection": {
+    "observedAt": "2026-11-03T18:17:20.817Z",
+    "accounts": [],
+    "requestResultText": "",
+    "popupOpened": false,
+    "result": "eth_requestAccounts remained pending across reloads and two fresh isolated profiles"
+  }
+}

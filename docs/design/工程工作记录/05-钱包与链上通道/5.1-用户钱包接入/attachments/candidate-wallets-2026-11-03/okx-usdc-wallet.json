@@ -1,0 +1,26 @@
+{
+  "wallet": "OKX",
+  "version": "4.22.2",
+  "observedAt": "2026-11-03T17:59:18.969Z",
+  "dataPreview": "Confirm Sign\n127.0.0.1:18793\nNetwork\nBase Sepolia\nWallet used\n0xecd14f7586f5053cecae148ae26309c2277d86a8\nPrivate key - 0xecd1...86a8\nAdvanced\nData\nCancel\nConfirm\nData\ndomain:\nname:\nUSDC\nversion:\n2\nchainId:\n84532\nverifyingContract:\n0x036CbD53842c5426634e7929541eC2318f3dCF7e\ntypes:\nEIP712Domain:\n0:\nname:\nname\ntype:\nstring\n1:\nname:\nversion\ntype:\nstring\n2:\nname:\nchainId\ntype:\nuint256\n3:\nname:\nverifyingContract\ntype:\naddress\nTransferWithAuthorization:\n0:\nname:\nfrom\ntype:\naddress\n1:\nname:\nto\ntype:\naddress\n2:\nname:\nvalue\ntype:\nuint256\n3:\nname:\nvalidAfter\ntype:\nuint256\n4:\nname:\nvalidBefore\ntype:\nuint256\n5:\nname:\nnonce\ntype:\nbytes32\nprimaryType:\nTransferWithAuthorization\nmessage:\nfrom:\n0xecd14F7586f5053CECae148Ae26309C2277D86A8\nto:\n0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA\nvalue:\n10000\nvalidAfter:\n1793728638\nvalidBefore:\n1793730439\nnonce:\n0xb77839ce48b912a89dff5a4e0b33be18c74c6638ce8936f02dc91d216928a1f1",
+  "rejection": {
+    "error": "Request Signature: User denied request signature.",
+    "code": 4001
+  },
+  "finalData": "Confirm Sign\n127.0.0.1:18793\nNetwork\nBase Sepolia\nWallet used\n0xecd14f7586f5053cecae148ae26309c2277d86a8\nPrivate key - 0xecd1...86a8\nAdvanced\nData\nCancel\nConfirm\nData\ndomain:\nname:\nUSDC\nversion:\n2\nchainId:\n84532\nverifyingContract:\n0x036CbD53842c5426634e7929541eC2318f3dCF7e\ntypes:\nEIP712Domain:\n0:\nname:\nname\ntype:\nstring\n1:\nname:\nversion\ntype:\nstring\n2:\nname:\nchainId\ntype:\nuint256\n3:\nname:\nverifyingContract\ntype:\naddress\nTransferWithAuthorization:\n0:\nname:\nfrom\ntype:\naddress\n1:\nname:\nto\ntype:\naddress\n2:\nname:\nvalue\ntype:\nuint256\n3:\nname:\nvalidAfter\ntype:\nuint256\n4:\nname:\nvalidBefore\ntype:\nuint256\n5:\nname:\nnonce\ntype:\nbytes32\nprimaryType:\nTransferWithAuthorization\nmessage:\nfrom:\n0xecd14F7586f5053CECae148Ae26309C2277D86A8\nto:\n0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA\nvalue:\n10000\nvalidAfter:\n1793728786\nvalidBefore:\n1793730587\nnonce:\n0xc7b9e817dc6debdf4b2dd06bb1b6f2f226cc73ec560ed9d9ccdc155a679782e0",
+  "validated": {
+    "status": "validated",
+    "reference": "7891c552-c378-43b9-8d64-519652954f17"
+  },
+  "capabilities": {
+    "wallet_getSupportedExecutionPermissions": {
+      "ok": false,
+      "code": -32601,
+      "message": "Method not found"
+    },
+    "wallet_getCapabilities": {
+      "ok": true,
+      "value": {}
+    }
+  }
+}

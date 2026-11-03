@@ -1,0 +1,52 @@
+[
+  {
+    "wallet": "okx",
+    "source": "https://www.okx.com/en-us/help/how-do-i-create-import-an-okx-wallet",
+    "extensionId": "mcohilncbfahbmgdjkbpemcciiolgcge",
+    "version": "4.22.2",
+    "crxBytes": 38062899,
+    "crxSha256": "d087228d0c7f2ec3fb03ff8ee684e5466b8f78ed6c9975d55054e89150b4b9bc",
+    "developerSignatureVerified": true,
+    "manifestOnlyIdentityAdjustment": false
+  },
+  {
+    "wallet": "trust",
+    "source": "https://trustwallet.com/browser-extension",
+    "extensionId": "egjidjbpglichdcondbcbdnbeeppgdph",
+    "version": "26.42.4",
+    "crxBytes": 57359631,
+    "crxSha256": "7dda83219188c5a0c169f416d33d308d8e5faabb5a845d957c16e617d7f69a71",
+    "developerSignatureVerified": true,
+    "manifestOnlyIdentityAdjustment": false
+  },
+  {
+    "wallet": "tokenpocket",
+    "source": "https://www.tokenpocket.pro/en/download/extension",
+    "extensionId": "mfgccjchihfkkindfppnaooecgfneiii",
+    "version": "2.20.1",
+    "crxBytes": 9343727,
+    "crxSha256": "9f13cd6a3b2050f53dbd870c80bd33125abdf1f65df2737942094fa195267c57",
+    "developerSignatureVerified": true,
+    "manifestOnlyIdentityAdjustment": false
+  },
+  {
+    "wallet": "bitget",
+    "source": "https://web3.bitget.com/en/wallet-download",
+    "extensionId": "jiidiaalihmmhddjgbnbgdfflelocpak",
+    "version": "2.21.11",
+    "crxBytes": 20897713,
+    "crxSha256": "3bf1ffe834496df54e7c3a8d01ed39f104cb2a476f9df158831ed8c4a10739ca",
+    "developerSignatureVerified": true,
+    "manifestOnlyIdentityAdjustment": false
+  },
+  {
+    "wallet": "coinbase",
+    "source": "https://chromewebstore.google.com/detail/coinbase-wallet-extension/hnfanknocfeofbddgcijnmhnfnkdnaad",
+    "extensionId": "hnfanknocfeofbddgcijnmhnfnkdnaad",
+    "version": "3.151.0",
+    "crxBytes": 14896601,
+    "crxSha256": "3216930a51551555b819219331c46129229fe7fbc3a27b586d3ffd3a208b0096",
+    "developerSignatureVerified": true,
+    "manifestOnlyIdentityAdjustment": true
+  }
+]
