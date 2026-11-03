@@ -1,0 +1,50 @@
+{
+  "observedAt": "2026-11-03T07:24:39.979Z",
+  "chainId": "0xcd8690dc",
+  "solidBlock": 72384478,
+  "solidBlockId": "0000000004507fde5bd21390628f7813426da63af98ee5513cf43bea44c927fe",
+  "orderReference": "0d9c57aa-5e39-4d90-b4fe-5ebcf019acc5",
+  "preparedAt": "2026-11-03T07:17:33.656Z",
+  "tx": {
+    "raw_data": {
+      "ref_block_bytes": "7f63",
+      "ref_block_hash": "cf41ec381571cf72",
+      "expiration": 1793690850000,
+      "contract": [
+        {
+          "parameter": {
+            "value": {
+              "owner_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "to_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "amount": 1000
+            },
+            "type_url": "type.googleapis.com/protocol.TransferContract"
+          },
+          "type": "TransferContract"
+        }
+      ],
+      "timestamp": 1793690250000
+    },
+    "signature": [
+      "8dc76028df40f70c7e76724723d0db6844405a4a26b788dd44040b262d4d1a322e522f379de1ebdd2999310280376cdc6485e49340fa8a656661926a929103331b"
+    ],
+    "ret": [
+      {
+        "contractRet": "SUCCESS"
+      }
+    ],
+    "raw_data_hex": "0a027f632208cf41ec381571cf7240d0a5b9829a345a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15412461517cf642358c8c0650b2cbccee4c31e16d7d121541913e6da20b97589625ae499b6eb17941e593840518e8077090d694829a34",
+    "txID": "c08fc0d615c4dc8546ce592e2d3bdbe711c282c68b437c18549395ac1979ac3e"
+  },
+  "info": {
+    "id": "c08fc0d615c4dc8546ce592e2d3bdbe711c282c68b437c18549395ac1979ac3e",
+    "blockNumber": 72384389,
+    "blockTimeStamp": 1793690352000,
+    "contractResult": [
+      ""
+    ],
+    "receipt": {
+      "net_usage": 266
+    }
+  }
+}

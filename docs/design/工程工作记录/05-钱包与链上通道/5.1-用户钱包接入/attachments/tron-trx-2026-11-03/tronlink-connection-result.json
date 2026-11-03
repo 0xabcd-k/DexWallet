@@ -1,0 +1,15 @@
+{
+  "observedAt": "2026-11-03T06:41:43.464Z",
+  "walletVersion": "4.11.2",
+  "connection": {
+    "value": [
+      "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio"
+    ]
+  },
+  "network": {
+    "fullNode": "https://nile.trongrid.io",
+    "solidityNode": "https://nile.trongrid.io",
+    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio"
+  },
+  "automaticPopupObserved": true
+}

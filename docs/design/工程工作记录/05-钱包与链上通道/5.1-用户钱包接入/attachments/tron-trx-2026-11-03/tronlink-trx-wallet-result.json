@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-11-03T07:18:47.183Z",
+  "walletVersion": "4.11.2",
+  "network": "Nile",
+  "addresses": {
+    "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+  },
+  "txID": "c08fc0d615c4dc8546ce592e2d3bdbe711c282c68b437c18549395ac1979ac3e",
+  "signatureCount": 1,
+  "rawBytesUnchanged": true,
+  "rejection": {
+    "ok": false,
+    "error": "Confirmation declined by user"
+  },
+  "rejectedNotBroadcast": true,
+  "signedNotBroadcast": true,
+  "preview": "127.0.0.1 is requesting\nNile Test\nTRON Nile Testnet\nSend\n0.001 TRX\nDetails\nMetadata\nFrom\nTDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio\nNile Test\nTo\nTPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH\nUser Consumption (Est.)\nResources\n266 Bandwidth\n\nView Total Consumptions\n\nReject\nSign"
+}

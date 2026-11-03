@@ -1,0 +1,17 @@
+{
+  "observedAt": "2026-11-03T07:23:39.207Z",
+  "mode": "--inspect",
+  "walletVersion": "4.11.2",
+  "addresses": {
+    "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+  },
+  "accounts": [
+    "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio"
+  ],
+  "network": {
+    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "fullNode": "https://nile.trongrid.io",
+    "solidityNode": "https://nile.trongrid.io"
+  }
+}

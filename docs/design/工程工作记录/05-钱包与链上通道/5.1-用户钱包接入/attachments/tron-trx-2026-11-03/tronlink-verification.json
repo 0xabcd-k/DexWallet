@@ -1,0 +1,15 @@
+{
+  "extensionId": "ibnejdfjmmkpcnlpebklmnkoeoihofec",
+  "version": "4.11.2",
+  "manifestVersion": 3,
+  "size": 11633098,
+  "crxSha256": "e03d0d11f4520ecd5f98d5d67ed062ed609aeef85921d840baa904c4b0b0f191",
+  "developerSignatureVerified": true,
+  "proofs": [
+    {
+      "proofType": 2,
+      "publicKeySha256": "81d49359ccaf2dbf41abcdae4e87e542b31dc8040680172f42a5836c62a53b08"
+    }
+  ],
+  "manifestKeyPresent": false
+}
