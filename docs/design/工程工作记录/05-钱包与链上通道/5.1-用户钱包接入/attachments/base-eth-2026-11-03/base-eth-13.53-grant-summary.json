@@ -1,0 +1,84 @@
+{
+  "capturedAt": "2026-11-03T04:28:17.414Z",
+  "walletVersion": "13.53.0.0",
+  "request": {
+    "chainId": "0x14a34",
+    "to": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+    "permission": {
+      "type": "native-token-allowance",
+      "isAdjustmentAllowed": false,
+      "data": {
+        "allowanceAmount": "0xe8d4a51000",
+        "startTime": 1793677123,
+        "justification": "Dedicated Base Sepolia test: 0.000001 ETH to platform test recipient; platform pays gas."
+      }
+    },
+    "rules": [
+      {
+        "type": "expiry",
+        "data": {
+          "timestamp": 1793680723
+        }
+      },
+      {
+        "type": "redeemer",
+        "data": {
+          "addresses": [
+            "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa"
+          ]
+        }
+      },
+      {
+        "type": "payee",
+        "data": {
+          "addresses": [
+            "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa"
+          ]
+        }
+      }
+    ]
+  },
+  "grants": [
+    {
+      "chainId": "0x14a34",
+      "from": "0xecd14F7586f5053CECae148Ae26309C2277D86A8",
+      "to": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA",
+      "permission": {
+        "type": "native-token-allowance",
+        "isAdjustmentAllowed": false,
+        "data": {
+          "allowanceAmount": "0xe8d4a51000",
+          "startTime": 1793677123,
+          "justification": "Dedicated Base Sepolia test: 0.000001 ETH to platform test recipient; platform pays gas."
+        }
+      },
+      "rules": [
+        {
+          "type": "expiry",
+          "data": {
+            "timestamp": 1793680723
+          }
+        },
+        {
+          "type": "redeemer",
+          "data": {
+            "addresses": [
+              "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa"
+            ]
+          }
+        },
+        {
+          "type": "payee",
+          "data": {
+            "addresses": [
+              "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa"
+            ]
+          }
+        }
+      ],
+      "delegationManager": "0xdb9B1e94B5b69Df7e401DDbedE43491141047dB3",
+      "contextBytes": 1824,
+      "dependencyCount": 0
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "capturedAt": "2026-11-03T02:21:05.612Z",
+  "walletVersion": "13.55.0.0",
+  "request": {
+    "chainId": "0x14a34",
+    "to": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA",
+    "permission": {
+      "type": "native-token-allowance",
+      "isAdjustmentAllowed": false,
+      "data": {
+        "allowanceAmount": "0xe8d4a51000",
+        "startTime": 1793674471,
+        "justification": "Dedicated Base Sepolia ETH sponsorship test; fixed payee and 0.000001 ETH total limit."
+      }
+    },
+    "rules": [
+      {
+        "type": "expiry",
+        "data": {
+          "timestamp": 1793678071
+        }
+      },
+      {
+        "type": "redeemer",
+        "data": {
+          "addresses": [
+            "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
+          ]
+        }
+      },
+      {
+        "type": "payee",
+        "data": {
+          "addresses": [
+            "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
+          ]
+        }
+      }
+    ]
+  },
+  "comparison": {
+    "address": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+    "origin": "npm:@metamask/gator-permissions-snap",
+    "networkClientId": "c000eb40-2019-4c5f-a38c-166aeccbd2a0",
+    "resolvedScope": "eip155:84532",
+    "permittedAddresses": []
+  },
+  "debuggerReadOnly": true,
+  "result": {
+    "ok": false,
+    "code": 4100,
+    "message": "The requested account and/or method has not been authorized by the user.",
+    "stack": "{\n  \"code\": 4100,\n  \"message\": \"The requested account and/or method has not been authorized by the user.\",\n  \"stack\": \"Error: The requested account and/or method has not been authorized by the user.\\n    at new a (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/3033.e4ee97546ae21a3352a9.js:2049:124448)\\n    at new i (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/3033.e4ee97546ae21a3352a9.js:2049:124866)\\n    at a (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/3033.e4ee97546ae21a3352a9.js:2049:127512)\\n    at Object.unauthorized (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/3033.e4ee97546ae21a3352a9.js:2049:127909)\\n    at o (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/7062.a3f3e9ad9dcf43998513.js:36:107362)\"\n}\n  at new a (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/3033.e4ee97546ae21a3352a9.js:2049:124448)\n  at new i (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/3033.e4ee97546ae21a3352a9.js:2049:124866)\n  at a (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/3033.e4ee97546ae21a3352a9.js:2049:127512)\n  at Object.unauthorized (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/3033.e4ee97546ae21a3352a9.js:2049:127909)\n  at o (chrome-extension://bdbmjkjloodjopbpjjmmoihedfomicgg/7062.a3f3e9ad9dcf43998513.js:36:107362)"
+  },
+  "snapPermissionState": {
+    "origin": "npm:@metamask/gator-permissions-snap",
+    "authorizedScopes": {
+      "isMultichainOrigin": false,
+      "optionalScopes": {
+        "eip155:84532": {
+          "accounts": []
+        },
+        "wallet:eip155": {
+          "accounts": [
+            "wallet:eip155:0x10ee6c67c856df24978544a12b2c64d49c269ee2",
+            "wallet:eip155:0xecd14f7586f5053cecae148ae26309c2277d86a8"
+          ]
+        }
+      },
+      "requiredScopes": {},
+      "sessionProperties": {}
+    }
+  },
+  "afterAccountAddition": {
+    "ok": false,
+    "code": 4100,
+    "message": "The requested account and/or method has not been authorized by the user."
+  }
+}

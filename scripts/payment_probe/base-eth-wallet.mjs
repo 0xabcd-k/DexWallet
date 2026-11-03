@@ -8,7 +8,10 @@ import { chromium } from 'playwright';
 import { rpc } from './rpc.mjs';
 
 const mode = process.argv[2] ?? '--inspect';
-assert(process.argv.length <= 3 && ['--inspect', '--reject', '--grant-probe'].includes(mode));
+const walletVersion = process.argv[3] ?? '13.55.0.0';
+assert(process.argv.length <= 4 && ['--inspect', '--reject', '--grant-probe'].includes(mode));
+assert(['13.55.0.0', '13.53.0.0'].includes(walletVersion));
+const comparison = walletVersion === '13.53.0.0'; // Explicit isolated comparison, never an automatic downgrade.
 const root = fileURLToPath(new URL('../../.tools/payment-feasibility/', import.meta.url));
 const chainId = '0x14a34';
 const endpoint = 'https://base-sepolia-rpc.publicnode.com';
@@ -16,14 +19,15 @@ const base = 'http://127.0.0.1:18794';
 const user = '0xecd14f7586f5053cecae148ae26309c2277d86a8';
 const sponsor = '0xa59c992aa84657df4ebff6f04e11a1632f6db1fa';
 const allowanceAmount = '0xe8d4a51000'; // Exactly 0.000001 test ETH, no periodic renewal.
-const run = `${mode.slice(2)}-${new Date().toISOString().replaceAll(':', '-')}`;
+const run = `${walletVersion}-${mode.slice(2)}-${new Date().toISOString().replaceAll(':', '-')}`;
 const prefix = `${root}/base-eth-wallet-${run}`;
 const evidence = { startedAt: new Date().toISOString(), mode, user, sponsor, chainId };
-const extension = `${root}/metamask-extension`;
+const extension = `${root}/${comparison ? 'metamask-13.53-extension' : 'metamask-extension'}`;
 const manifest = JSON.parse(await readFile(`${extension}/manifest.json`, 'utf8'));
-assert.equal(manifest.version, '13.55.0.0', 'Review wallet UI and capabilities after an upgrade');
+assert.equal(manifest.version, walletVersion, 'Review wallet UI and capabilities after an upgrade');
 evidence.walletVersion = manifest.version;
-const { metamaskPassword } = JSON.parse(await readFile(`${root}/secrets.json`, 'utf8'));
+const secrets = JSON.parse(await readFile(`${root}/${comparison ? 'metamask-13.53-secrets.json' : 'secrets.json'}`, 'utf8'));
+const metamaskPassword = comparison ? secrets.password : secrets.metamaskPassword;
 assert(metamaskPassword, 'Initialize the dedicated wallet profile first');
 const server = createServer((req, res) => {
   if (req.headers.host !== '127.0.0.1:18794' || req.method !== 'GET' || req.url !== '/') {
@@ -48,7 +52,7 @@ async function chainState() {
 }
 try {
   evidence.before = await chainState();
-  context = await chromium.launchPersistentContext(`${root}/metamask-profile`, {
+  context = await chromium.launchPersistentContext(`${root}/${comparison ? 'metamask-13.53-profile' : 'metamask-profile'}`, {
     channel: 'chromium', headless: true, locale: 'en-US', viewport: { width: 800, height: 600 },
     proxy: { server: 'http://127.0.0.1:7890', bypass: '127.0.0.1,localhost,base-sepolia-rpc.publicnode.com' },
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
@@ -122,7 +126,7 @@ try {
       const grant = notice.getByRole('button', { name: 'Grant', exact: true });
       if (!clicked && await grant.isVisible()) {
         // The wallet renders the Grant button before its permission details finish loading.
-        await notice.getByText('0.000001', { exact: true }).waitFor();
+        await notice.getByText('0.000001', { exact: true }).waitFor({ timeout: 30000 });
         text = await notice.locator('body').innerText();
         evidence.permissionPreview = text;
         const lower = text.toLowerCase();
@@ -132,12 +136,24 @@ try {
         await notice.screenshot({ path: `${prefix}-permission.png` });
         await notice.getByRole('button', { name: mode === '--reject' ? 'Cancel' : 'Grant', exact: true }).click();
         clicked = true;
+        continue; // Read the next confirmation afresh; never validate it using stale preview text.
       }
       if (mode === '--grant-probe' && text.includes('Account update') && text.includes('Paid by MetaMask')) {
         assert(text.includes('Smart account') && text.includes('Imported'));
         evidence.upgradePreview = text;
         await notice.screenshot({ path: `${prefix}-upgrade.png` });
         await notice.getByRole('button', { name: 'Confirm', exact: true }).click();
+        continue;
+      }
+      // Successful Gator authorization opens a second original-wallet signature confirmation.
+      const confirm = notice.getByRole('button', { name: 'Confirm', exact: true });
+      if (mode === '--grant-probe' && clicked && text.includes('Permission request') && await confirm.isVisible()) {
+        assert(text.includes('Imported Account 1') && text.includes('Base Sepolia') && text.includes('0.000001'));
+        assert(text.includes('Redeemer') && text.includes('Payee') && text.includes('Expiration'));
+        assert(text.toLowerCase().includes('0xa59') && text.toLowerCase().includes('db1fa'));
+        evidence.signaturePreview = text;
+        await notice.screenshot({ path: `${prefix}-signature.png` });
+        await confirm.click();
       }
       await pause();
     }
