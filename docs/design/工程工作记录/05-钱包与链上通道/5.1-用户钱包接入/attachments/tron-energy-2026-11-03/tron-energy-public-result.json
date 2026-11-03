@@ -1,0 +1,2513 @@
+{
+  "observedAt": "2026-11-03T09:59:54.881Z",
+  "network": "Nile",
+  "chainId": "0xcd8690dc",
+  "addresses": {
+    "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+  },
+  "contractAddress": "TK9pCdpqppcJinuCky3TEpYgodj7ksvbXa",
+  "runtime": "600160005260206000f3",
+  "contractSettings": {
+    "origin_address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+    "contract_address": "TK9pCdpqppcJinuCky3TEpYgodj7ksvbXa",
+    "abi": {
+      "entrys": [
+        {
+          "name": "probe",
+          "outputs": [
+            {
+              "type": "uint256"
+            }
+          ],
+          "type": "Function",
+          "stateMutability": "Nonpayable"
+        }
+      ]
+    },
+    "bytecode": "600a600c600039600a6000f3600160005260206000f3",
+    "consume_user_resource_percent": 100,
+    "name": "NileEnergyProbe",
+    "origin_energy_limit": 1,
+    "code_hash": "c1d5b4ce3e2a6227293fccce2904121c8647bbe16c1216340b851bf12d12560e"
+  },
+  "simulation": {
+    "transaction": {
+      "raw_data": {
+        "ref_block_bytes": "8b9c",
+        "ref_block_hash": "44afe6edb64107d8",
+        "expiration": 1793699781000,
+        "contract": [
+          {
+            "parameter": {
+              "value": {
+                "owner_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                "contract_address": "4164baacc0d23e84fad8afe39e7785b0da56c75d67",
+                "data": "b74af5a9"
+              },
+              "type_url": "type.googleapis.com/protocol.TriggerSmartContract"
+            },
+            "type": "TriggerSmartContract"
+          }
+        ],
+        "timestamp": 1793699723779
+      },
+      "ret": [
+        {}
+      ],
+      "raw_data_hex": "0a028b9c220844afe6edb64107d84088b3da869a345a6d081f12690a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412340a15412461517cf642358c8c0650b2cbccee4c31e16d7d12154164baacc0d23e84fad8afe39e7785b0da56c75d672204b74af5a97083f4d6869a34",
+      "txID": "dfb1a54068e58105f3af53eb4618e066bd1f05d4777e040ecaef2b7bd12d0e73",
+      "visible": false
+    },
+    "constant_result": [
+      "0000000000000000000000000000000000000000000000000000000000000001"
+    ],
+    "result": {
+      "result": true
+    },
+    "energy_used": 16
+  },
+  "setup": {
+    "deploy": {
+      "signed": {
+        "visible": false,
+        "txID": "8ae3e97e1eaa731ef086fbb7c4d5cd7ed1f9c1c3021dd3f19d64b38b50012c3c",
+        "raw_data_hex": "0a028b1022089d223ce29721d35140d8b6de869a345ab001081e12ab010a30747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e437265617465536d617274436f6e747261637412770a1541913e6da20b97589625ae499b6eb17941e5938405125e0a1541913e6da20b97589625ae499b6eb17941e59384051a180a161a0570726f62652a091a0775696e74323536300240032216600a600c600039600a6000f3600160005260206000f330643a0f4e696c65456e6572677950726f626540017098e7b9869a349001c0843d",
+        "raw_data": {
+          "contract": [
+            {
+              "parameter": {
+                "value": {
+                  "owner_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                  "new_contract": {
+                    "abi": {
+                      "entrys": [
+                        {
+                          "name": "probe",
+                          "type": "function",
+                          "inputs": [],
+                          "outputs": [
+                            {
+                              "name": "",
+                              "type": "uint256"
+                            }
+                          ],
+                          "stateMutability": "nonpayable"
+                        }
+                      ]
+                    },
+                    "consume_user_resource_percent": 100,
+                    "origin_energy_limit": 1,
+                    "origin_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                    "bytecode": "600a600c600039600a6000f3600160005260206000f3",
+                    "name": "NileEnergyProbe"
+                  }
+                },
+                "type_url": "type.googleapis.com/protocol.CreateSmartContract"
+              },
+              "type": "CreateSmartContract"
+            }
+          ],
+          "ref_block_bytes": "8b10",
+          "ref_block_hash": "9d223ce29721d351",
+          "expiration": 1793699847000,
+          "timestamp": 1793699247000,
+          "fee_limit": 1000000
+        },
+        "contract_address": "4164baacc0d23e84fad8afe39e7785b0da56c75d67",
+        "signature": [
+          "e48f4c53ddfab7c27d5bf6d19c202e044c40b042ab7216c6ac15ecbb00d3b74212f2f0cb7eaa2abf7355fcc2007dcb263f150756fb29ed03bcd8162bfbaef6451B"
+        ]
+      },
+      "before": {
+        "observedAt": "2026-11-03T09:47:19.680Z",
+        "addresses": {
+          "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+        },
+        "user": {
+          "account": {
+            "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+            "net_usage": 238,
+            "create_time": 1793688393000,
+            "latest_opration_time": 1793696457000,
+            "free_net_usage": 333,
+            "latest_consume_time": 1793690349000,
+            "latest_consume_free_time": 1793696457000,
+            "net_window_size": 25837000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793696457000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {},
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 333,
+            "freeNetLimit": 600,
+            "NetUsed": 238,
+            "NetLimit": 315,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914211
+          }
+        },
+        "sponsor": {
+          "account": {
+            "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+            "balance": 17132000,
+            "net_usage": 244,
+            "create_time": 1793687931000,
+            "latest_opration_time": 1793689185000,
+            "free_net_usage": 220,
+            "latest_consume_time": 1793689185000,
+            "latest_consume_free_time": 1793688468000,
+            "net_window_size": 25448000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {
+                "amount": 480000000
+              },
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 220,
+            "freeNetLimit": 600,
+            "NetUsed": 244,
+            "NetLimit": 302,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "tronPowerLimit": 980,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914211
+          }
+        },
+        "delegation": {
+          "delegatedResource": [
+            {
+              "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "frozen_balance_for_bandwidth": 500000000
+            }
+          ]
+        }
+      },
+      "status": "solidified",
+      "broadcast": {
+        "result": true,
+        "txid": "8ae3e97e1eaa731ef086fbb7c4d5cd7ed1f9c1c3021dd3f19d64b38b50012c3c"
+      },
+      "info": {
+        "id": "8ae3e97e1eaa731ef086fbb7c4d5cd7ed1f9c1c3021dd3f19d64b38b50012c3c",
+        "fee": 202100,
+        "blockNumber": 72387346,
+        "blockTimeStamp": 1793699253000,
+        "contractResult": [
+          "600160005260206000f3"
+        ],
+        "contract_address": "4164baacc0d23e84fad8afe39e7785b0da56c75d67",
+        "receipt": {
+          "energy_fee": 202100,
+          "energy_usage_total": 2021,
+          "net_usage": 346,
+          "result": "SUCCESS"
+        }
+      },
+      "transaction": {
+        "raw_data": {
+          "ref_block_bytes": "8b10",
+          "ref_block_hash": "9d223ce29721d351",
+          "expiration": 1793699847000,
+          "contract": [
+            {
+              "parameter": {
+                "value": {
+                  "owner_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                  "new_contract": {
+                    "origin_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                    "abi": {
+                      "entrys": [
+                        {
+                          "name": "probe",
+                          "outputs": [
+                            {
+                              "type": "uint256"
+                            }
+                          ],
+                          "type": "Function",
+                          "stateMutability": "Nonpayable"
+                        }
+                      ]
+                    },
+                    "bytecode": "600a600c600039600a6000f3600160005260206000f3",
+                    "consume_user_resource_percent": 100,
+                    "name": "NileEnergyProbe",
+                    "origin_energy_limit": 1
+                  }
+                },
+                "type_url": "type.googleapis.com/protocol.CreateSmartContract"
+              },
+              "type": "CreateSmartContract"
+            }
+          ],
+          "timestamp": 1793699247000,
+          "fee_limit": 1000000
+        },
+        "signature": [
+          "e48f4c53ddfab7c27d5bf6d19c202e044c40b042ab7216c6ac15ecbb00d3b74212f2f0cb7eaa2abf7355fcc2007dcb263f150756fb29ed03bcd8162bfbaef6451b"
+        ],
+        "ret": [
+          {
+            "contractRet": "SUCCESS"
+          }
+        ],
+        "contract_address": "4164baacc0d23e84fad8afe39e7785b0da56c75d67",
+        "raw_data_hex": "0a028b1022089d223ce29721d35140d8b6de869a345ab001081e12ab010a30747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e437265617465536d617274436f6e747261637412770a1541913e6da20b97589625ae499b6eb17941e5938405125e0a1541913e6da20b97589625ae499b6eb17941e59384051a180a161a0570726f62652a091a0775696e74323536300240032216600a600c600039600a6000f3600160005260206000f330643a0f4e696c65456e6572677950726f626540017098e7b9869a349001c0843d",
+        "txID": "8ae3e97e1eaa731ef086fbb7c4d5cd7ed1f9c1c3021dd3f19d64b38b50012c3c"
+      },
+      "after": {
+        "observedAt": "2026-11-03T09:48:31.692Z",
+        "addresses": {
+          "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+        },
+        "user": {
+          "account": {
+            "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+            "net_usage": 238,
+            "create_time": 1793688393000,
+            "latest_opration_time": 1793696457000,
+            "free_net_usage": 333,
+            "latest_consume_time": 1793690349000,
+            "latest_consume_free_time": 1793696457000,
+            "net_window_size": 25812000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793696457000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {},
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 333,
+            "freeNetLimit": 600,
+            "NetUsed": 238,
+            "NetLimit": 315,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914211
+          }
+        },
+        "sponsor": {
+          "account": {
+            "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+            "balance": 16929900,
+            "net_usage": 244,
+            "create_time": 1793687931000,
+            "latest_opration_time": 1793699250000,
+            "free_net_usage": 565,
+            "latest_consume_time": 1793689185000,
+            "latest_consume_free_time": 1793699250000,
+            "net_window_size": 25424000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793699250000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {
+                "amount": 480000000
+              },
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 565,
+            "freeNetLimit": 600,
+            "NetUsed": 244,
+            "NetLimit": 302,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "tronPowerLimit": 980,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914211
+          }
+        },
+        "delegation": {
+          "delegatedResource": [
+            {
+              "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "frozen_balance_for_bandwidth": 500000000
+            }
+          ]
+        }
+      }
+    },
+    "stakeEnergy": {
+      "signed": {
+        "visible": false,
+        "txID": "92eeab81ef484e25b529aa7a60f73b3a904114b8cc010a16cb17b23a14cc0322",
+        "raw_data_hex": "0a028b2822087d49a491f4c9c1e54098e9e2869a345a59083612550a34747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e467265657a6542616c616e63655632436f6e7472616374121d0a1541913e6da20b97589625ae499b6eb17941e593840510c0843d180170d899be869a34",
+        "raw_data": {
+          "contract": [
+            {
+              "parameter": {
+                "value": {
+                  "owner_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                  "frozen_balance": 1000000,
+                  "resource": "ENERGY"
+                },
+                "type_url": "type.googleapis.com/protocol.FreezeBalanceV2Contract"
+              },
+              "type": "FreezeBalanceV2Contract"
+            }
+          ],
+          "ref_block_bytes": "8b28",
+          "ref_block_hash": "7d49a491f4c9c1e5",
+          "expiration": 1793699919000,
+          "timestamp": 1793699319000
+        },
+        "signature": [
+          "e8d64c76d1a98ba6a3900e9fa32ec8797c7b71b282e17637c2b0c34edc8c05bb79635aca0efe726ce0c096732311514c342d0450b54569a13eeb4980853cd1d21B"
+        ]
+      },
+      "before": {
+        "observedAt": "2026-11-03T09:48:36.981Z",
+        "addresses": {
+          "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+        },
+        "user": {
+          "account": {
+            "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+            "net_usage": 238,
+            "create_time": 1793688393000,
+            "latest_opration_time": 1793696457000,
+            "free_net_usage": 333,
+            "latest_consume_time": 1793690349000,
+            "latest_consume_free_time": 1793696457000,
+            "net_window_size": 25811000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793696457000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {},
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 333,
+            "freeNetLimit": 600,
+            "NetUsed": 238,
+            "NetLimit": 315,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914211
+          }
+        },
+        "sponsor": {
+          "account": {
+            "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+            "balance": 16929900,
+            "net_usage": 244,
+            "create_time": 1793687931000,
+            "latest_opration_time": 1793699250000,
+            "free_net_usage": 565,
+            "latest_consume_time": 1793689185000,
+            "latest_consume_free_time": 1793699250000,
+            "net_window_size": 25423000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793699250000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {
+                "amount": 480000000
+              },
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 565,
+            "freeNetLimit": 600,
+            "NetUsed": 244,
+            "NetLimit": 302,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "tronPowerLimit": 980,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914211
+          }
+        },
+        "delegation": {
+          "delegatedResource": [
+            {
+              "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "frozen_balance_for_bandwidth": 500000000
+            }
+          ]
+        }
+      },
+      "status": "solidified",
+      "broadcast": {
+        "result": true,
+        "txid": "92eeab81ef484e25b529aa7a60f73b3a904114b8cc010a16cb17b23a14cc0322"
+      },
+      "info": {
+        "id": "92eeab81ef484e25b529aa7a60f73b3a904114b8cc010a16cb17b23a14cc0322",
+        "fee": 252000,
+        "blockNumber": 72387371,
+        "blockTimeStamp": 1793699328000,
+        "contractResult": [
+          ""
+        ],
+        "receipt": {
+          "net_fee": 252000
+        }
+      },
+      "transaction": {
+        "raw_data": {
+          "ref_block_bytes": "8b28",
+          "ref_block_hash": "7d49a491f4c9c1e5",
+          "expiration": 1793699919000,
+          "contract": [
+            {
+              "parameter": {
+                "value": {
+                  "owner_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                  "frozen_balance": 1000000,
+                  "resource": "ENERGY"
+                },
+                "type_url": "type.googleapis.com/protocol.FreezeBalanceV2Contract"
+              },
+              "type": "FreezeBalanceV2Contract"
+            }
+          ],
+          "timestamp": 1793699319000
+        },
+        "signature": [
+          "e8d64c76d1a98ba6a3900e9fa32ec8797c7b71b282e17637c2b0c34edc8c05bb79635aca0efe726ce0c096732311514c342d0450b54569a13eeb4980853cd1d21b"
+        ],
+        "ret": [
+          {
+            "contractRet": "SUCCESS"
+          }
+        ],
+        "raw_data_hex": "0a028b2822087d49a491f4c9c1e54098e9e2869a345a59083612550a34747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e467265657a6542616c616e63655632436f6e7472616374121d0a1541913e6da20b97589625ae499b6eb17941e593840510c0843d180170d899be869a34",
+        "txID": "92eeab81ef484e25b529aa7a60f73b3a904114b8cc010a16cb17b23a14cc0322"
+      },
+      "after": {
+        "observedAt": "2026-11-03T09:49:45.795Z",
+        "addresses": {
+          "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+        },
+        "user": {
+          "account": {
+            "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+            "net_usage": 238,
+            "create_time": 1793688393000,
+            "latest_opration_time": 1793696457000,
+            "free_net_usage": 333,
+            "latest_consume_time": 1793690349000,
+            "latest_consume_free_time": 1793696457000,
+            "net_window_size": 25788000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793696457000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {},
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 333,
+            "freeNetLimit": 600,
+            "NetUsed": 238,
+            "NetLimit": 315,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "sponsor": {
+          "account": {
+            "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+            "balance": 15677900,
+            "net_usage": 244,
+            "create_time": 1793687931000,
+            "latest_opration_time": 1793699325000,
+            "free_net_usage": 565,
+            "latest_consume_time": 1793689185000,
+            "latest_consume_free_time": 1793699250000,
+            "net_window_size": 25399000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793699250000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {
+                "amount": 480000000
+              },
+              {
+                "type": "ENERGY",
+                "amount": 1000000
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 565,
+            "freeNetLimit": 600,
+            "NetUsed": 244,
+            "NetLimit": 302,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "tronPowerLimit": 981,
+            "EnergyLimit": 73,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "delegation": {
+          "delegatedResource": [
+            {
+              "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "frozen_balance_for_bandwidth": 500000000
+            }
+          ]
+        }
+      }
+    },
+    "delegateEnergy": {
+      "signed": {
+        "visible": false,
+        "txID": "3b20bf5e6bf0b5bb54fd90bafdd307cec27b8993619d1c0058de2b0cabb0c430",
+        "raw_data_hex": "0a028b412208394c07a460105fea4090b3e7869a345a710839126d0a35747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e44656c65676174655265736f75726365436f6e747261637412340a1541913e6da20b97589625ae499b6eb17941e5938405100118c0843d2215412461517cf642358c8c0650b2cbccee4c31e16d7d70d0e3c2869a34",
+        "raw_data": {
+          "contract": [
+            {
+              "parameter": {
+                "value": {
+                  "owner_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                  "receiver_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                  "balance": 1000000,
+                  "resource": "ENERGY"
+                },
+                "type_url": "type.googleapis.com/protocol.DelegateResourceContract"
+              },
+              "type": "DelegateResourceContract"
+            }
+          ],
+          "ref_block_bytes": "8b41",
+          "ref_block_hash": "394c07a460105fea",
+          "expiration": 1793699994000,
+          "timestamp": 1793699394000
+        },
+        "signature": [
+          "593df977e2afd945d600f3eb1a6b18a25e6be6f9b95fdd1de539b12035afb77f58ff7834b35c87de9c753a4fa6bda72035566e4a4fe6bea978ead0c06801e8d61C"
+        ]
+      },
+      "before": {
+        "observedAt": "2026-11-03T09:49:51.303Z",
+        "addresses": {
+          "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+        },
+        "user": {
+          "account": {
+            "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+            "net_usage": 238,
+            "create_time": 1793688393000,
+            "latest_opration_time": 1793696457000,
+            "free_net_usage": 333,
+            "latest_consume_time": 1793690349000,
+            "latest_consume_free_time": 1793696457000,
+            "net_window_size": 25786000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793696457000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {},
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 333,
+            "freeNetLimit": 600,
+            "NetUsed": 238,
+            "NetLimit": 315,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "sponsor": {
+          "account": {
+            "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+            "balance": 15677900,
+            "net_usage": 244,
+            "create_time": 1793687931000,
+            "latest_opration_time": 1793699325000,
+            "free_net_usage": 565,
+            "latest_consume_time": 1793689185000,
+            "latest_consume_free_time": 1793699250000,
+            "net_window_size": 25397000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793699250000,
+              "energy_window_size": 28800000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {
+                "amount": 480000000
+              },
+              {
+                "type": "ENERGY",
+                "amount": 1000000
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 565,
+            "freeNetLimit": 600,
+            "NetUsed": 244,
+            "NetLimit": 302,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "tronPowerLimit": 981,
+            "EnergyLimit": 73,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "delegation": {
+          "delegatedResource": [
+            {
+              "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "frozen_balance_for_bandwidth": 500000000
+            }
+          ]
+        }
+      },
+      "status": "solidified",
+      "broadcast": {
+        "result": true,
+        "txid": "3b20bf5e6bf0b5bb54fd90bafdd307cec27b8993619d1c0058de2b0cabb0c430"
+      },
+      "info": {
+        "id": "3b20bf5e6bf0b5bb54fd90bafdd307cec27b8993619d1c0058de2b0cabb0c430",
+        "fee": 277000,
+        "blockNumber": 72387395,
+        "blockTimeStamp": 1793699400000,
+        "contractResult": [
+          ""
+        ],
+        "receipt": {
+          "net_fee": 277000
+        }
+      },
+      "transaction": {
+        "raw_data": {
+          "ref_block_bytes": "8b41",
+          "ref_block_hash": "394c07a460105fea",
+          "expiration": 1793699994000,
+          "contract": [
+            {
+              "parameter": {
+                "value": {
+                  "owner_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                  "resource": "ENERGY",
+                  "balance": 1000000,
+                  "receiver_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d"
+                },
+                "type_url": "type.googleapis.com/protocol.DelegateResourceContract"
+              },
+              "type": "DelegateResourceContract"
+            }
+          ],
+          "timestamp": 1793699394000
+        },
+        "signature": [
+          "593df977e2afd945d600f3eb1a6b18a25e6be6f9b95fdd1de539b12035afb77f58ff7834b35c87de9c753a4fa6bda72035566e4a4fe6bea978ead0c06801e8d61c"
+        ],
+        "ret": [
+          {
+            "contractRet": "SUCCESS"
+          }
+        ],
+        "raw_data_hex": "0a028b412208394c07a460105fea4090b3e7869a345a710839126d0a35747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e44656c65676174655265736f75726365436f6e747261637412340a1541913e6da20b97589625ae499b6eb17941e5938405100118c0843d2215412461517cf642358c8c0650b2cbccee4c31e16d7d70d0e3c2869a34",
+        "txID": "3b20bf5e6bf0b5bb54fd90bafdd307cec27b8993619d1c0058de2b0cabb0c430"
+      },
+      "after": {
+        "observedAt": "2026-11-03T09:50:57.459Z",
+        "addresses": {
+          "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+        },
+        "user": {
+          "account": {
+            "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+            "net_usage": 237,
+            "create_time": 1793688393000,
+            "latest_opration_time": 1793696457000,
+            "free_net_usage": 333,
+            "latest_consume_time": 1793690349000,
+            "latest_consume_free_time": 1793696457000,
+            "net_window_size": 25764000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793696457000,
+              "energy_window_size": 28800000,
+              "acquired_delegated_frozenV2_balance_for_energy": 1000000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {},
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 333,
+            "freeNetLimit": 600,
+            "NetUsed": 237,
+            "NetLimit": 315,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "EnergyLimit": 73,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "sponsor": {
+          "account": {
+            "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+            "balance": 15400900,
+            "net_usage": 244,
+            "create_time": 1793687931000,
+            "latest_opration_time": 1793699397000,
+            "free_net_usage": 564,
+            "latest_consume_time": 1793689185000,
+            "latest_consume_free_time": 1793699250000,
+            "net_window_size": 25375000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793699250000,
+              "energy_window_size": 28800000,
+              "delegated_frozenV2_balance_for_energy": 1000000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {
+                "amount": 480000000
+              },
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 564,
+            "freeNetLimit": 600,
+            "NetUsed": 244,
+            "NetLimit": 302,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "tronPowerLimit": 981,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "delegation": {
+          "delegatedResource": [
+            {
+              "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "frozen_balance_for_bandwidth": 500000000,
+              "frozen_balance_for_energy": 1000000
+            }
+          ]
+        }
+      }
+    },
+    "fundBandwidth": {
+      "signed": {
+        "visible": false,
+        "txID": "3753f3069de83a7f2fda348877ddf978a0050e5825b9e7d04d1b7d8078002da1",
+        "raw_data_hex": "0a028bba2208853fa65befd5e5634088c7fd869a345a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541913e6da20b97589625ae499b6eb17941e59384051215412461517cf642358c8c0650b2cbccee4c31e16d7d18f0fb1070c8f7d8869a34",
+        "raw_data": {
+          "contract": [
+            {
+              "parameter": {
+                "value": {
+                  "to_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                  "owner_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                  "amount": 278000
+                },
+                "type_url": "type.googleapis.com/protocol.TransferContract"
+              },
+              "type": "TransferContract"
+            }
+          ],
+          "ref_block_bytes": "8bba",
+          "ref_block_hash": "853fa65befd5e563",
+          "expiration": 1793700357000,
+          "timestamp": 1793699757000
+        },
+        "signature": [
+          "2363aa39b5e464ff0b4cb4c716ed50dc3f99f0ce58dbf1342cf080eb92fb7fc92136d9600556ed842f4c7c8804638d93183f8f64dc119dd56e9d476f1cb346e81C"
+        ]
+      },
+      "before": {
+        "observedAt": "2026-11-03T09:55:55.943Z",
+        "addresses": {
+          "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+        },
+        "user": {
+          "account": {
+            "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+            "net_usage": 237,
+            "create_time": 1793688393000,
+            "latest_opration_time": 1793696457000,
+            "free_net_usage": 331,
+            "latest_consume_time": 1793690349000,
+            "latest_consume_free_time": 1793696457000,
+            "net_window_size": 25665000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793696457000,
+              "energy_window_size": 28800000,
+              "acquired_delegated_frozenV2_balance_for_energy": 1000000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {},
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 331,
+            "freeNetLimit": 600,
+            "NetUsed": 237,
+            "NetLimit": 315,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "EnergyLimit": 73,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "sponsor": {
+          "account": {
+            "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+            "balance": 15400900,
+            "net_usage": 243,
+            "create_time": 1793687931000,
+            "latest_opration_time": 1793699397000,
+            "free_net_usage": 562,
+            "latest_consume_time": 1793689185000,
+            "latest_consume_free_time": 1793699250000,
+            "net_window_size": 25276000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793699250000,
+              "energy_window_size": 28800000,
+              "delegated_frozenV2_balance_for_energy": 1000000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {
+                "amount": 480000000
+              },
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 562,
+            "freeNetLimit": 600,
+            "NetUsed": 243,
+            "NetLimit": 302,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "tronPowerLimit": 981,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "delegation": {
+          "delegatedResource": [
+            {
+              "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "frozen_balance_for_bandwidth": 500000000,
+              "frozen_balance_for_energy": 1000000
+            }
+          ]
+        }
+      },
+      "status": "solidified",
+      "broadcast": {
+        "result": true,
+        "txid": "3753f3069de83a7f2fda348877ddf978a0050e5825b9e7d04d1b7d8078002da1"
+      },
+      "info": {
+        "id": "3753f3069de83a7f2fda348877ddf978a0050e5825b9e7d04d1b7d8078002da1",
+        "fee": 267000,
+        "blockNumber": 72387516,
+        "blockTimeStamp": 1793699763000,
+        "contractResult": [
+          ""
+        ],
+        "receipt": {
+          "net_fee": 267000
+        }
+      },
+      "transaction": {
+        "raw_data": {
+          "ref_block_bytes": "8bba",
+          "ref_block_hash": "853fa65befd5e563",
+          "expiration": 1793700357000,
+          "contract": [
+            {
+              "parameter": {
+                "value": {
+                  "owner_address": "41913e6da20b97589625ae499b6eb17941e5938405",
+                  "to_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                  "amount": 278000
+                },
+                "type_url": "type.googleapis.com/protocol.TransferContract"
+              },
+              "type": "TransferContract"
+            }
+          ],
+          "timestamp": 1793699757000
+        },
+        "signature": [
+          "2363aa39b5e464ff0b4cb4c716ed50dc3f99f0ce58dbf1342cf080eb92fb7fc92136d9600556ed842f4c7c8804638d93183f8f64dc119dd56e9d476f1cb346e81c"
+        ],
+        "ret": [
+          {
+            "contractRet": "SUCCESS"
+          }
+        ],
+        "raw_data_hex": "0a028bba2208853fa65befd5e5634088c7fd869a345a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541913e6da20b97589625ae499b6eb17941e59384051215412461517cf642358c8c0650b2cbccee4c31e16d7d18f0fb1070c8f7d8869a34",
+        "txID": "3753f3069de83a7f2fda348877ddf978a0050e5825b9e7d04d1b7d8078002da1"
+      },
+      "after": {
+        "observedAt": "2026-11-03T09:56:59.433Z",
+        "addresses": {
+          "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+        },
+        "user": {
+          "account": {
+            "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+            "balance": 278000,
+            "net_usage": 236,
+            "create_time": 1793688393000,
+            "latest_opration_time": 1793696457000,
+            "free_net_usage": 331,
+            "latest_consume_time": 1793690349000,
+            "latest_consume_free_time": 1793696457000,
+            "net_window_size": 25644000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793696457000,
+              "energy_window_size": 28800000,
+              "acquired_delegated_frozenV2_balance_for_energy": 1000000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {},
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 331,
+            "freeNetLimit": 600,
+            "NetUsed": 236,
+            "NetLimit": 315,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "EnergyLimit": 73,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "sponsor": {
+          "account": {
+            "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+            "balance": 14855900,
+            "net_usage": 242,
+            "create_time": 1793687931000,
+            "latest_opration_time": 1793699760000,
+            "free_net_usage": 562,
+            "latest_consume_time": 1793689185000,
+            "latest_consume_free_time": 1793699250000,
+            "net_window_size": 25255000,
+            "net_window_optimized": true,
+            "account_resource": {
+              "latest_consume_time_for_energy": 1793699250000,
+              "energy_window_size": 28800000,
+              "delegated_frozenV2_balance_for_energy": 1000000,
+              "energy_window_optimized": true
+            },
+            "owner_permission": {
+              "permission_name": "owner",
+              "threshold": 1,
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            },
+            "active_permission": [
+              {
+                "type": "Active",
+                "id": 2,
+                "permission_name": "active",
+                "threshold": 1,
+                "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+                "keys": [
+                  {
+                    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                    "weight": 1
+                  }
+                ]
+              }
+            ],
+            "frozenV2": [
+              {
+                "amount": 480000000
+              },
+              {
+                "type": "ENERGY"
+              },
+              {
+                "type": "TRON_POWER"
+              }
+            ],
+            "delegated_frozenV2_balance_for_bandwidth": 500000000,
+            "assetV2": [
+              {
+                "key": "1007445",
+                "value": 1000000
+              }
+            ],
+            "free_asset_net_usageV2": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "asset_optimized": true
+          },
+          "resources": {
+            "freeNetUsed": 562,
+            "freeNetLimit": 600,
+            "NetUsed": 242,
+            "NetLimit": 302,
+            "assetNetUsed": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "assetNetLimit": [
+              {
+                "key": "1007445",
+                "value": 0
+              }
+            ],
+            "TotalNetLimit": 43200000000,
+            "TotalNetWeight": 68453576909,
+            "tronPowerLimit": 981,
+            "TotalEnergyLimit": 180000000000,
+            "TotalEnergyWeight": 2449914212
+          }
+        },
+        "delegation": {
+          "delegatedResource": [
+            {
+              "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "frozen_balance_for_bandwidth": 500000000,
+              "frozen_balance_for_energy": 1000000
+            }
+          ]
+        }
+      }
+    }
+  },
+  "call": {
+    "signed": {
+      "visible": false,
+      "txID": "1f93c494a52ed122fcfd262129335bfd08d39ab9e5ebcda46d03729d48e27454",
+      "raw_data_hex": "0a028bb02208d717e0ae8cf9225e40d8fbc4879a345a6d081f12690a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412340a15412461517cf642358c8c0650b2cbccee4c31e16d7d12154164baacc0d23e84fad8afe39e7785b0da56c75d672204b74af5a970988dd7869a349001c0843d",
+      "raw_data": {
+        "contract": [
+          {
+            "parameter": {
+              "value": {
+                "data": "b74af5a9",
+                "owner_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                "contract_address": "4164baacc0d23e84fad8afe39e7785b0da56c75d67"
+              },
+              "type_url": "type.googleapis.com/protocol.TriggerSmartContract"
+            },
+            "type": "TriggerSmartContract"
+          }
+        ],
+        "ref_block_bytes": "8bb0",
+        "ref_block_hash": "d717e0ae8cf9225e",
+        "expiration": 1793701527000,
+        "timestamp": 1793699727000,
+        "fee_limit": 1000000
+      },
+      "signature": [
+        "6426b0927c3a9a97bbd44e8498f3e023d9a01fd7be3ce0146722e4b381c8fe6a7e757f31add0bdd607395fd2d3172ae1fbc40514079e8c08decc5b57748487971C"
+      ]
+    },
+    "signature": {
+      "signatureVerified": true,
+      "bandwidthEstimate": 278
+    },
+    "before": {
+      "observedAt": "2026-11-03T09:58:12.288Z",
+      "addresses": {
+        "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+        "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+      },
+      "user": {
+        "account": {
+          "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "balance": 278000,
+          "net_usage": 236,
+          "create_time": 1793688393000,
+          "latest_opration_time": 1793696457000,
+          "free_net_usage": 331,
+          "latest_consume_time": 1793690349000,
+          "latest_consume_free_time": 1793696457000,
+          "net_window_size": 25619000,
+          "net_window_optimized": true,
+          "account_resource": {
+            "latest_consume_time_for_energy": 1793696457000,
+            "energy_window_size": 28800000,
+            "acquired_delegated_frozenV2_balance_for_energy": 1000000,
+            "energy_window_optimized": true
+          },
+          "owner_permission": {
+            "permission_name": "owner",
+            "threshold": 1,
+            "keys": [
+              {
+                "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                "weight": 1
+              }
+            ]
+          },
+          "active_permission": [
+            {
+              "type": "Active",
+              "id": 2,
+              "permission_name": "active",
+              "threshold": 1,
+              "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            }
+          ],
+          "frozenV2": [
+            {},
+            {
+              "type": "ENERGY"
+            },
+            {
+              "type": "TRON_POWER"
+            }
+          ],
+          "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+          "assetV2": [
+            {
+              "key": "1007445",
+              "value": 1000000
+            }
+          ],
+          "free_asset_net_usageV2": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "asset_optimized": true
+        },
+        "resources": {
+          "freeNetUsed": 331,
+          "freeNetLimit": 600,
+          "NetUsed": 236,
+          "NetLimit": 315,
+          "assetNetUsed": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "assetNetLimit": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "TotalNetLimit": 43200000000,
+          "TotalNetWeight": 68453576909,
+          "EnergyLimit": 73,
+          "TotalEnergyLimit": 180000000000,
+          "TotalEnergyWeight": 2449914212
+        }
+      },
+      "sponsor": {
+        "account": {
+          "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+          "balance": 14855900,
+          "net_usage": 242,
+          "create_time": 1793687931000,
+          "latest_opration_time": 1793699760000,
+          "free_net_usage": 561,
+          "latest_consume_time": 1793689185000,
+          "latest_consume_free_time": 1793699250000,
+          "net_window_size": 25231000,
+          "net_window_optimized": true,
+          "account_resource": {
+            "latest_consume_time_for_energy": 1793699250000,
+            "energy_window_size": 28800000,
+            "delegated_frozenV2_balance_for_energy": 1000000,
+            "energy_window_optimized": true
+          },
+          "owner_permission": {
+            "permission_name": "owner",
+            "threshold": 1,
+            "keys": [
+              {
+                "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                "weight": 1
+              }
+            ]
+          },
+          "active_permission": [
+            {
+              "type": "Active",
+              "id": 2,
+              "permission_name": "active",
+              "threshold": 1,
+              "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            }
+          ],
+          "frozenV2": [
+            {
+              "amount": 480000000
+            },
+            {
+              "type": "ENERGY"
+            },
+            {
+              "type": "TRON_POWER"
+            }
+          ],
+          "delegated_frozenV2_balance_for_bandwidth": 500000000,
+          "assetV2": [
+            {
+              "key": "1007445",
+              "value": 1000000
+            }
+          ],
+          "free_asset_net_usageV2": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "asset_optimized": true
+        },
+        "resources": {
+          "freeNetUsed": 561,
+          "freeNetLimit": 600,
+          "NetUsed": 242,
+          "NetLimit": 302,
+          "assetNetUsed": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "assetNetLimit": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "TotalNetLimit": 43200000000,
+          "TotalNetWeight": 68453576909,
+          "tronPowerLimit": 981,
+          "TotalEnergyLimit": 180000000000,
+          "TotalEnergyWeight": 2449914212
+        }
+      },
+      "delegation": {
+        "delegatedResource": [
+          {
+            "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+            "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+            "frozen_balance_for_bandwidth": 500000000,
+            "frozen_balance_for_energy": 1000000
+          }
+        ]
+      }
+    },
+    "status": "solidified",
+    "broadcast": {
+      "result": true,
+      "txid": "1f93c494a52ed122fcfd262129335bfd08d39ab9e5ebcda46d03729d48e27454"
+    },
+    "info": {
+      "id": "1f93c494a52ed122fcfd262129335bfd08d39ab9e5ebcda46d03729d48e27454",
+      "fee": 278000,
+      "blockNumber": 72387562,
+      "blockTimeStamp": 1793699901000,
+      "contractResult": [
+        "0000000000000000000000000000000000000000000000000000000000000001"
+      ],
+      "contract_address": "4164baacc0d23e84fad8afe39e7785b0da56c75d67",
+      "receipt": {
+        "energy_usage": 16,
+        "energy_usage_total": 16,
+        "net_fee": 278000,
+        "result": "SUCCESS"
+      }
+    },
+    "transaction": {
+      "raw_data": {
+        "ref_block_bytes": "8bb0",
+        "ref_block_hash": "d717e0ae8cf9225e",
+        "expiration": 1793701527000,
+        "contract": [
+          {
+            "parameter": {
+              "value": {
+                "owner_address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+                "contract_address": "4164baacc0d23e84fad8afe39e7785b0da56c75d67",
+                "data": "b74af5a9"
+              },
+              "type_url": "type.googleapis.com/protocol.TriggerSmartContract"
+            },
+            "type": "TriggerSmartContract"
+          }
+        ],
+        "timestamp": 1793699727000,
+        "fee_limit": 1000000
+      },
+      "signature": [
+        "6426b0927c3a9a97bbd44e8498f3e023d9a01fd7be3ce0146722e4b381c8fe6a7e757f31add0bdd607395fd2d3172ae1fbc40514079e8c08decc5b57748487971c"
+      ],
+      "ret": [
+        {
+          "contractRet": "SUCCESS"
+        }
+      ],
+      "raw_data_hex": "0a028bb02208d717e0ae8cf9225e40d8fbc4879a345a6d081f12690a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412340a15412461517cf642358c8c0650b2cbccee4c31e16d7d12154164baacc0d23e84fad8afe39e7785b0da56c75d672204b74af5a970988dd7869a349001c0843d",
+      "txID": "1f93c494a52ed122fcfd262129335bfd08d39ab9e5ebcda46d03729d48e27454"
+    },
+    "after": {
+      "observedAt": "2026-11-03T09:59:18.683Z",
+      "addresses": {
+        "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+        "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+      },
+      "user": {
+        "account": {
+          "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "net_usage": 236,
+          "create_time": 1793688393000,
+          "latest_opration_time": 1793699898000,
+          "free_net_usage": 331,
+          "latest_consume_time": 1793690349000,
+          "latest_consume_free_time": 1793696457000,
+          "net_window_size": 25597000,
+          "net_window_optimized": true,
+          "account_resource": {
+            "energy_usage": 16,
+            "latest_consume_time_for_energy": 1793699898000,
+            "energy_window_size": 28780000,
+            "acquired_delegated_frozenV2_balance_for_energy": 1000000,
+            "energy_window_optimized": true
+          },
+          "owner_permission": {
+            "permission_name": "owner",
+            "threshold": 1,
+            "keys": [
+              {
+                "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                "weight": 1
+              }
+            ]
+          },
+          "active_permission": [
+            {
+              "type": "Active",
+              "id": 2,
+              "permission_name": "active",
+              "threshold": 1,
+              "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+              "keys": [
+                {
+                  "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+                  "weight": 1
+                }
+              ]
+            }
+          ],
+          "frozenV2": [
+            {},
+            {
+              "type": "ENERGY"
+            },
+            {
+              "type": "TRON_POWER"
+            }
+          ],
+          "acquired_delegated_frozenV2_balance_for_bandwidth": 500000000,
+          "assetV2": [
+            {
+              "key": "1007445",
+              "value": 1000000
+            }
+          ],
+          "free_asset_net_usageV2": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "asset_optimized": true
+        },
+        "resources": {
+          "freeNetUsed": 331,
+          "freeNetLimit": 600,
+          "NetUsed": 236,
+          "NetLimit": 315,
+          "assetNetUsed": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "assetNetLimit": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "TotalNetLimit": 43200000000,
+          "TotalNetWeight": 68453576909,
+          "EnergyUsed": 16,
+          "EnergyLimit": 73,
+          "TotalEnergyLimit": 180000000000,
+          "TotalEnergyWeight": 2449914212
+        }
+      },
+      "sponsor": {
+        "account": {
+          "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+          "balance": 14855900,
+          "net_usage": 242,
+          "create_time": 1793687931000,
+          "latest_opration_time": 1793699898000,
+          "free_net_usage": 561,
+          "latest_consume_time": 1793689185000,
+          "latest_consume_free_time": 1793699250000,
+          "net_window_size": 25209000,
+          "net_window_optimized": true,
+          "account_resource": {
+            "latest_consume_time_for_energy": 1793699898000,
+            "energy_window_size": 28800000,
+            "delegated_frozenV2_balance_for_energy": 1000000,
+            "energy_window_optimized": true
+          },
+          "owner_permission": {
+            "permission_name": "owner",
+            "threshold": 1,
+            "keys": [
+              {
+                "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                "weight": 1
+              }
+            ]
+          },
+          "active_permission": [
+            {
+              "type": "Active",
+              "id": 2,
+              "permission_name": "active",
+              "threshold": 1,
+              "operations": "7fff1fc0033efb0f000000000000000000000000000000000000000000000000",
+              "keys": [
+                {
+                  "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+                  "weight": 1
+                }
+              ]
+            }
+          ],
+          "frozenV2": [
+            {
+              "amount": 480000000
+            },
+            {
+              "type": "ENERGY"
+            },
+            {
+              "type": "TRON_POWER"
+            }
+          ],
+          "delegated_frozenV2_balance_for_bandwidth": 500000000,
+          "assetV2": [
+            {
+              "key": "1007445",
+              "value": 1000000
+            }
+          ],
+          "free_asset_net_usageV2": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "asset_optimized": true
+        },
+        "resources": {
+          "freeNetUsed": 561,
+          "freeNetLimit": 600,
+          "NetUsed": 242,
+          "NetLimit": 302,
+          "assetNetUsed": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "assetNetLimit": [
+            {
+              "key": "1007445",
+              "value": 0
+            }
+          ],
+          "TotalNetLimit": 43200000000,
+          "TotalNetWeight": 68453576909,
+          "tronPowerLimit": 981,
+          "TotalEnergyLimit": 180000000000,
+          "TotalEnergyWeight": 2449914212
+        }
+      },
+      "delegation": {
+        "delegatedResource": [
+          {
+            "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+            "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+            "frozen_balance_for_bandwidth": 500000000,
+            "frozen_balance_for_energy": 1000000
+          }
+        ]
+      }
+    },
+    "checks": {
+      "platformDelegatedEnergyUsed": 16,
+      "originEnergyUsed": 0,
+      "energyBurnedSun": 0,
+      "bandwidthBurnedSun": 278000,
+      "bandwidthFunding": "platform pre-funded test TRX; not delegated bandwidth",
+      "assetTransfer": false
+    }
+  },
+  "scope": "Energy mechanism only; no token transfer and no USDT fee sizing claim"
+}

@@ -8,12 +8,15 @@ import { chromium } from 'playwright';
 import { post } from './rpc.mjs';
 import { ENDPOINT, checkTransfer, verifyWalletSignature } from './tron-live-core.mjs';
 import { USDT, AMOUNT_UNITS, checkTransfer as checkUSDTTransfer, verifySignature as verifyUSDTSignature } from './tron-usdt-core.mjs';
+import { checkCall, verifySignature as verifyEnergySignature } from './tron-energy-core.mjs';
 
 const mode = process.argv[2] ?? '--inspect';
 const asset = process.argv[3] ?? 'trx';
-assert(process.argv.length <= 4 && ['--inspect', '--sign', '--sign-metadata'].includes(mode) && ['trx', 'usdt'].includes(asset));
+assert(process.argv.length <= 4 && ['--inspect', '--sign', '--sign-metadata'].includes(mode) && ['trx', 'usdt', 'energy'].includes(asset));
 assert(mode !== '--sign-metadata' || asset === 'usdt', 'Metadata inspection is limited to this known Nile USDT probe');
-const probe = asset === 'usdt' ? { prefix: 'tron-usdt', amount: '0.01 USDT', check: checkUSDTTransfer, verify: verifyUSDTSignature }
+const probe = asset === 'energy' ? { prefix: 'tron-energy', amount: 'Energy resource probe; no token transfer',
+  check: tx => checkCall(tx, state.addresses, state.contractAddress), verify: (_order, tx, now) => verifyEnergySignature(state, tx, now) }
+  : asset === 'usdt' ? { prefix: 'tron-usdt', amount: '0.01 USDT', check: checkUSDTTransfer, verify: verifyUSDTSignature }
   : { prefix: 'tron-live', amount: '0.001 TRX', check: checkTransfer, verify: verifyWalletSignature };
 const root = fileURLToPath(new URL('../../.tools/payment-feasibility/', import.meta.url));
 const extension = `${root}/tronlink-extension`;
@@ -24,7 +27,7 @@ const evidence = { observedAt: new Date().toISOString(), mode, asset, walletVers
 const prefix = `${root}/tronlink-${asset}-${mode.slice(2)}-${new Date().toISOString().replaceAll(':', '-')}`;
 const query = (method, body) => post(`${ENDPOINT}/wallet/${method}`, body, { direct: true });
 if (mode !== '--inspect') {
-  assert(state.order && !state.payment, 'Inspect the existing payment before requesting another signature');
+  assert(state.order && !state.payment && !state.call, 'Inspect the existing payment before requesting another signature');
   probe.check(state.order.unsigned, state.addresses);
   assert(Date.now() < state.order.unsigned.raw_data.expiration, 'Prepared transaction has expired');
 }
@@ -33,14 +36,16 @@ const server = createServer((req, res) => {
     res.writeHead(404); res.end(); return;
   }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-  res.end(`<!doctype html><title>TRON Nile signing probe</title><h1>Dedicated Nile test</h1><p>${probe.amount} to the platform test address. Wallet signs only; backend validates and broadcasts separately.</p>`);
+  const intent = asset === 'energy' ? 'Call the dedicated Energy test contract; no token transfer.' : `${probe.amount} to the platform test address.`;
+  res.end(`<!doctype html><title>TRON Nile signing probe</title><h1>Dedicated Nile test</h1><p>${intent} Wallet signs only; backend validates and broadcasts separately.</p>`);
 });
 await new Promise((resolve, reject) => { server.once('error', reject); server.listen(18795, '127.0.0.1', resolve); });
 let context;
 try {
   context = await chromium.launchPersistentContext(`${root}/tronlink-profile`, {
     channel: 'chromium', headless: true, locale: 'en-US', viewport: { width: 900, height: 800 },
-    proxy: { server: 'http://127.0.0.1:7890', bypass: '127.0.0.1,localhost,nile.trongrid.io,api.nileex.io,nileapi.tronscan.org,niletest.tronlink.org' },
+    // Nile RPC is reachable directly; the wallet's cloud API needs the local proxy.
+    proxy: { server: 'http://127.0.0.1:7890', bypass: '127.0.0.1,localhost,nile.trongrid.io,api.nileex.io' },
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
   });
   context.setDefaultTimeout(15000);
@@ -49,10 +54,19 @@ try {
     const url = new URL(request.url());
     evidence.networkFailures.push({ endpoint: url.origin + url.pathname, error: request.failure()?.errorText });
   });
-  context.on('response', response => {
+  context.on('response', async response => {
     if (response.status() >= 400) {
       const url = new URL(response.url());
       evidence.networkFailures.push({ endpoint: url.origin + url.pathname, status: response.status() });
+    }
+    // TronLink can return HTTP 200 with an application authentication error.
+    // Save diagnostics only, never its request authentication headers.
+    if (new URL(response.url()).hostname === 'niletest.tronlink.org') {
+      try {
+        const body = await response.json();
+        if (body.code === 4000) evidence.networkFailures.push({ endpoint: new URL(response.url()).pathname,
+          status: response.status(), code: body.code, message: body.message });
+      } catch { /* Response may be unavailable while the dedicated browser closes. */ }
     }
   });
   const worker = context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker');
@@ -92,6 +106,7 @@ try {
       }
       assert(notice, 'No original wallet signature popup');
       await notice.getByText('Sign', { exact: true }).waitFor();
+      if (asset === 'energy') await notice.getByText('Metadata', { exact: true }).waitFor();
       if (asset === 'usdt') {
         try { await notice.waitForFunction(amount => document.body.innerText.replace(/\s+/g, ' ').includes(amount), probe.amount, { timeout: 20000 }); }
         catch { evidence.amountPreviewTimedOut = true; }
@@ -99,13 +114,18 @@ try {
       const preview = (await notice.locator('body').innerText()).replace(/\s+/g, ' ');
       evidence.preview = preview;
       await notice.screenshot({ path: `${prefix}-${decision.toLowerCase()}.png` });
-      if (asset === 'usdt' && !preview.includes(probe.amount)) {
+      if (asset === 'energy' || (asset === 'usdt' && !preview.includes(probe.amount))) {
         await notice.getByText('Metadata', { exact: true }).click();
         evidence.metadataPreview = await notice.locator('body').innerText();
         await notice.screenshot({ path: `${prefix}-metadata.png` });
       }
-      for (const expected of ['TRON Nile Testnet', state.addresses.user, state.addresses.sponsor]) assert(preview.includes(expected), `Missing wallet preview: ${expected}`);
-      if (mode === '--sign-metadata' && !preview.includes(probe.amount)) {
+      const expectedPreview = asset === 'energy' ? ['TRON Nile Testnet', state.contractAddress, 'No expected asset change']
+        : ['TRON Nile Testnet', state.addresses.user, state.addresses.sponsor];
+      for (const expected of expectedPreview) assert(preview.includes(expected), `Missing wallet preview: ${expected}`);
+      if (asset === 'energy') {
+        assert(evidence.metadataPreview.includes('probe()'));
+        assert(evidence.metadataPreview.includes(state.order.unsigned.raw_data_hex), 'Wallet metadata differs from prepared bytes');
+      } else if (mode === '--sign-metadata' && !preview.includes(probe.amount)) {
         assert(preview.includes('Token precision error') && preview.includes(USDT));
         const metadata = evidence.metadataPreview;
         assert(metadata.includes('transfer(address,uint256)') && metadata.includes(state.addresses.sponsor));

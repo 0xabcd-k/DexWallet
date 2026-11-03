@@ -1,0 +1,150 @@
+{
+  "observedAt": "2026-11-03T09:56:47.435Z",
+  "responses": [
+    {
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/search",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/wallet/v2/search",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    },
+    {
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb",
+      "status": 200,
+      "body": {
+        "code": 4000,
+        "message": "Authentication failed.",
+        "data": null
+      }
+    }
+  ],
+  "preview": "127.0.0.1 is requesting\nNile Test\nTRON Nile Testnet\nSend\n10,000 undefined\n\nToken precision error. Data is calculated based on 0 as the token precision. Please verify before proceeding.\n\nDetails\nMetadata\nFrom\nTDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio\nNile Test\nTo\nTPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH\nContract Called\nTXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf\nUser Consumption (Est.)\n\nView Total Consumptions\n\nReject\nSign"
+}

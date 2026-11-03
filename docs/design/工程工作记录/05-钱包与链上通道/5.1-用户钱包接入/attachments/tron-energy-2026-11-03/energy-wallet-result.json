@@ -1,0 +1,290 @@
+{
+  "observedAt": "2026-11-03T09:57:41.651Z",
+  "mode": "--sign",
+  "asset": "energy",
+  "walletVersion": "4.11.2",
+  "addresses": {
+    "user": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "sponsor": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
+  },
+  "networkFailures": [
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/banners",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/approve/list",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/assetList",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/transaction/blacklist",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/queryAbi",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/search",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/transaction/blacklist",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/queryAbi",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/search",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/transaction/ruleset",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/transaction/ruleset",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/ga",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/ga",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/banners",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/approve/list",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/assetList",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/queryAbi",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/transaction/blacklist",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/search",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/transaction/blacklist",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/queryAbi",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/search",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/transaction/ruleset",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/transaction/ruleset",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/ga",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/ga",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/ga",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/dapp/v2/dapp",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/tronweb",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/web/v1/banners",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/approve/list",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    },
+    {
+      "endpoint": "/api/wallet/v2/assetList",
+      "status": 200,
+      "code": 4000,
+      "message": "Authentication failed."
+    }
+  ],
+  "accounts": [
+    "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio"
+  ],
+  "network": {
+    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "fullNode": "https://nile.trongrid.io",
+    "solidityNode": "https://nile.trongrid.io"
+  },
+  "txID": "1f93c494a52ed122fcfd262129335bfd08d39ab9e5ebcda46d03729d48e27454",
+  "preview": "127.0.0.1 is requesting Nile Test TRON Nile Testnet Trigger Smart Contract Preview No expected asset change Details Metadata Contract Called TK9pCdpqppcJinuCky3TEpYgodj7ksvbXa User Consumption (Est.) Resources 16 Energy View Total Consumptions Reject Sign",
+  "metadataPreview": "127.0.0.1 is requesting\nNile Test\nTRON Nile Testnet\nTrigger Smart Contract\nPreview\nNo expected asset change\nDetails\nMetadata\nContract method\nprobe()\nHex Data\n0a028bb02208d717e0ae8cf9225e40d8fbc4879a345a6d081f12690a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412340a15412461517cf642358c8c0650b2cbccee4c31e16d7d12154164baacc0d23e84fad8afe39e7785b0da56c75d672204b74af5a970988dd7869a349001c0843d\nReject\nSign",
+  "rejection": {
+    "ok": false,
+    "error": "Confirmation declined by user"
+  },
+  "signature": {
+    "signatureVerified": true,
+    "bandwidthEstimate": 278
+  },
+  "signedNotBroadcast": true
+}

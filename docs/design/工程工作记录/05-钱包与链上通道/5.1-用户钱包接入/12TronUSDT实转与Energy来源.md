@@ -97,3 +97,5 @@ git diff --check
 钱包探针默认仍为 TRX，新增显式 usdt 参数及对应校验器。13 项新行为测试和 10 项原 TRX 测试通过；真实实转、固化、重放、重复 submit、只读 audit、JS 语法、文档和差异检查通过。原始失败与最终证据分别保留。当前结论是“真实钱包到后端的 USDT 转账可执行”，平台 Energy 代付和钱包金额展示仍需完成。
 
 修改后还实际执行默认 TRX 的 `--inspect`，重启钱包、解锁、连接和 Nile 地址核对通过，见[回归读取](attachments/tron-usdt-2026-11-03/tronlink-trx-regression-inspect.json)。
+
+后续进展见 [精度诊断与 Energy 委托验证](13TronLink精度诊断与Energy委托验证.md)：平台 Energy 委托已在独立无资产调用中实际消耗，未改写本记录的 USDT 费用来源。钱包 API 鉴权错误已获得响应证据，金额显示仍待解决。

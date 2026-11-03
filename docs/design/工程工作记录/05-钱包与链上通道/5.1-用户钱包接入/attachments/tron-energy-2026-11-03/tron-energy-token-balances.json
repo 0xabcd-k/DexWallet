@@ -1,0 +1,13 @@
+{
+  "observedAt": "2026-11-03T09:59:54.643Z",
+  "token": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+  "decimals": 6,
+  "user": {
+    "address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "units": "999990000"
+  },
+  "sponsor": {
+    "address": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+    "units": "10000"
+  }
+}

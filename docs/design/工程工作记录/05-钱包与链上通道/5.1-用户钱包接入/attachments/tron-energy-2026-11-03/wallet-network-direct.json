@@ -1,0 +1,946 @@
+{
+  "observedAt": "2026-11-03T09:41:31.139Z",
+  "home": [
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.119",
+      "url": "https://niletest.tronlink.org/api/wallet/v2/approve/list"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.120",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "body": "{\"address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.120",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.121",
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.122",
+      "url": "https://niletest.tronlink.org/api/wallet/v2/approve/list"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.191",
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.208",
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.217",
+      "url": "https://niletest.tronlink.org/api/web/v1/banners"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.218",
+      "url": "https://niletest.tronlink.org/api/wallet/v2/approve/list"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.220",
+      "url": "https://niletest.tronlink.org/api/wallet/v2/assetList"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.259",
+      "url": "https://niletest.tronlink.org/api/transfer/account"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.260",
+      "url": "https://niletest.tronlink.org/api/wallet/gasFree/check"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.261",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "body": "{\"address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\"}"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.262",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "body": "{\"address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\"}"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.291",
+      "url": "https://niletest.tronlink.org/api/transfer/account"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.292",
+      "url": "https://niletest.tronlink.org/api/wallet/gasFree/check"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.300",
+      "url": "https://niletest.tronlink.org/api/wallet/v2/search"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.261",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.319",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "body": "{\"address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.262",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.320",
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.319",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.325",
+      "url": "https://list.tronlink.org/api/wallet/eth/nodes"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.326",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "body": "{\"address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.326",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "status": 200
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.325",
+      "url": "https://list.tronlink.org/api/wallet/eth/nodes",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.334",
+      "url": "https://niletest.tronlink.org/api/transfer/account"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.335",
+      "url": "https://niletest.tronlink.org/api/wallet/gasFree/check"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.338",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "body": "{\"address\":\"41913e6da20b97589625ae499b6eb17941e5938405\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.338",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.344",
+      "url": "https://nile.trongrid.io/wallet/triggerconstantcontract",
+      "body": "{\"data\":\"a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e59384050000000000000000000000000000000000000000000000000000000000002710\",\"owner_address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\",\"contract_address\":\"41eca9bc828a3005b9a3b909f2cc5c2a54794de05f\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.344",
+      "url": "https://nile.trongrid.io/wallet/triggerconstantcontract",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.346",
+      "url": "https://nile.trongrid.io/wallet/getcontract",
+      "body": "{\"value\":\"41eca9bc828a3005b9a3b909f2cc5c2a54794de05f\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.346",
+      "url": "https://nile.trongrid.io/wallet/getcontract",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.349",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "body": "{\"address\":\"4165fa68800fff5a10346d1a3aa1fb2ce92f2e2971\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.349",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "status": 200
+    }
+  ],
+  "sign": [
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.308",
+      "url": "https://niletest.tronlink.org/api/transfer/account"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.309",
+      "url": "https://niletest.tronlink.org/api/wallet/gasFree/check"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.310",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "body": "{\"address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\"}"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.311",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "body": "{\"address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\"}"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.315",
+      "url": "https://niletest.tronlink.org/api/transfer/account"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.316",
+      "url": "https://niletest.tronlink.org/api/wallet/gasFree/check"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.321",
+      "url": "https://niletest.tronlink.org/api/wallet/v2/search"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.310",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.322",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "body": "{\"address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.311",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.323",
+      "url": "https://niletest.tronlink.org/api/web/v1/tronweb"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.322",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.341",
+      "url": "https://niletest.tronlink.org/api/transfer/account"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.342",
+      "url": "https://niletest.tronlink.org/api/wallet/gasFree/check"
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.343",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "body": "{\"address\":\"41913e6da20b97589625ae499b6eb17941e5938405\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.343",
+      "url": "https://nile.trongrid.io/wallet/getaccount",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.345",
+      "url": "https://nile.trongrid.io/wallet/triggerconstantcontract",
+      "body": "{\"data\":\"a9059cbb000000000000000000000000913e6da20b97589625ae499b6eb17941e59384050000000000000000000000000000000000000000000000000000000000002710\",\"owner_address\":\"412461517cf642358c8c0650b2cbccee4c31e16d7d\",\"contract_address\":\"41eca9bc828a3005b9a3b909f2cc5c2a54794de05f\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.345",
+      "url": "https://nile.trongrid.io/wallet/triggerconstantcontract",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.347",
+      "url": "https://nile.trongrid.io/wallet/getcontract",
+      "body": "{\"value\":\"41eca9bc828a3005b9a3b909f2cc5c2a54794de05f\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.347",
+      "url": "https://nile.trongrid.io/wallet/getcontract",
+      "status": 200
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "id": "231623.350",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "body": "{\"address\":\"4165fa68800fff5a10346d1a3aa1fb2ce92f2e2971\"}"
+    },
+    {
+      "method": "Network.responseReceived",
+      "id": "231623.350",
+      "url": "https://nile.trongrid.io/wallet/getaccountresource",
+      "status": 200
+    }
+  ],
+  "text": "127.0.0.1 is requesting\nNile Test\nTRON Nile Testnet\nSend\n10,000 undefined\n\nToken precision error. Data is calculated based on 0 as the token precision. Please verify before proceeding.\n\nDetails\nMetadata\nFrom\nTDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio\nNile Test\nTo\nTPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH\nContract Called\nTXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf\nUser Consumption (Est.)\n\nView Total Consumptions\n\nReject\nSign",
+  "contractABI": {
+    "entrys": [
+      {
+        "constant": true,
+        "name": "name",
+        "outputs": [
+          {
+            "type": "string"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "deprecate",
+        "inputs": [
+          {
+            "name": "_upgradedAddress",
+            "type": "address"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "name": "approve",
+        "inputs": [
+          {
+            "name": "_spender",
+            "type": "address"
+          },
+          {
+            "name": "_value",
+            "type": "uint256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "deprecated",
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "addBlackList",
+        "inputs": [
+          {
+            "name": "_evilUser",
+            "type": "address"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "totalSupply",
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "transferFrom",
+        "inputs": [
+          {
+            "name": "_from",
+            "type": "address"
+          },
+          {
+            "name": "_to",
+            "type": "address"
+          },
+          {
+            "name": "_value",
+            "type": "uint256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "upgradedAddress",
+        "outputs": [
+          {
+            "type": "address"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "constant": true,
+        "name": "decimals",
+        "outputs": [
+          {
+            "type": "uint8"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "constant": true,
+        "name": "maximumFee",
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "constant": true,
+        "name": "_totalSupply",
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "unpause",
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "getBlackListStatus",
+        "inputs": [
+          {
+            "name": "_maker",
+            "type": "address"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "constant": true,
+        "name": "paused",
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "decreaseApproval",
+        "inputs": [
+          {
+            "name": "_spender",
+            "type": "address"
+          },
+          {
+            "name": "_subtractedValue",
+            "type": "uint256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "balanceOf",
+        "inputs": [
+          {
+            "name": "who",
+            "type": "address"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "constant": true,
+        "name": "calcFee",
+        "inputs": [
+          {
+            "name": "_value",
+            "type": "uint256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "pause",
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "owner",
+        "outputs": [
+          {
+            "type": "address"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "constant": true,
+        "name": "symbol",
+        "outputs": [
+          {
+            "type": "string"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "transfer",
+        "inputs": [
+          {
+            "name": "_to",
+            "type": "address"
+          },
+          {
+            "name": "_value",
+            "type": "uint256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "oldBalanceOf",
+        "inputs": [
+          {
+            "name": "who",
+            "type": "address"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "setParams",
+        "inputs": [
+          {
+            "name": "newBasisPoints",
+            "type": "uint256"
+          },
+          {
+            "name": "newMaxFee",
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "name": "issue",
+        "inputs": [
+          {
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "name": "increaseApproval",
+        "inputs": [
+          {
+            "name": "_spender",
+            "type": "address"
+          },
+          {
+            "name": "_addedValue",
+            "type": "uint256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "name": "redeem",
+        "inputs": [
+          {
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "allowance",
+        "inputs": [
+          {
+            "name": "_owner",
+            "type": "address"
+          },
+          {
+            "name": "_spender",
+            "type": "address"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "remaining",
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "constant": true,
+        "name": "basisPointsRate",
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "constant": true,
+        "name": "isBlackListed",
+        "inputs": [
+          {
+            "type": "address"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "bool"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "removeBlackList",
+        "inputs": [
+          {
+            "name": "_clearedUser",
+            "type": "address"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "constant": true,
+        "name": "MAX_UINT",
+        "outputs": [
+          {
+            "type": "uint256"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "View"
+      },
+      {
+        "name": "transferOwnership",
+        "inputs": [
+          {
+            "name": "newOwner",
+            "type": "address"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "name": "destroyBlackFunds",
+        "inputs": [
+          {
+            "name": "_blackListedUser",
+            "type": "address"
+          }
+        ],
+        "type": "Function",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "inputs": [
+          {
+            "name": "_initialSupply",
+            "type": "uint256"
+          },
+          {
+            "name": "_name",
+            "type": "string"
+          },
+          {
+            "name": "_symbol",
+            "type": "string"
+          },
+          {
+            "name": "_decimals",
+            "type": "uint8"
+          }
+        ],
+        "type": "Constructor",
+        "stateMutability": "Nonpayable"
+      },
+      {
+        "name": "DestroyedBlackFunds",
+        "inputs": [
+          {
+            "indexed": true,
+            "name": "_blackListedUser",
+            "type": "address"
+          },
+          {
+            "name": "_balance",
+            "type": "uint256"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "Issue",
+        "inputs": [
+          {
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "Redeem",
+        "inputs": [
+          {
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "Deprecate",
+        "inputs": [
+          {
+            "name": "newAddress",
+            "type": "address"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "AddedBlackList",
+        "inputs": [
+          {
+            "indexed": true,
+            "name": "_user",
+            "type": "address"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "RemovedBlackList",
+        "inputs": [
+          {
+            "indexed": true,
+            "name": "_user",
+            "type": "address"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "Params",
+        "inputs": [
+          {
+            "name": "feeBasisPoints",
+            "type": "uint256"
+          },
+          {
+            "name": "maxFee",
+            "type": "uint256"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "Pause",
+        "type": "Event"
+      },
+      {
+        "name": "Unpause",
+        "type": "Event"
+      },
+      {
+        "name": "OwnershipTransferred",
+        "inputs": [
+          {
+            "indexed": true,
+            "name": "previousOwner",
+            "type": "address"
+          },
+          {
+            "indexed": true,
+            "name": "newOwner",
+            "type": "address"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "Approval",
+        "inputs": [
+          {
+            "indexed": true,
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "indexed": true,
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          }
+        ],
+        "type": "Event"
+      },
+      {
+        "name": "Transfer",
+        "inputs": [
+          {
+            "indexed": true,
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "indexed": true,
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          }
+        ],
+        "type": "Event"
+      }
+    ]
+  }
+}
