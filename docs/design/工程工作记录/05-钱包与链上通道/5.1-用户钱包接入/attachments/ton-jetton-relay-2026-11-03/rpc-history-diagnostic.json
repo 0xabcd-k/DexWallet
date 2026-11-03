@@ -1,0 +1,7 @@
+{
+  "observedAt": "2026-11-03T15:13:27.458Z",
+  "operation": "TONCenter v2 getTransactions for test jetton master, limit 10",
+  "status": 500,
+  "error": "LITE_SERVER_UNKNOWN: cannot compute block with specified transaction: cannot find block (0,f418a04cf196ebc9) lt=104917787000012: lt not in db",
+  "resolution": "Use V3 trace indexed by the confirmed root transaction; independently verify every message link, finality and balances."
+}

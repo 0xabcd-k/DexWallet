@@ -1,0 +1,525 @@
+{
+  "observedAt": "2026-11-03T15:11:59.703Z",
+  "mode": "payment",
+  "snapshot": {
+    "observedAt": "2026-11-03T15:11:18.984Z",
+    "master": "kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy",
+    "masterCodeHash": "GNW254D/C7RRJUwsdg0J1uSFY4zRQHq7lweHUsPBye4=",
+    "tokenCodeHash": "j0Utek39dAZraCNlF3JZ7QVzRDW+drX9S9XYryt8PWg=",
+    "totalSupply": "9817902425496",
+    "accounts": {
+      "platform": {
+        "address": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+        "publicKey": "bc12c0287c416d9cc04ecd49300386c06edf31d8bf8e411ff8f29e236bb95918",
+        "state": "active",
+        "seqno": 4,
+        "balance": "1955384278",
+        "lastTransaction": {
+          "lt": "107332237000010",
+          "hash": "2ZS2uh7AkbS3feOpePCcA946HMSHdmNEoYEDOVj/b/w="
+        },
+        "token": {
+          "address": "0:db0cadcf093b72ab1d5cdd0db6daec3be55fab0c6a0665a99cbdc561a81248a0",
+          "state": "active",
+          "status": 0,
+          "balance": "1000000",
+          "tonBalance": "974433",
+          "lastTransaction": {
+            "lt": "107332237000007",
+            "hash": "1Q8Nf02GkbCbiVHDcwa+SOAALlm7fmjCXR8ZACAlojA="
+          }
+        }
+      },
+      "user": {
+        "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+        "publicKey": "91a0d3523098850dc441f525f5fb22c8e25a7470a3888aada6868b093b37cb51",
+        "state": "active",
+        "seqno": 4,
+        "balance": "124560230",
+        "lastTransaction": {
+          "lt": "107332237000003",
+          "hash": "nbf1zRwDTGxKMgR37e02hM4oxKXJwMLQ46k7JCa6Od0="
+        },
+        "token": {
+          "address": "0:90a51a0fd3524a8db2fd03b66567fa3c4c6f5b2153df8340558a440e10e897c2",
+          "state": "active",
+          "status": 0,
+          "balance": "9000000",
+          "tonBalance": "974423",
+          "lastTransaction": {
+            "lt": "107332237000005",
+            "hash": "jyjhKpCR2hBOYqzlK7D8fr6sOvXjsanQ8axP6L14Pog="
+          }
+        }
+      }
+    }
+  },
+  "transactions": {
+    "platform": [
+      {
+        "hash": "d994b6ba1ec091b4b77de3a978f09c03de3a1cc487766344a181033958ff6ffc",
+        "lt": "107332237000010",
+        "now": 1793718538,
+        "oldStatus": "active",
+        "endStatus": "active",
+        "totalFees": "51868",
+        "description": {
+          "type": "generic",
+          "creditFirst": true,
+          "storagePhase": {
+            "storageFeesCollected": "0",
+            "statusChange": "unchanged"
+          },
+          "creditPhase": {
+            "credit": {
+              "coins": "46810895"
+            }
+          },
+          "computePhase": {
+            "type": "vm",
+            "success": true,
+            "messageStateUsed": false,
+            "accountActivated": false,
+            "gasFees": "51868",
+            "gasUsed": "778",
+            "gasLimit": "702163",
+            "mode": 0,
+            "exitCode": 0,
+            "vmSteps": 23,
+            "vmInitStateHash": "0",
+            "vmFinalStateHash": "0"
+          },
+          "actionPhase": {
+            "success": true,
+            "valid": true,
+            "noFunds": false,
+            "statusChange": "unchanged",
+            "resultCode": 0,
+            "totalActions": 0,
+            "specActions": 0,
+            "skippedActions": 0,
+            "messagesCreated": 0,
+            "actionListHash": "68134197439415885698044414435951397869210496020759160419881882418413283430343",
+            "totalMessageSize": {
+              "cells": "0",
+              "bits": "0"
+            }
+          },
+          "aborted": false,
+          "destroyed": false
+        },
+        "incoming": {
+          "type": "internal",
+          "source": "EQDbDK3PCTtyqx1c3Q222uw75V-rDGoGZamcvcVhqBJIoAe5",
+          "destination": "EQAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0KEm",
+          "value": "46810895",
+          "forwardFee": "44446",
+          "bounced": false,
+          "bodyHash": "c5db153dd08e4127ab8689054bcb291d4efc2ccfdb49d009595d50e521d85870",
+          "opcode": "0xd53276db",
+          "queryId": "2026110301"
+        },
+        "outgoing": []
+      },
+      {
+        "hash": "4d4736089e7289dc92e76747fb308dc2be68df20372320f595ca4435fd0133da",
+        "lt": "107332237000009",
+        "now": 1793718538,
+        "oldStatus": "active",
+        "endStatus": "active",
+        "totalFees": "0",
+        "description": {
+          "type": "generic",
+          "creditFirst": true,
+          "storagePhase": {
+            "storageFeesCollected": "0",
+            "statusChange": "unchanged"
+          },
+          "creditPhase": {
+            "credit": {
+              "coins": "1"
+            }
+          },
+          "computePhase": {
+            "type": "skipped",
+            "reason": "no-gas"
+          },
+          "aborted": true,
+          "destroyed": false
+        },
+        "incoming": {
+          "type": "internal",
+          "source": "EQDbDK3PCTtyqx1c3Q222uw75V-rDGoGZamcvcVhqBJIoAe5",
+          "destination": "EQAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0KEm",
+          "value": "1",
+          "forwardFee": "66313",
+          "bounced": false,
+          "bodyHash": "65079e6495808723b06dbc115c21d22afdf284ee8b8975ab04d581723b5da7a3",
+          "opcode": "0x7362d09c",
+          "queryId": "2026110301",
+          "token": {
+            "amount": "1000000",
+            "owner": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a"
+          }
+        },
+        "outgoing": []
+      },
+      {
+        "hash": "feedec45670c6bfc76d4b8231280c3517781757bf46e9baf89d7599449351922",
+        "lt": "107332237000001",
+        "now": 1793718538,
+        "oldStatus": "active",
+        "endStatus": "active",
+        "totalFees": "663680",
+        "description": {
+          "type": "generic",
+          "creditFirst": true,
+          "storagePhase": {
+            "storageFeesCollected": "13",
+            "statusChange": "unchanged"
+          },
+          "computePhase": {
+            "type": "vm",
+            "success": true,
+            "messageStateUsed": false,
+            "accountActivated": false,
+            "gasFees": "329268",
+            "gasUsed": "4939",
+            "gasLimit": "0",
+            "gasCredit": "10000",
+            "mode": 0,
+            "exitCode": 0,
+            "vmSteps": 143,
+            "vmInitStateHash": "0",
+            "vmFinalStateHash": "0"
+          },
+          "actionPhase": {
+            "success": true,
+            "valid": true,
+            "noFunds": false,
+            "statusChange": "unchanged",
+            "totalFwdFees": "218001",
+            "totalActionFees": "72665",
+            "resultCode": 0,
+            "totalActions": 1,
+            "specActions": 0,
+            "skippedActions": 0,
+            "messagesCreated": 1,
+            "actionListHash": "6419181646107120746484988451304490913533295676111946465754481969322012742078",
+            "totalMessageSize": {
+              "cells": "6",
+              "bits": "2475"
+            }
+          },
+          "aborted": false,
+          "destroyed": false
+        },
+        "incoming": {
+          "type": "external-in",
+          "destination": "EQAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0KEm",
+          "value": null,
+          "forwardFee": null,
+          "bounced": null,
+          "bodyHash": "1c8037b95f1349a7e553dfb41ad6ddcbd8297af16d25dddcccef9dadc5ba49ee",
+          "opcode": "0x7369676e",
+          "queryId": null
+        },
+        "outgoing": [
+          {
+            "type": "internal",
+            "source": "EQAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0KEm",
+            "destination": "EQCjk6WUaIpT9hONiPNEeomRCTzDh_BGPQrNlVKJ-tvvekyD",
+            "value": "53000000",
+            "forwardFee": "145336",
+            "bounced": false,
+            "bodyHash": "3ef5bd42f37fc5f58d95c4c0f85cf54ad14715ac3e41a818cfad3c6d12ef68f4",
+            "opcode": "0x73696e74",
+            "queryId": null
+          }
+        ]
+      }
+    ],
+    "user": [
+      {
+        "hash": "9db7f5cd1c034c6c4a320477eded3684ce28c4a5c9c0c2d0e3a93b2426ba39dd",
+        "lt": "107332237000003",
+        "now": 1793718538,
+        "oldStatus": "active",
+        "endStatus": "active",
+        "totalFees": "395124",
+        "description": {
+          "type": "generic",
+          "creditFirst": false,
+          "storagePhase": {
+            "storageFeesCollected": "13",
+            "statusChange": "unchanged"
+          },
+          "creditPhase": {
+            "credit": {
+              "coins": "53000000"
+            }
+          },
+          "computePhase": {
+            "type": "vm",
+            "success": true,
+            "messageStateUsed": false,
+            "accountActivated": false,
+            "gasFees": "355734",
+            "gasUsed": "5336",
+            "gasLimit": "794999",
+            "mode": 0,
+            "exitCode": 0,
+            "vmSteps": 162,
+            "vmInitStateHash": "0",
+            "vmFinalStateHash": "0"
+          },
+          "actionPhase": {
+            "success": true,
+            "valid": true,
+            "noFunds": false,
+            "statusChange": "unchanged",
+            "totalFwdFees": "118134",
+            "totalActionFees": "39377",
+            "resultCode": 0,
+            "totalActions": 1,
+            "specActions": 0,
+            "skippedActions": 0,
+            "messagesCreated": 1,
+            "actionListHash": "92504850458966639593363790963339985212143846604445399457041687180883075332802",
+            "totalMessageSize": {
+              "cells": "2",
+              "bits": "1377"
+            }
+          },
+          "aborted": false,
+          "destroyed": false
+        },
+        "incoming": {
+          "type": "internal",
+          "source": "EQAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0KEm",
+          "destination": "EQCjk6WUaIpT9hONiPNEeomRCTzDh_BGPQrNlVKJ-tvvekyD",
+          "value": "53000000",
+          "forwardFee": "145336",
+          "bounced": false,
+          "bodyHash": "3ef5bd42f37fc5f58d95c4c0f85cf54ad14715ac3e41a818cfad3c6d12ef68f4",
+          "opcode": "0x73696e74",
+          "queryId": null
+        },
+        "outgoing": [
+          {
+            "type": "internal",
+            "source": "EQCjk6WUaIpT9hONiPNEeomRCTzDh_BGPQrNlVKJ-tvvekyD",
+            "destination": "EQCQpRoP01JKjbL9A7ZlZ_o8TG9bIVPfg0BVikQOEOiXwoAR",
+            "value": "50000000",
+            "forwardFee": "78757",
+            "bounced": false,
+            "bodyHash": "376cba27b38a16dcefb226bd15a60d3bdbe677e382334070740a39eea46e5dda",
+            "opcode": "0x0f8a7ea5",
+            "queryId": "2026110301",
+            "token": {
+              "amount": "1000000",
+              "owner": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+              "responseDestination": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+              "forwardTon": "1"
+            }
+          }
+        ]
+      }
+    ],
+    "userToken": [
+      {
+        "hash": "8f28e12a9091da104e62ace52bb0fc7ebeac3af5e3b1a9d0f1ac4fe8bd783e88",
+        "lt": "107332237000005",
+        "now": 1793718538,
+        "oldStatus": "active",
+        "endStatus": "active",
+        "totalFees": "856207",
+        "description": {
+          "type": "generic",
+          "creditFirst": false,
+          "storagePhase": {
+            "storageFeesCollected": "10",
+            "statusChange": "unchanged"
+          },
+          "creditPhase": {
+            "credit": {
+              "coins": "50000000"
+            }
+          },
+          "computePhase": {
+            "type": "vm",
+            "success": true,
+            "messageStateUsed": false,
+            "accountActivated": false,
+            "gasFees": "601534",
+            "gasUsed": "9023",
+            "gasLimit": "749999",
+            "mode": 0,
+            "exitCode": 0,
+            "vmSteps": 221,
+            "vmInitStateHash": "0",
+            "vmFinalStateHash": "0"
+          },
+          "actionPhase": {
+            "success": true,
+            "valid": true,
+            "noFunds": false,
+            "statusChange": "unchanged",
+            "totalFwdFees": "764001",
+            "totalActionFees": "254663",
+            "resultCode": 0,
+            "totalActions": 1,
+            "specActions": 0,
+            "skippedActions": 0,
+            "messagesCreated": 1,
+            "actionListHash": "4489187480678646762599108475237146732247711208273960768785952274818266904877",
+            "totalMessageSize": {
+              "cells": "19",
+              "bits": "9366"
+            }
+          },
+          "aborted": false,
+          "destroyed": false
+        },
+        "incoming": {
+          "type": "internal",
+          "source": "EQCjk6WUaIpT9hONiPNEeomRCTzDh_BGPQrNlVKJ-tvvekyD",
+          "destination": "EQCQpRoP01JKjbL9A7ZlZ_o8TG9bIVPfg0BVikQOEOiXwoAR",
+          "value": "50000000",
+          "forwardFee": "78757",
+          "bounced": false,
+          "bodyHash": "376cba27b38a16dcefb226bd15a60d3bdbe677e382334070740a39eea46e5dda",
+          "opcode": "0x0f8a7ea5",
+          "queryId": "2026110301",
+          "token": {
+            "amount": "1000000",
+            "owner": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+            "responseDestination": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+            "forwardTon": "1"
+          }
+        },
+        "outgoing": [
+          {
+            "type": "internal",
+            "source": "EQCQpRoP01JKjbL9A7ZlZ_o8TG9bIVPfg0BVikQOEOiXwoAR",
+            "destination": "EQDbDK3PCTtyqx1c3Q222uw75V-rDGoGZamcvcVhqBJIoAe5",
+            "value": "48634465",
+            "forwardFee": "509338",
+            "bounced": false,
+            "bodyHash": "9ef25e826221639b5ec5dc2514b15dbb99473097baf7e900f618e60760aea4e6",
+            "opcode": "0x178d4519",
+            "queryId": "2026110301",
+            "token": {
+              "amount": "1000000",
+              "owner": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+              "responseDestination": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+              "forwardTon": "1"
+            }
+          }
+        ]
+      }
+    ],
+    "platformToken": [
+      {
+        "hash": "d50f0d7f4d8691b09b8951c37306be48e0002e59bb7e68c25d1f19002025a230",
+        "lt": "107332237000007",
+        "now": 1793718538,
+        "oldStatus": "non-existing",
+        "endStatus": "active",
+        "totalFees": "738377",
+        "description": {
+          "type": "generic",
+          "creditFirst": false,
+          "storagePhase": {
+            "storageFeesCollected": "0",
+            "statusChange": "unchanged"
+          },
+          "creditPhase": {
+            "credit": {
+              "coins": "48634465"
+            }
+          },
+          "computePhase": {
+            "type": "vm",
+            "success": true,
+            "messageStateUsed": false,
+            "accountActivated": false,
+            "gasFees": "683001",
+            "gasUsed": "10245",
+            "gasLimit": "729516",
+            "mode": 0,
+            "exitCode": 0,
+            "vmSteps": 196,
+            "vmInitStateHash": "0",
+            "vmFinalStateHash": "0"
+          },
+          "actionPhase": {
+            "success": true,
+            "valid": true,
+            "noFunds": false,
+            "statusChange": "unchanged",
+            "totalFwdFees": "166135",
+            "totalActionFees": "55376",
+            "resultCode": 0,
+            "totalActions": 3,
+            "specActions": 1,
+            "skippedActions": 0,
+            "messagesCreated": 2,
+            "actionListHash": "57334895119026434483460794153640851135665060744872051799313939511670963220035",
+            "totalMessageSize": {
+              "cells": "3",
+              "bits": "1866"
+            }
+          },
+          "aborted": false,
+          "destroyed": false
+        },
+        "incoming": {
+          "type": "internal",
+          "source": "EQCQpRoP01JKjbL9A7ZlZ_o8TG9bIVPfg0BVikQOEOiXwoAR",
+          "destination": "EQDbDK3PCTtyqx1c3Q222uw75V-rDGoGZamcvcVhqBJIoAe5",
+          "value": "48634465",
+          "forwardFee": "509338",
+          "bounced": false,
+          "bodyHash": "9ef25e826221639b5ec5dc2514b15dbb99473097baf7e900f618e60760aea4e6",
+          "opcode": "0x178d4519",
+          "queryId": "2026110301",
+          "token": {
+            "amount": "1000000",
+            "owner": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+            "responseDestination": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+            "forwardTon": "1"
+          }
+        },
+        "outgoing": [
+          {
+            "type": "internal",
+            "source": "EQDbDK3PCTtyqx1c3Q222uw75V-rDGoGZamcvcVhqBJIoAe5",
+            "destination": "EQAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0KEm",
+            "value": "1",
+            "forwardFee": "66313",
+            "bounced": false,
+            "bodyHash": "65079e6495808723b06dbc115c21d22afdf284ee8b8975ab04d581723b5da7a3",
+            "opcode": "0x7362d09c",
+            "queryId": "2026110301",
+            "token": {
+              "amount": "1000000",
+              "owner": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a"
+            }
+          },
+          {
+            "type": "internal",
+            "source": "EQDbDK3PCTtyqx1c3Q222uw75V-rDGoGZamcvcVhqBJIoAe5",
+            "destination": "EQAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0KEm",
+            "value": "46810895",
+            "forwardFee": "44446",
+            "bounced": false,
+            "bodyHash": "c5db153dd08e4127ab8689054bcb291d4efc2ccfdb49d009595d50e521d85870",
+            "opcode": "0xd53276db",
+            "queryId": "2026110301"
+          }
+        ]
+      }
+    ]
+  }
+}

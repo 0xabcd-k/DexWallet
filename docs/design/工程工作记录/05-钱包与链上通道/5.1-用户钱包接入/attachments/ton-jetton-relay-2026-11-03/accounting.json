@@ -1,0 +1,32 @@
+{
+  "status": "verified-from-public-evidence",
+  "unit": "nanoton",
+  "claim": {
+    "transactions": 7,
+    "links": 6,
+    "skippedNotifications": 1,
+    "finalized": true,
+    "masterchainBlock": "95543171",
+    "rootTransactionHash": "fe6360769eb851b07324d6ae6086f40dc25ebb1fac5b6f4c1f47bdd31e617522",
+    "networkCost": "4037778",
+    "platformNetSpend": "52741075",
+    "userTonIncrease": "19684491"
+  },
+  "paymentAccounting": {
+    "excessReturnedToPlatform": "46810895",
+    "excessReceiptFee": "51868",
+    "newRecipientTokenReserve": "974433",
+    "oldSenderTokenReserveSpent": "10"
+  },
+  "payment": {
+    "transactions": 6,
+    "links": 5,
+    "skippedNotifications": 1,
+    "finalized": true,
+    "masterchainBlock": "95543880",
+    "rootTransactionHash": "feedec45670c6bfc76d4b8231280c3517781757bf46e9baf89d7599449351922",
+    "networkCost": "3549446",
+    "platformNetSpend": "7049988",
+    "userTonIncrease": "2526119"
+  }
+}

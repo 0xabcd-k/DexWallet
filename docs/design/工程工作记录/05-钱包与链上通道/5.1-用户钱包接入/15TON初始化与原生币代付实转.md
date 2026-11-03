@@ -128,3 +128,5 @@ NO_PROXY=testnet.toncenter.com node scripts/payment_probe/ton-live.mjs status
 本地 `.tools/payment-feasibility/ton-live/` 保留原钱包 capture、实际提交 BoC、两次未执行的提交记录及私有 RPC 诊断。公开附件只保留审阅后的交易/状态摘要、哈希和无敏感信息截图，不包含助记词、PIN 或可执行签名。收尾检查时临时探针、隧道及模拟器均已不在运行，测试资金保留供后续验证；上述余额是本次确认快照，不是永久余额。
 
 下一项为 **TON USDT / Jetton**：先核实测试代币来源和合约身份，再独立验证真实钱包签名、平台附带 TON、代币钱包开户、收款与余款去向。若只能使用自建测试 Jetton，必须明确它不能证明真实 USDT 合约兼容。首次 W5 初始化、原生币补贴余款的业务规则及正式订单入账仍单列待决。
+
+后续更新：TON 社区测试 USDT 已完成真实签名、平台代付、首次收款和余款核对，见 [测试 USDT 专项记录](16TON测试USDT代付与余款验证.md)；本页保留原生币试验及其待决边界。

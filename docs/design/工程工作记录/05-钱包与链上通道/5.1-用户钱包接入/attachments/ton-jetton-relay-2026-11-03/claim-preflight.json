@@ -1,0 +1,42 @@
+{
+  "observedAt": "2026-11-03T15:04:12.263Z",
+  "mode": "claim",
+  "wallet": {
+    "platform": "android",
+    "appName": "Tonkeeper",
+    "appVersion": "26.10.4",
+    "maxProtocolVersion": 2,
+    "features": [
+      "SendTransaction",
+      {
+        "name": "SignData",
+        "types": [
+          "text",
+          "binary",
+          "cell"
+        ]
+      },
+      {
+        "name": "SendTransaction",
+        "maxMessages": 255
+      },
+      {
+        "name": "SignMessage",
+        "maxMessages": 255
+      }
+    ]
+  },
+  "seqno": 2,
+  "validUntil": 1793718400,
+  "bodyHash": "90aa44fe31815d820b3c9a33fca1a03a589894c5f9acd3868b2308209ae7401b",
+  "signatureVerified": true,
+  "rejected": [
+    "wrong network",
+    "changed attached TON",
+    "changed token wallet",
+    "changed token payload",
+    "changed deadline",
+    "stale seqno",
+    "expired authorization"
+  ]
+}

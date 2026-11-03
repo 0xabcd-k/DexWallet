@@ -1,0 +1,81 @@
+{
+  "observedAt": "2026-11-03T15:10:48.917Z",
+  "externalHash": "827e4125813032be856482811c160f7224c263aacca2eb7429355a9b42cb3c6d",
+  "externalValidUntil": 1793718655,
+  "exitCode": "133",
+  "before": {
+    "observedAt": "2026-11-03T15:10:15.075Z",
+    "accounts": {
+      "platform": {
+        "balance": "1955384278",
+        "lastTransaction": {
+          "lt": "107332237000010",
+          "hash": "2ZS2uh7AkbS3feOpePCcA946HMSHdmNEoYEDOVj/b/w="
+        },
+        "seqno": 4
+      },
+      "user": {
+        "balance": "124560230",
+        "lastTransaction": {
+          "lt": "107332237000003",
+          "hash": "nbf1zRwDTGxKMgR37e02hM4oxKXJwMLQ46k7JCa6Od0="
+        },
+        "seqno": 4
+      },
+      "userToken": {
+        "balance": "974423",
+        "lastTransaction": {
+          "lt": "107332237000005",
+          "hash": "jyjhKpCR2hBOYqzlK7D8fr6sOvXjsanQ8axP6L14Pog="
+        },
+        "tokenBalance": "9000000"
+      },
+      "platformToken": {
+        "balance": "974433",
+        "lastTransaction": {
+          "lt": "107332237000007",
+          "hash": "1Q8Nf02GkbCbiVHDcwa+SOAALlm7fmjCXR8ZACAlojA="
+        },
+        "tokenBalance": "1000000"
+      }
+    }
+  },
+  "after": {
+    "observedAt": "2026-11-03T15:10:37.627Z",
+    "accounts": {
+      "platform": {
+        "balance": "1955384278",
+        "lastTransaction": {
+          "lt": "107332237000010",
+          "hash": "2ZS2uh7AkbS3feOpePCcA946HMSHdmNEoYEDOVj/b/w="
+        },
+        "seqno": 4
+      },
+      "user": {
+        "balance": "124560230",
+        "lastTransaction": {
+          "lt": "107332237000003",
+          "hash": "nbf1zRwDTGxKMgR37e02hM4oxKXJwMLQ46k7JCa6Od0="
+        },
+        "seqno": 4
+      },
+      "userToken": {
+        "balance": "974423",
+        "lastTransaction": {
+          "lt": "107332237000005",
+          "hash": "jyjhKpCR2hBOYqzlK7D8fr6sOvXjsanQ8axP6L14Pog="
+        },
+        "tokenBalance": "9000000"
+      },
+      "platformToken": {
+        "balance": "974433",
+        "lastTransaction": {
+          "lt": "107332237000007",
+          "hash": "1Q8Nf02GkbCbiVHDcwa+SOAALlm7fmjCXR8ZACAlojA="
+        },
+        "tokenBalance": "1000000"
+      }
+    }
+  },
+  "balancesSeqnosAndTransactionsUnchanged": true
+}

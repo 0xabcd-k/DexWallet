@@ -1,0 +1,115 @@
+{
+  "observedAt": "2026-11-03T15:04:12.325Z",
+  "mode": "claim",
+  "before": {
+    "observedAt": "2026-11-03T15:03:51.432Z",
+    "master": "kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy",
+    "masterCodeHash": "GNW254D/C7RRJUwsdg0J1uSFY4zRQHq7lweHUsPBye4=",
+    "tokenCodeHash": "j0Utek39dAZraCNlF3JZ7QVzRDW+drX9S9XYryt8PWg=",
+    "totalSupply": "9817892425496",
+    "accounts": {
+      "platform": {
+        "address": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+        "publicKey": "bc12c0287c416d9cc04ecd49300386c06edf31d8bf8e411ff8f29e236bb95918",
+        "state": "active",
+        "seqno": 2,
+        "balance": "2015175341",
+        "lastTransaction": {
+          "lt": "107312846000006",
+          "hash": "JOp2G+L+Fjg7pa/dLU55BYYzziKel54QS0UvrDfMFgE="
+        },
+        "token": {
+          "address": "0:db0cadcf093b72ab1d5cdd0db6daec3be55fab0c6a0665a99cbdc561a81248a0",
+          "state": "uninitialized",
+          "balance": "0",
+          "tonBalance": "0",
+          "lastTransaction": null
+        }
+      },
+      "user": {
+        "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+        "publicKey": "91a0d3523098850dc441f525f5fb22c8e25a7470a3888aada6868b093b37cb51",
+        "state": "active",
+        "seqno": 2,
+        "balance": "102349620",
+        "lastTransaction": {
+          "lt": "107312902000003",
+          "hash": "ckcckKQQSzS0eKRktT9e5Gacr8/p5wtFldKTo1C3EzI="
+        },
+        "token": {
+          "address": "0:90a51a0fd3524a8db2fd03b66567fa3c4c6f5b2153df8340558a440e10e897c2",
+          "state": "uninitialized",
+          "balance": "0",
+          "tonBalance": "0",
+          "lastTransaction": null
+        }
+      }
+    }
+  },
+  "expected": {
+    "mode": "claim",
+    "queryId": "0",
+    "target": "0:cd503242d2242f268669d2697e62d78bd4db535caa61534dc24c8e6fe15b4184",
+    "amount": "49000000",
+    "relayValue": "52000000",
+    "payloadHash": "940d52f5e1bcb50db17c4899ee44ff7b32bcd673af2f117e620b038bcefe744e",
+    "tokenAmount": "10000000"
+  },
+  "authorization": {
+    "bodyHash": "90aa44fe31815d820b3c9a33fca1a03a589894c5f9acd3868b2308209ae7401b",
+    "seqno": 2,
+    "validUntil": 1793718400
+  },
+  "externalHash": "ce08738f764536c4adf4432caef3f0283731c14a5b1a305f017b367e82749949",
+  "platformBodyHash": "a2ebd70309b12c3d691506b2d68425068b61e5e0851f14738696f75e8ad15675",
+  "externalValidUntil": 1793718372,
+  "status": "needs-transaction-trace",
+  "after": {
+    "observedAt": "2026-11-03T15:04:25.802Z",
+    "master": "kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy",
+    "masterCodeHash": "GNW254D/C7RRJUwsdg0J1uSFY4zRQHq7lweHUsPBye4=",
+    "tokenCodeHash": "j0Utek39dAZraCNlF3JZ7QVzRDW+drX9S9XYryt8PWg=",
+    "totalSupply": "9817902425496",
+    "accounts": {
+      "platform": {
+        "address": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+        "publicKey": "bc12c0287c416d9cc04ecd49300386c06edf31d8bf8e411ff8f29e236bb95918",
+        "state": "active",
+        "seqno": 3,
+        "balance": "1962434266",
+        "lastTransaction": {
+          "lt": "107331528000001",
+          "hash": "/mNgdp64UbBzJNauYIb0DcJeux+sW29MH0e90x5hdSI="
+        },
+        "token": {
+          "address": "0:db0cadcf093b72ab1d5cdd0db6daec3be55fab0c6a0665a99cbdc561a81248a0",
+          "state": "uninitialized",
+          "balance": "0",
+          "tonBalance": "0",
+          "lastTransaction": null
+        }
+      },
+      "user": {
+        "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+        "publicKey": "91a0d3523098850dc441f525f5fb22c8e25a7470a3888aada6868b093b37cb51",
+        "state": "active",
+        "seqno": 3,
+        "balance": "122034111",
+        "lastTransaction": {
+          "lt": "107331528000012",
+          "hash": "k1SXYEQ5kUvNds7+Wp1dsEzUYh3T1TKQgGdPUDJ8huw="
+        },
+        "token": {
+          "address": "0:90a51a0fd3524a8db2fd03b66567fa3c4c6f5b2153df8340558a440e10e897c2",
+          "state": "active",
+          "balance": "10000000",
+          "tonBalance": "974433",
+          "lastTransaction": {
+            "lt": "107331528000009",
+            "hash": "laudoKr++6C44+6jZ1obdgiNUBQod3LYiSM0KQR+xFY="
+          }
+        }
+      }
+    }
+  }
+}
