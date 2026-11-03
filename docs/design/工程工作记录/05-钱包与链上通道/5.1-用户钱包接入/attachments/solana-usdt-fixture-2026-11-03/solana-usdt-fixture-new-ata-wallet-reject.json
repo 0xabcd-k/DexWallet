@@ -1,0 +1,52 @@
+{
+  "startedAt": "2026-11-03T15:55:00.097Z",
+  "mode": "--reject",
+  "probeName": "solana-usdt-fixture-new-ata",
+  "wallet": "Solflare",
+  "version": "2.41.1",
+  "restoredPageCount": 1,
+  "networkSetting": "Devnet",
+  "connection": {
+    "connected": true,
+    "wallet": "solflare",
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "signTransactionAvailable": true
+  },
+  "walletSettlingMs": 15000,
+  "rejection": "Transaction cancelled",
+  "serverAfterRejection": {
+    "reference": "4792b906-14f0-4aa6-8201-d79638b6b245",
+    "preparedAt": "2026-11-03T15:55:21.163Z",
+    "network": "solana-devnet",
+    "asset": "USDT-FIXTURE",
+    "probeCase": "solana-usdt-fixture-new-ata",
+    "addresses": {
+      "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+      "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+      "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"
+    },
+    "tokenAccounts": {
+      "user": "G3fPnGibrCdEUDURrYFxk8Y1KfUmNWGPFsobTCRRbAdt",
+      "recipient": "DT3EUVqAxQ4ZL6bvo419FiA9vpd4efKsn6Htmt4SLE5J"
+    },
+    "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "amountAtomic": "10000",
+    "decimals": 6,
+    "accountSnapshot": {
+      "observedAt": "2026-11-03T15:55:20.584Z",
+      "slot": 518267555,
+      "sourceAmount": "20000000",
+      "recipientAmount": "0",
+      "recipientExists": false,
+      "rentLamports": 1488440
+    },
+    "estimatedAtaRentLamports": 1488440,
+    "blockhash": "6aVRCW1wHCD54Wn6Ev43mqdqDSMFdrceQ4VRzn25WEvM",
+    "lastValidBlockHeight": 505430524,
+    "unsigned": "AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgEFCbtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrS4995EqipfwDtCdGU9yZV+ZOHJWD+36X4zmqnlZMf/9d+N4FjDY3GsPLGAz3XLGnqRxAvQN9fqSRthh5HpZPQvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdXVPTrY0E3eChDOrPZa+hMKy1uvHi/z+VteDsIB4AjF63vqs+GdFtRa6Y7NeQSu59L6vNdhDHawZuTq++KjiejJclj04kifG7PRApFI4NgwtaE5na/xCEBI572Nvp+FkG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqVLeu5ckMMXHcX8SLzrgOl32AQAoxrW9IveJ+fbWqAsSAgcGAAIGBQQIAQEIBAMFAgEKDBAnAAAAAAAABg==",
+    "messageSha256": "b08c2f7493484dff517c0ef38f71b8bdcf7031e14bc4d44b4f0ff0fa478356ce",
+    "status": "prepared"
+  },
+  "completedAt": "2026-11-03T15:55:22.456Z"
+}

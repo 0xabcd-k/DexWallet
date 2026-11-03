@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { probeToken } from './solana-token-assets.mjs';
 
 const mode = process.argv[2] ?? '--connect';
 assert(process.argv.length <= 3 && ['--connect', '--reject', '--pay'].includes(mode), 'Use --connect, --reject or --pay');
@@ -15,9 +16,9 @@ async function json(path, body) {
 }
 const config = await json('/config');
 assert.equal(config.httpStatus, 200);
-assert.equal(config.value.asset, 'USDC');
+const token = probeToken(config.value.asset);
 const { probeName, addresses } = config.value;
-assert(['solana-usdc-new-ata', 'solana-usdc-existing-ata'].includes(probeName));
+assert([`${token.probePrefix}-new-ata`, `${token.probePrefix}-existing-ata`].includes(probeName));
 const { solflarePassword } = JSON.parse(await readFile(`${output}/secrets.json`, 'utf8'));
 assert(solflarePassword, 'Initialize the dedicated Solflare profile first');
 const extension = `${output}/solflare-extension`;
@@ -86,7 +87,7 @@ try {
           if (!trusted && await trust.isVisible()) {
             evidence.securityPreview = await popup.locator('body').innerText();
             await popup.screenshot({ path: `${output}/${probeName}-sign.png` }); captured = true;
-            // Only the fixed local test site and fixed server USDC payment are authorized here.
+            // Only the fixed local test site and fixed server token payment are authorized here.
             await trust.click(); trusted = true;
           }
           const approve = popup.getByRole('button', { name: 'Approve', exact: true });
@@ -109,8 +110,9 @@ try {
       evidence.serverAfterRejection = current.value;
     } else {
       assert.equal(evidence.userSigned?.status, 'validated', 'Wallet did not return a validated signature');
-      assert.equal(evidence.userSigned.asset, 'USDC');
-      assert.equal(evidence.userSigned.amountAtomic, '10000');
+      assert.equal(evidence.userSigned.asset, token.symbol);
+      assert.equal(evidence.userSigned.amountAtomic, token.amount.toString());
+      assert.equal(evidence.userSigned.mint, token.mint);
       await app.locator('#submit').click();
       await app.waitForFunction(() => window.solanaProbe.last?.signature || window.solanaProbe.last?.error, {}, { timeout: 60000 });
       const submitted = await app.evaluate(() => window.solanaProbe.last);

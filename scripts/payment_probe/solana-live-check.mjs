@@ -3,7 +3,8 @@ import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { rpc } from './rpc.mjs';
 import { DEVNET_ENDPOINT, verifyReceipt } from './solana-live-core.mjs';
-import { verifyUsdcReceipt } from './solana-usdc-core.mjs';
+import { verifyTokenReceipt } from './solana-token-core.mjs';
+import { probeToken } from './solana-token-assets.mjs';
 
 const base = 'http://127.0.0.1:18792';
 const output = fileURLToPath(new URL('../../.tools/payment-feasibility/', import.meta.url));
@@ -26,15 +27,16 @@ for (let attempt = 0; attempt < 20 && state.status !== 'finalized'; attempt++) {
   state = await get();
 }
 assert.equal(state.status, 'finalized', 'Finalization pending; inspect the existing transaction');
-const usdc = state.asset === 'USDC';
-const probeName = usdc ? state.probeCase : 'solana-live';
-assert(['solana-live', 'solana-usdc-new-ata', 'solana-usdc-existing-ata'].includes(probeName));
-(usdc ? verifyUsdcReceipt : verifyReceipt)(state, state.receipt);
+const token = state.asset ? probeToken(state.asset) : null;
+const probeName = token ? state.probeCase : 'solana-live';
+assert(['solana-live', ...(token ? [`${token.probePrefix}-new-ata`, `${token.probePrefix}-existing-ata`] : [])].includes(probeName));
+if (token) verifyTokenReceipt(state, state.receipt, token);
+else verifyReceipt(state, state.receipt);
 await writeFile(`${output}/${probeName}-public-result.json`, JSON.stringify(state, null, 2));
 if (replayRequested) {
   async function balances() {
     const entries = Object.entries(state.addresses);
-    if (usdc) entries.push(['userAta', state.tokenAccounts.user], ['recipientAta', state.tokenAccounts.recipient]);
+    if (token) entries.push(['userAta', state.tokenAccounts.user], ['recipientAta', state.tokenAccounts.recipient]);
     const { value } = await rpc(DEVNET_ENDPOINT, 'getMultipleAccounts', [entries.map(([, address]) => address), { commitment: 'confirmed', encoding: 'jsonParsed' }]);
     return Object.fromEntries(entries.map(([role], index) => [role, {
       lamports: value[index].lamports, tokenAmount: value[index].data?.parsed?.info?.tokenAmount?.amount,

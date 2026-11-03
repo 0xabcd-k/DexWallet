@@ -127,3 +127,5 @@ NO_PROXY=testnet.toncenter.com node scripts/payment_probe/ton-jetton.mjs state
 实转顺序为原钱包 `claim` 签名 → `relay claim CAPTURE` → 领取到账核对 → 原钱包 `payment` 签名 → `relay payment CAPTURE` → 付款到账核对 → 未过期时 `replay payment` → 完整 trace 与余额核对。钱包脚本依赖前轮本机探针、当次 HTTPS manifest 和 AVD；本轮通过时显式使用 `PAYMENT_PROBE_BROWSER_PROXY=http://127.0.0.1:7890`，`PAYMENT_PROBE_PUBLIC_ORIGIN` 不复用已关闭的随机隧道域名。
 
 下一项为首版范围内尚未独立验证的 **Solana USDT**。TON 后续仍需验证主网库引用环境的成本与状态差异、收款代币钱包复用时的成本、首次 W5 初始化和最终费用归属，并在实际开发阶段接入订单状态、链上确认及账本入账。普通测试通过不自动开放正式通道。
+
+后续 [Solana USDT 代付机制验证](17SolanaUSDT代付机制验证.md) 已完成主网资产 / 程序只读核对与自建 Devnet 测试币的真实钱包代付，明确区分机制通过和官方资产实转。

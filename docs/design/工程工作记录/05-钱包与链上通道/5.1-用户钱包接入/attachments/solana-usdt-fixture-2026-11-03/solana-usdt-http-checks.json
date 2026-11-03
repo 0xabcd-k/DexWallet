@@ -1,0 +1,30 @@
+{
+  "observedAt": "2026-11-03T15:58:20.270Z",
+  "config": {
+    "probeName": "solana-usdt-fixture-existing-ata",
+    "asset": "USDT-FIXTURE",
+    "paymentDescription": "Dedicated test accounts only. Payment: 0.01 self-issued Devnet SPL fixture (NOT Tether USDT). Platform pays network fees and recipient ATA creation deposit. Case: existing ATA.",
+    "addresses": {
+      "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+      "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+      "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"
+    }
+  },
+  "results": [
+    {
+      "name": "signed-order-cannot-reprepare",
+      "status": 400,
+      "message": "{\"error\":\"A signed submission already exists; inspect it before preparing another payment\"}"
+    },
+    {
+      "name": "foreign-origin",
+      "status": 400,
+      "message": "{\"error\":\"Unexpected request origin\"}"
+    },
+    {
+      "name": "no-private-files",
+      "status": 404,
+      "message": ""
+    }
+  ]
+}

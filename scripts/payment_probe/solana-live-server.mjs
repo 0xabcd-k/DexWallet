@@ -7,16 +7,20 @@ import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
 import { rpc } from './rpc.mjs';
 import { DEVNET_ENDPOINT, MAX_FEE_LAMPORTS, digest, prepareOrder, validateUserTransaction, verifyReceipt } from './solana-live-core.mjs';
-import { inspectUsdcAccounts, prepareUsdcOrder, verifyUsdcReceipt } from './solana-usdc-core.mjs';
+import { inspectTokenAccounts, prepareTokenOrder, verifyTokenReceipt } from './solana-token-core.mjs';
+import { USDC, USDT_FIXTURE } from './solana-token-assets.mjs';
 
 const usdc = process.argv.includes('--usdc');
+const fixture = process.argv.includes('--usdt-fixture');
+assert(!(usdc && fixture), 'Choose one token probe');
+const token = usdc ? USDC : fixture ? USDT_FIXTURE : null;
 const existingAta = process.argv.includes('--existing-ata');
-assert(process.argv.slice(2).every(arg => ['--usdc', '--existing-ata'].includes(arg)), 'Unknown probe option');
-assert(!existingAta || usdc, '--existing-ata requires --usdc');
-const probeName = usdc ? (existingAta ? 'solana-usdc-existing-ata' : 'solana-usdc-new-ata') : 'solana-live';
-const checkReceipt = usdc ? verifyUsdcReceipt : verifyReceipt;
-const paymentDescription = usdc
-  ? `Dedicated test accounts only. Payment: 0.01 Circle Devnet USDC. Platform pays network fees and recipient ATA creation deposit. Case: ${existingAta ? 'existing ATA' : 'new ATA'}.`
+assert(process.argv.slice(2).every(arg => ['--usdc', '--usdt-fixture', '--existing-ata'].includes(arg)), 'Unknown probe option');
+assert(!existingAta || token, '--existing-ata requires a token probe');
+const probeName = token ? `${token.probePrefix}-${existingAta ? 'existing' : 'new'}-ata` : 'solana-live';
+const checkReceipt = token ? (order, receipt) => verifyTokenReceipt(order, receipt, token) : verifyReceipt;
+const paymentDescription = token
+  ? `Dedicated test accounts only. Payment: 0.01 ${token.description}. Platform pays network fees and recipient ATA creation deposit. Case: ${existingAta ? 'existing ATA' : 'new ATA'}.`
   : 'Dedicated test accounts only. Payment: 0.000001 SOL (1000 lamports). Platform pays network fees.';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -57,9 +61,9 @@ async function handleAction(path, body) {
   if (path === '/prepare') {
     assert.equal(body.user, addresses.user, 'Only the configured dedicated test account is allowed');
     assert(!state?.signature, 'A signed submission already exists; inspect it before preparing another payment');
-    const snapshot = usdc ? await inspectUsdcAccounts(addresses) : null;
+    const snapshot = token ? await inspectTokenAccounts(addresses, token) : null;
     const block = (await rpc(DEVNET_ENDPOINT, 'getLatestBlockhash', [{ commitment: 'confirmed' }])).value;
-    state = usdc ? prepareUsdcOrder(addresses, block, snapshot, existingAta) : prepareOrder(addresses, block);
+    state = token ? prepareTokenOrder(addresses, block, snapshot, existingAta, token) : prepareOrder(addresses, block);
     await save();
   } else if (path === '/validate') {
     assert(state && !state.signature, 'No unsigned order available');
@@ -117,7 +121,7 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET') {
       if (path === '/config') {
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ probeName, asset: usdc ? 'USDC' : 'SOL', paymentDescription, addresses })); return;
+        res.end(JSON.stringify({ probeName, asset: token?.symbol ?? 'SOL', paymentDescription, addresses })); return;
       }
       if (path === '/state') {
         if (!mutating) { mutating = true; try { await refresh(); } finally { mutating = false; } }

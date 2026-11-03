@@ -1,0 +1,18 @@
+{
+  "startedAt": "2026-11-03T15:54:04.826Z",
+  "mode": "--reject",
+  "probeName": "solana-usdt-fixture-new-ata",
+  "wallet": "Solflare",
+  "version": "2.41.1",
+  "restoredPageCount": 1,
+  "networkSetting": "Devnet",
+  "connection": {
+    "connected": true,
+    "wallet": "solflare",
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "signTransactionAvailable": true
+  },
+  "walletSettlingMs": 15000,
+  "rejection": "curl 28: curl: (28) SSL connection timeout; ",
+  "error": "The input did not match the regular expression /cancel|reject/i. Input:\n\n'curl 28: curl: (28) SSL connection timeout; '\n"
+}

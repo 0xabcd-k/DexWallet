@@ -4,14 +4,15 @@ import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { rpc } from './rpc.mjs';
 import { DEVNET_ENDPOINT } from './solana-live-core.mjs';
-import { verifyUsdcReceipt } from './solana-usdc-core.mjs';
+import { verifyTokenReceipt } from './solana-token-core.mjs';
+import { probeToken } from './solana-token-assets.mjs';
 
 const response = await fetch('http://127.0.0.1:18792/state');
 const state = await response.json();
 assert(response.ok && state?.status === 'finalized', 'Wait for the current payment to finalize');
-assert.equal(state.asset, 'USDC');
-assert(['solana-usdc-new-ata', 'solana-usdc-existing-ata'].includes(state.probeCase));
-verifyUsdcReceipt(state, state.receipt);
+const asset = probeToken(state.asset);
+assert([`${asset.probePrefix}-new-ata`, `${asset.probePrefix}-existing-ata`].includes(state.probeCase));
+verifyTokenReceipt(state, state.receipt, asset);
 const entries = [...Object.entries(state.addresses), ['userAta', state.tokenAccounts.user], ['recipientAta', state.tokenAccounts.recipient]];
 const accounts = await rpc(DEVNET_ENDPOINT, 'getMultipleAccounts', [entries.map(([, address]) => address), {
   encoding: 'jsonParsed', commitment: 'confirmed', minContextSlot: state.receipt.slot,
