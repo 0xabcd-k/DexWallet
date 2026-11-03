@@ -28,18 +28,26 @@ document.getElementById('connect').onclick = async () => {
 };
 
 document.getElementById('sign').onclick = async () => {
+  delete window.paymentProbe.signedCapture;
   try {
     if (!connector.wallet) throw new Error('Connect a wallet first');
     const features = connector.wallet.device.features;
     const supportsSignMessage = features.some(feature => typeof feature === 'object' && feature.name === 'SignMessage');
     await record('sign-capability', { features, supportsSignMessage, chain: connector.account.chain });
-    // Missing features are rejected by the SDK before dispatch. Supported wallets must be on testnet.
-    if (supportsSignMessage && connector.account.chain !== TESTNET) throw new Error('Switch the dedicated wallet to testnet before requesting a signature');
-    const result = await connector.signMessage({
+    if (!supportsSignMessage) {
+      await record('sign-unsupported', { reason: 'Connected wallet did not advertise SignMessage' });
+      return;
+    }
+    if (connector.account.chain !== TESTNET) throw new Error('Switch the dedicated wallet to testnet before requesting a signature');
+    const request = {
       network: TESTNET,
       validUntil: Math.floor(Date.now() / 1000) + 120,
-      messages: [{ address: connector.account.address, amount: '1' }],
-    }, { signal: AbortSignal.timeout(60000) });
+      messages: [{ address: TonConnectSDK.toUserFriendlyAddress(connector.account.address, true), amount: '1' }],
+    };
+    const result = await connector.signMessage(request, { signal: AbortSignal.timeout(60000) });
+    // The local bridge runner may save this privately for backend verification.
+    // Never send executable authorization to the public event collector.
+    window.paymentProbe.signedCapture = { request, account: connector.account, result };
     // Persist no executable authorization in public evidence.
     await record('sign-result', { internalBocReturned: typeof result.internalBoc === 'string', traceId: result.traceId });
   } catch (error) { await record('sign-error', errorValue(error)); }

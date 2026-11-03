@@ -1,0 +1,102 @@
+{
+  "claimAt": "2026-11-03T11:15:30Z",
+  "provider": "Official Acton v1.2.1 testnet faucet",
+  "claim": {
+    "address": "kQAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0Bqs",
+    "difficulty": 24,
+    "message": "Your claim has been queued. It will be processed soon.",
+    "nonce": 3928834,
+    "solve_ms": 470,
+    "success": true
+  },
+  "balanceCheckedAt": "2026-11-03T11:25:33Z",
+  "platformAddress": "0QAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0Edp",
+  "platform": {
+    "ok": true,
+    "result": {
+      "@type": "raw.fullAccountState",
+      "balance": "0",
+      "extra_currencies": [],
+      "last_transaction_id": {
+        "@type": "internal.transactionId",
+        "lt": "0",
+        "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "block_id": {
+        "@type": "ton.blockIdExt",
+        "workchain": -1,
+        "shard": "-9223372036854775808",
+        "seqno": 95510507,
+        "root_hash": "mrG93FgzmWTlIXTnO/JyOL+WKzneHSPm+0bnJjWjFvc=",
+        "file_hash": "ZW2iw5AlXlXqO699a0yiQnaNzgdqRWlcwF4EwnHV7H0="
+      },
+      "code": "",
+      "data": "",
+      "frozen_hash": "",
+      "sync_utime": 1793705132,
+      "state": "uninitialized",
+      "suspended": false
+    },
+    "@extra": "1793705132:3:13.097"
+  },
+  "userAddress": "0QCjk6WUaIpT9hONiPNEeomRCTzDh_BGPQrNlVKJ-tvveqrM",
+  "userAfterSign": {
+    "ok": true,
+    "result": {
+      "@type": "raw.fullAccountState",
+      "balance": "0",
+      "extra_currencies": [],
+      "last_transaction_id": {
+        "@type": "internal.transactionId",
+        "lt": "0",
+        "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "block_id": {
+        "@type": "ton.blockIdExt",
+        "workchain": -1,
+        "shard": "-9223372036854775808",
+        "seqno": 95509826,
+        "root_hash": "BxcPCirSiRnVMJ9raD2EBUy/rezfSHi/ODcHRGqOaGo=",
+        "file_hash": "02T9dIspXsXxLjx2wfNuYWnlh8Lp3yiNO62MdR3YoSA="
+      },
+      "code": "",
+      "data": "",
+      "frozen_hash": "",
+      "sync_utime": 1793704860,
+      "state": "uninitialized",
+      "suspended": false
+    },
+    "@extra": "1793704860:3:5.182"
+  },
+  "fundingConfirmed": false,
+  "broadcast": false,
+  "finalBalanceCheckedAt": "2026-11-03T11:29:26Z",
+  "finalPlatform": {
+    "ok": true,
+    "result": {
+      "@type": "raw.fullAccountState",
+      "balance": "0",
+      "extra_currencies": [],
+      "last_transaction_id": {
+        "@type": "internal.transactionId",
+        "lt": "0",
+        "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "block_id": {
+        "@type": "ton.blockIdExt",
+        "workchain": -1,
+        "shard": "-9223372036854775808",
+        "seqno": 95511091,
+        "root_hash": "L/R5bB+6assrrUWpdwtzsPkTphk3jfzRrK+JN/mRg8M=",
+        "file_hash": "FVudK872ZNtyULbT3r4eD8Svfa+FYfHtpnf3pogJRcE="
+      },
+      "code": "",
+      "data": "",
+      "frozen_hash": "",
+      "sync_utime": 1793705365,
+      "state": "uninitialized",
+      "suspended": false
+    },
+    "@extra": "1793705365:4:3.353"
+  }
+}

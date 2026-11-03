@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
+import { mkdir, writeFile } from 'node:fs/promises';
 
 // Uses an isolated Chromium session; approve the connection on emulator-5580.
 const browser = await chromium.launch({ headless: true });
@@ -16,6 +17,16 @@ try {
   const connectionError = await page.evaluate(() => window.paymentProbe.lastEvent?.type === 'connection-error' ? window.paymentProbe.lastEvent.value : null);
   if (connectionError) throw new Error(`${connectionError.name}: ${connectionError.message}`);
   await page.getByRole('button', { name: 'Check sign-only capability' }).click();
-  await page.waitForFunction(() => ['sign-error', 'sign-result'].includes(window.paymentProbe.lastEvent?.type), undefined, { timeout: 65000 });
+  await page.waitForFunction(() => ['sign-error', 'sign-result', 'sign-unsupported'].includes(window.paymentProbe.lastEvent?.type), undefined, { timeout: 65000 });
+  if (process.env.PAYMENT_PROBE_CAPTURE === '1') {
+    const capture = await page.evaluate(() => window.paymentProbe.signedCapture);
+    if (capture) {
+      const directory = new URL('../../.tools/payment-feasibility/ton-signatures/', import.meta.url);
+      await mkdir(directory, { recursive: true, mode: 0o700 });
+      const filename = `capture-${Date.now()}.json`;
+      await writeFile(new URL(filename, directory), JSON.stringify({ observedAt: new Date().toISOString(), ...capture }), { mode: 0o600, flag: 'wx' });
+      console.log(`Private signature capture saved: ${filename}`);
+    }
+  }
   console.log(await page.locator('#result').innerText());
 } finally { await browser.close(); }

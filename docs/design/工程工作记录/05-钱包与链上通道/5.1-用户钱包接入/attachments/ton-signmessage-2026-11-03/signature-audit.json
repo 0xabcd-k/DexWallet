@@ -1,0 +1,38 @@
+{
+  "observedAt": "2026-11-03T11:23:09.790Z",
+  "capturedAt": "2026-11-03T11:20:04.465Z",
+  "scope": "Real wallet response audit only; no RPC or broadcast",
+  "wallet": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+  "publicKey": "91a0d3523098850dc441f525f5fb22c8e25a7470a3888aada6868b093b37cb51",
+  "network": "-3",
+  "wrapperHasStateInit": true,
+  "bodyHash": "51dd89264a45e63c644a21742eab1e1ada7fb028a4222a28e52897fe7d081eb4",
+  "opcode": "0x73696e74",
+  "walletId": 2147483645,
+  "seqno": 0,
+  "signedValidUntil": 4294967295,
+  "requestedValidUntil": 1793704888,
+  "amountNano": "1",
+  "destination": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+  "sendMode": 3,
+  "checks": {
+    "walletAndStateInitMatch": true,
+    "signatureVerified": true,
+    "exactSelfTransfer": true,
+    "tamperingRejected": [
+      "amount",
+      "destination",
+      "deadline",
+      "networkWalletId",
+      "authType"
+    ],
+    "deadlineMatches": false,
+    "signedDeadlineStillFuture": true
+  },
+  "relayAllowed": false,
+  "reasons": [
+    "Signed deadline differs from requested deadline",
+    "This audit does not verify current chain seqno, deployment or relay funding"
+  ],
+  "broadcast": false
+}

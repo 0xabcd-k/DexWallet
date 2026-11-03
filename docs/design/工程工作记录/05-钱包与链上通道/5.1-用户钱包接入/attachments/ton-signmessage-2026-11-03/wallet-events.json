@@ -1,0 +1,282 @@
+[
+  {
+    "observedAt": "2026-11-03T10:48:44.870Z",
+    "type": "connection",
+    "value": {
+      "device": {
+        "platform": "android",
+        "appName": "Tonkeeper",
+        "appVersion": "26.06.2",
+        "maxProtocolVersion": 2,
+        "features": [
+          "SendTransaction",
+          {
+            "name": "SignData",
+            "types": [
+              "text",
+              "binary",
+              "cell"
+            ]
+          },
+          {
+            "name": "SendTransaction",
+            "maxMessages": 255
+          }
+        ]
+      },
+      "account": {
+        "address": "0:7a42f807c7d6214cc8a8492647a4e81307bcc5196305bb0c25ff42351dae4d24",
+        "chain": "-239",
+        "publicKey": "c9e19f2cc1d3addba945fe87692415a7ee2139181e821275b2aaaadbfb8cedae"
+      },
+      "provider": "http"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T10:48:44.956Z",
+    "type": "sign-capability",
+    "value": {
+      "features": [
+        "SendTransaction",
+        {
+          "name": "SignData",
+          "types": [
+            "text",
+            "binary",
+            "cell"
+          ]
+        },
+        {
+          "name": "SendTransaction",
+          "maxMessages": 255
+        }
+      ],
+      "supportsSignMessage": false,
+      "chain": "-239"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T10:48:44.967Z",
+    "type": "sign-error",
+    "value": {
+      "name": "TonConnectError",
+      "message": "[TON_CONNECT_SDK_ERROR] TonConnectError\nSignMessageRequest validation failed: Wrong 'address' format in message at index 0"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:02:04.348Z",
+    "type": "connection",
+    "value": {
+      "device": {
+        "platform": "android",
+        "appName": "Tonkeeper",
+        "appVersion": "26.10.4",
+        "maxProtocolVersion": 2,
+        "features": [
+          "SendTransaction",
+          {
+            "name": "SignData",
+            "types": [
+              "text",
+              "binary",
+              "cell"
+            ]
+          },
+          {
+            "name": "SendTransaction",
+            "maxMessages": 255
+          },
+          {
+            "name": "SignMessage",
+            "maxMessages": 255
+          }
+        ]
+      },
+      "account": {
+        "address": "0:7a42f807c7d6214cc8a8492647a4e81307bcc5196305bb0c25ff42351dae4d24",
+        "chain": "-239",
+        "publicKey": "c9e19f2cc1d3addba945fe87692415a7ee2139181e821275b2aaaadbfb8cedae"
+      },
+      "provider": "http"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:02:04.441Z",
+    "type": "sign-capability",
+    "value": {
+      "features": [
+        "SendTransaction",
+        {
+          "name": "SignData",
+          "types": [
+            "text",
+            "binary",
+            "cell"
+          ]
+        },
+        {
+          "name": "SendTransaction",
+          "maxMessages": 255
+        },
+        {
+          "name": "SignMessage",
+          "maxMessages": 255
+        }
+      ],
+      "supportsSignMessage": true,
+      "chain": "-239"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:02:04.449Z",
+    "type": "sign-error",
+    "value": {
+      "name": "Error",
+      "message": "Switch the dedicated wallet to testnet before requesting a signature"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:18:24.933Z",
+    "type": "connection",
+    "value": {
+      "device": {
+        "platform": "android",
+        "appName": "Tonkeeper",
+        "appVersion": "26.10.4",
+        "maxProtocolVersion": 2,
+        "features": [
+          "SendTransaction",
+          {
+            "name": "SignData",
+            "types": [
+              "text",
+              "binary",
+              "cell"
+            ]
+          },
+          {
+            "name": "SendTransaction",
+            "maxMessages": 255
+          },
+          {
+            "name": "SignMessage",
+            "maxMessages": 255
+          }
+        ]
+      },
+      "account": {
+        "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+        "chain": "-3",
+        "publicKey": "91a0d3523098850dc441f525f5fb22c8e25a7470a3888aada6868b093b37cb51"
+      },
+      "provider": "http"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:18:25.012Z",
+    "type": "sign-capability",
+    "value": {
+      "features": [
+        "SendTransaction",
+        {
+          "name": "SignData",
+          "types": [
+            "text",
+            "binary",
+            "cell"
+          ]
+        },
+        {
+          "name": "SendTransaction",
+          "maxMessages": 255
+        },
+        {
+          "name": "SignMessage",
+          "maxMessages": 255
+        }
+      ],
+      "supportsSignMessage": true,
+      "chain": "-3"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:19:00.750Z",
+    "type": "sign-error",
+    "value": {
+      "name": "UserRejectsError",
+      "message": "[TON_CONNECT_SDK_ERROR] UserRejectsError: User rejects the action in the wallet.\nUser declined the transaction"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:19:28.384Z",
+    "type": "connection",
+    "value": {
+      "device": {
+        "platform": "android",
+        "appName": "Tonkeeper",
+        "appVersion": "26.10.4",
+        "maxProtocolVersion": 2,
+        "features": [
+          "SendTransaction",
+          {
+            "name": "SignData",
+            "types": [
+              "text",
+              "binary",
+              "cell"
+            ]
+          },
+          {
+            "name": "SendTransaction",
+            "maxMessages": 255
+          },
+          {
+            "name": "SignMessage",
+            "maxMessages": 255
+          }
+        ]
+      },
+      "account": {
+        "address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+        "chain": "-3",
+        "publicKey": "91a0d3523098850dc441f525f5fb22c8e25a7470a3888aada6868b093b37cb51"
+      },
+      "provider": "http"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:19:28.458Z",
+    "type": "sign-capability",
+    "value": {
+      "features": [
+        "SendTransaction",
+        {
+          "name": "SignData",
+          "types": [
+            "text",
+            "binary",
+            "cell"
+          ]
+        },
+        {
+          "name": "SendTransaction",
+          "maxMessages": 255
+        },
+        {
+          "name": "SignMessage",
+          "maxMessages": 255
+        }
+      ],
+      "supportsSignMessage": true,
+      "chain": "-3"
+    }
+  },
+  {
+    "observedAt": "2026-11-03T11:20:04.450Z",
+    "type": "sign-result",
+    "value": {
+      "internalBocReturned": true,
+      "traceId": "01a1a123-4058-748a-8280-f912d444d276"
+    }
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "observedAt": "2026-11-03T11:26:57.264212+00:00",
+  "tag": "v26.10.4_1353",
+  "commit": "8597b87a990c8f88afc1d27cb17ff35a42d873ec",
+  "apk": {
+    "url": "https://github.com/tonkeeper/android/releases/download/v26.10.4_1353/Tonkeeper.apk",
+    "size": 150245335,
+    "sha256": "fd4568185f6b1c7ee111044cbbb00ff494e38acc94e29173dcf95077ed5f05b6",
+    "publisherCertificateSha256": "2cc80c10bd94b0cbec2ee3e84a1dde2deb4698cc029887a6aadbf93ca5e96d8a"
+  },
+  "sources": [
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/lib/blockchain/src/main/java/com/tonapps/blockchain/ton/contract/WalletV5R1Contract.kt",
+      "sha256": "ddc300695b730e7606033dc5be15b8f69d5169716313d1edaae9ed29d7e7a004"
+    },
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/lib/blockchain/src/main/java/com/tonapps/blockchain/ton/contract/BaseWalletContract.kt",
+      "sha256": "bc818433b776d5af47ae806f3ed0789f4849400a29dc36c156287435bed54c03"
+    },
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/lib/blockchain/src/main/java/com/tonapps/blockchain/ton/extensions/CellBuilder.kt",
+      "sha256": "132dcf8ac8e23b18936ed2e215686d73d6175340bb5cc766c44216028d938d7c"
+    },
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/ui/screen/send/transaction/SendTransactionViewModel.kt",
+      "sha256": "68f376e304dca6056788ba79d06afa82900c8ce1098f1cf10ab3b5918cf5ed9f"
+    },
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/extensions/WalletSignMessage.kt",
+      "sha256": "32b5c05ae4598251eca0b1e12b4de9562a4a43b7aeea62655ab67de6a9b40ba8"
+    },
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/tonconnect/TonConnectManager.kt",
+      "sha256": "b49af9c2ee447b07dfb69256013cc1079508d4719165dc445f85ec93c7da382c"
+    },
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/tonconnect/TonConnectSignMessageValidation.kt",
+      "sha256": "42f96e7a2b4af816a53127d7dca2637bd0bf13649a5f9657727a0c4d2d0b6aba"
+    },
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/tonconnect/bridge/JsonBuilder.kt",
+      "sha256": "f8d44f1e27a7885948078db8aa0ab8785934141b1a9976f7e68b6b1e8fa36962"
+    },
+    {
+      "url": "https://github.com/tonkeeper/android/blob/v26.10.4_1353/apps/wallet/instance/app/src/main/java/com/tonapps/tonkeeper/manager/tonconnect/bridge/model/BridgeMethod.kt",
+      "sha256": "0f9cca19a54c4f34a9f2b045a86651aae295cd2dd6b366b09c7b8d480f634642"
+    }
+  ]
+}
