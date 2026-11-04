@@ -1,0 +1,48 @@
+{
+  "observedAt": "2026-11-04T02:28:42.778Z",
+  "requestCreatedAt": "2026-11-04T02:20:24.635Z",
+  "walletRegistryAppName": "telegram-wallet",
+  "clientLabel": "Walt (ex. Wallet)",
+  "connectionMethod": "TON Connect SDK 5.0.0 over official SSE bridge",
+  "bridgeUrl": "https://walletbot.me/tonconnect-bridge/bridge",
+  "requestedItems": [
+    "ton_addr"
+  ],
+  "requestAndResponseRunMatch": true,
+  "userReportedConnected": true,
+  "device": {
+    "platform": "android",
+    "appName": "telegram-wallet",
+    "appVersion": "1",
+    "maxProtocolVersion": 2,
+    "features": [
+      "SendTransaction",
+      {
+        "name": "SendTransaction",
+        "maxMessages": 255
+      },
+      {
+        "name": "SignData",
+        "types": [
+          "text",
+          "binary",
+          "cell"
+        ]
+      }
+    ]
+  },
+  "provider": "http",
+  "accountChain": "-239",
+  "signMessageAdvertised": false,
+  "signMessageRequested": false,
+  "sendTransactionRequested": false,
+  "signDataRequested": false,
+  "broadcast": false,
+  "conclusion": "Current connection does not advertise the SignMessage capability required by the accepted backend relay flow; not a payment execution test.",
+  "versionScope": "appVersion is the TON Connect self-reported value, not the installed Telegram build.",
+  "omittedFields": [
+    "account.address",
+    "account.publicKey",
+    "account.walletStateInit"
+  ]
+}
