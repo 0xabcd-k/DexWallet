@@ -1,0 +1,162 @@
+{
+  "observedAt": "2026-11-04T05:35:43.696Z",
+  "scope": "Read-only preflight; no payment signature, broadcast, or fee deduction.",
+  "walletBaseline": {
+    "connectionObservedAt": "2026-11-04T02:28:42.778Z",
+    "appName": "telegram-wallet",
+    "accountChain": "-239",
+    "stateInitMatchesAccountAddress": true,
+    "codeHash": "20834b7b72b112147e1b2fb457b84e74d1a30f04f737d4f62a668e9552d2b72f",
+    "matchesW5R1": true,
+    "library": "@ton/ton 16.3.0",
+    "onChainWalletStateChecked": false,
+    "accountIdentifiersOmitted": true
+  },
+  "userReportedTestnetSetting": true,
+  "publicServiceChecks": {
+    "observedAt": "2026-11-04T04:56:15.633137+00:00",
+    "results": [
+      {
+        "name": "tonapi-mainnet-gasless",
+        "url": "https://tonapi.io/v2/gasless/config",
+        "status": "200",
+        "bytes": 1181,
+        "response": {
+          "relay_address": "0:7ae5056c3fd9406f9bbbe7c7089cd4c40801d9075486cbedb7ce12df119eacf1",
+          "gas_jettons": [
+            {
+              "master_id": "0:78db4c90b19a1b19ccb45580df48a1e91b6410970fa3d5ffed3eed49e3cf08ff"
+            },
+            {
+              "master_id": "0:589d4ac897006b5aaa7fae5f95c5e481bd34765664df0b831a9d0eb9ee7fc150"
+            },
+            {
+              "master_id": "0:e1c8fcdb223253fd69d8de01a9ae349850af5f88632358c7b3c4ef0c66251d7d"
+            },
+            {
+              "master_id": "0:bdf3fa8098d129b54b4f73b5bac5d1e1fd91eb054169c3916dfc8ccd536d1000"
+            },
+            {
+              "master_id": "0:afc49cb8786f21c87045b19ede78fc6b46c51048513f8e9a6d44060199c1bf0c"
+            },
+            {
+              "master_id": "0:09f2e59dec406ab26a5259a45d7ff23ef11f3e5c7c21de0b0d2a1cbe52b76b3d"
+            },
+            {
+              "master_id": "0:78cd9bac1ec6d4daf5533ea8e19689083a8899844742313ef4dc2584ce14cea3"
+            },
+            {
+              "master_id": "0:ae3e6d351e576276e439e7168117fd64696fd6014cb90c77b2f2cbaacd4fcc00"
+            },
+            {
+              "master_id": "0:5390b02112d7990918117bfc4cb39644d1b32b76e63129bcb3182a575d6f1d45"
+            },
+            {
+              "master_id": "0:f4bdd480fcd79d47dbaf6e037d1229115feb2e7ac0f119e160ebd5d031abdf2e"
+            },
+            {
+              "master_id": "0:2f956143c461769579baef2e32cc2d7bc18283f40d20bb03e432cd603ac33ffc"
+            },
+            {
+              "master_id": "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"
+            },
+            {
+              "master_id": "0:fe72f474373e97032441bdb873f9a6d3ad10bab08e6dbc7befa5e42b695f5400"
+            }
+          ]
+        }
+      },
+      {
+        "name": "tonapi-testnet-gasless",
+        "url": "https://testnet.tonapi.io/v2/gasless/config",
+        "status": "200",
+        "bytes": 1181,
+        "response": {
+          "relay_address": "0:7ae5056c3fd9406f9bbbe7c7089cd4c40801d9075486cbedb7ce12df119eacf1",
+          "gas_jettons": [
+            {
+              "master_id": "0:f4bdd480fcd79d47dbaf6e037d1229115feb2e7ac0f119e160ebd5d031abdf2e"
+            },
+            {
+              "master_id": "0:78cd9bac1ec6d4daf5533ea8e19689083a8899844742313ef4dc2584ce14cea3"
+            },
+            {
+              "master_id": "0:ae3e6d351e576276e439e7168117fd64696fd6014cb90c77b2f2cbaacd4fcc00"
+            },
+            {
+              "master_id": "0:5390b02112d7990918117bfc4cb39644d1b32b76e63129bcb3182a575d6f1d45"
+            },
+            {
+              "master_id": "0:e1c8fcdb223253fd69d8de01a9ae349850af5f88632358c7b3c4ef0c66251d7d"
+            },
+            {
+              "master_id": "0:bdf3fa8098d129b54b4f73b5bac5d1e1fd91eb054169c3916dfc8ccd536d1000"
+            },
+            {
+              "master_id": "0:2f956143c461769579baef2e32cc2d7bc18283f40d20bb03e432cd603ac33ffc"
+            },
+            {
+              "master_id": "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"
+            },
+            {
+              "master_id": "0:afc49cb8786f21c87045b19ede78fc6b46c51048513f8e9a6d44060199c1bf0c"
+            },
+            {
+              "master_id": "0:fe72f474373e97032441bdb873f9a6d3ad10bab08e6dbc7befa5e42b695f5400"
+            },
+            {
+              "master_id": "0:09f2e59dec406ab26a5259a45d7ff23ef11f3e5c7c21de0b0d2a1cbe52b76b3d"
+            },
+            {
+              "master_id": "0:78db4c90b19a1b19ccb45580df48a1e91b6410970fa3d5ffed3eed49e3cf08ff"
+            },
+            {
+              "master_id": "0:589d4ac897006b5aaa7fae5f95c5e481bd34765664df0b831a9d0eb9ee7fc150"
+            }
+          ]
+        }
+      }
+    ],
+    "comparison": {
+      "officialMainnetUsdtMaster": "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe",
+      "communityTestMaster": "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+      "testnetConfigIncludesOfficialMainnetAddress": true,
+      "testnetConfigIncludesCommunityFixture": false
+    },
+    "testnetTokenStates": [
+      {
+        "name": "official-address-on-testnet",
+        "address": "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe",
+        "ok": true,
+        "state": "uninitialized",
+        "balance": "227264914555",
+        "hasCode": false,
+        "error": null
+      },
+      {
+        "name": "community-fixture-on-testnet",
+        "address": "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+        "ok": true,
+        "state": "active",
+        "balance": "19297762586",
+        "hasCode": true,
+        "error": null
+      }
+    ],
+    "walletUsesThisGaslessServiceVerified": false
+  },
+  "explicitTestnetConnection": {
+    "observedAt": "2026-11-04T05:09:44.430Z",
+    "requestedNetwork": "-3",
+    "requestedItems": [
+      "ton_addr"
+    ],
+    "wallet": "telegram-wallet",
+    "errorName": "BadRequestError",
+    "errorMessage": "[TON_CONNECT_SDK_ERROR] BadRequestError: Request to the wallet contains errors.\nNetwork is not supported",
+    "manifestReachable": true,
+    "paymentRequested": false,
+    "broadcast": false,
+    "conclusion": "Wallet rejected the explicit testnet connection request; does not yet establish whether an unqualified connection can return a testnet account."
+  }
+}
