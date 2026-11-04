@@ -1,0 +1,62 @@
+{
+  "observedAt": "2026-11-04T06:12:44.996Z",
+  "scope": "Telegram/Walt testnet connection comparison; no payment request",
+  "request": {
+    "requestedItems": [
+      "ton_addr"
+    ],
+    "connectionNetworkOmitted": true,
+    "requiredPaymentNetwork": "-3",
+    "matchedCurrentHandoff": true,
+    "sdkVersion": "5.0.0"
+  },
+  "response": {
+    "accountChain": "-239",
+    "device": {
+      "platform": "android",
+      "appName": "telegram-wallet",
+      "appVersion": "1",
+      "maxProtocolVersion": 2,
+      "features": [
+        "SendTransaction",
+        {
+          "name": "SendTransaction",
+          "maxMessages": 255
+        },
+        {
+          "name": "SignData",
+          "types": [
+            "text",
+            "binary",
+            "cell"
+          ]
+        }
+      ]
+    },
+    "appVersionIsSelfReported": true
+  },
+  "offlineChecks": {
+    "stateInitMatchesAccountAddress": true,
+    "matchesW5R1": true,
+    "sameAddressAsEarlierMainnet": true,
+    "samePublicKeyAsEarlierMainnet": true,
+    "library": "@ton/ton 16.3.0",
+    "accountOwnershipProven": false,
+    "onChainWalletStateChecked": false
+  },
+  "safeguard": {
+    "disconnectOnNonTestnet": true,
+    "connectorConnectedAfterCallback": false,
+    "checkedAt": "2026-11-04T06:20:27.369Z",
+    "paymentRequested": false,
+    "signatureRequested": false,
+    "broadcast": false
+  },
+  "interpretation": {
+    "testnetConnectionEstablished": false,
+    "usdtFeePaymentVerified": false,
+    "allWalletTestnetSupportRuledOut": false,
+    "reason": "Current connection returned mainnet; wallet network setting at connection time still requires confirmation."
+  },
+  "accountIdentifiersOmitted": true
+}
