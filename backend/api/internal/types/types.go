@@ -88,6 +88,13 @@ type AccountHoldsResponse struct {
 	TraceId string           `json:"traceId"`
 }
 
+type AssignLimitPlanRequest struct {
+	Idx             string `path:"idx"`
+	PlanIdx         string `json:"planIdx"`
+	ExpectedPlanIdx string `json:"expectedPlanIdx"`
+	Reason          string `json:"reason"`
+}
+
 type BackofficeAccount struct {
 	Idx                string `json:"idx"`
 	Email              string `json:"email"`
@@ -197,6 +204,14 @@ type ChallengeResponse struct {
 	TraceId string        `json:"traceId"`
 }
 
+type CreateLimitPlanRequest struct {
+	RequestKey         string `json:"requestKey"`
+	Name               string `json:"name"`
+	MinAmount          string `json:"minAmount"`
+	MaxAmount          string `json:"maxAmount"`
+	DailyOutgoingLimit string `json:"dailyOutgoingLimit"`
+}
+
 type CurrentUserData struct {
 	Idx       string `json:"idx"`
 	Nickname  string `json:"nickname"`
@@ -217,7 +232,7 @@ type EmailLoginRequest struct {
 }
 
 type ErrorResponse struct {
-	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND"`
+	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND|PAYMENT_RESTRICTED|TRANSFER_AMOUNT_LIMIT|TRANSFER_DAILY_LIMIT|INSUFFICIENT_BALANCE|TRANSFER_REQUEST_CONFLICT|TRANSFER_OUTCOME_UNKNOWN|TRANSFER_BUSY|TRANSFER_RECIPIENT_UNAVAILABLE|IDENTITY_HISTORY_UNKNOWN"`
 	Message string `json:"message"`
 	TraceId string `json:"traceId"`
 }
@@ -244,14 +259,41 @@ type IdentitiesResponse struct {
 	TraceId string         `json:"traceId"`
 }
 
+type IdentityApproval struct {
+	ExpectedRevision    int64 `json:"expectedRevision"`
+	ExpectedReplacement bool  `json:"expectedReplacement"`
+}
+
 type IdentityEmailCodeRequest struct {
 	SendEmailRequest
 	Purpose string `json:"purpose,options=bind|replace"`
 }
 
 type IdentityEmailRequest struct {
+	IdentityApproval
 	EmailLoginRequest
 	Purpose string `json:"purpose,options=bind|replace"`
+}
+
+type IdentityImpactData struct {
+	Revision           int64  `json:"revision"`
+	Replacement        bool   `json:"replacement"`
+	RestrictionSeconds int64  `json:"restrictionSeconds"`
+	RestrictedUntil    string `json:"restrictedUntil"`
+}
+
+type IdentityImpactRequest struct {
+	Identity string `json:"identity,options=email|telegram"`
+	Purpose  string `json:"purpose,options=bind|replace"`
+	Email    string `json:"email,optional"`
+	InitData string `json:"initData,optional"`
+}
+
+type IdentityImpactResponse struct {
+	Code    string             `json:"code,options=OK"`
+	Message string             `json:"message"`
+	Data    IdentityImpactData `json:"data"`
+	TraceId string             `json:"traceId"`
 }
 
 type IdentitySummary struct {
@@ -261,8 +303,31 @@ type IdentitySummary struct {
 }
 
 type IdentityTelegramRequest struct {
+	IdentityApproval
 	TelegramLoginRequest
 	Purpose string `json:"purpose,options=bind|replace"`
+}
+
+type LimitPlanResponse struct {
+	Code    string            `json:"code,options=OK"`
+	Message string            `json:"message"`
+	Data    TransferLimitPlan `json:"data"`
+	TraceId string            `json:"traceId"`
+}
+
+type LimitPlansData struct {
+	Plans []TransferLimitPlan `json:"plans"`
+}
+
+type LimitPlansRequest struct {
+	Page int64 `form:"page,default=1,range=[1:1000000]"`
+}
+
+type LimitPlansResponse struct {
+	Code    string         `json:"code,options=OK"`
+	Message string         `json:"message"`
+	Data    LimitPlansData `json:"data"`
+	TraceId string         `json:"traceId"`
 }
 
 type ManagedUserData struct {
@@ -288,9 +353,29 @@ type ManagedUserStatusRequest struct {
 	Reason string `json:"reason"`
 }
 
+type ReceiveCodeData struct {
+	User        CurrentUserData `json:"user"`
+	Code        string          `json:"code"`
+	Url         string          `json:"url"`
+	TelegramUrl string          `json:"telegramUrl"`
+}
+
+type ReceiveCodeResponse struct {
+	Code    string          `json:"code,options=OK"`
+	Message string          `json:"message"`
+	Data    ReceiveCodeData `json:"data"`
+	TraceId string          `json:"traceId"`
+}
+
 type SendEmailRequest struct {
 	Email  string `json:"email"`
 	Locale string `json:"locale,default=en,options=en|zh-CN"`
+}
+
+type SubmitTransferRequest struct {
+	RequestKey   string `json:"requestKey"`
+	RecipientIdx string `json:"recipientIdx"`
+	Amount       string `json:"amount"`
 }
 
 type TelegramLoginRequest struct {
@@ -298,9 +383,10 @@ type TelegramLoginRequest struct {
 }
 
 type TokenData struct {
-	AccessToken string `json:"accessToken"`
-	UserIdx     string `json:"userIdx"`
-	ExpiresAt   int64  `json:"expiresAt"`
+	RestrictedUntil string `json:"restrictedUntil,optional"`
+	AccessToken     string `json:"accessToken"`
+	UserIdx         string `json:"userIdx"`
+	ExpiresAt       int64  `json:"expiresAt"`
 }
 
 type TokenResponse struct {
@@ -310,10 +396,75 @@ type TokenResponse struct {
 	TraceId string    `json:"traceId"`
 }
 
+type TransferByRequestRequest struct {
+	RequestKey string `path:"requestKey"`
+}
+
+type TransferData struct {
+	Idx          string          `json:"idx"`
+	Direction    string          `json:"direction,options=in|out"`
+	Counterparty CurrentUserData `json:"counterparty"`
+	Amount       string          `json:"amount"`
+	Fee          string          `json:"fee"`
+	Unit         string          `json:"unit,options=USD"`
+	Status       string          `json:"status,options=completed"`
+	CreatedAt    string          `json:"createdAt"`
+}
+
+type TransferDetailRequest struct {
+	Idx string `path:"idx"`
+}
+
+type TransferLimitPlan struct {
+	Idx                string `json:"idx"`
+	Name               string `json:"name"`
+	MinAmount          string `json:"minAmount"`
+	MaxAmount          string `json:"maxAmount"`
+	DailyOutgoingLimit string `json:"dailyOutgoingLimit"`
+}
+
+type TransferPolicyData struct {
+	Plan            TransferLimitPlan `json:"plan"`
+	UsedToday       string            `json:"usedToday"`
+	RemainingToday  string            `json:"remainingToday"`
+	ResetAt         string            `json:"resetAt"`
+	RestrictedUntil string            `json:"restrictedUntil"`
+}
+
+type TransferPolicyResponse struct {
+	Code    string             `json:"code,options=OK"`
+	Message string             `json:"message"`
+	Data    TransferPolicyData `json:"data"`
+	TraceId string             `json:"traceId"`
+}
+
+type TransferResponse struct {
+	Code    string       `json:"code,options=OK"`
+	Message string       `json:"message"`
+	Data    TransferData `json:"data"`
+	TraceId string       `json:"traceId"`
+}
+
+type TransferTargetRequest struct {
+	RecipientIdx string `json:"recipientIdx,optional"`
+	ReceiveCode  string `json:"receiveCode,optional"`
+}
+
+type TransferTargetResponse struct {
+	Code    string          `json:"code,options=OK"`
+	Message string          `json:"message"`
+	Data    CurrentUserData `json:"data"`
+	TraceId string          `json:"traceId"`
+}
+
 type UnbindRequest struct {
 	Identity string `json:"identity,options=email|telegram"`
 }
 
 type UpdateProfileRequest struct {
 	Nickname string `json:"nickname"`
+}
+
+type UserLimitPlanRequest struct {
+	Idx string `path:"idx"`
 }

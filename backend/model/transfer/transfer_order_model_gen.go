@@ -41,13 +41,16 @@ type (
 	}
 
 	TransferOrder struct {
-		Id          int64           `db:"id"`
-		SenderId    int64           `db:"sender_id"`
-		RecipientId int64           `db:"recipient_id"`
-		RequestKey  string          `db:"request_key"`
-		Amount      decimal.Decimal `db:"amount"`
-		VoucherId   sql.NullInt64   `db:"voucher_id"`
-		CreatedAt   time.Time       `db:"created_at"`
+		Id                int64           `db:"id"`
+		SenderId          int64           `db:"sender_id"`
+		RecipientId       int64           `db:"recipient_id"`
+		RequestKey        string          `db:"request_key"`
+		Amount            decimal.Decimal `db:"amount"`
+		VoucherId         sql.NullInt64   `db:"voucher_id"`
+		LimitPlanId       sql.NullInt64   `db:"limit_plan_id"`
+		SenderNickname    string          `db:"sender_nickname"`
+		RecipientNickname string          `db:"recipient_nickname"`
+		CreatedAt         time.Time       `db:"created_at"`
 	}
 )
 
@@ -107,14 +110,14 @@ func (m *defaultTransferOrderModel) FindOneByVoucherId(ctx context.Context, vouc
 }
 
 func (m *defaultTransferOrderModel) Insert(ctx context.Context, data *TransferOrder) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?)", m.table, transferOrderRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.SenderId, data.RecipientId, data.RequestKey, data.Amount, data.VoucherId)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?)", m.table, transferOrderRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.SenderId, data.RecipientId, data.RequestKey, data.Amount, data.VoucherId, data.LimitPlanId, data.SenderNickname, data.RecipientNickname)
 	return ret, err
 }
 
 func (m *defaultTransferOrderModel) Update(ctx context.Context, newData *TransferOrder) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, transferOrderRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.SenderId, newData.RecipientId, newData.RequestKey, newData.Amount, newData.VoucherId, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.SenderId, newData.RecipientId, newData.RequestKey, newData.Amount, newData.VoucherId, newData.LimitPlanId, newData.SenderNickname, newData.RecipientNickname, newData.Id)
 	return err
 }
 

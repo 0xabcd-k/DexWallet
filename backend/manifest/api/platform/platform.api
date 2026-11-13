@@ -2,7 +2,7 @@ syntax = "v1"
 
 type (
     ErrorResponse {
-        Code string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND"`
+        Code string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND|PAYMENT_RESTRICTED|TRANSFER_AMOUNT_LIMIT|TRANSFER_DAILY_LIMIT|INSUFFICIENT_BALANCE|TRANSFER_REQUEST_CONFLICT|TRANSFER_OUTCOME_UNKNOWN|TRANSFER_BUSY|TRANSFER_RECIPIENT_UNAVAILABLE|IDENTITY_HISTORY_UNKNOWN"`
         Message string `json:"message"`
         TraceId string `json:"traceId"`
     }
@@ -43,10 +43,12 @@ type (
         Purpose string `json:"purpose,options=bind|replace"`
     }
     IdentityEmailRequest {
+        IdentityApproval
         EmailLoginRequest
         Purpose string `json:"purpose,options=bind|replace"`
     }
     IdentityTelegramRequest {
+        IdentityApproval
         TelegramLoginRequest
         Purpose string `json:"purpose,options=bind|replace"`
     }
@@ -64,6 +66,7 @@ type (
         TraceId string `json:"traceId"`
     }
     TokenData {
+        RestrictedUntil string `json:"restrictedUntil,optional"`
         AccessToken string `json:"accessToken"`
         UserIdx string `json:"userIdx"`
         ExpiresAt int64 `json:"expiresAt"`
@@ -376,4 +379,154 @@ service platform {
     post /v1/admin/user/status (ManagedUserStatusRequest) returns (ManagedUserResponse)
     @handler backofficeAudits
     get /v1/admin/audits (BackofficeAuditRequest) returns (BackofficeAuditResponse)
+}
+
+// Only preview metadata, never a separate authentication credential.
+type (
+    IdentityApproval {
+        ExpectedRevision int64 `json:"expectedRevision"`
+        ExpectedReplacement bool `json:"expectedReplacement"`
+    }
+    IdentityImpactRequest {
+        Identity string `json:"identity,options=email|telegram"`
+        Purpose string `json:"purpose,options=bind|replace"`
+        Email string `json:"email,optional"`
+        InitData string `json:"initData,optional"`
+    }
+    IdentityImpactData {
+        Revision int64 `json:"revision"`
+        Replacement bool `json:"replacement"`
+        RestrictionSeconds int64 `json:"restrictionSeconds"`
+        RestrictedUntil string `json:"restrictedUntil"`
+    }
+    IdentityImpactResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data IdentityImpactData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+    TransferTargetRequest {
+        RecipientIdx string `json:"recipientIdx,optional"`
+        ReceiveCode string `json:"receiveCode,optional"`
+    }
+    TransferTargetResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data CurrentUserData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+    ReceiveCodeData {
+        User CurrentUserData `json:"user"`
+        Code string `json:"code"`
+        Url string `json:"url"`
+        TelegramUrl string `json:"telegramUrl"`
+    }
+    ReceiveCodeResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data ReceiveCodeData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+    TransferLimitPlan {
+        Idx string `json:"idx"`
+        Name string `json:"name"`
+        MinAmount string `json:"minAmount"`
+        MaxAmount string `json:"maxAmount"`
+        DailyOutgoingLimit string `json:"dailyOutgoingLimit"`
+    }
+    TransferPolicyData {
+        Plan TransferLimitPlan `json:"plan"`
+        UsedToday string `json:"usedToday"`
+        RemainingToday string `json:"remainingToday"`
+        ResetAt string `json:"resetAt"`
+        RestrictedUntil string `json:"restrictedUntil"`
+    }
+    TransferPolicyResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data TransferPolicyData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+    SubmitTransferRequest {
+        RequestKey string `json:"requestKey"`
+        RecipientIdx string `json:"recipientIdx"`
+        Amount string `json:"amount"`
+    }
+    TransferByRequestRequest { RequestKey string `path:"requestKey"` }
+    TransferDetailRequest { Idx string `path:"idx"` }
+    TransferData {
+        Idx string `json:"idx"`
+        Direction string `json:"direction,options=in|out"`
+        Counterparty CurrentUserData `json:"counterparty"`
+        Amount string `json:"amount"`
+        Fee string `json:"fee"`
+        Unit string `json:"unit,options=USD"`
+        Status string `json:"status,options=completed"`
+        CreatedAt string `json:"createdAt"`
+    }
+    TransferResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data TransferData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+    LimitPlansRequest { Page int64 `form:"page,default=1,range=[1:1000000]"` }
+    LimitPlansData { Plans []TransferLimitPlan `json:"plans"` }
+    LimitPlansResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data LimitPlansData `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+    CreateLimitPlanRequest {
+        RequestKey string `json:"requestKey"`
+        Name string `json:"name"`
+        MinAmount string `json:"minAmount"`
+        MaxAmount string `json:"maxAmount"`
+        DailyOutgoingLimit string `json:"dailyOutgoingLimit"`
+    }
+    LimitPlanResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        Data TransferLimitPlan `json:"data"`
+        TraceId string `json:"traceId"`
+    }
+    UserLimitPlanRequest { Idx string `path:"idx"` }
+    AssignLimitPlanRequest {
+        Idx string `path:"idx"`
+        PlanIdx string `json:"planIdx"`
+        ExpectedPlanIdx string `json:"expectedPlanIdx"`
+        Reason string `json:"reason"`
+    }
+)
+@server(group: transfer middleware: AuthTransport,UserAuth)
+service platform {
+    @handler receiveCode
+    get /v1/user/receive-code returns (ReceiveCodeResponse)
+    @handler transferTarget
+    post /v1/user/transfer-targets/resolve (TransferTargetRequest) returns (TransferTargetResponse)
+    @handler transferPolicy
+    get /v1/user/transfer-policy returns (TransferPolicyResponse)
+    @handler submitTransfer
+    post /v1/user/transfers (SubmitTransferRequest) returns (TransferResponse)
+    @handler transferByRequest
+    get /v1/user/transfers/by-request/:requestKey (TransferByRequestRequest) returns (TransferResponse)
+    @handler transferDetail
+    get /v1/user/transfers/:idx (TransferDetailRequest) returns (TransferResponse)
+}
+@server(group: identity middleware: AuthTransport,UserAuth)
+service platform {
+    @handler identityImpact
+    post /v1/user/identities/impact (IdentityImpactRequest) returns (IdentityImpactResponse)
+}
+@server(group: backoffice middleware: BackofficeTransport,AdminAuth)
+service platform {
+    @handler limitPlans
+    get /v1/admin/transfer-limit-plans (LimitPlansRequest) returns (LimitPlansResponse)
+    @handler createLimitPlan
+    post /v1/admin/transfer-limit-plans (CreateLimitPlanRequest) returns (LimitPlanResponse)
+    @handler userLimitPlan
+    get /v1/admin/users/:idx/transfer-limit-plan (UserLimitPlanRequest) returns (TransferPolicyResponse)
+    @handler assignLimitPlan
+    put /v1/admin/users/:idx/transfer-limit-plan (AssignLimitPlanRequest) returns (TransferPolicyResponse)
 }

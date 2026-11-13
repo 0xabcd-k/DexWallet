@@ -278,6 +278,7 @@ func TestBackofficeHTTP(t *testing.T) {
 	}
 	call("GET", "/v1/user/current", productToken, nil, 200, "OK")
 	call("GET", "/v1/admin/user?idx="+productIdx, token, nil, 200, "OK")
+	checkTransferPlanHTTP(t, s, token, productToken, mt, productIdx, call)
 	for _, status := range []string{"disabled", "active"} {
 		call("POST", "/v1/admin/user/status", token, map[string]string{"idx": productIdx, "status": status, "reason": "product status check"}, 200, "OK")
 		if status == "disabled" {

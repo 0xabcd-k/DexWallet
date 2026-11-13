@@ -90,6 +90,14 @@ export interface AccountHoldsResponse {
 	traceId: string
 }
 
+export interface AssignLimitPlanRequest {
+	planIdx: string
+	expectedPlanIdx: string
+	reason: string
+}
+export interface AssignLimitPlanRequestParams {
+}
+
 export interface BackofficeAccount {
 	idx: string
 	email: string
@@ -206,6 +214,14 @@ export interface ChallengeResponse {
 	traceId: string
 }
 
+export interface CreateLimitPlanRequest {
+	requestKey: string
+	name: string
+	minAmount: string
+	maxAmount: string
+	dailyOutgoingLimit: string
+}
+
 export interface CurrentUserData {
 	idx: string
 	nickname: string
@@ -226,7 +242,7 @@ export interface EmailLoginRequest {
 }
 
 export interface ErrorResponse {
-	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND'
+	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN'
 	message: string
 	traceId: string
 }
@@ -253,6 +269,11 @@ export interface IdentitiesResponse {
 	traceId: string
 }
 
+export interface IdentityApproval {
+	expectedRevision: number
+	expectedReplacement: boolean
+}
+
 export interface IdentityEmailCodeRequest {
 	email: string
 	locale: 'en' | 'zh-CN'
@@ -260,10 +281,33 @@ export interface IdentityEmailCodeRequest {
 }
 
 export interface IdentityEmailRequest {
+	expectedRevision: number
+	expectedReplacement: boolean
 	email: string
 	challenge: string
 	code: string
 	purpose: 'bind' | 'replace'
+}
+
+export interface IdentityImpactData {
+	revision: number
+	replacement: boolean
+	restrictionSeconds: number
+	restrictedUntil: string
+}
+
+export interface IdentityImpactRequest {
+	identity: 'email' | 'telegram'
+	purpose: 'bind' | 'replace'
+	email?: string
+	initData?: string
+}
+
+export interface IdentityImpactResponse {
+	code: 'OK'
+	message: string
+	data: IdentityImpactData
+	traceId: string
 }
 
 export interface IdentitySummary {
@@ -273,8 +317,34 @@ export interface IdentitySummary {
 }
 
 export interface IdentityTelegramRequest {
+	expectedRevision: number
+	expectedReplacement: boolean
 	initData: string
 	purpose: 'bind' | 'replace'
+}
+
+export interface LimitPlanResponse {
+	code: 'OK'
+	message: string
+	data: TransferLimitPlan
+	traceId: string
+}
+
+export interface LimitPlansData {
+	plans: Array<TransferLimitPlan>
+}
+
+export interface LimitPlansRequest {
+}
+export interface LimitPlansRequestParams {
+	page: number
+}
+
+export interface LimitPlansResponse {
+	code: 'OK'
+	message: string
+	data: LimitPlansData
+	traceId: string
 }
 
 export interface ManagedUserData {
@@ -302,9 +372,29 @@ export interface ManagedUserStatusRequest {
 	reason: string
 }
 
+export interface ReceiveCodeData {
+	user: CurrentUserData
+	code: string
+	url: string
+	telegramUrl: string
+}
+
+export interface ReceiveCodeResponse {
+	code: 'OK'
+	message: string
+	data: ReceiveCodeData
+	traceId: string
+}
+
 export interface SendEmailRequest {
 	email: string
 	locale: 'en' | 'zh-CN'
+}
+
+export interface SubmitTransferRequest {
+	requestKey: string
+	recipientIdx: string
+	amount: string
 }
 
 export interface TelegramLoginRequest {
@@ -312,6 +402,7 @@ export interface TelegramLoginRequest {
 }
 
 export interface TokenData {
+	restrictedUntil?: string
 	accessToken: string
 	userIdx: string
 	expiresAt: number
@@ -324,10 +415,78 @@ export interface TokenResponse {
 	traceId: string
 }
 
+export interface TransferByRequestRequest {
+}
+export interface TransferByRequestRequestParams {
+}
+
+export interface TransferData {
+	idx: string
+	direction: 'in' | 'out'
+	counterparty: CurrentUserData
+	amount: string
+	fee: string
+	unit: 'USD'
+	status: 'completed'
+	createdAt: string
+}
+
+export interface TransferDetailRequest {
+}
+export interface TransferDetailRequestParams {
+}
+
+export interface TransferLimitPlan {
+	idx: string
+	name: string
+	minAmount: string
+	maxAmount: string
+	dailyOutgoingLimit: string
+}
+
+export interface TransferPolicyData {
+	plan: TransferLimitPlan
+	usedToday: string
+	remainingToday: string
+	resetAt: string
+	restrictedUntil: string
+}
+
+export interface TransferPolicyResponse {
+	code: 'OK'
+	message: string
+	data: TransferPolicyData
+	traceId: string
+}
+
+export interface TransferResponse {
+	code: 'OK'
+	message: string
+	data: TransferData
+	traceId: string
+}
+
+export interface TransferTargetRequest {
+	recipientIdx?: string
+	receiveCode?: string
+}
+
+export interface TransferTargetResponse {
+	code: 'OK'
+	message: string
+	data: CurrentUserData
+	traceId: string
+}
+
 export interface UnbindRequest {
 	identity: 'email' | 'telegram'
 }
 
 export interface UpdateProfileRequest {
 	nickname: string
+}
+
+export interface UserLimitPlanRequest {
+}
+export interface UserLimitPlanRequestParams {
 }

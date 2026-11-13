@@ -52,3 +52,11 @@ RocketMQ:
 # After explicit business migration 9 and topic provisioning, enable the publisher:
 # Background: {}
 # Business task handlers are registered in code when their channels are implemented.
+
+# Public USD transfers require business migration 10.
+Transfer:
+  DefaultLimitPlanID: 1
+  # Enable signed personal codes with DEXWALLET_RECEIVE_CODE_SECRET (32+ bytes),
+  # a canonical WebURL and optionally the exact official TelegramURL:
+  # WebURL: https://wallet.example.com/
+  # TelegramURL: https://t.me/your_bot/your_app

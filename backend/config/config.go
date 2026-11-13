@@ -11,6 +11,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
+	"github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/go-sql-driver/mysql"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -21,6 +22,7 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
+	Transfer          transfer.Config    `json:",optional"`
 	Background        *background.Config `json:",optional"`
 	Backoffice        *backoffice.Config `json:",optional"`
 	Auth              *auth.Config       `json:",optional"`
@@ -64,6 +66,7 @@ func Load(path string) (Config, error) {
 	}
 	c.MySQL.DSN = os.Getenv("DEXWALLET_MYSQL_DSN")
 	c.IDSecret = os.Getenv("DEXWALLET_ID_SECRET")
+	c.Transfer.ReceiveSecret = os.Getenv("DEXWALLET_RECEIVE_CODE_SECRET")
 	if c.Session != nil {
 		c.Session.Secret = os.Getenv("DEXWALLET_TOKEN_SECRET")
 	}
@@ -82,6 +85,27 @@ func Load(path string) (Config, error) {
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if err := c.Transfer.Check(); err != nil {
+		return err
+	}
+	if c.Transfer.ReceiveSecret != "" {
+		secrets := []string{c.IDSecret}
+		if c.Auth != nil {
+			secrets = append(secrets, c.Auth.Secret)
+		}
+		if c.Session != nil {
+			secrets = append(secrets, c.Session.Secret)
+		}
+		if c.Backoffice != nil {
+			secrets = append(secrets, c.Backoffice.AdminSecret, c.Backoffice.MerchantSecret)
+		}
+		for _, secret := range secrets {
+			if secret == c.Transfer.ReceiveSecret {
+				return fmt.Errorf("receive-code secret must be independent")
+			}
+		}
+	}
+
 	if c.Background != nil {
 		if err := c.Background.Check(); err != nil {
 			return err

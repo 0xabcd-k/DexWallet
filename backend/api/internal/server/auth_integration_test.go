@@ -150,7 +150,7 @@ func TestProductSessionHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer res.Body.Close()
-		if wantStatus == http.StatusNotFound {
+		if wantStatus == http.StatusNotFound && !strings.HasPrefix(path, "/v1/user/transfers") {
 			if res.StatusCode != wantStatus || !strings.HasPrefix(res.Header.Get("Content-Type"), "text/plain") || len(res.Header.Get(httpapi.TraceHeader)) != 32 || res.Header.Get(session.TokenHeader) != "" {
 				t.Fatal("fallback HTTP contract", res.Status, res.Header)
 			}
@@ -295,10 +295,10 @@ func TestProductSessionHTTP(t *testing.T) {
 		t.Fatal("HTTP renewal", err)
 	}
 
-	bind := map[string]string{"purpose": "bind", "initData": tg(100, 1)}
+	bind := map[string]any{"purpose": "bind", "initData": tg(100, 1), "expectedRevision": 1, "expectedReplacement": false}
 	h, b = call("POST", "/v1/user/identities/telegram/verify", token, bind, 200, "OK")
 	token = decodeToken(h, b)
-	replacement := map[string]string{"purpose": "replace", "email": "new@example.com", "challenge": send("new@example.com", token, "replace"), "code": mail.code("new@example.com")}
+	replacement := map[string]any{"expectedRevision": 2, "expectedReplacement": true, "purpose": "replace", "email": "new@example.com", "challenge": send("new@example.com", token, "replace"), "code": mail.code("new@example.com")}
 	h, b = call("POST", "/v1/user/identities/email/verify", token, replacement, 200, "OK")
 	changed := decodeToken(h, b)
 	call("GET", "/v1/user/current", token, nil, 401, "UNAUTHENTICATED")
@@ -360,6 +360,7 @@ func TestProductSessionHTTP(t *testing.T) {
 	// An external write without invalidation leaves an accepted short cache window.
 	checkLedgerHTTP(t, s, tgID, id, tgToken, call)
 	checkHoldsHTTP(t, s, tgID, id, tgToken, call)
+	checkPublicTransferHTTP(t, s, call)
 	// Critical writes still reject the stale actor against the locked database row.
 	if _, err = s.DB.ExecContext(ctx, "UPDATE `user` SET auth_version=auth_version+1 WHERE id=?", tgID); err != nil {
 		t.Fatal(err)

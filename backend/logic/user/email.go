@@ -55,7 +55,7 @@ func (s *Service) resolveEmailInSession(ctx context.Context, session sqlx.Sessio
 	if owner > 0 {
 		u, e = users.FindForUpdate(ctx, owner)
 	} else {
-		u, e = createUser(ctx, users, "", "")
+		u, e = s.createUser(ctx, users, "", "")
 	}
 	if e != nil {
 		return nil, e
@@ -91,6 +91,13 @@ func (s *Service) resolveEmailInSession(ctx context.Context, session sqlx.Sessio
 		identity.BindingVersion++
 		identity.BoundAt = sql.NullTime{Time: time.Now().UTC(), Valid: true}
 		if e = identities.Update(ctx, identity); e != nil {
+			return nil, e
+		}
+	}
+
+	if owner == 0 {
+		remember(u, model.IdentityEmail, identity.Id)
+		if e = users.Update(ctx, u); e != nil {
 			return nil, e
 		}
 	}

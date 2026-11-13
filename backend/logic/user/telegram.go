@@ -81,7 +81,7 @@ func (s *Service) resolveTelegramInSession(ctx context.Context, session sqlx.Ses
 	if owner > 0 {
 		u, e = users.FindForUpdate(ctx, owner)
 	} else {
-		u, e = createUser(ctx, users, initialNickname(profile.FirstName), stringValue(profile.PhotoURL))
+		u, e = s.createUser(ctx, users, initialNickname(profile.FirstName), stringValue(profile.PhotoURL))
 	}
 	if e != nil {
 		return nil, e
@@ -125,6 +125,13 @@ func (s *Service) resolveTelegramInSession(ctx context.Context, session sqlx.Ses
 	identity.LanguageCode = nullString(profile.LanguageCode)
 	if e = identities.Update(ctx, identity); e != nil {
 		return nil, e
+	}
+
+	if owner == 0 {
+		remember(u, model.IdentityTelegram, identity.Id)
+		if e = users.Update(ctx, u); e != nil {
+			return nil, e
+		}
 	}
 
 	result := Resolved{User: u, Binding: Binding{Type: model.IdentityTelegram, IdentityID: identity.Id, UserID: u.Id, Version: identity.BindingVersion}}

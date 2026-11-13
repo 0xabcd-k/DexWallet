@@ -79,6 +79,7 @@ test('binding conflict keeps account; success returns to source and new version 
   await page.getByRole('button', { name: 'Send code', exact: true }).click();
   await page.getByLabel('Verification code', { exact: true }).fill('123456');
   await page.getByRole('button', { name: 'Verify and link' }).click();
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click();
   await expect(page).toHaveURL(`${base}/#/settings`);
   await expect(page.getByText('New@example.com')).toBeVisible();
   await page.reload(); await expect(page.getByText(userIdx, { exact: true })).toBeVisible();
@@ -132,6 +133,7 @@ test('lost replacement response requires fresh login and never replays the mutat
   await page.getByRole('button', { name: 'Send code', exact: true }).click();
   await page.getByLabel('Verification code', { exact: true }).fill('123456');
   await page.getByRole('button', { name: 'Verify and link' }).click();
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   expect(calls).toBe(1);
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).token, SESSION_KEY)).toBeNull();

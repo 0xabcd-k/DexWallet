@@ -54,5 +54,5 @@ func (s *Service) VerifyEmail(ctx context.Context, address, challenge, code, sou
 	if intent.Purpose == userlogic.Login {
 		return s.users.ResolveOrCreateVerifiedEmail(ctx, email)
 	}
-	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityEmail, email, nil)
+	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityEmail, email, nil, intent.Approval)
 }

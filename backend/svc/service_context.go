@@ -42,6 +42,7 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
+	ReceiveCodes          *transferlogic.Codes
 	Config                config.Config
 	Background            *background.Runtime
 	Backoffice            *backoffice.Service
@@ -125,6 +126,10 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.ModelUserAccount = accountmodel.NewUserAccountModel(conn)
 	d.Accounts = accountlogic.New(d.ModelUserAccount)
 	d.Transfers = transferlogic.New(conn, d.Tx, d.Accounts)
+	d.ReceiveCodes, err = transferlogic.NewCodes(c.Transfer, c.Environment)
+	if err != nil {
+		return d, err
+	}
 	d.ModelEmailIdentity = usermodel.NewEmailIdentityModel(conn)
 	d.ModelTelegramIdentity = usermodel.NewTelegramIdentityModel(conn)
 	d.checks = append(d.checks, health.Check{Name: MySQLDependency, Required: true, Run: d.DB.PingContext})
@@ -133,7 +138,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 		d.ModelUser = usermodel.NewUserModelWithCache(conn, usermodel.NewUserCache(d.Redis, d.Namespace))
 		d.checks = append(d.checks, health.Check{Name: RedisDependency, Required: c.Redis.Required, Run: func(ctx context.Context) error { return d.Redis.Ping(ctx).Err() }})
 	}
-	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx)
+	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx, c.Transfer.DefaultLimitPlanID)
 	var sender authlogic.Mailer
 	if c.Auth != nil {
 		if c.Auth.EmailEnabled {

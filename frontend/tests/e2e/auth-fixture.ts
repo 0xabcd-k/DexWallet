@@ -45,6 +45,10 @@ export async function mockAccount(page: Page) {
     ] });
     if (path === '/v1/user/profile') { state.nickname = input.nickname ?? ''; return ok({ idx: userIdx, nickname: state.nickname, avatarUrl: '' }); }
     if (path === '/v1/user/identities/email/code') return ok({ challenge: 'b'.repeat(64), expiresAt: Math.floor(Date.now() / 1000) + 300 });
+    if (path === '/v1/user/identities/impact') {
+      if (state.occupied) return fail(409, 'IDENTITY_OCCUPIED');
+      return ok({ revision: state.version, replacement: input.purpose === 'replace', restrictionSeconds: input.purpose === 'replace' ? 86400 : 0, restrictedUntil: '' });
+    }
     if (path.endsWith('/verify')) {
       if (state.occupied) return fail(409, 'IDENTITY_OCCUPIED');
       if (input.purpose === 'replace') state.version++;

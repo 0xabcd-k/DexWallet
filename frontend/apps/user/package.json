@@ -10,17 +10,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@dexwallet/api-client": "workspace:*",
+    "@dexwallet/api-contract": "workspace:*",
+    "@dexwallet/i18n": "workspace:*",
+    "@dexwallet/session": "workspace:*",
+    "@tma.js/bridge": "2.3.3",
+    "@zxing/browser": "0.1.5",
+    "antd-mobile": "5.43.0",
+    "qrcode": "1.5.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router": "7.18.4",
-    "@dexwallet/api-client": "workspace:*",
-    "@dexwallet/i18n": "workspace:*",
-    "antd-mobile": "5.43.0",
-    "@tma.js/bridge": "2.3.3",
-    "@dexwallet/api-contract": "workspace:*",
-    "@dexwallet/session": "workspace:*"
+    "react-router": "7.18.4"
   },
   "devDependencies": {
-    "@noble/hashes": "2.0.1"
+    "@noble/hashes": "2.0.1",
+    "@types/qrcode": "1.5.6"
   }
 }

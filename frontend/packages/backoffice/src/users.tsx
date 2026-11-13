@@ -3,6 +3,7 @@ import { useTranslation } from '@dexwallet/i18n';
 import { Button, Input } from 'antd';
 import { useAuth, Failure } from './auth';
 import type { ManagedUserData, ManagedUserStatusRequest, ManagedUserRequestParams } from '@dexwallet/api-contract/platform';
+import { UserLimitPlan } from './limits';
 import { decodeUser } from './client';
 export function Users() {
   const { client } = useAuth();
@@ -101,6 +102,7 @@ export function Users() {
           </Button>
         </form>
       )}
+      {user && <UserLimitPlan key={user.idx} idx={user.idx} />}
       {error !== undefined && <Failure error={error} />}
     </section>
   );

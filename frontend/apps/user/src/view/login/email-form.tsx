@@ -4,6 +4,7 @@ import { useTranslation } from '@dexwallet/i18n';
 import type { EmailLoginRequest, ChallengeData } from '@dexwallet/api-contract/platform';
 import { authenticate, sendEmail } from '../../api/account';
 import { Failure } from '../../auth/context';
+import { approveIdentity } from './identity-impact';
 import { session } from '../../auth/session';
 
 const CODE_RESEND_MS = 60_000;
@@ -33,7 +34,9 @@ export default function EmailForm({ purpose, onSuccess }: { purpose?: 'bind' | '
       const input: EmailLoginRequest = { email: challenge.email, challenge: challenge.challenge, code };
       const ticket = purpose ? session.capture() : await session.begin(session.capture());
       if (!ticket) return;
-      await authenticate('email', purpose ? { ...input, purpose } : input, ticket);
+      const approval = purpose ? await approveIdentity({ identity: 'email', purpose, email: input.email }, ticket, t) : undefined;
+      if (purpose && !approval) return;
+      await authenticate('email', purpose ? { ...input, purpose, ...approval! } : input, ticket);
       if (active.current) onSuccess();
     }
     catch (failure) { if (active.current) setError(failure); } finally { if (active.current) setBusy(false); }

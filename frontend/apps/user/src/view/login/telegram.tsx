@@ -4,6 +4,7 @@ import { Button } from 'antd-mobile';
 import { useTranslation } from '@dexwallet/i18n';
 import { authenticate } from '../../api/account';
 import { Failure, useAuth } from '../../auth/context';
+import { approveIdentity } from './identity-impact';
 import { session } from '../../auth/session';
 
 const developmentTelegram = import.meta.env.DEV && import.meta.env.DEV_TELEGRAM;
@@ -16,7 +17,9 @@ export default function Telegram({ purpose, automatic = false, onSuccess }: { pu
     const ticket = purpose ? session.capture() : await session.begin(session.capture());
     if (!ticket) throw new ApiError('cancelled');
     const material = { initData: launch.rawInitData };
-    return authenticate('telegram', purpose ? { ...material, purpose } : material, ticket);
+    const approval = purpose ? await approveIdentity({ identity: 'telegram', purpose, ...material }, ticket, t, launch.mode !== 'telegram') : undefined;
+    if (purpose && !approval) throw new ApiError('cancelled');
+    return authenticate('telegram', purpose ? { ...material, purpose, ...approval! } : material, ticket);
   }
   async function submit(operation?: Promise<void>) {
     setBusy(true); setError(undefined);

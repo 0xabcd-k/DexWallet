@@ -56,7 +56,7 @@ function Statement({ kind }: { kind: string }) {
           <div className="record-title"><strong>{t(sourceNames[entry.businessType] ?? 'entryChange')}</strong><span>{t(kindNames[entry.kind]!)}</span></div>
           <p className={`record-amount record-${reserved ? 'hold' : entry.direction}`}><span>{t(activityLabel)}</span> {reserved ? '' : entry.direction === 'in' ? '+' : '−'}{formatAmount(entry.amount, unit)}</p>
           <dl><dt>{t(entry.balancePart === 'held' ? 'entryHeldAfter' : 'entryBalanceAfter')}</dt><dd>{formatAmount(entry.balanceAfter, unit)}</dd>
-            <dt>{t('entryBusinessId')}</dt><dd>{entry.businessIdx}</dd>
+            <dt>{t('entryBusinessId')}</dt><dd>{entry.businessType === 'transfer' ? <Link to={`/transfers/${entry.businessIdx}`}>{entry.businessIdx}</Link> : entry.businessIdx}</dd>
             <dt>{t('common:time')}</dt><dd><time dateTime={entry.createdAt}>{formatTime(Date.parse(entry.createdAt), i18n.resolvedLanguage === 'zh-CN' ? 'zh-CN' : 'en')}</time></dd></dl>
         </article></li>;
       })}

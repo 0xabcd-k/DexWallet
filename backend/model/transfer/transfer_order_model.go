@@ -2,8 +2,10 @@ package transfer
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"time"
 )
 
 var _ TransferOrderModel = (*customTransferOrderModel)(nil)
@@ -15,6 +17,7 @@ type (
 		transferOrderModel
 		WithSession(session sqlx.Session) TransferOrderModel
 		Complete(context.Context, int64, int64) error
+		InsertAt(context.Context, *TransferOrder, time.Time) (sql.Result, error)
 	}
 
 	customTransferOrderModel struct {
@@ -48,4 +51,8 @@ func (m *customTransferOrderModel) Complete(ctx context.Context, id, voucherID i
 		return fmt.Errorf("transfer %d completion affected %d rows", id, n)
 	}
 	return nil
+}
+
+func (m *customTransferOrderModel) InsertAt(ctx context.Context, row *TransferOrder, now time.Time) (sql.Result, error) {
+	return m.conn.ExecCtx(ctx, "INSERT INTO transfer_order (sender_id,recipient_id,request_key,amount,limit_plan_id,sender_nickname,recipient_nickname,created_at) VALUES (?,?,?,?,?,?,?,?)", row.SenderId, row.RecipientId, row.RequestKey, row.Amount, row.LimitPlanId, row.SenderNickname, row.RecipientNickname, now)
 }

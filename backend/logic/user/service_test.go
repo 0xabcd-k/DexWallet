@@ -12,7 +12,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
-var userColumns = []string{"id", "status", "nickname", "avatar_url", "auth_version", "created_at", "updated_at"}
+var userColumns = []string{"id", "status", "nickname", "avatar_url", "auth_version", "transfer_limit_plan_id", "payment_restricted_until", "identity_revision", "last_email_identity_id", "last_telegram_identity_id", "created_at", "updated_at"}
 var emailColumns = []string{"id", "user_id", "binding_version", "bound_at", "email_address", "email_local_part", "email_domain", "email_original", "created_at", "updated_at"}
 
 func mockService(t *testing.T) (*Service, sqlmock.Sqlmock) {
@@ -37,7 +37,7 @@ func TestCreateFailureRollsBackCandidateUser(t *testing.T) {
 	m.ExpectBegin()
 	m.ExpectExec("insert into `user`").WillReturnResult(sqlmock.NewResult(7, 1))
 	now := time.Now()
-	m.ExpectQuery("select .* from `user`").WillReturnRows(sqlmock.NewRows(userColumns).AddRow(7, model.StatusActive, "", "", 1, now, now))
+	m.ExpectQuery("select .* from `user`").WillReturnRows(sqlmock.NewRows(userColumns).AddRow(7, model.StatusActive, "", "", 1, 1, nil, 1, 0, 0, now, now))
 	m.ExpectExec("insert into `email_identity`").WillReturnError(failure)
 	m.ExpectRollback()
 	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), normalizedEmail(t, "a@example.com"))
@@ -54,7 +54,7 @@ func TestCommitUnknownIsNotRetriedOrReturnedAsSuccess(t *testing.T) {
 	}
 	m.ExpectQuery("select .*email_identity.*email_address").WillReturnRows(row())
 	m.ExpectBegin()
-	m.ExpectQuery("select .* from `user`.*for update").WillReturnRows(sqlmock.NewRows(userColumns).AddRow(7, model.StatusActive, "", "", 1, now, now))
+	m.ExpectQuery("select .* from `user`.*for update").WillReturnRows(sqlmock.NewRows(userColumns).AddRow(7, model.StatusActive, "", "", 1, 1, nil, 1, 0, 0, now, now))
 	m.ExpectQuery("select .*email_identity.*for update").WillReturnRows(row())
 	m.ExpectCommit().WillReturnError(failure)
 	result, err := s.ResolveOrCreateVerifiedEmail(context.Background(), normalizedEmail(t, "a@example.com"))
@@ -83,7 +83,7 @@ func TestResolutionRechecksOwnerAfterLocking(t *testing.T) {
 		owner := int64(attempt + 7)
 		m.ExpectQuery("select .*email_identity.*email_address").WillReturnRows(row(owner))
 		m.ExpectBegin()
-		m.ExpectQuery("select .* from `user`.*for update").WithArgs(owner).WillReturnRows(sqlmock.NewRows(userColumns).AddRow(owner, model.StatusActive, "", "", 1, now, now))
+		m.ExpectQuery("select .* from `user`.*for update").WithArgs(owner).WillReturnRows(sqlmock.NewRows(userColumns).AddRow(owner, model.StatusActive, "", "", 1, 1, nil, 1, 0, 0, now, now))
 		// A concurrent rebind won before our transaction took the identity lock.
 		m.ExpectQuery("select .*email_identity.*for update").WillReturnRows(row(8))
 		if attempt == 0 {

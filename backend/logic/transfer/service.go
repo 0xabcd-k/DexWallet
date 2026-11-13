@@ -1,10 +1,11 @@
-// Package transfer owns internal USD transfers and their durable request identity.
+// Package transfer owns USD transfers, policy checks and durable request identity.
 // Callers authenticate the actor; this service rechecks current DB authority.
-// HTTP endpoints, client request-key generation and notifications follow in 3.5/3.6.
+// Order, ledger entries and the completion event commit in one transaction.
 package transfer
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"regexp"
@@ -152,7 +153,7 @@ func (s *Service) submit(ctx context.Context, session sqlx.Session, actor userlo
 	// reciprocal transfers from acquiring user locks in opposite order.
 	ids := []int64{actor.UserID, request.RecipientID}
 	slices.Sort(ids)
-	var recipient *usermodel.User
+	var recipient, sender *usermodel.User
 	for _, id := range ids {
 		u, err := users.FindForUpdate(ctx, id)
 		if id == request.RecipientID && errors.Is(err, usermodel.ErrNotFound) {
@@ -162,6 +163,7 @@ func (s *Service) submit(ctx context.Context, session sqlx.Session, actor userlo
 			return nil, fmt.Errorf("lock transfer user %d: %w", id, err)
 		}
 		if id == actor.UserID {
+			sender = u
 			if err = checkActor(u, actor); err != nil {
 				return nil, err
 			}
@@ -184,8 +186,21 @@ func (s *Service) submit(ctx context.Context, session sqlx.Session, actor userlo
 	if recipient == nil || recipient.Status != usermodel.StatusActive {
 		return nil, ErrRecipientUnavailable
 	}
-	order := &model.TransferOrder{SenderId: actor.UserID, RecipientId: request.RecipientID, RequestKey: request.Key, Amount: request.Amount}
-	inserted, err := orders.Insert(ctx, order)
+	policy, now, err := ReadPolicy(ctx, sqlx.NewSqlConnFromSession(session), sender)
+	if err != nil {
+		return nil, err
+	}
+	if !policy.RestrictedUntil.IsZero() {
+		return nil, ErrRestricted
+	}
+	if request.Amount.LessThan(policy.Plan.MinAmount) || request.Amount.GreaterThan(policy.Plan.MaxAmount) {
+		return nil, ErrAmountLimit
+	}
+	if request.Amount.GreaterThan(policy.Remaining) {
+		return nil, ErrDailyLimit
+	}
+	order := &model.TransferOrder{SenderId: actor.UserID, RecipientId: request.RecipientID, RequestKey: request.Key, Amount: request.Amount, LimitPlanId: sql.NullInt64{Int64: policy.Plan.Id, Valid: true}, SenderNickname: sender.Nickname, RecipientNickname: recipient.Nickname}
+	inserted, err := orders.InsertAt(ctx, order, now)
 	if err != nil {
 		return nil, fmt.Errorf("insert transfer: %w", err)
 	}

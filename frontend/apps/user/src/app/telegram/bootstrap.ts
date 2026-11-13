@@ -94,3 +94,12 @@ export function updateTarget(context: LaunchContext, status: TargetStatus, stora
 export function sessionStorageOrUndefined(): Storage | undefined {
   try { return window.sessionStorage; } catch { return undefined; }
 }
+
+// Routing hint only. The backend verifies code signatures and recipient state.
+export function isReceiveTarget(value: string | null): boolean {
+  if (!value || !/^[A-Za-z0-9_-]{1,512}$/.test(value)) return false;
+  try {
+    const decoded: unknown = JSON.parse(atob(value.replace(/-/g, '+').replace(/_/g, '/')));
+    return Array.isArray(decoded) && decoded.length === 4 && decoded[0] === 1 && decoded[1] === 'account' && typeof decoded[2] === 'string' && typeof decoded[3] === 'string';
+  } catch { return false; }
+}

@@ -11,6 +11,7 @@ import (
 	backoffice "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/backoffice"
 	health "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/health"
 	identity "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/identity"
+	transfer "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/transfer"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -207,6 +208,34 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	)
 
 	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.BackofficeTransport, serverCtx.AdminAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/transfer-limit-plans",
+					Handler: backoffice.LimitPlansHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/transfer-limit-plans",
+					Handler: backoffice.CreateLimitPlanHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/users/:idx/transfer-limit-plan",
+					Handler: backoffice.UserLimitPlanHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPut,
+					Path:    "/v1/admin/users/:idx/transfer-limit-plan",
+					Handler: backoffice.AssignLimitPlanHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
@@ -239,6 +268,57 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/v1/user/identities/unbind",
 					Handler: identity.UnbindHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/identities/impact",
+					Handler: identity.IdentityImpactHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/receive-code",
+					Handler: transfer.ReceiveCodeHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/transfer-policy",
+					Handler: transfer.TransferPolicyHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/transfer-targets/resolve",
+					Handler: transfer.TransferTargetHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/transfers",
+					Handler: transfer.SubmitTransferHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/transfers/:idx",
+					Handler: transfer.TransferDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/transfers/by-request/:requestKey",
+					Handler: transfer.TransferByRequestHandler(serverCtx),
 				},
 			}...,
 		),

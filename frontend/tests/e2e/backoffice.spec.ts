@@ -251,3 +251,30 @@ test('admin: uncertain create result guides verification and audit states follow
   await expect(page.getByText('变更后: 已禁用', { exact: true })).toBeVisible();
   await expect(page.getByText('操作原因: manual reason', { exact: true })).toBeVisible();
 });
+
+test('administrator creates an immutable plan and assigns it with previous plan and reason', async ({ page }) => {
+  const state = await mockBackoffice(page, 'admin'); state.mustChangePassword = false;
+  await page.addInitScript(({ token, idx }) => { localStorage.setItem('dexwallet:admin:session', JSON.stringify({ generation: 'plan-test', token })); }, { token: token('admin', 1), idx: userIdx });
+  const initial = { idx: '01111111111111111', name: 'Default', minAmount: '0.01', maxAmount: '100.00', dailyOutgoingLimit: '500.00' };
+  const plans = [initial]; let current = initial; let assignment: unknown;
+  const policy = () => ({ plan: current, usedToday: '400.00', remainingToday: current.idx === initial.idx ? '100.00' : '200.00', resetAt: new Date(Date.now() + 86400000).toISOString(), restrictedUntil: '' });
+  await page.route('**/api/v1/admin/transfer-limit-plans*', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: envelope({ plans }) });
+    const input = route.request().postDataJSON(); expect(input.requestKey.length).toBeGreaterThanOrEqual(16);
+    const plan = { idx: '02222222222222222', name: input.name, minAmount: input.minAmount, maxAmount: input.maxAmount, dailyOutgoingLimit: input.dailyOutgoingLimit }; plans.push(plan);
+    return route.fulfill({ json: envelope(plan) });
+  });
+  await page.route('**/api/v1/admin/user?*', route => route.fulfill({ json: envelope({ idx: userIdx, nickname: 'Payer', status: 'active', avatarUrl: '' }) }));
+  await page.route('**/api/v1/admin/users/*/transfer-limit-plan', route => {
+    if (route.request().method() === 'PUT') { assignment = route.request().postDataJSON(); current = plans[1]!; }
+    return route.fulfill({ json: envelope(policy()) });
+  });
+  await page.goto('http://127.0.0.1:5175/limits');
+  await page.getByLabel('Plan name', { exact: true }).fill('Reviewed'); await page.getByLabel('Daily outgoing limit (USD)').fill('600.00');
+  await page.getByRole('button', { name: 'Create plan', exact: true }).click(); await expect(page.getByText('Reviewed ·', { exact: false })).toBeVisible();
+  await page.getByRole('link', { name: 'Product users', exact: true }).click(); await page.getByLabel('Account ID', { exact: true }).fill(userIdx); await page.getByRole('button', { name: 'Search', exact: true }).click();
+  const panel = page.locator('section').filter({ has: page.getByRole('heading', { name: 'User transfer limits', exact: true }) }).last();
+  await panel.getByRole('combobox').selectOption(plans[1]!.idx); await panel.getByLabel('Reason', { exact: true }).fill('Reviewed user activity');
+  await expect(panel.getByText('Used today 400.00', { exact: false })).toBeVisible(); await panel.getByRole('button', { name: 'Confirm assignment', exact: true }).click();
+  await expect(panel.getByText('remaining 200.00 USD', { exact: false })).toBeVisible(); expect(assignment).toEqual({ planIdx: plans[1]!.idx, expectedPlanIdx: initial.idx, reason: 'Reviewed user activity' });
+});

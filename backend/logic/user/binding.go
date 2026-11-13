@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"time"
 
 	model "github.com/0xabcd-k/DexWallet/backend/model/user"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -49,7 +50,7 @@ func (s *Service) CheckActorInSession(ctx context.Context, session sqlx.Session,
 
 // ChangeIdentityInSession only accepts authenticated actors and verified targets.
 // It never authenticates a caller from the supplied numeric actor ID.
-func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Session, actor Actor, purpose Purpose, kind model.IdentityType, address EmailAddress, tg *VerifiedTelegram) (*Resolved, error) {
+func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Session, actor Actor, purpose Purpose, kind model.IdentityType, address EmailAddress, tg *VerifiedTelegram, approvals ...*IdentityApproval) (*Resolved, error) {
 	if session == nil || (purpose != Bind && purpose != Replace && purpose != Unbind) || (kind != model.IdentityEmail && kind != model.IdentityTelegram) {
 		return nil, ErrInvalidInput
 	}
@@ -153,6 +154,19 @@ func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Sess
 	if purpose == Bind && oldID > 0 && oldID != targetID {
 		return nil, ErrUseReplace
 	}
+	isReplacement := false
+	if purpose != Unbind {
+		isReplacement, err = replacement(u, kind, targetID)
+		if err != nil {
+			return nil, err
+		}
+		if len(approvals) > 0 && approvals[0] != nil {
+			approved := approvals[0]
+			if approved.Revision != u.IdentityRevision || approved.Replacement != isReplacement {
+				return nil, ErrBindingChanged
+			}
+		}
+	}
 	changed := purpose == Unbind || oldID != targetID
 	if changed {
 		for _, row := range locked {
@@ -171,14 +185,36 @@ func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Sess
 			}
 		}
 		target.BindingVersion++
-		if purpose == Replace || purpose == Unbind {
+		if isReplacement || purpose == Unbind {
 			if u.AuthVersion == math.MaxInt64 {
 				return nil, ErrVersionExhausted
 			}
 			u.AuthVersion++
-			if err = s.users.WithSession(session).Update(ctx, u); err != nil {
+
+		}
+		if u.IdentityRevision == math.MaxInt64 {
+			return nil, ErrVersionExhausted
+		}
+		u.IdentityRevision++
+		if purpose == Unbind {
+			remember(u, kind, oldID)
+		} else {
+			remember(u, kind, targetID)
+		}
+		if isReplacement {
+			var clock struct {
+				Now time.Time `db:"now_utc"`
+			}
+			if err = session.QueryRowCtx(ctx, &clock, "SELECT UTC_TIMESTAMP(6) AS now_utc"); err != nil {
 				return nil, err
 			}
+			until := clock.Now.UTC().Add(ReplacementRestriction)
+			if !u.PaymentRestrictedUntil.Valid || u.PaymentRestrictedUntil.Time.Before(until) {
+				u.PaymentRestrictedUntil = sql.NullTime{Time: until, Valid: true}
+			}
+		}
+		if err = s.users.WithSession(session).Update(ctx, u); err != nil {
+			return nil, err
 		}
 	}
 	if kind == model.IdentityTelegram && purpose != Unbind {
@@ -199,13 +235,13 @@ func (s *Service) ChangeIdentityInSession(ctx context.Context, session sqlx.Sess
 }
 
 // ChangeIdentity owns the SQL transaction after the external proof was consumed.
-func (s *Service) ChangeIdentity(ctx context.Context, actor Actor, purpose Purpose, kind model.IdentityType, address EmailAddress, tg *VerifiedTelegram) (*Resolved, error) {
+func (s *Service) ChangeIdentity(ctx context.Context, actor Actor, purpose Purpose, kind model.IdentityType, address EmailAddress, tg *VerifiedTelegram, approvals ...*IdentityApproval) (*Resolved, error) {
 	var last error
 	for attempt := 0; attempt < resolveAttempts; attempt++ {
 		var result *Resolved
 		err := s.tx.TransactCtx(ctx, func(ctx context.Context, tx sqlx.Session) error {
 			var err error
-			result, err = s.ChangeIdentityInSession(ctx, tx, actor, purpose, kind, address, tg)
+			result, err = s.ChangeIdentityInSession(ctx, tx, actor, purpose, kind, address, tg, approvals...)
 			return err
 		})
 		if err == nil {

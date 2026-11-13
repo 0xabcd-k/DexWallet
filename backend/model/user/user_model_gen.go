@@ -37,13 +37,18 @@ type (
 	}
 
 	User struct {
-		Id          int64     `db:"id"`
-		Status      string    `db:"status"`
-		Nickname    string    `db:"nickname"`
-		AvatarUrl   string    `db:"avatar_url"`
-		AuthVersion int64     `db:"auth_version"`
-		CreatedAt   time.Time `db:"created_at"`
-		UpdatedAt   time.Time `db:"updated_at"`
+		Id                     int64        `db:"id"`
+		Status                 string       `db:"status"`
+		Nickname               string       `db:"nickname"`
+		AvatarUrl              string       `db:"avatar_url"`
+		AuthVersion            int64        `db:"auth_version"`
+		TransferLimitPlanId    int64        `db:"transfer_limit_plan_id"`
+		PaymentRestrictedUntil sql.NullTime `db:"payment_restricted_until"`
+		IdentityRevision       int64        `db:"identity_revision"`
+		LastEmailIdentityId    int64        `db:"last_email_identity_id"`
+		LastTelegramIdentityId int64        `db:"last_telegram_identity_id"`
+		CreatedAt              time.Time    `db:"created_at"`
+		UpdatedAt              time.Time    `db:"updated_at"`
 	}
 )
 
@@ -75,14 +80,14 @@ func (m *defaultUserModel) FindOne(ctx context.Context, id int64) (*User, error)
 }
 
 func (m *defaultUserModel) Insert(ctx context.Context, data *User) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?)", m.table, userRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Status, data.Nickname, data.AvatarUrl, data.AuthVersion)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, userRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.Status, data.Nickname, data.AvatarUrl, data.AuthVersion, data.TransferLimitPlanId, data.PaymentRestrictedUntil, data.IdentityRevision, data.LastEmailIdentityId, data.LastTelegramIdentityId)
 	return ret, err
 }
 
 func (m *defaultUserModel) Update(ctx context.Context, data *User) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, userRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, data.Status, data.Nickname, data.AvatarUrl, data.AuthVersion, data.Id)
+	_, err := m.conn.ExecCtx(ctx, query, data.Status, data.Nickname, data.AvatarUrl, data.AuthVersion, data.TransferLimitPlanId, data.PaymentRestrictedUntil, data.IdentityRevision, data.LastEmailIdentityId, data.LastTelegramIdentityId, data.Id)
 	return err
 }
 

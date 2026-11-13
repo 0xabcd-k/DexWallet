@@ -87,5 +87,34 @@ func (s *Service) VerifyTelegram(ctx context.Context, raw, source string, intent
 	if intent.Purpose == userlogic.Login {
 		return s.users.ResolveOrCreateVerifiedTelegram(ctx, profile)
 	}
-	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityTelegram, userlogic.EmailAddress{}, &profile)
+	return s.users.ChangeIdentity(ctx, intent.Actor, intent.Purpose, usermodel.IdentityTelegram, userlogic.EmailAddress{}, &profile, intent.Approval)
+}
+
+// IdentityImpact verifies a Telegram target without consuming its login proof.
+func (s *Service) IdentityImpact(ctx context.Context, actor userlogic.Actor, purpose userlogic.Purpose, kind usermodel.IdentityType, email, raw, source string) (*userlogic.IdentityImpact, error) {
+	if kind == usermodel.IdentityEmail {
+		address, err := userlogic.NormalizeEmail(email)
+		if err != nil {
+			return nil, err
+		}
+		return s.users.IdentityImpact(ctx, actor, purpose, kind, address, nil)
+	}
+	if kind != usermodel.IdentityTelegram {
+		return nil, ErrInvalid
+	}
+	if !s.cfg.TelegramEnabled {
+		return nil, ErrUnavailable
+	}
+	ip, err := sourceIP(source)
+	if err != nil {
+		return nil, err
+	}
+	if err = s.limit.Allow(ctx, RateTelegram, "", ip); err != nil {
+		return nil, err
+	}
+	profile, _, err := verifyTelegram(raw, s.cfg.BotToken, s.now(), s.cfg.TelegramDevelopment)
+	if err != nil {
+		return nil, err
+	}
+	return s.users.IdentityImpact(ctx, actor, purpose, kind, userlogic.EmailAddress{}, &profile)
 }

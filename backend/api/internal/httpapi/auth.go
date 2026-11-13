@@ -54,7 +54,7 @@ func TokenReply(ctx context.Context, tokens *session.Tokens, r *authlogic.Result
 	if err != nil {
 		return nil, err
 	}
-	return &types.TokenResponse{Code: SuccessCode, Message: "OK", TraceId: TraceID(ctx), Data: types.TokenData{AccessToken: raw, UserIdx: claims.Subject, ExpiresAt: claims.ExpiresAt.Unix()}}, nil
+	return &types.TokenResponse{Code: SuccessCode, Message: "OK", TraceId: TraceID(ctx), Data: types.TokenData{AccessToken: raw, UserIdx: claims.Subject, ExpiresAt: claims.ExpiresAt.Unix(), RestrictedUntil: TimeString(r.User.PaymentRestrictedUntil.Time)}}, nil
 }
 
 // WithRenewal carries only a transport token, never a product-user authorization.

@@ -4,6 +4,12 @@ CREATE TABLE `user` (
     `nickname` VARCHAR(128) NOT NULL DEFAULT '',
     `avatar_url` VARCHAR(2048) NOT NULL DEFAULT '',
     `auth_version` BIGINT NOT NULL DEFAULT 1,
+    `transfer_limit_plan_id` BIGINT NOT NULL DEFAULT 1,
+    `payment_restricted_until` DATETIME(6) NULL,
+    `identity_revision` BIGINT NOT NULL DEFAULT 1,
+    `last_email_identity_id` BIGINT NOT NULL DEFAULT 0,
+    `last_telegram_identity_id` BIGINT NOT NULL DEFAULT 0,
+
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`)

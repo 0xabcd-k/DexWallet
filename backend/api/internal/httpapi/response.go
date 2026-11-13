@@ -8,7 +8,9 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/types"
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
+	accountlogic "github.com/0xabcd-k/DexWallet/backend/logic/account"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
@@ -31,6 +33,16 @@ type description struct {
 }
 
 var descriptions = map[apperror.Code]description{
+	apperror.PaymentRestricted:            {423, "Payments temporarily restricted"},
+	apperror.TransferAmountLimit:          {422, "Transfer amount outside plan limits"},
+	apperror.TransferDailyLimit:           {422, "Daily transfer limit exceeded"},
+	apperror.InsufficientBalance:          {422, "Insufficient available balance"},
+	apperror.TransferRequestConflict:      {409, "Request key parameters differ"},
+	apperror.TransferOutcomeUnknown:       {503, "Transfer outcome unknown; recover using original key"},
+	apperror.TransferBusy:                 {409, "Transfer busy; retry using original key"},
+	apperror.TransferRecipientUnavailable: {404, "Transfer recipient unavailable"},
+	apperror.IdentityHistoryUnknown:       {409, "Identity history requires verified backfill"},
+
 	apperror.AuthProofInvalid:        {400, "Invalid or expired authentication proof"},
 	apperror.IdentityOccupied:        {409, "Identity belongs to another account"},
 	apperror.AnotherIdentityRequired: {422, "Bind another identity first"},
@@ -88,7 +100,29 @@ func describeError(err error) (apperror.Code, description) {
 	var app *apperror.Error
 	var oversized *http.MaxBytesError
 	switch {
+	case errors.Is(err, transferlogic.ErrOutcomeUnknown):
+		code = apperror.TransferOutcomeUnknown
 	case errors.As(err, &tx): // Cleanup/commit failures cannot become business rejections.
+	case errors.Is(err, transferlogic.ErrRestricted):
+		code = apperror.PaymentRestricted
+	case errors.Is(err, transferlogic.ErrAmountLimit):
+		code = apperror.TransferAmountLimit
+	case errors.Is(err, transferlogic.ErrDailyLimit):
+		code = apperror.TransferDailyLimit
+	case errors.Is(err, transferlogic.ErrRequestConflict):
+		code = apperror.TransferRequestConflict
+	case errors.Is(err, transferlogic.ErrBusy):
+		code = apperror.TransferBusy
+	case errors.Is(err, transferlogic.ErrRecipientUnavailable):
+		code = apperror.TransferRecipientUnavailable
+	case errors.Is(err, transferlogic.ErrNotFound):
+		code = apperror.NotFound
+	case errors.Is(err, transferlogic.ErrInvalidRequest):
+		code = apperror.InvalidArgument
+	case errors.Is(err, accountlogic.ErrInsufficientBalance):
+		code = apperror.InsufficientBalance
+	case errors.Is(err, userlogic.ErrHistoryUnknown):
+		code = apperror.IdentityHistoryUnknown
 	case errors.As(err, &oversized):
 		code = apperror.PayloadTooLarge
 	case errors.As(err, &app):

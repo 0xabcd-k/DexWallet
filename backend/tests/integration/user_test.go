@@ -69,8 +69,8 @@ func TestUserSchemaAndConstraints(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer full.Close()
-	for _, name := range []string{"tables.sql", "constraints.sql"} {
-		ddl, err := os.ReadFile(filepath.Join("../../manifest/sql/ddl/user", name))
+	for _, name := range []string{"user/tables.sql", "user/constraints.sql", "account/tables.sql", "account/constraints.sql", "transfer/tables.sql", "transfer/constraints.sql"} {
+		ddl, err := os.ReadFile(filepath.Join("../../manifest/sql/ddl", name))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -242,7 +242,7 @@ func TestUserTransactionRollback(t *testing.T) {
 	err := transaction.New(db).TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
 		users := model.NewUserModel(conn).WithSession(session)
 		identities := model.NewEmailIdentityModel(conn).WithSession(session)
-		result, err := users.Insert(ctx, &model.User{Status: model.StatusActive, AuthVersion: 1})
+		result, err := users.Insert(ctx, &model.User{Status: model.StatusActive, AuthVersion: 1, TransferLimitPlanId: 1, IdentityRevision: 1})
 		if err != nil {
 			return err
 		}

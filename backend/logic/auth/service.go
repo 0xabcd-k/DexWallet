@@ -25,8 +25,9 @@ var (
 type Result = userlogic.Resolved
 
 type Intent struct {
-	Purpose userlogic.Purpose
-	Actor   userlogic.Actor
+	Purpose  userlogic.Purpose
+	Actor    userlogic.Actor
+	Approval *userlogic.IdentityApproval
 }
 
 func (i Intent) valid() bool {

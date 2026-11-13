@@ -188,7 +188,7 @@ func TestUserCache(t *testing.T) {
 		t.Fatalf("Redis failure did not fall back to DB: %v", err)
 	}
 	// Failed invalidation cannot turn an already committed write into a failure.
-	if err := m.Update(ctx, &model.User{Id: 1, Status: model.StatusActive, AuthVersion: 5}); err != nil {
+	if err := m.Update(ctx, &model.User{Id: 1, Status: model.StatusActive, AuthVersion: 5, TransferLimitPlanId: 1, IdentityRevision: 1}); err != nil {
 		t.Fatalf("committed update reported failed: %v", err)
 	}
 	var version int64

@@ -31,14 +31,19 @@ type Transactor interface {
 	TransactCtx(context.Context, func(context.Context, sqlx.Session) error) error
 }
 type Service struct {
-	users     model.UserModel
-	emails    model.EmailIdentityModel
-	telegrams model.TelegramIdentityModel
-	tx        Transactor
+	users         model.UserModel
+	emails        model.EmailIdentityModel
+	telegrams     model.TelegramIdentityModel
+	tx            Transactor
+	defaultPlanID int64
 }
 
-func New(users model.UserModel, emails model.EmailIdentityModel, telegrams model.TelegramIdentityModel, tx Transactor) *Service {
-	return &Service{users: users, emails: emails, telegrams: telegrams, tx: tx}
+func New(users model.UserModel, emails model.EmailIdentityModel, telegrams model.TelegramIdentityModel, tx Transactor, defaultPlanIDs ...int64) *Service {
+	planID := InitialTransferPlanID
+	if len(defaultPlanIDs) > 0 && defaultPlanIDs[0] != 0 {
+		planID = defaultPlanIDs[0]
+	}
+	return &Service{users: users, emails: emails, telegrams: telegrams, tx: tx, defaultPlanID: planID}
 }
 
 type Binding struct {
@@ -97,8 +102,8 @@ func insertIdentityError(err error) error {
 	}
 	return err
 }
-func createUser(ctx context.Context, users model.UserModel, nickname, avatar string) (*model.User, error) {
-	u := &model.User{Status: model.StatusActive, AuthVersion: model.InitialAuthVersion, Nickname: nickname, AvatarUrl: avatar}
+func (s *Service) createUser(ctx context.Context, users model.UserModel, nickname, avatar string) (*model.User, error) {
+	u := &model.User{Status: model.StatusActive, AuthVersion: model.InitialAuthVersion, Nickname: nickname, AvatarUrl: avatar, TransferLimitPlanId: s.defaultPlanID, IdentityRevision: 1, LastEmailIdentityId: 0, LastTelegramIdentityId: 0}
 	result, err := users.Insert(ctx, u)
 	if err != nil {
 		return nil, err

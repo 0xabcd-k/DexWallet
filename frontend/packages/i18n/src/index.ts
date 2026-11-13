@@ -50,6 +50,16 @@ export const common = {
 };
 export const errors = {
   en: {
+    "PAYMENT_RESTRICTED": "Payments are restricted after identity replacement. Check the restriction end time.",
+    "TRANSFER_AMOUNT_LIMIT": "Amount is outside your per-transfer limits.",
+    "TRANSFER_DAILY_LIMIT": "Daily outgoing limit exceeded.",
+    "INSUFFICIENT_BALANCE": "Insufficient available balance.",
+    "TRANSFER_REQUEST_CONFLICT": "Request key parameters differ. Keep the original payment information and check its result.",
+    "TRANSFER_OUTCOME_UNKNOWN": "Payment outcome is unknown. Check the original payment.",
+    "TRANSFER_BUSY": "Transfer is busy. Retry using the original request key.",
+    "TRANSFER_RECIPIENT_UNAVAILABLE": "Recipient account is unavailable.",
+    "IDENTITY_HISTORY_UNKNOWN": "Previous identity history needs verification. Contact the platform before binding.",
+
     generic: 'Unable to confirm the outcome. Check the current state or sign in again before retrying.', network: 'Unable to connect. Check your connection.',
     timeout: 'The request timed out. Its result may still be pending.', protocol: 'The server returned an unexpected response.',
     http: 'The service is temporarily unavailable.', cancelled: 'Request cancelled.',
@@ -65,6 +75,16 @@ export const errors = {
     IDENTITY_ALREADY_BOUND: 'This sign-in method is already linked. Use the replacement option.',
   },
   'zh-CN': {
+    "PAYMENT_RESTRICTED": "换绑后付款暂时受限，请查看限制到期时间。",
+    "TRANSFER_AMOUNT_LIMIT": "金额不符合当前单笔限额。",
+    "TRANSFER_DAILY_LIMIT": "已超过每日转出限额。",
+    "INSUFFICIENT_BALANCE": "可用余额不足。",
+    "TRANSFER_REQUEST_CONFLICT": "原请求号参数不一致，请保留原付款信息并查询。",
+    "TRANSFER_OUTCOME_UNKNOWN": "付款结果待确认，请查询原单。",
+    "TRANSFER_BUSY": "转账处理中，请沿用原请求号重试。",
+    "TRANSFER_RECIPIENT_UNAVAILABLE": "收款账户不可用。",
+    "IDENTITY_HISTORY_UNKNOWN": "历史绑定记录需核实，请联系平台处理后再绑定。",
+
     generic: '无法确认操作结果，请先查询状态或重新登录，再决定是否重试。', network: '无法连接，请检查网络。',
     timeout: '请求超时，处理结果可能仍在确认中。', protocol: '服务返回的数据不符合预期。',
     http: '服务暂时不可用。', cancelled: '请求已取消。',

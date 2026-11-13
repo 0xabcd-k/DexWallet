@@ -109,6 +109,10 @@ func New(c Config, cfg auth.Config, conn sqlx.SqlConn, tx *transaction.Runner, u
 		s.limits[r] = auth.NewRedisLimiter(client, namespace+":backoffice:"+string(r), cfg)
 	}
 	var err error
+	s.codecs[LimitPlan], err = idcodec.New(idSecret, idcodec.TransferLimitPlan)
+	if err != nil {
+		return nil, err
+	}
 	s.dummy, err = bcrypt.GenerateFromPassword([]byte("nonexistent-account-dummy-password"), bcrypt.DefaultCost)
 	return s, err
 }
