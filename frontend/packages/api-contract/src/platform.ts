@@ -274,6 +274,74 @@ export interface CurrentUserResponse {
 	traceId: string
 }
 
+export interface DrawListData {
+	items: Array<DrawResultData>
+	nextCursor: string
+}
+
+export interface DrawListRequest {
+}
+export interface DrawListRequestParams {
+	before?: string
+	limit: number
+}
+
+export interface DrawListResponse {
+	code: 'OK'
+	message: string
+	data: DrawListData
+	traceId: string
+}
+
+export interface DrawPrizeData {
+	code: string
+	rewardUsd: string
+	weight: number
+	symbols: Array<number>
+}
+
+export interface DrawRequest {
+	requestKey: string
+	versionIdx: string
+}
+
+export interface DrawResultData {
+	idx: string
+	versionIdx: string
+	versionName: string
+	costPoints: string
+	prizeCode: string
+	rewardUsd: string
+	symbols: Array<number>
+	voucherIdx: string
+	createdAt: string
+}
+
+export interface DrawResultResponse {
+	code: 'OK'
+	message: string
+	data: DrawResultData
+	traceId: string
+}
+
+export interface DrawStateData {
+	available: boolean
+	versionIdx: string
+	versionName: string
+	costPoints: string
+	rtp: string
+	prizes: Array<DrawPrizeData>
+	points: string
+	rewardUsd: string
+}
+
+export interface DrawStateResponse {
+	code: 'OK'
+	message: string
+	data: DrawStateData
+	traceId: string
+}
+
 export interface EmailLoginRequest {
 	email: string
 	challenge: string
@@ -281,7 +349,7 @@ export interface EmailLoginRequest {
 }
 
 export interface ErrorResponse {
-	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN' | 'TASK_TELEGRAM_REQUIRED' | 'TASK_UNAVAILABLE' | 'TASK_ALREADY_COMPLETED' | 'TASK_BINDING_CHANGED' | 'TASK_VERIFICATION_UNAVAILABLE' | 'TASK_NOT_MEMBER' | 'TASK_CONTEXT_CHANGED' | 'TASK_INVITATION_INVALID' | 'TASK_INVITATION_REQUIRED_FIRST' | 'TASK_REQUEST_CONFLICT' | 'TASK_OUTCOME_UNKNOWN' | 'TASK_BUSY' | 'TASK_HISTORY_UNKNOWN'
+	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN' | 'TASK_TELEGRAM_REQUIRED' | 'TASK_UNAVAILABLE' | 'TASK_ALREADY_COMPLETED' | 'TASK_BINDING_CHANGED' | 'TASK_VERIFICATION_UNAVAILABLE' | 'TASK_NOT_MEMBER' | 'TASK_CONTEXT_CHANGED' | 'TASK_INVITATION_INVALID' | 'TASK_INVITATION_REQUIRED_FIRST' | 'TASK_REQUEST_CONFLICT' | 'TASK_OUTCOME_UNKNOWN' | 'TASK_BUSY' | 'TASK_HISTORY_UNKNOWN' | 'DRAW_UNAVAILABLE' | 'DRAW_VERSION_CHANGED' | 'DRAW_REQUEST_CONFLICT' | 'DRAW_OUTCOME_UNKNOWN' | 'DRAW_BUSY'
 	message: string
 	traceId: string
 }

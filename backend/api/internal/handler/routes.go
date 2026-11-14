@@ -9,6 +9,7 @@ import (
 	account "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/account"
 	auth "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/auth"
 	backoffice "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/backoffice"
+	draw "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/draw"
 	health "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/health"
 	identity "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/identity"
 	task "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/task"
@@ -231,6 +232,39 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPut,
 					Path:    "/v1/admin/users/:idx/transfer-limit-plan",
 					Handler: backoffice.AssignLimitPlanHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/draw-state",
+					Handler: draw.DrawStateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/draws",
+					Handler: draw.DrawCreateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/draws",
+					Handler: draw.DrawListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/draws/:idx",
+					Handler: draw.DrawDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/draws/by-request/:requestKey",
+					Handler: draw.DrawByRequestHandler(serverCtx),
 				},
 			}...,
 		),

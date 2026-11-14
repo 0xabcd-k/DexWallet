@@ -277,7 +277,7 @@ func TestTaskSchemaAndMigration(t *testing.T) {
 	if err != nil || !strings.Contains(string(output), "Mode: mock") || !strings.Contains(string(output), "/#/tasks/") {
 		t.Fatalf("sample tool: %v %s", err, output)
 	}
-	if err = m.Steps(-2); err == nil {
+	if err = m.Steps(-3); err == nil {
 		t.Fatal("discarded task configuration")
 	}
 	var count int

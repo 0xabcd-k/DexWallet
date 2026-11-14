@@ -261,6 +261,72 @@ type CurrentUserResponse struct {
 	TraceId string          `json:"traceId"`
 }
 
+type DrawListData struct {
+	Items      []DrawResultData `json:"items"`
+	NextCursor string           `json:"nextCursor"`
+}
+
+type DrawListRequest struct {
+	Before string `form:"before,optional"`
+	Limit  int64  `form:"limit,default=20,range=[1:100]"`
+}
+
+type DrawListResponse struct {
+	Code    string       `json:"code,options=OK"`
+	Message string       `json:"message"`
+	Data    DrawListData `json:"data"`
+	TraceId string       `json:"traceId"`
+}
+
+type DrawPrizeData struct {
+	Code      string  `json:"code"`
+	RewardUsd string  `json:"rewardUsd"`
+	Weight    int64   `json:"weight"`
+	Symbols   []int64 `json:"symbols"`
+}
+
+type DrawRequest struct {
+	RequestKey string `json:"requestKey"`
+	VersionIdx string `json:"versionIdx"`
+}
+
+type DrawResultData struct {
+	Idx         string  `json:"idx"`
+	VersionIdx  string  `json:"versionIdx"`
+	VersionName string  `json:"versionName"`
+	CostPoints  string  `json:"costPoints"`
+	PrizeCode   string  `json:"prizeCode"`
+	RewardUsd   string  `json:"rewardUsd"`
+	Symbols     []int64 `json:"symbols"`
+	VoucherIdx  string  `json:"voucherIdx"`
+	CreatedAt   string  `json:"createdAt"`
+}
+
+type DrawResultResponse struct {
+	Code    string         `json:"code,options=OK"`
+	Message string         `json:"message"`
+	Data    DrawResultData `json:"data"`
+	TraceId string         `json:"traceId"`
+}
+
+type DrawStateData struct {
+	Available   bool            `json:"available"`
+	VersionIdx  string          `json:"versionIdx"`
+	VersionName string          `json:"versionName"`
+	CostPoints  string          `json:"costPoints"`
+	Rtp         string          `json:"rtp"`
+	Prizes      []DrawPrizeData `json:"prizes"`
+	Points      string          `json:"points"`
+	RewardUsd   string          `json:"rewardUsd"`
+}
+
+type DrawStateResponse struct {
+	Code    string        `json:"code,options=OK"`
+	Message string        `json:"message"`
+	Data    DrawStateData `json:"data"`
+	TraceId string        `json:"traceId"`
+}
+
 type EmailLoginRequest struct {
 	Email     string `json:"email"`
 	Challenge string `json:"challenge"`
@@ -268,7 +334,7 @@ type EmailLoginRequest struct {
 }
 
 type ErrorResponse struct {
-	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND|PAYMENT_RESTRICTED|TRANSFER_AMOUNT_LIMIT|TRANSFER_DAILY_LIMIT|INSUFFICIENT_BALANCE|TRANSFER_REQUEST_CONFLICT|TRANSFER_OUTCOME_UNKNOWN|TRANSFER_BUSY|TRANSFER_RECIPIENT_UNAVAILABLE|IDENTITY_HISTORY_UNKNOWN|TASK_TELEGRAM_REQUIRED|TASK_UNAVAILABLE|TASK_ALREADY_COMPLETED|TASK_BINDING_CHANGED|TASK_VERIFICATION_UNAVAILABLE|TASK_NOT_MEMBER|TASK_CONTEXT_CHANGED|TASK_INVITATION_INVALID|TASK_INVITATION_REQUIRED_FIRST|TASK_REQUEST_CONFLICT|TASK_OUTCOME_UNKNOWN|TASK_BUSY|TASK_HISTORY_UNKNOWN"`
+	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND|PAYMENT_RESTRICTED|TRANSFER_AMOUNT_LIMIT|TRANSFER_DAILY_LIMIT|INSUFFICIENT_BALANCE|TRANSFER_REQUEST_CONFLICT|TRANSFER_OUTCOME_UNKNOWN|TRANSFER_BUSY|TRANSFER_RECIPIENT_UNAVAILABLE|IDENTITY_HISTORY_UNKNOWN|TASK_TELEGRAM_REQUIRED|TASK_UNAVAILABLE|TASK_ALREADY_COMPLETED|TASK_BINDING_CHANGED|TASK_VERIFICATION_UNAVAILABLE|TASK_NOT_MEMBER|TASK_CONTEXT_CHANGED|TASK_INVITATION_INVALID|TASK_INVITATION_REQUIRED_FIRST|TASK_REQUEST_CONFLICT|TASK_OUTCOME_UNKNOWN|TASK_BUSY|TASK_HISTORY_UNKNOWN|DRAW_UNAVAILABLE|DRAW_VERSION_CHANGED|DRAW_REQUEST_CONFLICT|DRAW_OUTCOME_UNKNOWN|DRAW_BUSY"`
 	Message string `json:"message"`
 	TraceId string `json:"traceId"`
 }

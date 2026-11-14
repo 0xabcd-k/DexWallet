@@ -42,4 +42,9 @@ const (
 	TaskOutcomeUnknown           Code = "TASK_OUTCOME_UNKNOWN"
 	TaskBusy                     Code = "TASK_BUSY"
 	TaskHistoryUnknown           Code = "TASK_HISTORY_UNKNOWN"
+	DrawUnavailable              Code = "DRAW_UNAVAILABLE"
+	DrawVersionChanged           Code = "DRAW_VERSION_CHANGED"
+	DrawRequestConflict          Code = "DRAW_REQUEST_CONFLICT"
+	DrawOutcomeUnknown           Code = "DRAW_OUTCOME_UNKNOWN"
+	DrawBusy                     Code = "DRAW_BUSY"
 )

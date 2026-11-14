@@ -10,6 +10,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	accountlogic "github.com/0xabcd-k/DexWallet/backend/logic/account"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
 	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
 	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
@@ -34,6 +35,11 @@ type description struct {
 }
 
 var descriptions = map[apperror.Code]description{
+	apperror.DrawUnavailable:              {409, "Draws are not currently available"},
+	apperror.DrawVersionChanged:           {409, "Draw rules changed; review the current version"},
+	apperror.DrawRequestConflict:          {409, "Draw request key parameters differ"},
+	apperror.DrawOutcomeUnknown:           {503, "Draw outcome unknown; recover original request"},
+	apperror.DrawBusy:                     {409, "Draw busy; retry original request"},
 	apperror.TaskNotMember:                {422, "Follow the channel before claiming"},
 	apperror.TaskContextChanged:           {409, "Task context changed; review rewards again"},
 	apperror.TaskInvitationInvalid:        {409, "Task invitation is unavailable"},
@@ -114,6 +120,8 @@ func describeError(err error) (apperror.Code, description) {
 	var app *apperror.Error
 	var oversized *http.MaxBytesError
 	switch {
+	case errors.Is(err, drawlogic.ErrOutcomeUnknown):
+		code = apperror.DrawOutcomeUnknown
 	case errors.Is(err, tasklogic.ErrClaimUnknown):
 		code = apperror.TaskOutcomeUnknown
 	case errors.Is(err, transferlogic.ErrOutcomeUnknown):

@@ -362,6 +362,7 @@ func TestProductSessionHTTP(t *testing.T) {
 	checkHoldsHTTP(t, s, tgID, id, tgToken, call)
 	checkPublicTransferHTTP(t, s, call)
 	checkTaskHTTP(t, s, call)
+	checkDrawHTTP(t, s, call)
 	// Critical writes still reject the stale actor against the locked database row.
 	if _, err = s.DB.ExecContext(ctx, "UPDATE `user` SET auth_version=auth_version+1 WHERE id=?", tgID); err != nil {
 		t.Fatal(err)

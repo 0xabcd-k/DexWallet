@@ -1,0 +1,15 @@
+.draw-page { padding: 20px; max-width: 600px; margin: auto; }
+.draw-page dl { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.draw-page dd { margin: 0; font-weight: 600; }
+.draw-page table { width: 100%; text-align: left; border-collapse: collapse; }
+.draw-page th, .draw-page td { padding: 8px 4px; border-bottom: 1px solid #d8ddda; }
+.draw-page details { border-top: 1px solid #d8ddda; padding-top: 16px; }
+.draw-page summary { cursor: pointer; font-weight: 600; }
+.draw-result { margin: 20px 0; padding: 16px; border: 1px solid #d8ddda; border-radius: 16px; overflow-wrap: anywhere; }
+.draw-symbols { display: flex; justify-content: center; gap: 12px; padding: 20px 0; }
+.draw-symbols span { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 72px; background: #eef2e9; border-radius: 12px; font-size: 36px; }
+.draw-reveal span { animation: draw-reveal 650ms ease-out both; }
+.draw-reveal span:nth-child(2) { animation-delay: 100ms; }
+.draw-reveal span:nth-child(3) { animation-delay: 200ms; }
+@keyframes draw-reveal { from { opacity: .2; transform: translateY(-12px) rotateX(80deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .draw-reveal span { animation: none; } }

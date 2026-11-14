@@ -17,6 +17,7 @@ import (
 	accountlogic "github.com/0xabcd-k/DexWallet/backend/logic/account"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
+	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
 	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
 	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
@@ -54,6 +55,7 @@ type ServiceContext struct {
 	Users                 *userlogic.Service
 	Accounts              *accountlogic.Service
 	Transfers             *transferlogic.Service
+	Draws                 *drawlogic.Service
 	Tasks                 *tasklogic.Service
 	Auth                  *authlogic.Service
 	Tokens                *session.Tokens
@@ -128,6 +130,8 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.ModelUserAccount = accountmodel.NewUserAccountModel(conn)
 	d.Accounts = accountlogic.New(d.ModelUserAccount)
 	d.Transfers = transferlogic.New(conn, d.Tx, d.Accounts)
+	// Candidate prize versions are limited to local development until release review.
+	d.Draws = drawlogic.New(conn, d.Tx, d.Accounts, c.Environment == "local" && c.Mode == "dev")
 	var membership tasklogic.Membership
 	if c.Tasks.Mode == tasklogic.ModeMock {
 		membership, err = tasklogic.NewMock(c.Tasks.Fixtures)

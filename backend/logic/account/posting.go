@@ -27,6 +27,7 @@ const (
 type BusinessType string
 
 const (
+	BusinessDraw       BusinessType = "point_draw"
 	BusinessTransfer   BusinessType = "transfer"
 	BusinessDeposit    BusinessType = "deposit"
 	BusinessReward     BusinessType = "reward"
@@ -36,6 +37,8 @@ const (
 
 func (b BusinessType) IDKind() (idcodec.Kind, bool) {
 	switch b {
+	case BusinessDraw:
+		return idcodec.PointDraw, true
 	case BusinessTransfer:
 		return idcodec.Transfer, true
 	case BusinessDeposit:
@@ -60,16 +63,17 @@ const ActionPost Action = "post"
 type SystemCode string
 
 const (
-	SystemUSDClearing   SystemCode = "usd_clearing"
-	SystemRewardExpense SystemCode = "reward_expense"
-	SystemPointIssuance SystemCode = "point_issuance"
+	SystemPointConsumption SystemCode = "point_consumption"
+	SystemUSDClearing      SystemCode = "usd_clearing"
+	SystemRewardExpense    SystemCode = "reward_expense"
+	SystemPointIssuance    SystemCode = "point_issuance"
 )
 
 func (s SystemCode) definition() (model.Definition, bool) {
 	switch s {
 	case SystemUSDClearing, SystemRewardExpense:
 		return model.Lookup(model.KindUSD)
-	case SystemPointIssuance:
+	case SystemPointIssuance, SystemPointConsumption:
 		return model.Lookup(model.KindTaskPoints)
 	default:
 		return model.Definition{}, false
