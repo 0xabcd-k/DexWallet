@@ -17,6 +17,7 @@ import (
 	accountlogic "github.com/0xabcd-k/DexWallet/backend/logic/account"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
+	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
 	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	accountmodel "github.com/0xabcd-k/DexWallet/backend/model/account"
@@ -53,6 +54,7 @@ type ServiceContext struct {
 	Users                 *userlogic.Service
 	Accounts              *accountlogic.Service
 	Transfers             *transferlogic.Service
+	Tasks                 *tasklogic.Service
 	Auth                  *authlogic.Service
 	Tokens                *session.Tokens
 	AuthTransport         rest.Middleware
@@ -126,6 +128,14 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.ModelUserAccount = accountmodel.NewUserAccountModel(conn)
 	d.Accounts = accountlogic.New(d.ModelUserAccount)
 	d.Transfers = transferlogic.New(conn, d.Tx, d.Accounts)
+	var membership tasklogic.Membership
+	if c.Tasks.Mode == tasklogic.ModeMock {
+		membership, err = tasklogic.NewMock(c.Tasks.Fixtures)
+		if err != nil {
+			return d, err
+		}
+	}
+	d.Tasks = tasklogic.New(conn, membership)
 	d.ReceiveCodes, err = transferlogic.NewCodes(c.Transfer, c.Environment)
 	if err != nil {
 		return d, err

@@ -13,6 +13,7 @@ import (
 type Kind string
 
 const (
+	Task              Kind = "TaskId"
 	User              Kind = "UserId"
 	Admin             Kind = "AdminId"
 	Merchant          Kind = "MerchantId"

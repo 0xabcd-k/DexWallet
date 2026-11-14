@@ -12,7 +12,7 @@ import (
 
 var testRun *testenv.Run
 
-const businessSchemaVersion = 10
+const businessSchemaVersion = 11
 
 func TestMain(m *testing.M) {
 	var err error

@@ -150,7 +150,7 @@ func TestProductSessionHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer res.Body.Close()
-		if wantStatus == http.StatusNotFound && !strings.HasPrefix(path, "/v1/user/transfers") {
+		if wantStatus == http.StatusNotFound && (path == "/v1/user/auth/logout-all" || wantCode == "") {
 			if res.StatusCode != wantStatus || !strings.HasPrefix(res.Header.Get("Content-Type"), "text/plain") || len(res.Header.Get(httpapi.TraceHeader)) != 32 || res.Header.Get(session.TokenHeader) != "" {
 				t.Fatal("fallback HTTP contract", res.Status, res.Header)
 			}
@@ -361,6 +361,7 @@ func TestProductSessionHTTP(t *testing.T) {
 	checkLedgerHTTP(t, s, tgID, id, tgToken, call)
 	checkHoldsHTTP(t, s, tgID, id, tgToken, call)
 	checkPublicTransferHTTP(t, s, call)
+	checkTaskHTTP(t, s, call)
 	// Critical writes still reject the stale actor against the locked database row.
 	if _, err = s.DB.ExecContext(ctx, "UPDATE `user` SET auth_version=auth_version+1 WHERE id=?", tgID); err != nil {
 		t.Fatal(err)

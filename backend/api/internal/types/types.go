@@ -232,7 +232,7 @@ type EmailLoginRequest struct {
 }
 
 type ErrorResponse struct {
-	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND|PAYMENT_RESTRICTED|TRANSFER_AMOUNT_LIMIT|TRANSFER_DAILY_LIMIT|INSUFFICIENT_BALANCE|TRANSFER_REQUEST_CONFLICT|TRANSFER_OUTCOME_UNKNOWN|TRANSFER_BUSY|TRANSFER_RECIPIENT_UNAVAILABLE|IDENTITY_HISTORY_UNKNOWN"`
+	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND|PAYMENT_RESTRICTED|TRANSFER_AMOUNT_LIMIT|TRANSFER_DAILY_LIMIT|INSUFFICIENT_BALANCE|TRANSFER_REQUEST_CONFLICT|TRANSFER_OUTCOME_UNKNOWN|TRANSFER_BUSY|TRANSFER_RECIPIENT_UNAVAILABLE|IDENTITY_HISTORY_UNKNOWN|TASK_TELEGRAM_REQUIRED|TASK_UNAVAILABLE|TASK_ALREADY_COMPLETED|TASK_BINDING_CHANGED|TASK_VERIFICATION_UNAVAILABLE"`
 	Message string `json:"message"`
 	TraceId string `json:"traceId"`
 }
@@ -376,6 +376,60 @@ type SubmitTransferRequest struct {
 	RequestKey   string `json:"requestKey"`
 	RecipientIdx string `json:"recipientIdx"`
 	Amount       string `json:"amount"`
+}
+
+type TaskCheckData struct {
+	Task      TaskData `json:"task"`
+	Outcome   string   `json:"outcome,options=member|not_member"`
+	CheckedAt string   `json:"checkedAt"`
+}
+
+type TaskCheckResponse struct {
+	Code    string        `json:"code,options=OK"`
+	Message string        `json:"message"`
+	TraceId string        `json:"traceId"`
+	Data    TaskCheckData `json:"data"`
+}
+
+type TaskData struct {
+	Idx              string `json:"idx"`
+	Kind             string `json:"kind,options=telegram_channel_follow"`
+	Title            string `json:"title"`
+	Description      string `json:"description"`
+	RequiredIdentity string `json:"requiredIdentity,options=telegram"`
+	StartsAt         string `json:"startsAt"`
+	EndsAt           string `json:"endsAt"`
+	Eligibility      string `json:"eligibility,options=eligible|telegram_required|not_started|expired|paused|completed"`
+	Sample           bool   `json:"sample"`
+	ClaimAvailable   bool   `json:"claimAvailable"`
+}
+
+type TaskListData struct {
+	Items      []TaskData `json:"items"`
+	NextCursor string     `json:"nextCursor"`
+}
+
+type TaskListRequest struct {
+	Before string `form:"before,optional"`
+	Limit  int64  `form:"limit,default=20,range=[1:100]"`
+}
+
+type TaskListResponse struct {
+	Code    string       `json:"code,options=OK"`
+	Message string       `json:"message"`
+	TraceId string       `json:"traceId"`
+	Data    TaskListData `json:"data"`
+}
+
+type TaskRequest struct {
+	Idx string `path:"idx"`
+}
+
+type TaskResponse struct {
+	Code    string   `json:"code,options=OK"`
+	Message string   `json:"message"`
+	TraceId string   `json:"traceId"`
+	Data    TaskData `json:"data"`
 }
 
 type TelegramLoginRequest struct {

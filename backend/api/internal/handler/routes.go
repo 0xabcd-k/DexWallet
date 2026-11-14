@@ -11,6 +11,7 @@ import (
 	backoffice "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/backoffice"
 	health "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/health"
 	identity "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/identity"
+	task "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/task"
 	transfer "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/transfer"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
 
@@ -281,6 +282,29 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/v1/user/identities/impact",
 					Handler: identity.IdentityImpactHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/tasks",
+					Handler: task.TaskListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/tasks/:idx",
+					Handler: task.TaskDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/tasks/:idx/check",
+					Handler: task.TaskCheckHandler(serverCtx),
 				},
 			}...,
 		),

@@ -29,4 +29,9 @@ const (
 	TransferBusy                 Code = "TRANSFER_BUSY"
 	TransferRecipientUnavailable Code = "TRANSFER_RECIPIENT_UNAVAILABLE"
 	IdentityHistoryUnknown       Code = "IDENTITY_HISTORY_UNKNOWN"
+	TaskTelegramRequired         Code = "TASK_TELEGRAM_REQUIRED"
+	TaskUnavailable              Code = "TASK_UNAVAILABLE"
+	TaskAlreadyCompleted         Code = "TASK_ALREADY_COMPLETED"
+	TaskBindingChanged           Code = "TASK_BINDING_CHANGED"
+	TaskVerificationUnavailable  Code = "TASK_VERIFICATION_UNAVAILABLE"
 )

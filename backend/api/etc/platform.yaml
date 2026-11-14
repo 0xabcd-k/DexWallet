@@ -60,3 +60,7 @@ Transfer:
   # a canonical WebURL and optionally the exact official TelegramURL:
   # WebURL: https://wallet.example.com/
   # TelegramURL: https://t.me/your_bot/your_app
+
+# Sample task verification is opt-in and restricted to Environment=local / Mode=dev.
+Tasks:
+  Mode: disabled

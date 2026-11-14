@@ -58,6 +58,11 @@ export const errors = {
     "TRANSFER_OUTCOME_UNKNOWN": "Payment outcome is unknown. Check the original payment.",
     "TRANSFER_BUSY": "Transfer is busy. Retry using the original request key.",
     "TRANSFER_RECIPIENT_UNAVAILABLE": "Recipient account is unavailable.",
+    "TASK_TELEGRAM_REQUIRED": "Bind Telegram before checking this task.",
+    "TASK_UNAVAILABLE": "The task has changed or is unavailable. Refresh its details.",
+    "TASK_ALREADY_COMPLETED": "This Telegram account has already used its attempt.",
+    "TASK_BINDING_CHANGED": "Your identity changed. Refresh eligibility and check again.",
+    "TASK_VERIFICATION_UNAVAILABLE": "Unable to verify membership now. No attempt was consumed. Try again later.",
     "IDENTITY_HISTORY_UNKNOWN": "Previous identity history needs verification. Contact the platform before binding.",
 
     generic: 'Unable to confirm the outcome. Check the current state or sign in again before retrying.', network: 'Unable to connect. Check your connection.',
@@ -83,6 +88,11 @@ export const errors = {
     "TRANSFER_OUTCOME_UNKNOWN": "付款结果待确认，请查询原单。",
     "TRANSFER_BUSY": "转账处理中，请沿用原请求号重试。",
     "TRANSFER_RECIPIENT_UNAVAILABLE": "收款账户不可用。",
+    "TASK_TELEGRAM_REQUIRED": "请先绑定 Telegram 再检查任务。",
+    "TASK_UNAVAILABLE": "任务已变更或暂不可用，请刷新详情。",
+    "TASK_ALREADY_COMPLETED": "该 Telegram 账户已使用本任务的参与次数。",
+    "TASK_BINDING_CHANGED": "绑定身份已变化，请刷新资格后重新检查。",
+    "TASK_VERIFICATION_UNAVAILABLE": "暂时无法核验关注状态，未消耗次数，请稍后重试。",
     "IDENTITY_HISTORY_UNKNOWN": "历史绑定记录需核实，请联系平台处理后再绑定。",
 
     generic: '无法确认操作结果，请先查询状态或重新登录，再决定是否重试。', network: '无法连接，请检查网络。',

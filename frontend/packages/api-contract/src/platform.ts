@@ -242,7 +242,7 @@ export interface EmailLoginRequest {
 }
 
 export interface ErrorResponse {
-	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN'
+	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN' | 'TASK_TELEGRAM_REQUIRED' | 'TASK_UNAVAILABLE' | 'TASK_ALREADY_COMPLETED' | 'TASK_BINDING_CHANGED' | 'TASK_VERIFICATION_UNAVAILABLE'
 	message: string
 	traceId: string
 }
@@ -395,6 +395,63 @@ export interface SubmitTransferRequest {
 	requestKey: string
 	recipientIdx: string
 	amount: string
+}
+
+export interface TaskCheckData {
+	task: TaskData
+	outcome: 'member' | 'not_member'
+	checkedAt: string
+}
+
+export interface TaskCheckResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: TaskCheckData
+}
+
+export interface TaskData {
+	idx: string
+	kind: 'telegram_channel_follow'
+	title: string
+	description: string
+	requiredIdentity: 'telegram'
+	startsAt: string
+	endsAt: string
+	eligibility: 'eligible' | 'telegram_required' | 'not_started' | 'expired' | 'paused' | 'completed'
+	sample: boolean
+	claimAvailable: boolean
+}
+
+export interface TaskListData {
+	items: Array<TaskData>
+	nextCursor: string
+}
+
+export interface TaskListRequest {
+}
+export interface TaskListRequestParams {
+	before?: string
+	limit: number
+}
+
+export interface TaskListResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: TaskListData
+}
+
+export interface TaskRequest {
+}
+export interface TaskRequestParams {
+}
+
+export interface TaskResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: TaskData
 }
 
 export interface TelegramLoginRequest {

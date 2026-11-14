@@ -2,8 +2,8 @@ import { isRecord } from '@dexwallet/api-client';
 export function safeDestination(value: unknown, fallback = '/wallet'): string {
   if (typeof value !== 'string' || !/^\/(?!\/)/.test(value) || /[\\\r\n#]/.test(value)) return fallback;
   const path = value.split('?')[0];
-  if (/^\/transfers\/0\d{16,19}$/.test(path ?? '')) return value;
-  return ['/pay', '/receive', '/balance', '/wallet', '/rewards', '/records', '/holds', '/account', '/identities', '/settings', '/__dev'].includes(path ?? '') ? value : fallback;
+  if (/^\/(transfers|tasks)\/0\d{16,19}$/.test(path ?? '')) return value;
+  return ['/tasks', '/pay', '/receive', '/balance', '/wallet', '/rewards', '/records', '/holds', '/account', '/identities', '/settings', '/__dev'].includes(path ?? '') ? value : fallback;
 }
 export function safeReturn(state: unknown, fallback = '/wallet'): string {
   const target = safeDestination(isRecord(state) ? state.from : undefined, fallback);

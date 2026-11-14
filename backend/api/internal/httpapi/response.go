@@ -33,6 +33,11 @@ type description struct {
 }
 
 var descriptions = map[apperror.Code]description{
+	apperror.TaskTelegramRequired:         {422, "Bind Telegram before checking this task"},
+	apperror.TaskUnavailable:              {409, "Task is not currently available"},
+	apperror.TaskAlreadyCompleted:         {409, "This Telegram identity has already completed the task"},
+	apperror.TaskBindingChanged:           {409, "Identity changed; check the task again"},
+	apperror.TaskVerificationUnavailable:  {503, "Unable to verify channel membership"},
 	apperror.PaymentRestricted:            {423, "Payments temporarily restricted"},
 	apperror.TransferAmountLimit:          {422, "Transfer amount outside plan limits"},
 	apperror.TransferDailyLimit:           {422, "Daily transfer limit exceeded"},
