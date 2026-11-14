@@ -10,6 +10,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	accountlogic "github.com/0xabcd-k/DexWallet/backend/logic/account"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
+	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
 	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	"github.com/0xabcd-k/DexWallet/backend/session"
@@ -33,6 +34,14 @@ type description struct {
 }
 
 var descriptions = map[apperror.Code]description{
+	apperror.TaskNotMember:                {422, "Follow the channel before claiming"},
+	apperror.TaskContextChanged:           {409, "Task context changed; review rewards again"},
+	apperror.TaskInvitationInvalid:        {409, "Task invitation is unavailable"},
+	apperror.TaskInvitationRequiredFirst:  {422, "Complete your first task before inviting"},
+	apperror.TaskRequestConflict:          {409, "Task request key parameters differ"},
+	apperror.TaskOutcomeUnknown:           {503, "Claim outcome unknown; recover original request"},
+	apperror.TaskBusy:                     {409, "Task claim busy; retry original request"},
+	apperror.TaskHistoryUnknown:           {409, "Historical task rewards require reconciliation"},
 	apperror.TaskTelegramRequired:         {422, "Bind Telegram before checking this task"},
 	apperror.TaskUnavailable:              {409, "Task is not currently available"},
 	apperror.TaskAlreadyCompleted:         {409, "This Telegram identity has already completed the task"},
@@ -105,6 +114,8 @@ func describeError(err error) (apperror.Code, description) {
 	var app *apperror.Error
 	var oversized *http.MaxBytesError
 	switch {
+	case errors.Is(err, tasklogic.ErrClaimUnknown):
+		code = apperror.TaskOutcomeUnknown
 	case errors.Is(err, transferlogic.ErrOutcomeUnknown):
 		code = apperror.TransferOutcomeUnknown
 	case errors.As(err, &tx): // Cleanup/commit failures cannot become business rejections.

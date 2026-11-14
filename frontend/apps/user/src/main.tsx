@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 import { createAppI18n, I18nextProvider } from '@dexwallet/i18n';
 import { appResources } from './locales';
-import { bootstrapTelegram, sessionStorageOrUndefined, isReceiveTarget } from './app/telegram/bootstrap';
+import { bootstrapTelegram, sessionStorageOrUndefined, isReceiveTarget, taskInvitationTarget } from './app/telegram/bootstrap';
 import { createUserRouter } from './app/router';
 import { session } from './auth/session';
 
@@ -22,7 +22,8 @@ if (context.mode === 'error') {
   root.textContent = i18n.t('common:startupError');
 } else {
   if (context.source === 'fresh') {
-    const route = context.targetStatus === 'pending' && isReceiveTarget(context.target) ? `/pay?code=${encodeURIComponent(context.target!)}` : '/wallet';
+    const invitation = context.targetStatus === 'pending' ? taskInvitationTarget(context.target) : undefined;
+    const route = invitation ? `/task-invitations/${invitation}` : context.targetStatus === 'pending' && isReceiveTarget(context.target) ? `/pay?code=${encodeURIComponent(context.target!)}` : '/wallet';
     history.replaceState(null, '', `${location.pathname}${location.search}#${route}`);
   }
   if (context.mode === 'telegram' && !session.capture().credential) {

@@ -39,15 +39,23 @@ type (
 	}
 
 	TaskCompletion struct {
-		Id                 int64     `db:"id"`
-		TaskId             int64     `db:"task_id"`
-		TelegramIdentityId int64     `db:"telegram_identity_id"`
-		UserId             int64     `db:"user_id"`
-		RequestKey         string    `db:"request_key"`
-		TaskRevision       int64     `db:"task_revision"`
-		BasePoints         int64     `db:"base_points"`
-		VerifiedAt         time.Time `db:"verified_at"`
-		CreatedAt          time.Time `db:"created_at"`
+		Id                 int64         `db:"id"`
+		TaskId             int64         `db:"task_id"`
+		TelegramIdentityId int64         `db:"telegram_identity_id"`
+		UserId             int64         `db:"user_id"`
+		RequestKey         string        `db:"request_key"`
+		TaskRevision       int64         `db:"task_revision"`
+		BasePoints         int64         `db:"base_points"`
+		Mode               string        `db:"mode"`
+		ParticipantStage   string        `db:"participant_stage"`
+		InvitationId       sql.NullInt64 `db:"invitation_id"`
+		IdentityRevision   int64         `db:"identity_revision"`
+		BindingVersion     int64         `db:"binding_version"`
+		MemberStatus       string        `db:"member_status"`
+		TaskTitle          string        `db:"task_title"`
+		RuleVersion        int64         `db:"rule_version"`
+		VerifiedAt         time.Time     `db:"verified_at"`
+		CreatedAt          time.Time     `db:"created_at"`
 	}
 )
 
@@ -107,14 +115,14 @@ func (m *defaultTaskCompletionModel) FindOneByUserIdRequestKey(ctx context.Conte
 }
 
 func (m *defaultTaskCompletionModel) Insert(ctx context.Context, data *TaskCompletion) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?)", m.table, taskCompletionRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.TaskId, data.TelegramIdentityId, data.UserId, data.RequestKey, data.TaskRevision, data.BasePoints, data.VerifiedAt)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, taskCompletionRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.TaskId, data.TelegramIdentityId, data.UserId, data.RequestKey, data.TaskRevision, data.BasePoints, data.Mode, data.ParticipantStage, data.InvitationId, data.IdentityRevision, data.BindingVersion, data.MemberStatus, data.TaskTitle, data.RuleVersion, data.VerifiedAt)
 	return ret, err
 }
 
 func (m *defaultTaskCompletionModel) Update(ctx context.Context, newData *TaskCompletion) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, taskCompletionRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.TaskId, newData.TelegramIdentityId, newData.UserId, newData.RequestKey, newData.TaskRevision, newData.BasePoints, newData.VerifiedAt, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.TaskId, newData.TelegramIdentityId, newData.UserId, newData.RequestKey, newData.TaskRevision, newData.BasePoints, newData.Mode, newData.ParticipantStage, newData.InvitationId, newData.IdentityRevision, newData.BindingVersion, newData.MemberStatus, newData.TaskTitle, newData.RuleVersion, newData.VerifiedAt, newData.Id)
 	return err
 }
 

@@ -316,6 +316,59 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
+					Path:    "/v1/user/reward-grants/:idx",
+					Handler: task.RewardGrantDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/reward-summary",
+					Handler: task.RewardSummaryHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/task-completions",
+					Handler: task.TaskCompletionListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/task-completions/:idx",
+					Handler: task.TaskCompletionDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/task-completions/by-request/:requestKey",
+					Handler: task.TaskCompletionByRequestHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/task-invitations/:idx",
+					Handler: task.TaskInvitationDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/tasks/:idx/claim",
+					Handler: task.TaskClaimHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/tasks/:idx/claim-preview",
+					Handler: task.ClaimPreviewHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/tasks/:idx/invitation",
+					Handler: task.TaskInvitationCreateHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
 					Path:    "/v1/user/receive-code",
 					Handler: transfer.ReceiveCodeHandler(serverCtx),
 				},

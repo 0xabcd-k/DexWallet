@@ -103,3 +103,7 @@ export function isReceiveTarget(value: string | null): boolean {
     return Array.isArray(decoded) && decoded.length === 4 && decoded[0] === 1 && decoded[1] === 'account' && typeof decoded[2] === 'string' && typeof decoded[3] === 'string';
   } catch { return false; }
 }
+
+export function taskInvitationTarget(value: string | null): string | undefined {
+  return value?.match(/^task_(0\d{16,19})$/)?.[1];
+}

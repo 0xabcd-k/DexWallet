@@ -11,5 +11,5 @@ func TaskData(secret string, item task.Item) (types.TaskData, error) {
 	d := item.Definition
 	idx, err := EncodeIdx(secret, idcodec.Task, d.Id)
 	return types.TaskData{Idx: idx, Kind: d.Kind, Title: d.Title, Description: d.Description, RequiredIdentity: string(user.IdentityTelegram),
-		StartsAt: TimeString(d.StartsAt), EndsAt: TimeString(d.EndsAt), Eligibility: item.Eligibility, Sample: true, ClaimAvailable: false}, err
+		StartsAt: TimeString(d.StartsAt), EndsAt: TimeString(d.EndsAt), Eligibility: item.Eligibility, Sample: true, ClaimAvailable: item.ClaimAvailable, RewardsAvailable: item.RewardsAvailable}, err
 }

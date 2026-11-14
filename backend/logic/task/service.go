@@ -1,5 +1,4 @@
-// Package task provides task definitions, identity eligibility and read-only
-// verification previews. Completion and reward settlement are a later use case.
+// Package task owns task eligibility, verification, invitations and atomic rewards.
 package task
 
 import (
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
+	"github.com/0xabcd-k/DexWallet/backend/logic/account"
 	users "github.com/0xabcd-k/DexWallet/backend/logic/user"
 	model "github.com/0xabcd-k/DexWallet/backend/model/task"
 	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
@@ -33,7 +33,13 @@ const (
 	MaxPageSize               = 100
 )
 
+type Transactor interface {
+	TransactCtx(context.Context, func(context.Context, sqlx.Session) error) error
+}
+
 type Service struct {
+	tx          Transactor
+	accounts    *account.Service
 	conn        sqlx.SqlConn
 	definitions model.TaskDefinitionModel
 	membership  Membership
@@ -41,6 +47,12 @@ type Service struct {
 
 func New(conn sqlx.SqlConn, membership Membership) *Service {
 	return &Service{conn: conn, definitions: model.NewTaskDefinitionModel(conn), membership: membership}
+}
+
+func NewWithRewards(conn sqlx.SqlConn, membership Membership, tx Transactor, accounts *account.Service) *Service {
+	s := New(conn, membership)
+	s.tx, s.accounts = tx, accounts
+	return s
 }
 
 type Snapshot struct {
@@ -54,8 +66,10 @@ type Snapshot struct {
 	Now              time.Time     `db:"now_utc"`
 }
 type Item struct {
-	Definition  *model.TaskDefinition
-	Eligibility string
+	Definition       *model.TaskDefinition
+	Eligibility      string
+	ClaimAvailable   bool
+	RewardsAvailable bool
 }
 type Page struct {
 	Items  []Item
@@ -105,6 +119,8 @@ func (s *Service) item(ctx context.Context, d *model.TaskDefinition, v Snapshot)
 			item.Eligibility = Completed
 		}
 	}
+	item.RewardsAvailable = s.tx != nil && s.accounts != nil
+	item.ClaimAvailable = item.Eligibility == Eligible && item.RewardsAvailable
 	return item, nil
 }
 func (s *Service) List(ctx context.Context, actor users.Actor, before, limit int64) (Page, error) {

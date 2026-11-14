@@ -34,4 +34,12 @@ const (
 	TaskAlreadyCompleted         Code = "TASK_ALREADY_COMPLETED"
 	TaskBindingChanged           Code = "TASK_BINDING_CHANGED"
 	TaskVerificationUnavailable  Code = "TASK_VERIFICATION_UNAVAILABLE"
+	TaskNotMember                Code = "TASK_NOT_MEMBER"
+	TaskContextChanged           Code = "TASK_CONTEXT_CHANGED"
+	TaskInvitationInvalid        Code = "TASK_INVITATION_INVALID"
+	TaskInvitationRequiredFirst  Code = "TASK_INVITATION_REQUIRED_FIRST"
+	TaskRequestConflict          Code = "TASK_REQUEST_CONFLICT"
+	TaskOutcomeUnknown           Code = "TASK_OUTCOME_UNKNOWN"
+	TaskBusy                     Code = "TASK_BUSY"
+	TaskHistoryUnknown           Code = "TASK_HISTORY_UNKNOWN"
 )

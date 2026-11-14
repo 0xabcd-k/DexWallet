@@ -32,6 +32,7 @@ export async function mockAccount(page: Page) {
     try { const raw = req.headers().authorization?.split(' ')[1]?.split('.')[1]; if (raw) version = JSON.parse(Buffer.from(raw, 'base64url').toString()).auth_version; } catch { /* invalid header */ }
     if (version !== state.version) return fail(401, 'UNAUTHENTICATED');
     if (path === '/v1/user/current') return ok({ idx: userIdx, nickname: state.nickname, avatarUrl: '' });
+    if (path === '/v1/user/reward-summary') return ok({ firstCompleted: false, proProgress: '0', pro: false, proUnlockedAt: '', friendCount: 0, assistanceCount: 0, assistancePoints: '0', commissionPoints: '0' });
     if (path === '/v1/user/account-holds') return ok({ holds: [], nextCursor: '' });
     if (path === '/v1/user/account-entries') return ok({ entries: [], nextCursor: '' });
     if (path === '/v1/user/accounts') return ok({ accounts: [

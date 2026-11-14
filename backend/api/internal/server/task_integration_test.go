@@ -73,10 +73,48 @@ func checkTaskHTTP(t *testing.T, s *shared.ServiceContext, call func(string, str
 	failed, _ := tasks.NewMock([]tasks.Fixture{{ChannelID: -100, TelegramUserID: 88001, Failure: tasks.FailureTimeout}})
 	s.Tasks = tasks.New(sqlx.NewSqlConnFromDB(s.DB), failed)
 	call("POST", "/v1/user/tasks/"+idx+"/check", token, nil, 503, "TASK_VERIFICATION_UNAVAILABLE")
-	call("POST", "/v1/user/tasks/"+idx+"/claim", token, nil, 404, "")
+	call("POST", "/v1/user/tasks/"+idx+"/claim", token, nil, 400, "INVALID_ARGUMENT")
 	var count int
 	if err = s.DB.QueryRow("SELECT COUNT(*) FROM task_completion").Scan(&count); err != nil || count != 0 {
 		t.Fatal("check completed task", count, err)
 	}
+
+	// The preceding ledger-only scenario used synthetic reward source ID 1.
+	// Reserve a disjoint range for real reward-grant records in this shared fixture.
+	if _, err = s.DB.Exec("ALTER TABLE reward_grant AUTO_INCREMENT=1000"); err != nil {
+		t.Fatal(err)
+	}
+	s.Tasks = tasks.NewWithRewards(sqlx.NewSqlConnFromDB(s.DB), mock, s.Tx, s.Accounts)
+	call("POST", "/v1/user/tasks/"+idx+"/invitation", token, nil, 422, "TASK_INVITATION_REQUIRED_FIRST")
+	_, raw = call("GET", "/v1/user/tasks/"+idx+"/claim-preview", token, nil, 200, "OK")
+	var preview types.ClaimPreviewData
+	if err = json.Unmarshal(raw, &preview); err != nil || preview.RewardUsd != "1.00" || preview.ProDelta != "1000" || preview.TaskPoints != "0" || !preview.Task.ClaimAvailable {
+		t.Fatal(preview, err)
+	}
+	request := types.TaskClaimRequest{RequestKey: "http_task_claim_0001", Mode: "self", ExpectedTaskRevision: preview.TaskRevision, ExpectedIdentityRevision: preview.IdentityRevision, ExpectedParticipantStage: preview.ParticipantStage}
+	_, raw = call("POST", "/v1/user/tasks/"+idx+"/claim", token, request, 200, "OK")
+	var completed types.TaskCompletionData
+	if err = json.Unmarshal(raw, &completed); err != nil || len(completed.Grants) != 1 || completed.Grants[0].RewardUsd != "1.00" || completed.Grants[0].Points != "0" {
+		t.Fatal(completed, err)
+	}
+	_, raw = call("GET", "/v1/user/task-completions/by-request/"+request.RequestKey, token, nil, 200, "OK")
+	var recovered types.TaskCompletionData
+	if err = json.Unmarshal(raw, &recovered); err != nil || recovered.Idx != completed.Idx {
+		t.Fatal(recovered, err)
+	}
+	call("GET", "/v1/user/task-completions/"+completed.Idx, unbound, nil, 404, "NOT_FOUND")
+	call("GET", "/v1/user/reward-grants/"+completed.Grants[0].Idx, unbound, nil, 404, "NOT_FOUND")
+	call("GET", "/v1/user/reward-grants/"+completed.Grants[0].Idx, token, nil, 200, "OK")
+	call("GET", "/v1/user/task-completions?taskIdx="+idx, token, nil, 200, "OK")
+	call("GET", "/v1/user/reward-summary", token, nil, 200, "OK")
+	_, raw = call("POST", "/v1/user/tasks/"+idx+"/invitation", token, nil, 200, "OK")
+	var invitation types.TaskInvitationData
+	if err = json.Unmarshal(raw, &invitation); err != nil || invitation.TaskIdx != idx || !strings.HasPrefix(invitation.StartParam, "task_") {
+		t.Fatal(invitation, err)
+	}
+	call("GET", "/v1/user/task-invitations/"+invitation.Idx, unbound, nil, 200, "OK")
+	call("POST", "/v1/user/tasks/"+idx+"/claim", token, request, 200, "OK")
+	request.ExpectedParticipantStage = "returning"
+	call("POST", "/v1/user/tasks/"+idx+"/claim", token, request, 409, "TASK_REQUEST_CONFLICT")
 	s.Tasks = tasks.New(sqlx.NewSqlConnFromDB(s.DB), nil)
 }

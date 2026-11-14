@@ -14,6 +14,8 @@ type Kind string
 
 const (
 	Task              Kind = "TaskId"
+	TaskCompletion    Kind = "TaskCompletionId"
+	TaskInvitation    Kind = "TaskInvitationId"
 	User              Kind = "UserId"
 	Admin             Kind = "AdminId"
 	Merchant          Kind = "MerchantId"

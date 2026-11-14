@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { Button } from 'antd-mobile';
 import { formatTime, useTranslation } from '@dexwallet/i18n';
 import type { TaskData, TaskListData, TaskCheckData } from '@dexwallet/api-contract/platform';
 import { getTasks, getTask, checkTask } from '../../api/tasks';
 import { Failure, useAuth } from '../../auth/context';
 import './style.less';
+import { ClaimPanel } from './claim';
 
 export default function Tasks() {
   const auth = useAuth();
@@ -21,7 +22,7 @@ function TaskList() {
     return () => controller.abort();
   }, [before, revision]);
   return <section className="task-page"><h1>{t('tasks')}</h1>
-    <p>{t('taskPreviewNotice')}</p>
+    <p>{t('taskIntro')}</p>
     {state.error ? <><Failure error={state.error} /><Button onClick={() => setRevision(n => n + 1)}>{t('common:retry')}</Button></> : !state.data ? <p role="status">{t('common:loading')}</p> : <>
       {state.data.items.length === 0 && <p>{t('taskEmpty')}</p>}
       {state.data.items.map(item => <article className="task-card" key={item.idx}><h2><Link to={`/tasks/${item.idx}`}>{item.title}</Link></h2>
@@ -34,16 +35,16 @@ function TaskList() {
   </section>;
 }
 export function TaskDetail() {
-  const { idx = '' } = useParams(); const auth = useAuth();
-  return <Detail key={`${auth.session.generation}:${idx}`} idx={idx} />;
+  const { idx = '' } = useParams(); const auth = useAuth(); const [params] = useSearchParams(); const invitationIdx = params.get('invitationIdx') ?? '';
+  return <Detail key={`${auth.session.generation}:${idx}:${invitationIdx}`} idx={idx} invitationIdx={invitationIdx} />;
 }
-function Detail({ idx }: { idx: string }) {
+function Detail({ idx, invitationIdx }: { idx: string; invitationIdx: string }) {
   const { t, i18n } = useTranslation(); const checkController = useRef<AbortController | undefined>(undefined);
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<{ data?: TaskData; error?: unknown }>({});
   const [result, setResult] = useState<TaskCheckData>(); const [error, setError] = useState<unknown>(); const [checking, setChecking] = useState(false);
   useEffect(() => {
-    const controller = new AbortController(); setState({}); setResult(undefined); setError(undefined);
+    const controller = new AbortController(); setResult(undefined); setError(undefined);
     void getTask(idx, controller.signal).then(data => { if (!controller.signal.aborted) setState({ data }); }, failure => { if (!controller.signal.aborted) setState({ error: failure }); });
     return () => { controller.abort(); checkController.current?.abort(); };
   }, [idx, revision]);
@@ -64,11 +65,11 @@ function Detail({ idx }: { idx: string }) {
       {item.sample && <p className="task-sample">{t('taskSampleNotice')}</p>}
       <dl><dt>{t('taskIdentity')}</dt><dd>Telegram</dd><dt>{t('taskStarts')}</dt><dd>{formatTime(Date.parse(item.startsAt), i18n.resolvedLanguage === 'zh-CN' ? 'zh-CN' : 'en')}</dd><dt>{t('taskEnds')}</dt><dd>{formatTime(Date.parse(item.endsAt), i18n.resolvedLanguage === 'zh-CN' ? 'zh-CN' : 'en')}</dd></dl>
       <p>{t(`taskEligibility_${item.eligibility}`)}</p>
-      {item.eligibility === 'telegram_required' && <Link to="/settings" state={{ from: `/tasks/${idx}` }}>{t('taskBindTelegram')}</Link>}
+      {item.eligibility === 'telegram_required' && <Link to="/settings" state={{ from: `/tasks/${idx}${invitationIdx ? `?invitationIdx=${invitationIdx}` : ''}` }}>{t('taskBindTelegram')}</Link>}
       <Button color="primary" disabled={checking || item.eligibility !== 'eligible'} loading={checking} onClick={() => { void check(); }}>{t('taskCheck')}</Button>
       {error !== undefined && <Failure error={error} />}
       {result && <div role="status" className="task-result"><strong>{t(result.outcome === 'member' ? 'taskMember' : 'taskNotMember')}</strong><p>{t('taskCheckedAt', { time: formatTime(Date.parse(result.checkedAt), i18n.resolvedLanguage === 'zh-CN' ? 'zh-CN' : 'en') })}</p></div>}
-      <p>{t('taskPreviewNotice')}</p>
+      {item.rewardsAvailable ? <><p>{t('taskReadOnlyNotice')}</p><ClaimPanel idx={idx} invitationIdx={invitationIdx} refresh={() => setRevision(n => n + 1)} /></> : <p>{t('taskPreviewNotice')}</p>}
       <Button disabled={checking} onClick={() => setRevision(n => n + 1)}>{t('taskRefresh')}</Button>
     </>}
   </section>;

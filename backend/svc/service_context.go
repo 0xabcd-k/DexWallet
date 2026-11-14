@@ -135,7 +135,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 			return d, err
 		}
 	}
-	d.Tasks = tasklogic.New(conn, membership)
+	d.Tasks = tasklogic.NewWithRewards(conn, membership, d.Tx, d.Accounts)
 	d.ReceiveCodes, err = transferlogic.NewCodes(c.Transfer, c.Environment)
 	if err != nil {
 		return d, err

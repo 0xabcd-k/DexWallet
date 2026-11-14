@@ -6,6 +6,7 @@ import { useTranslation } from '@dexwallet/i18n';
 import { safeReturn } from './navigation';
 import Home from '../view/home';
 import Tasks, { TaskDetail } from '../view/tasks';
+import { CompletionHistory, CompletionDetail, RewardGrantDetail, InvitationLanding } from '../view/tasks/results';
 import Login from '../view/login';
 import Settings from '../view/settings';
 import Holds from '../view/holds';
@@ -49,6 +50,10 @@ export function createUserRouter(launch: LaunchContext) {
     { element: <ChildLayout />, children: [
       { path: '/settings', element: <Settings /> },
       { path: '/tasks', element: <RequireAuth><Tasks /></RequireAuth> },
+      { path: '/task-completions', element: <RequireAuth><CompletionHistory /></RequireAuth> },
+      { path: '/task-completions/:idx', element: <RequireAuth><CompletionDetail /></RequireAuth> },
+      { path: '/reward-grants/:idx', element: <RequireAuth><RewardGrantDetail /></RequireAuth> },
+      { path: '/task-invitations/:idx', element: <RequireAuth><InvitationLanding /></RequireAuth> },
       { path: '/tasks/:idx', element: <RequireAuth><TaskDetail /></RequireAuth> },
       { path: '/receive', element: <RequireAuth><Receive /></RequireAuth> },
       { path: '/pay', element: <RequireAuth><Pay /></RequireAuth> },

@@ -214,6 +214,45 @@ export interface ChallengeResponse {
 	traceId: string
 }
 
+export interface ClaimPreviewData {
+	task: TaskData
+	mode: 'self' | 'help'
+	participantStage: 'first' | 'returning'
+	taskRevision: number
+	identityRevision: number
+	invitationIdx: string
+	inviterIdx: string
+	inviterNickname: string
+	rewardUsd: string
+	taskPoints: string
+	commissionPoints: string
+	proDelta: string
+	proProgress: string
+	pro: boolean
+	canInvite: boolean
+}
+
+export interface ClaimPreviewRequest {
+}
+export interface ClaimPreviewRequestParams {
+	invitationIdx?: string
+}
+
+export interface ClaimPreviewResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: ClaimPreviewData
+}
+
+export interface CompletionListRequest {
+}
+export interface CompletionListRequestParams {
+	before?: string
+	taskIdx?: string
+	limit: number
+}
+
 export interface CreateLimitPlanRequest {
 	requestKey: string
 	name: string
@@ -242,7 +281,7 @@ export interface EmailLoginRequest {
 }
 
 export interface ErrorResponse {
-	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN' | 'TASK_TELEGRAM_REQUIRED' | 'TASK_UNAVAILABLE' | 'TASK_ALREADY_COMPLETED' | 'TASK_BINDING_CHANGED' | 'TASK_VERIFICATION_UNAVAILABLE'
+	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN' | 'TASK_TELEGRAM_REQUIRED' | 'TASK_UNAVAILABLE' | 'TASK_ALREADY_COMPLETED' | 'TASK_BINDING_CHANGED' | 'TASK_VERIFICATION_UNAVAILABLE' | 'TASK_NOT_MEMBER' | 'TASK_CONTEXT_CHANGED' | 'TASK_INVITATION_INVALID' | 'TASK_INVITATION_REQUIRED_FIRST' | 'TASK_REQUEST_CONFLICT' | 'TASK_OUTCOME_UNKNOWN' | 'TASK_BUSY' | 'TASK_HISTORY_UNKNOWN'
 	message: string
 	traceId: string
 }
@@ -386,6 +425,48 @@ export interface ReceiveCodeResponse {
 	traceId: string
 }
 
+export interface RewardGrantData {
+	idx: string
+	completionIdx: string
+	taskIdx: string
+	taskTitle: string
+	reason: 'first_task' | 'own_task' | 'assistance' | 'commission'
+	rewardUsd: string
+	points: string
+	proDelta: string
+	proBefore: string
+	proAfter: string
+	wasPro: boolean
+	unlockedPro: boolean
+	voucherIdx: string
+	createdAt: string
+}
+
+export interface RewardGrantResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: RewardGrantData
+}
+
+export interface RewardSummaryData {
+	firstCompleted: boolean
+	proProgress: string
+	pro: boolean
+	proUnlockedAt: string
+	friendCount: number
+	assistanceCount: number
+	assistancePoints: string
+	commissionPoints: string
+}
+
+export interface RewardSummaryResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: RewardSummaryData
+}
+
 export interface SendEmailRequest {
 	email: string
 	locale: 'en' | 'zh-CN'
@@ -410,6 +491,51 @@ export interface TaskCheckResponse {
 	data: TaskCheckData
 }
 
+export interface TaskClaimByRequest {
+}
+export interface TaskClaimByRequestParams {
+}
+
+export interface TaskClaimRequest {
+	requestKey: string
+	mode: 'self' | 'help'
+	invitationIdx?: string
+	expectedTaskRevision: number
+	expectedIdentityRevision: number
+	expectedParticipantStage: 'first' | 'returning'
+}
+export interface TaskClaimRequestParams {
+}
+
+export interface TaskCompletionData {
+	idx: string
+	taskIdx: string
+	taskTitle: string
+	mode: 'self' | 'help'
+	participantStage: 'first' | 'returning'
+	completedAt: string
+	grants: Array<RewardGrantData>
+}
+
+export interface TaskCompletionListData {
+	items: Array<TaskCompletionData>
+	nextCursor: string
+}
+
+export interface TaskCompletionListResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: TaskCompletionListData
+}
+
+export interface TaskCompletionResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: TaskCompletionData
+}
+
 export interface TaskData {
 	idx: string
 	kind: 'telegram_channel_follow'
@@ -421,6 +547,26 @@ export interface TaskData {
 	eligibility: 'eligible' | 'telegram_required' | 'not_started' | 'expired' | 'paused' | 'completed'
 	sample: boolean
 	claimAvailable: boolean
+	rewardsAvailable: boolean
+}
+
+export interface TaskInvitationData {
+	idx: string
+	taskIdx: string
+	inviterIdx: string
+	inviterNickname: string
+	inviterAvatarUrl: string
+	path: string
+	startParam: string
+	url: string
+	telegramUrl: string
+}
+
+export interface TaskInvitationResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: TaskInvitationData
 }
 
 export interface TaskListData {

@@ -164,7 +164,7 @@ func TestTaskCatalogAndIdentityConsumption(t *testing.T) {
 	_, err = disabled.Check(ctx, actor, 1)
 	taskCode(t, err, apperror.NotFound)
 	// Fixture represents a past atomically settled completion; preview cannot create it.
-	completion := &model.TaskCompletion{TaskId: 1, TelegramIdentityId: account.Binding.IdentityID, UserId: actor.UserID, RequestKey: "past_task_request_0", TaskRevision: 1, BasePoints: 100, VerifiedAt: time.Now().UTC()}
+	completion := &model.TaskCompletion{Mode: tasks.ClaimSelf, ParticipantStage: tasks.StageFirst, TaskId: 1, TelegramIdentityId: account.Binding.IdentityID, UserId: actor.UserID, RequestKey: "past_task_request_0", TaskRevision: 1, BasePoints: 100, VerifiedAt: time.Now().UTC()}
 	completions := model.NewTaskCompletionModel(conn)
 	tx := transaction.New(db)
 	rollback := errors.New("rollback")
@@ -237,7 +237,7 @@ func TestTaskSchemaAndMigration(t *testing.T) {
 		}
 		mustExec(t, full, string(ddl))
 	}
-	for _, name := range []string{"task_definition", "task_completion"} {
+	for _, name := range []string{"task_definition", "task_completion", "user_reward_state", "task_invitation", "user_referral", "reward_grant"} {
 		var table, a, b string
 		if err = db.QueryRow("SHOW CREATE TABLE "+name).Scan(&table, &a); err != nil {
 			t.Fatal(err)
@@ -277,7 +277,7 @@ func TestTaskSchemaAndMigration(t *testing.T) {
 	if err != nil || !strings.Contains(string(output), "Mode: mock") || !strings.Contains(string(output), "/#/tasks/") {
 		t.Fatalf("sample tool: %v %s", err, output)
 	}
-	if err = m.Steps(-1); err == nil {
+	if err = m.Steps(-2); err == nil {
 		t.Fatal("discarded task configuration")
 	}
 	var count int

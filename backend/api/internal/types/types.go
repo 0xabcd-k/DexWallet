@@ -204,6 +204,42 @@ type ChallengeResponse struct {
 	TraceId string        `json:"traceId"`
 }
 
+type ClaimPreviewData struct {
+	Task             TaskData `json:"task"`
+	Mode             string   `json:"mode,options=self|help"`
+	ParticipantStage string   `json:"participantStage,options=first|returning"`
+	TaskRevision     int64    `json:"taskRevision"`
+	IdentityRevision int64    `json:"identityRevision"`
+	InvitationIdx    string   `json:"invitationIdx"`
+	InviterIdx       string   `json:"inviterIdx"`
+	InviterNickname  string   `json:"inviterNickname"`
+	RewardUsd        string   `json:"rewardUsd"`
+	TaskPoints       string   `json:"taskPoints"`
+	CommissionPoints string   `json:"commissionPoints"`
+	ProDelta         string   `json:"proDelta"`
+	ProProgress      string   `json:"proProgress"`
+	Pro              bool     `json:"pro"`
+	CanInvite        bool     `json:"canInvite"`
+}
+
+type ClaimPreviewRequest struct {
+	Idx           string `path:"idx"`
+	InvitationIdx string `form:"invitationIdx,optional"`
+}
+
+type ClaimPreviewResponse struct {
+	Code    string           `json:"code,options=OK"`
+	Message string           `json:"message"`
+	TraceId string           `json:"traceId"`
+	Data    ClaimPreviewData `json:"data"`
+}
+
+type CompletionListRequest struct {
+	Before  string `form:"before,optional"`
+	TaskIdx string `form:"taskIdx,optional"`
+	Limit   int64  `form:"limit,default=20,range=[1:100]"`
+}
+
 type CreateLimitPlanRequest struct {
 	RequestKey         string `json:"requestKey"`
 	Name               string `json:"name"`
@@ -232,7 +268,7 @@ type EmailLoginRequest struct {
 }
 
 type ErrorResponse struct {
-	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND|PAYMENT_RESTRICTED|TRANSFER_AMOUNT_LIMIT|TRANSFER_DAILY_LIMIT|INSUFFICIENT_BALANCE|TRANSFER_REQUEST_CONFLICT|TRANSFER_OUTCOME_UNKNOWN|TRANSFER_BUSY|TRANSFER_RECIPIENT_UNAVAILABLE|IDENTITY_HISTORY_UNKNOWN|TASK_TELEGRAM_REQUIRED|TASK_UNAVAILABLE|TASK_ALREADY_COMPLETED|TASK_BINDING_CHANGED|TASK_VERIFICATION_UNAVAILABLE"`
+	Code    string `json:"code,options=INVALID_ARGUMENT|UNAUTHENTICATED|PERMISSION_DENIED|NOT_FOUND|METHOD_NOT_ALLOWED|CONFLICT|UNPROCESSABLE|RATE_LIMITED|INTERNAL_ERROR|SERVICE_UNAVAILABLE|REQUEST_TIMEOUT|PAYLOAD_TOO_LARGE|AUTH_PROOF_INVALID|IDENTITY_OCCUPIED|ANOTHER_IDENTITY_REQUIRED|IDENTITY_ALREADY_BOUND|PAYMENT_RESTRICTED|TRANSFER_AMOUNT_LIMIT|TRANSFER_DAILY_LIMIT|INSUFFICIENT_BALANCE|TRANSFER_REQUEST_CONFLICT|TRANSFER_OUTCOME_UNKNOWN|TRANSFER_BUSY|TRANSFER_RECIPIENT_UNAVAILABLE|IDENTITY_HISTORY_UNKNOWN|TASK_TELEGRAM_REQUIRED|TASK_UNAVAILABLE|TASK_ALREADY_COMPLETED|TASK_BINDING_CHANGED|TASK_VERIFICATION_UNAVAILABLE|TASK_NOT_MEMBER|TASK_CONTEXT_CHANGED|TASK_INVITATION_INVALID|TASK_INVITATION_REQUIRED_FIRST|TASK_REQUEST_CONFLICT|TASK_OUTCOME_UNKNOWN|TASK_BUSY|TASK_HISTORY_UNKNOWN"`
 	Message string `json:"message"`
 	TraceId string `json:"traceId"`
 }
@@ -367,6 +403,48 @@ type ReceiveCodeResponse struct {
 	TraceId string          `json:"traceId"`
 }
 
+type RewardGrantData struct {
+	Idx           string `json:"idx"`
+	CompletionIdx string `json:"completionIdx"`
+	TaskIdx       string `json:"taskIdx"`
+	TaskTitle     string `json:"taskTitle"`
+	Reason        string `json:"reason,options=first_task|own_task|assistance|commission"`
+	RewardUsd     string `json:"rewardUsd"`
+	Points        string `json:"points"`
+	ProDelta      string `json:"proDelta"`
+	ProBefore     string `json:"proBefore"`
+	ProAfter      string `json:"proAfter"`
+	WasPro        bool   `json:"wasPro"`
+	UnlockedPro   bool   `json:"unlockedPro"`
+	VoucherIdx    string `json:"voucherIdx"`
+	CreatedAt     string `json:"createdAt"`
+}
+
+type RewardGrantResponse struct {
+	Code    string          `json:"code,options=OK"`
+	Message string          `json:"message"`
+	TraceId string          `json:"traceId"`
+	Data    RewardGrantData `json:"data"`
+}
+
+type RewardSummaryData struct {
+	FirstCompleted   bool   `json:"firstCompleted"`
+	ProProgress      string `json:"proProgress"`
+	Pro              bool   `json:"pro"`
+	ProUnlockedAt    string `json:"proUnlockedAt"`
+	FriendCount      int64  `json:"friendCount"`
+	AssistanceCount  int64  `json:"assistanceCount"`
+	AssistancePoints string `json:"assistancePoints"`
+	CommissionPoints string `json:"commissionPoints"`
+}
+
+type RewardSummaryResponse struct {
+	Code    string            `json:"code,options=OK"`
+	Message string            `json:"message"`
+	TraceId string            `json:"traceId"`
+	Data    RewardSummaryData `json:"data"`
+}
+
 type SendEmailRequest struct {
 	Email  string `json:"email"`
 	Locale string `json:"locale,default=en,options=en|zh-CN"`
@@ -391,6 +469,49 @@ type TaskCheckResponse struct {
 	Data    TaskCheckData `json:"data"`
 }
 
+type TaskClaimByRequest struct {
+	RequestKey string `path:"requestKey"`
+}
+
+type TaskClaimRequest struct {
+	Idx                      string `path:"idx"`
+	RequestKey               string `json:"requestKey"`
+	Mode                     string `json:"mode,options=self|help"`
+	InvitationIdx            string `json:"invitationIdx,optional"`
+	ExpectedTaskRevision     int64  `json:"expectedTaskRevision"`
+	ExpectedIdentityRevision int64  `json:"expectedIdentityRevision"`
+	ExpectedParticipantStage string `json:"expectedParticipantStage,options=first|returning"`
+}
+
+type TaskCompletionData struct {
+	Idx              string            `json:"idx"`
+	TaskIdx          string            `json:"taskIdx"`
+	TaskTitle        string            `json:"taskTitle"`
+	Mode             string            `json:"mode,options=self|help"`
+	ParticipantStage string            `json:"participantStage,options=first|returning"`
+	CompletedAt      string            `json:"completedAt"`
+	Grants           []RewardGrantData `json:"grants"`
+}
+
+type TaskCompletionListData struct {
+	Items      []TaskCompletionData `json:"items"`
+	NextCursor string               `json:"nextCursor"`
+}
+
+type TaskCompletionListResponse struct {
+	Code    string                 `json:"code,options=OK"`
+	Message string                 `json:"message"`
+	TraceId string                 `json:"traceId"`
+	Data    TaskCompletionListData `json:"data"`
+}
+
+type TaskCompletionResponse struct {
+	Code    string             `json:"code,options=OK"`
+	Message string             `json:"message"`
+	TraceId string             `json:"traceId"`
+	Data    TaskCompletionData `json:"data"`
+}
+
 type TaskData struct {
 	Idx              string `json:"idx"`
 	Kind             string `json:"kind,options=telegram_channel_follow"`
@@ -402,6 +523,26 @@ type TaskData struct {
 	Eligibility      string `json:"eligibility,options=eligible|telegram_required|not_started|expired|paused|completed"`
 	Sample           bool   `json:"sample"`
 	ClaimAvailable   bool   `json:"claimAvailable"`
+	RewardsAvailable bool   `json:"rewardsAvailable"`
+}
+
+type TaskInvitationData struct {
+	Idx              string `json:"idx"`
+	TaskIdx          string `json:"taskIdx"`
+	InviterIdx       string `json:"inviterIdx"`
+	InviterNickname  string `json:"inviterNickname"`
+	InviterAvatarUrl string `json:"inviterAvatarUrl"`
+	Path             string `json:"path"`
+	StartParam       string `json:"startParam"`
+	Url              string `json:"url"`
+	TelegramUrl      string `json:"telegramUrl"`
+}
+
+type TaskInvitationResponse struct {
+	Code    string             `json:"code,options=OK"`
+	Message string             `json:"message"`
+	TraceId string             `json:"traceId"`
+	Data    TaskInvitationData `json:"data"`
 }
 
 type TaskListData struct {
