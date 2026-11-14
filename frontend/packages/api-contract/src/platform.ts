@@ -349,7 +349,7 @@ export interface EmailLoginRequest {
 }
 
 export interface ErrorResponse {
-	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN' | 'TASK_TELEGRAM_REQUIRED' | 'TASK_UNAVAILABLE' | 'TASK_ALREADY_COMPLETED' | 'TASK_BINDING_CHANGED' | 'TASK_VERIFICATION_UNAVAILABLE' | 'TASK_NOT_MEMBER' | 'TASK_CONTEXT_CHANGED' | 'TASK_INVITATION_INVALID' | 'TASK_INVITATION_REQUIRED_FIRST' | 'TASK_REQUEST_CONFLICT' | 'TASK_OUTCOME_UNKNOWN' | 'TASK_BUSY' | 'TASK_HISTORY_UNKNOWN' | 'DRAW_UNAVAILABLE' | 'DRAW_VERSION_CHANGED' | 'DRAW_REQUEST_CONFLICT' | 'DRAW_OUTCOME_UNKNOWN' | 'DRAW_BUSY'
+	code: 'INVALID_ARGUMENT' | 'UNAUTHENTICATED' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'CONFLICT' | 'UNPROCESSABLE' | 'RATE_LIMITED' | 'INTERNAL_ERROR' | 'SERVICE_UNAVAILABLE' | 'REQUEST_TIMEOUT' | 'PAYLOAD_TOO_LARGE' | 'AUTH_PROOF_INVALID' | 'IDENTITY_OCCUPIED' | 'ANOTHER_IDENTITY_REQUIRED' | 'IDENTITY_ALREADY_BOUND' | 'PAYMENT_RESTRICTED' | 'TRANSFER_AMOUNT_LIMIT' | 'TRANSFER_DAILY_LIMIT' | 'INSUFFICIENT_BALANCE' | 'TRANSFER_REQUEST_CONFLICT' | 'TRANSFER_OUTCOME_UNKNOWN' | 'TRANSFER_BUSY' | 'TRANSFER_RECIPIENT_UNAVAILABLE' | 'IDENTITY_HISTORY_UNKNOWN' | 'TASK_TELEGRAM_REQUIRED' | 'TASK_UNAVAILABLE' | 'TASK_ALREADY_COMPLETED' | 'TASK_BINDING_CHANGED' | 'TASK_VERIFICATION_UNAVAILABLE' | 'TASK_NOT_MEMBER' | 'TASK_CONTEXT_CHANGED' | 'TASK_INVITATION_INVALID' | 'TASK_INVITATION_REQUIRED_FIRST' | 'TASK_REQUEST_CONFLICT' | 'TASK_OUTCOME_UNKNOWN' | 'TASK_BUSY' | 'TASK_HISTORY_UNKNOWN' | 'DRAW_UNAVAILABLE' | 'DRAW_VERSION_CHANGED' | 'DRAW_REQUEST_CONFLICT' | 'DRAW_OUTCOME_UNKNOWN' | 'DRAW_BUSY' | 'REWARD_TRANSFER_PRO_REQUIRED' | 'REWARD_TRANSFER_MINIMUM' | 'REWARD_TRANSFER_REQUEST_CONFLICT' | 'REWARD_TRANSFER_OUTCOME_UNKNOWN' | 'REWARD_RISK_UNAVAILABLE'
 	message: string
 	traceId: string
 }
@@ -533,6 +533,87 @@ export interface RewardSummaryResponse {
 	message: string
 	traceId: string
 	data: RewardSummaryData
+}
+
+export interface RewardTransferAdminData {
+	transfer: RewardTransferData
+	riskDecision: string
+	riskVersion: string
+	riskReason: string
+	reviewerIdx?: string
+}
+
+export interface RewardTransferAdminListRequest {
+}
+export interface RewardTransferAdminListRequestParams {
+	before?: string
+	limit: number
+	status: string
+}
+
+export interface RewardTransferAdminResponse {
+	code: string
+	message: string
+	data: RewardTransferAdminData
+	traceId: string
+}
+
+export interface RewardTransferData {
+	idx: string
+	userIdx: string
+	amount: string
+	fee: string
+	status: string
+	reviewReason: string
+	createdAt: string
+	resolvedAt?: string
+}
+
+export interface RewardTransferListData {
+	items: Array<RewardTransferData>
+	nextCursor?: string
+}
+
+export interface RewardTransferListResponse {
+	code: string
+	message: string
+	data: RewardTransferListData
+	traceId: string
+}
+
+export interface RewardTransferRequest {
+	requestKey: string
+	amount: string
+}
+
+export interface RewardTransferResponse {
+	code: string
+	message: string
+	data: RewardTransferData
+	traceId: string
+}
+
+export interface RewardTransferReviewRequest {
+	decision: 'approve' | 'reject'
+	reason: string
+}
+export interface RewardTransferReviewRequestParams {
+}
+
+export interface RewardTransferStateData {
+	available: boolean
+	pro: boolean
+	minimumAmount: string
+	rewardUsd: string
+	pendingUsd: string
+	fee: string
+}
+
+export interface RewardTransferStateResponse {
+	code: string
+	message: string
+	data: RewardTransferStateData
+	traceId: string
 }
 
 export interface SendEmailRequest {

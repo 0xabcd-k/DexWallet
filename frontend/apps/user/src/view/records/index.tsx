@@ -9,7 +9,7 @@ import { Failure, useAuth } from '../../auth/context';
 import './style.less';
 
 const kindNames: Record<string, string> = { [AccountKind.usd]: 'usdBalance', [AccountKind.reward]: 'rewardCash', [AccountKind.points]: 'taskPoints' };
-const sourceNames: Record<string, string> = { point_draw: 'drawTitle', transfer: 'entryTransfer', deposit: 'entryDeposit', reward: 'entryReward', withdrawal: 'entryWithdrawal', payment: 'entryPayment' };
+const sourceNames: Record<string, string> = { reward_transfer: 'rtTitle', point_draw: 'drawTitle', transfer: 'entryTransfer', deposit: 'entryDeposit', reward: 'entryReward', withdrawal: 'entryWithdrawal', payment: 'entryPayment' };
 
 export default function Records() {
   const auth = useAuth(); const { t } = useTranslation();
@@ -56,7 +56,7 @@ function Statement({ kind }: { kind: string }) {
           <div className="record-title"><strong>{t(sourceNames[entry.businessType] ?? 'entryChange')}</strong><span>{t(kindNames[entry.kind]!)}</span></div>
           <p className={`record-amount record-${reserved ? 'hold' : entry.direction}`}><span>{t(activityLabel)}</span> {reserved ? '' : entry.direction === 'in' ? '+' : '−'}{formatAmount(entry.amount, unit)}</p>
           <dl><dt>{t(entry.balancePart === 'held' ? 'entryHeldAfter' : 'entryBalanceAfter')}</dt><dd>{formatAmount(entry.balanceAfter, unit)}</dd>
-            <dt>{t('entryBusinessId')}</dt><dd>{entry.businessType === 'transfer' ? <Link to={`/transfers/${entry.businessIdx}`}>{entry.businessIdx}</Link> : entry.businessType === 'point_draw' ? <Link to={`/draws/${entry.businessIdx}`}>{entry.businessIdx}</Link> : entry.businessType === 'reward' ? <Link to={`/reward-grants/${entry.businessIdx}`}>{entry.businessIdx}</Link> : entry.businessIdx}</dd>
+            <dt>{t('entryBusinessId')}</dt><dd>{entry.businessType === 'reward_transfer' ? <Link to={`/reward-transfers/${entry.businessIdx}`}>{entry.businessIdx}</Link> : entry.businessType === 'transfer' ? <Link to={`/transfers/${entry.businessIdx}`}>{entry.businessIdx}</Link> : entry.businessType === 'point_draw' ? <Link to={`/draws/${entry.businessIdx}`}>{entry.businessIdx}</Link> : entry.businessType === 'reward' ? <Link to={`/reward-grants/${entry.businessIdx}`}>{entry.businessIdx}</Link> : entry.businessIdx}</dd>
             <dt>{t('common:time')}</dt><dd><time dateTime={entry.createdAt}>{formatTime(Date.parse(entry.createdAt), i18n.resolvedLanguage === 'zh-CN' ? 'zh-CN' : 'en')}</time></dd></dl>
         </article></li>;
       })}

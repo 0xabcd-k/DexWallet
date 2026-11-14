@@ -113,6 +113,10 @@ func New(c Config, cfg auth.Config, conn sqlx.SqlConn, tx *transaction.Runner, u
 	if err != nil {
 		return nil, err
 	}
+	s.codecs[RewardTransfer], err = idcodec.New(idSecret, idcodec.RewardTransfer)
+	if err != nil {
+		return nil, err
+	}
 	s.dummy, err = bcrypt.GenerateFromPassword([]byte("nonexistent-account-dummy-password"), bcrypt.DefaultCost)
 	return s, err
 }

@@ -335,7 +335,7 @@ func TestDrawSchemaMigrationAndIsolatedTool(t *testing.T) {
 	if ledgerCount(t, upgrade, "user_account") != 0 || ledgerCount(t, upgrade, "point_draw") != 0 {
 		t.Fatal("tool created user money")
 	}
-	if err = m.Steps(-1); err == nil {
+	if err = m.Migrate(12); err == nil {
 		t.Fatal("dropped published configuration")
 	}
 }

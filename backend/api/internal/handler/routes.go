@@ -12,6 +12,7 @@ import (
 	draw "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/draw"
 	health "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/health"
 	identity "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/identity"
+	rewardtransfer "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/rewardtransfer"
 	task "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/task"
 	transfer "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/transfer"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
@@ -239,6 +240,29 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.BackofficeTransport, serverCtx.AdminAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/reward-transfers",
+					Handler: backoffice.RewardTransferQueueHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/reward-transfers/:idx",
+					Handler: backoffice.RewardTransferAuditDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/reward-transfers/:idx/review",
+					Handler: backoffice.RewardTransferReviewHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
 			[]rest.Route{
 				{
@@ -316,6 +340,39 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/v1/user/identities/impact",
 					Handler: identity.IdentityImpactHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/reward-transfer-state",
+					Handler: rewardtransfer.RewardTransferStateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/reward-transfers",
+					Handler: rewardtransfer.RewardTransferCreateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/reward-transfers",
+					Handler: rewardtransfer.RewardTransferListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/reward-transfers/:idx",
+					Handler: rewardtransfer.RewardTransferDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/reward-transfers/by-request/:requestKey",
+					Handler: rewardtransfer.RewardTransferByRequestHandler(serverCtx),
 				},
 			}...,
 		),

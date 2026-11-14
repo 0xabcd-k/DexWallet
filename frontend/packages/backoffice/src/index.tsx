@@ -40,6 +40,7 @@ export function createBackofficeRouter(
           { path: '/accounts', labelKey: 'boAccounts' },
           { path: '/users', labelKey: 'boUsers' },
           { path: '/limits', labelKey: 'boLimits' },
+ { path: '/reward-transfers', labelKey: 'boRewardTransfers' },
           { path: '/audits', labelKey: 'boAudits' },
         ]
       : []),
@@ -69,7 +70,10 @@ export function createBackofficeRouter(
                 ...(realm === 'admin'
                   ? [
                       {
-                        path: '/limits', lazy: async () => ({ Component: (await import('./limits')).Limits }),
+                        path: '/reward-transfers', lazy: async () => ({ Component: (await import('./reward-transfers')).RewardTransfers }),
+ },
+ {
+ path: '/limits', lazy: async () => ({ Component: (await import('./limits')).Limits }),
                       },
                       {
                         path: '/accounts',

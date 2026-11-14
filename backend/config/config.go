@@ -11,6 +11,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
+	"github.com/0xabcd-k/DexWallet/backend/logic/risk"
 	"github.com/0xabcd-k/DexWallet/backend/logic/task"
 	"github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	"github.com/0xabcd-k/DexWallet/backend/session"
@@ -23,6 +24,7 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
+	RewardRisk        risk.Config        `json:",optional"`
 	Tasks             task.Config        `json:",optional"`
 	Transfer          transfer.Config    `json:",optional"`
 	Background        *background.Config `json:",optional"`
@@ -87,6 +89,9 @@ func Load(path string) (Config, error) {
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if err := c.RewardRisk.Check(c.Environment, c.Mode); err != nil {
+		return err
+	}
 	if err := c.Tasks.Check(c.Environment, c.Mode); err != nil {
 		return err
 	}

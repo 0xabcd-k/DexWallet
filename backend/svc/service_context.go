@@ -18,6 +18,7 @@ import (
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
 	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
+	rewardtransfer "github.com/0xabcd-k/DexWallet/backend/logic/rewardtransfer"
 	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
 	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
@@ -55,6 +56,7 @@ type ServiceContext struct {
 	Users                 *userlogic.Service
 	Accounts              *accountlogic.Service
 	Transfers             *transferlogic.Service
+	RewardTransfers       *rewardtransfer.Service
 	Draws                 *drawlogic.Service
 	Tasks                 *tasklogic.Service
 	Auth                  *authlogic.Service
@@ -130,6 +132,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.ModelUserAccount = accountmodel.NewUserAccountModel(conn)
 	d.Accounts = accountlogic.New(d.ModelUserAccount)
 	d.Transfers = transferlogic.New(conn, d.Tx, d.Accounts)
+	d.RewardTransfers = rewardtransfer.New(conn, d.Tx, d.Accounts, c.RewardRisk.Assessor())
 	// Candidate prize versions are limited to local development until release review.
 	d.Draws = drawlogic.New(conn, d.Tx, d.Accounts, c.Environment == "local" && c.Mode == "dev")
 	var membership tasklogic.Membership

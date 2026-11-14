@@ -5,6 +5,7 @@ import zh from 'antd-mobile/es/locales/zh-CN';
 import { useTranslation } from '@dexwallet/i18n';
 import { safeReturn } from './navigation';
 import Home from '../view/home';
+import RewardTransfers, { RewardTransferHistory, RewardTransferDetail } from '../view/reward-transfers';
 import Draws, { DrawHistory, DrawDetail } from '../view/draws';
 import Tasks, { TaskDetail } from '../view/tasks';
 import { CompletionHistory, CompletionDetail, RewardGrantDetail, InvitationLanding } from '../view/tasks/results';
@@ -34,7 +35,7 @@ function MainLayout() {
 function ChildLayout() {
   const { t } = useTranslation(); const location = useLocation();
   const fallback = location.pathname === '/identities' || location.pathname === '/login' ? '/settings' : '/wallet';
-  return <><header className="mobile-header"><Link to={safeReturn(location.state, fallback)} replace>{t('back')}</Link><strong>{t(location.pathname.startsWith('/draw') ? 'drawTitle' : location.pathname.startsWith('/tasks') ? 'tasks' : location.pathname === '/receive' ? 'receive' : location.pathname === '/pay' ? 'pay' : location.pathname === '/balance' ? 'usdBalance' : location.pathname.startsWith('/transfers/') ? 'transferDetail' : location.pathname === '/holds' ? 'holds' : location.pathname === '/login' ? 'signIn' : location.pathname === '/identities' ? 'identities' : 'common:settings')}</strong></header><main><Outlet /></main></>;
+  return <><header className="mobile-header"><Link to={safeReturn(location.state, fallback)} replace>{t('back')}</Link><strong>{t(location.pathname.startsWith('/reward-transfer') ? 'rtTitle' : location.pathname.startsWith('/draw') ? 'drawTitle' : location.pathname.startsWith('/tasks') ? 'tasks' : location.pathname === '/receive' ? 'receive' : location.pathname === '/pay' ? 'pay' : location.pathname === '/balance' ? 'usdBalance' : location.pathname.startsWith('/transfers/') ? 'transferDetail' : location.pathname === '/holds' ? 'holds' : location.pathname === '/login' ? 'signIn' : location.pathname === '/identities' ? 'identities' : 'common:settings')}</strong></header><main><Outlet /></main></>;
 }
 function IdentityRedirect() {
   const location = useLocation();
@@ -50,7 +51,10 @@ export function createUserRouter(launch: LaunchContext) {
     ] },
     { element: <ChildLayout />, children: [
       { path: '/settings', element: <Settings /> },
-      { path: '/draws', element: <RequireAuth><Draws /></RequireAuth> },
+      { path: '/reward-transfers', element: <RequireAuth><RewardTransfers /></RequireAuth> },
+ { path: '/reward-transfers/:idx', element: <RequireAuth><RewardTransferDetail /></RequireAuth> },
+ { path: '/reward-transfer-history', element: <RequireAuth><RewardTransferHistory /></RequireAuth> },
+ { path: '/draws', element: <RequireAuth><Draws /></RequireAuth> },
       { path: '/draws/:idx', element: <RequireAuth><DrawDetail /></RequireAuth> },
       { path: '/draw-history', element: <RequireAuth><DrawHistory /></RequireAuth> },
       { path: '/tasks', element: <RequireAuth><Tasks /></RequireAuth> },

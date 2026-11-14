@@ -13,6 +13,7 @@ import (
 type Kind string
 
 const (
+	RewardTransfer    Kind = "RewardTransferId"
 	PointDraw         Kind = "PointDrawId"
 	DrawVersion       Kind = "DrawVersionId"
 	Task              Kind = "TaskId"

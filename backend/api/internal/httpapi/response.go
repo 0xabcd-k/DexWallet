@@ -11,6 +11,7 @@ import (
 	accountlogic "github.com/0xabcd-k/DexWallet/backend/logic/account"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
+	rewardtransfer "github.com/0xabcd-k/DexWallet/backend/logic/rewardtransfer"
 	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
 	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
 	userlogic "github.com/0xabcd-k/DexWallet/backend/logic/user"
@@ -35,33 +36,38 @@ type description struct {
 }
 
 var descriptions = map[apperror.Code]description{
-	apperror.DrawUnavailable:              {409, "Draws are not currently available"},
-	apperror.DrawVersionChanged:           {409, "Draw rules changed; review the current version"},
-	apperror.DrawRequestConflict:          {409, "Draw request key parameters differ"},
-	apperror.DrawOutcomeUnknown:           {503, "Draw outcome unknown; recover original request"},
-	apperror.DrawBusy:                     {409, "Draw busy; retry original request"},
-	apperror.TaskNotMember:                {422, "Follow the channel before claiming"},
-	apperror.TaskContextChanged:           {409, "Task context changed; review rewards again"},
-	apperror.TaskInvitationInvalid:        {409, "Task invitation is unavailable"},
-	apperror.TaskInvitationRequiredFirst:  {422, "Complete your first task before inviting"},
-	apperror.TaskRequestConflict:          {409, "Task request key parameters differ"},
-	apperror.TaskOutcomeUnknown:           {503, "Claim outcome unknown; recover original request"},
-	apperror.TaskBusy:                     {409, "Task claim busy; retry original request"},
-	apperror.TaskHistoryUnknown:           {409, "Historical task rewards require reconciliation"},
-	apperror.TaskTelegramRequired:         {422, "Bind Telegram before checking this task"},
-	apperror.TaskUnavailable:              {409, "Task is not currently available"},
-	apperror.TaskAlreadyCompleted:         {409, "This Telegram identity has already completed the task"},
-	apperror.TaskBindingChanged:           {409, "Identity changed; check the task again"},
-	apperror.TaskVerificationUnavailable:  {503, "Unable to verify channel membership"},
-	apperror.PaymentRestricted:            {423, "Payments temporarily restricted"},
-	apperror.TransferAmountLimit:          {422, "Transfer amount outside plan limits"},
-	apperror.TransferDailyLimit:           {422, "Daily transfer limit exceeded"},
-	apperror.InsufficientBalance:          {422, "Insufficient available balance"},
-	apperror.TransferRequestConflict:      {409, "Request key parameters differ"},
-	apperror.TransferOutcomeUnknown:       {503, "Transfer outcome unknown; recover using original key"},
-	apperror.TransferBusy:                 {409, "Transfer busy; retry using original key"},
-	apperror.TransferRecipientUnavailable: {404, "Transfer recipient unavailable"},
-	apperror.IdentityHistoryUnknown:       {409, "Identity history requires verified backfill"},
+	apperror.RewardTransferProRequired:     {422, "Pro required for reward transfers"},
+	apperror.RewardTransferMinimum:         {422, "Minimum reward transfer is 2 USD"},
+	apperror.RewardTransferRequestConflict: {409, "Reward transfer request parameters differ"},
+	apperror.RewardTransferOutcomeUnknown:  {503, "Reward transfer outcome unknown; recover original request"},
+	apperror.RewardRiskUnavailable:         {503, "Reward risk decision unavailable; no new application accepted"},
+	apperror.DrawUnavailable:               {409, "Draws are not currently available"},
+	apperror.DrawVersionChanged:            {409, "Draw rules changed; review the current version"},
+	apperror.DrawRequestConflict:           {409, "Draw request key parameters differ"},
+	apperror.DrawOutcomeUnknown:            {503, "Draw outcome unknown; recover original request"},
+	apperror.DrawBusy:                      {409, "Draw busy; retry original request"},
+	apperror.TaskNotMember:                 {422, "Follow the channel before claiming"},
+	apperror.TaskContextChanged:            {409, "Task context changed; review rewards again"},
+	apperror.TaskInvitationInvalid:         {409, "Task invitation is unavailable"},
+	apperror.TaskInvitationRequiredFirst:   {422, "Complete your first task before inviting"},
+	apperror.TaskRequestConflict:           {409, "Task request key parameters differ"},
+	apperror.TaskOutcomeUnknown:            {503, "Claim outcome unknown; recover original request"},
+	apperror.TaskBusy:                      {409, "Task claim busy; retry original request"},
+	apperror.TaskHistoryUnknown:            {409, "Historical task rewards require reconciliation"},
+	apperror.TaskTelegramRequired:          {422, "Bind Telegram before checking this task"},
+	apperror.TaskUnavailable:               {409, "Task is not currently available"},
+	apperror.TaskAlreadyCompleted:          {409, "This Telegram identity has already completed the task"},
+	apperror.TaskBindingChanged:            {409, "Identity changed; check the task again"},
+	apperror.TaskVerificationUnavailable:   {503, "Unable to verify channel membership"},
+	apperror.PaymentRestricted:             {423, "Payments temporarily restricted"},
+	apperror.TransferAmountLimit:           {422, "Transfer amount outside plan limits"},
+	apperror.TransferDailyLimit:            {422, "Daily transfer limit exceeded"},
+	apperror.InsufficientBalance:           {422, "Insufficient available balance"},
+	apperror.TransferRequestConflict:       {409, "Request key parameters differ"},
+	apperror.TransferOutcomeUnknown:        {503, "Transfer outcome unknown; recover using original key"},
+	apperror.TransferBusy:                  {409, "Transfer busy; retry using original key"},
+	apperror.TransferRecipientUnavailable:  {404, "Transfer recipient unavailable"},
+	apperror.IdentityHistoryUnknown:        {409, "Identity history requires verified backfill"},
 
 	apperror.AuthProofInvalid:        {400, "Invalid or expired authentication proof"},
 	apperror.IdentityOccupied:        {409, "Identity belongs to another account"},
@@ -120,6 +126,8 @@ func describeError(err error) (apperror.Code, description) {
 	var app *apperror.Error
 	var oversized *http.MaxBytesError
 	switch {
+	case errors.Is(err, rewardtransfer.ErrOutcomeUnknown):
+		code = apperror.RewardTransferOutcomeUnknown
 	case errors.Is(err, drawlogic.ErrOutcomeUnknown):
 		code = apperror.DrawOutcomeUnknown
 	case errors.Is(err, tasklogic.ErrClaimUnknown):
