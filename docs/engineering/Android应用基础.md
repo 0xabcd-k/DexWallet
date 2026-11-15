@@ -58,10 +58,12 @@ App 在加载业务模块前通过 `NativeState` 插件从 Android SharedPrefere
 
 普通检查保持 `bash scripts/check.sh common`、浏览器回归保持 `pnpm test:e2e`；原生 APK 和 Android 实测单独执行，不能将浏览器 mock 当作钱包真机兼容结论。具体本轮结果见 [8.4 验证记录](../design/工程工作记录/08-发布与多端扩展/8.4-独立App工程/04验证记录.md)。
 
-本次按用户要求在 Android 首批工程暂停；恢复后先完成 My Wallet 真实连接/切换验收，再继续 5.1 内置钱包密钥保护、创建/导入/备份及 App 独立 Telegram 授权；随后接 5.2 资产查询与选择。四链九资产组合仍在产品范围，逐通道签名、Gas、充值/转出和组合支付继续沿用已确认方案与独立验收。
+2026-11-15 续验已完成 Keeper 26.10.4 / My Wallet 26.10.7 的真实连接、回跳、切换、恢复、断开与取消边界。下一批继续 5.1 内置钱包密钥保护、创建/导入/备份及 App 独立 Telegram 授权；随后接 5.2 资产查询与选择。四链九资产组合仍在产品范围，逐通道签名、Gas、充值/转出和组合支付继续沿用已确认方案与独立验收。
 
 Keeper Android 26.10.4 未声明目录中的 `tonkeeper-tc://`，本批根据 APK 和官方文档使用 `tonkeeper://ton-connect`。不能只根据目录声明就认定当前安装包兼容；MyTonWallet 使用其公布的连接 scheme。
 
 官方依据：[Keeper 深链](https://docs.tonapi.io/tonkeeper/deep-linking)、[Capacitor Android](https://capacitorjs.com/docs/android)、[App 生命周期](https://capacitorjs.com/docs/apis/app)、[TON Connect SDK](https://github.com/ton-connect/sdk/blob/main/packages/sdk/README.md)、[TON Connect manifest](https://github.com/ton-blockchain/ton-connect/blob/main/spec/manifest.md)。
 
 原生状态落盘依据：[SharedPreferences.Editor.commit](https://developer.android.com/reference/android/content/SharedPreferences.Editor#commit())。该保护不涵盖卸载、手动清除 App 数据或损坏的设备存储。
+
+本地模拟器 37.2.12 曾伴随图形错误退出；本轮隔离安装 37.1.11 后完成对照验证。版本来源、校验值和启动命令见 [续验环境](../design/工程工作记录/08-发布与多端扩展/8.4-独立App工程/04验证记录.md#模拟器问题与可复用环境)，不要求覆盖开发者的 SDK。

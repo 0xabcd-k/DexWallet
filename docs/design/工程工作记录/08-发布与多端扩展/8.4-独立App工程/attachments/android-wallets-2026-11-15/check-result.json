@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-15",
+  "sourceCommit": "4f1c431640e8c78e30b35a924be8912b04bff722",
+  "emulator": {
+    "version": "37.1.11",
+    "build": 15917651,
+    "sha256": "95771e0ae431897b2a4bd2d97fa095f29a8b0624a7b216baf529f9306161c266",
+    "url": "https://redirector.gvt1.com/edgedl/android/repository/emulator-linux_x64-15917651.zip",
+    "gpu": "swangle_indirect",
+    "SDKInstallationUnchanged": true
+  },
+  "device": {
+    "api": 35,
+    "android": "15",
+    "webview": "124.0.6367.219",
+    "avd": "dexwallet_app_api35",
+    "serial": "emulator-5582"
+  },
+  "walletVersions": {
+    "Keeper": "26.10.4",
+    "MyWallet": "26.10.7"
+  },
+  "checks": {
+    "keeper-connected": {
+      "wallet": "Tonkeeper",
+      "details": [
+        "0:59b8ca44ea04b38cded8c2baae608831d072cf7d6ff9d7752b9e3b0fe19c8106",
+        "TON Mainnet"
+      ],
+      "route": "#/wallet-connections",
+      "chainTransactions": 0
+    },
+    "keeper-disconnected-restart": {
+      "disconnected": true,
+      "staysDisconnectedAfterRestart": true,
+      "productLoginRestored": true
+    },
+    "keeper-disconnected-force-stop": {
+      "disconnected": true,
+      "staysDisconnectedAfterRestart": true,
+      "productLoginRestored": true
+    },
+    "mywallet-connected": {
+      "wallet": "MyTonWallet",
+      "details": [
+        "0:cc5ebece42a482cbcdbc549132cdbc09b02e5e3cd8e3a666752c4c44a275782f",
+        "TON Mainnet"
+      ],
+      "route": "#/wallet-connections",
+      "chainTransactions": 0
+    },
+    "mywallet-return": {
+      "approvedAddressConnection": true,
+      "automaticallyReturnedToDexWallet": true,
+      "chainTransactions": 0
+    },
+    "mywallet-restored": {
+      "wallet": "MyTonWallet",
+      "details": [
+        "0:cc5ebece42a482cbcdbc549132cdbc09b02e5e3cd8e3a666752c4c44a275782f",
+        "TON Mainnet"
+      ],
+      "route": "#/wallet-connections",
+      "chainTransactions": 0
+    },
+    "switched-to-keeper": {
+      "wallet": "Tonkeeper",
+      "details": [
+        "0:59b8ca44ea04b38cded8c2baae608831d072cf7d6ff9d7752b9e3b0fe19c8106",
+        "TON Mainnet"
+      ],
+      "route": "#/wallet-connections",
+      "chainTransactions": 0
+    },
+    "switched-to-mywallet": {
+      "wallet": "MyTonWallet",
+      "details": [
+        "0:cc5ebece42a482cbcdbc549132cdbc09b02e5e3cd8e3a666752c4c44a275782f",
+        "TON Mainnet"
+      ],
+      "route": "#/wallet-connections",
+      "chainTransactions": 0
+    },
+    "mywallet-disconnected-restart": {
+      "disconnected": true,
+      "staysDisconnectedAfterRestart": true,
+      "productLoginRestored": true
+    },
+    "cancel-result": {
+      "cancelledBeforeApproval": true,
+      "lateWalletApprovalIgnored": true
+    },
+    "cancelled-after-late-approval-restart": {
+      "disconnected": true,
+      "staysDisconnectedAfterRestart": true,
+      "productLoginRestored": true
+    }
+  },
+  "observedAppForceStopRestartsOn37111": 4,
+  "chainTransactions": 0,
+  "centralizedTransferPosts": 0,
+  "backend": "real isolated appdemo; business 15; private file mail",
+  "apkSHA256": "d5c47032a01c25b5c74e83c89999aeddcbffd22f6f3871818f222898d288d2a5",
+  "scope": "TON address connection only; no message/transaction signing, gas sponsorship, deposits or withdrawals",
+  "automationNote": "Wallet approval labels can be accessibility descriptions. Check fresh UI dump success and foreground package; do not require a Done button when a wallet already returned.",
+  "cleanup": {
+    "emulatorStopped": true,
+    "apiStopped": true,
+    "manifestServerStopped": true,
+    "tunnelStopped": true,
+    "isolatedResourceJournalEmpty": true,
+    "privateAVDRetainedForReproduction": true
+  }
+}
