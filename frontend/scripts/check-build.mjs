@@ -8,6 +8,6 @@ for (const app of ['user', 'merchant', 'admin']) {
   const content = (await Promise.all(assets.filter(f => /\.(js|css)$/.test(f)).map(f => readFile(resolve(folder, 'assets', f), 'utf8')))).join('\n');
   if (Object.keys(manifest).some(key => key.includes('/view/dev/') || key.includes('/dev/DevPage'))) throw new Error(`${app}: development route shipped`);
   if (app === 'user' && content.includes('.desktop-shell')) throw new Error('User build includes desktop UI');
-  if (app === 'user' && Object.keys(manifest).some(key => key.includes('/native/') || key.includes('/wallet-connections/'))) throw new Error('Native wallet modules entered Mini App build');
+  if (app === 'user' && Object.keys(manifest).some(key => key.includes('/native/') || key.includes('/wallet-connections/') || key.includes('/local-wallets/'))) throw new Error('Native wallet modules entered Mini App build');
   console.log(`PASS ${app}: production entry and development/desktop isolation`);
 }

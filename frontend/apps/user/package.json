@@ -11,25 +11,34 @@
     "build:app": "vite build --mode native"
   },
   "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/app-launcher": "8.0.1",
+    "@capacitor/core": "8.6.2",
+    "@capacitor/preferences": "8.0.1",
     "@dexwallet/api-client": "workspace:*",
     "@dexwallet/api-contract": "workspace:*",
     "@dexwallet/i18n": "workspace:*",
     "@dexwallet/session": "workspace:*",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@scure/base": "2.4.0",
+    "@scure/bip32": "2.4.0",
+    "@scure/bip39": "2.4.0",
     "@tma.js/bridge": "2.3.3",
+    "@ton/core": "0.63.1",
+    "@ton/crypto": "3.3.0",
+    "@ton/ton": "16.3.0",
+    "@tonconnect/sdk": "5.0.1",
     "@zxing/browser": "0.1.5",
     "antd-mobile": "5.43.0",
+    "buffer": "6.0.3",
+    "micro-key-producer": "0.10.2",
     "qrcode": "1.5.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router": "7.18.4",
-    "@capacitor/core": "8.6.2",
-    "@capacitor/app": "8.1.2",
-    "@capacitor/app-launcher": "8.0.1",
-    "@tonconnect/sdk": "5.0.1",
-    "@capacitor/preferences": "8.0.1"
+    "react-router": "7.18.4"
   },
   "devDependencies": {
-    "@noble/hashes": "2.0.1",
     "@types/qrcode": "1.5.6"
   }
 }

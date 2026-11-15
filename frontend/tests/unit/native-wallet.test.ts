@@ -37,8 +37,10 @@ describe('native return intents', () => {
   it('restores the wallet screen after authentication only in the native build', () => {
     vi.stubEnv('NATIVE_APP', 'true');
     expect(safeDestination('/wallet-connections')).toBe('/wallet-connections');
+    expect(safeDestination('/local-wallets')).toBe('/local-wallets');
     vi.stubEnv('NATIVE_APP', '');
     expect(safeDestination('/wallet-connections')).toBe('/wallet');
+    expect(safeDestination('/local-wallets')).toBe('/wallet');
     vi.unstubAllEnvs();
   });
   it('only navigates the declared callback, rejecting supplied credentials and payment parameters', () => {
