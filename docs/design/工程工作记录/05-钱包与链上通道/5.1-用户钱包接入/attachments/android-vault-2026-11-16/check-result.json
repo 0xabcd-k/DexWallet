@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-16",
+  "baseCommit": "9ca9844",
+  "branch": "feat/android-wallet-vault",
+  "environment": {
+    "emulator": "37.1.11",
+    "androidAPI": 35,
+    "androidVersion": "15",
+    "physicalDeviceUsed": false
+  },
+  "scope": "Android native encrypted secret storage and device credential confirmation only; no funded wallets, mnemonic derivation, signing or chain transactions",
+  "nativeTests": {
+    "passed": 12,
+    "storageTestsUsingFakeKeys": 11,
+    "realKeystorePolicyAndExpiryTests": 1,
+    "deviceAuthenticationExpiryWaitSeconds": 31
+  },
+  "deviceChecks": {
+    "cancelledCreateLeavesNoRecord": true,
+    "approvedWriteAndReadMatch": true,
+    "everyOperationRequiresSystemConfirmation": true,
+    "cancelledReadReturnsNoSecret": true,
+    "concurrentRequestRejected": "VAULT_BUSY",
+    "forceStopReadRestoresSameValue": true,
+    "forceStopDuringAuthenticationLeavesNoNewRecord": true,
+    "cancelledRemovalPreservesRecord": true,
+    "approvedRemovalClearsRecord": true,
+    "noDeviceLockRejectsReadAndWrite": "VAULT_DEVICE_LOCK_REQUIRED",
+    "resetDeviceLockDoesNotRecoverOldKey": "VAULT_KEY_UNAVAILABLE",
+    "invalidatedRecordCannotBeOverwritten": "VAULT_EXISTS",
+    "invalidatedRecordCanBeExplicitlyRemoved": true,
+    "malformedUnicodeRejected": "VAULT_INVALID_INPUT"
+  },
+  "checks": {
+    "debugAPKBuild": "passed",
+    "mobileTypecheck": "passed",
+    "androidLint": {
+      "errors": 0,
+      "warnings": 13
+    },
+    "bridgeParameterLoggingBuildGuard": "passed",
+    "documentCheck": "passed",
+    "diffCheck": "passed"
+  },
+  "apkSHA256": "cabd00dd228e52a1ef6049fe70d940e9f4d7d7fa6578be23615a3292b4d1f952",
+  "cleanup": {
+    "testVaultRecordsRemoved": true,
+    "screenLockRestoredToInitialState": true,
+    "instrumentationAPKRemoved": true,
+    "plaintextAbsentFromLogcat": true,
+    "ownedEmulatorStopped": true,
+    "backendOrTunnelStarted": false
+  },
+  "limits": [
+    "No creation/import/backup UI",
+    "No physical hardware security verification",
+    "Only Android API 35 exercised",
+    "No biometrics, address derivation, chain signing or payments"
+  ],
+  "finalBuildNote": "Storage and Keystore tests passed on unchanged store/key code. Final plugin response ordering and UTF-8 validation adjustments rebuilt and checked with real put/get/remove and malformed-input probes."
+}

@@ -44,6 +44,17 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
+// The bridge's built-in debug logger serializes plugin inputs. Wallet secrets
+// must never be included, including when Gradle reuses existing bundled assets.
+tasks.named('preBuild').configure {
+    doFirst {
+        def config = new groovy.json.JsonSlurper().parse(file('src/main/assets/capacitor.config.json'))
+        if ((config.android?.loggingBehavior ?: config.loggingBehavior) != 'none') {
+            throw new GradleException('Wallet vault requires Capacitor loggingBehavior none; sync the App assets again')
+        }
+    }
+}
+
 // A direct Gradle release build must not reuse a debug HTTP Capacitor config.
 tasks.matching { it.name == 'preReleaseBuild' }.configureEach {
     doFirst {

@@ -1,7 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">DexWallet</string>
-    <string name="title_activity_main">DexWallet</string>
-    <string name="package_name">com.dexwallet.app</string>
-    <string name="custom_url_scheme">com.dexwallet.app</string>
+    <string name="vault_unlock_title">Unlock local wallet</string>
+    <string name="vault_store_description">Confirm your device screen lock to save this wallet on this device.</string>
+    <string name="vault_read_description">Confirm your device screen lock to access this wallet’s recovery secret.</string>
+    <string name="vault_remove_description">Remove this wallet from this device. You will need your backup to restore access.</string>
+    <string name="app_name" translatable="false">DexWallet</string>
+    <string name="title_activity_main" translatable="false">DexWallet</string>
+    <string name="package_name" translatable="false">com.dexwallet.app</string>
+    <string name="custom_url_scheme" translatable="false">com.dexwallet.app</string>
 </resources>

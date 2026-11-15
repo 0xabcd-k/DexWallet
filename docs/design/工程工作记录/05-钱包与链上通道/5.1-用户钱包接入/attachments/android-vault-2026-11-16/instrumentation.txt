@@ -1,0 +1,6 @@
+com.dexwallet.app.WalletVaultStoreTest:...........
+com.dexwallet.app.AndroidVaultKeysTest:.
+
+Time: 31.137
+
+OK (12 tests)

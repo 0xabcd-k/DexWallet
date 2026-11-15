@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_unlock_title">解锁本机钱包</string>
+    <string name="vault_store_description">请验证手机锁屏凭证，将钱包保存到这台设备。</string>
+    <string name="vault_read_description">请验证手机锁屏凭证，访问钱包的恢复密钥。</string>
+    <string name="vault_remove_description">将从这台设备移除钱包，之后需要用备份恢复访问。</string>
+</resources>
