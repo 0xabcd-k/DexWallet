@@ -410,6 +410,37 @@ type IdentityTelegramRequest struct {
 	Purpose string `json:"purpose,options=bind|replace"`
 }
 
+type InvitationEarningData struct {
+	GrantIdx     string `json:"grantIdx"`
+	PeerIdx      string `json:"peerIdx"`
+	PeerNickname string `json:"peerNickname"`
+	Reason       string `json:"reason"`
+	Points       string `json:"points"`
+	TaskTitle    string `json:"taskTitle"`
+	CreatedAt    string `json:"createdAt"`
+}
+
+type InvitationEarningsData struct {
+	Items      []InvitationEarningData `json:"items"`
+	NextCursor string                  `json:"nextCursor,optional"`
+}
+
+type InvitationEarningsRequest struct {
+	Before    string `form:"before,optional"`
+	Limit     int64  `form:"limit,default=20,range=[1:100]"`
+	FriendIdx string `form:"friendIdx,optional"`
+	Reason    string `form:"reason,default=all,options=all|assistance|commission"`
+	From      string `form:"from,optional"`
+	To        string `form:"to,optional"`
+}
+
+type InvitationEarningsResponse struct {
+	Code    string                 `json:"code"`
+	Message string                 `json:"message"`
+	Data    InvitationEarningsData `json:"data"`
+	TraceId string                 `json:"traceId"`
+}
+
 type LimitPlanResponse struct {
 	Code    string            `json:"code,options=OK"`
 	Message string            `json:"message"`
@@ -430,6 +461,87 @@ type LimitPlansResponse struct {
 	Message string         `json:"message"`
 	Data    LimitPlansData `json:"data"`
 	TraceId string         `json:"traceId"`
+}
+
+type ManagedCompletionData struct {
+	Idx          string `json:"idx"`
+	UserIdx      string `json:"userIdx"`
+	TaskTitle    string `json:"taskTitle"`
+	Mode         string `json:"mode"`
+	TaskRevision int64  `json:"taskRevision"`
+	CompletedAt  string `json:"completedAt"`
+}
+
+type ManagedCompletionRequest struct {
+	Idx    string `path:"idx"`
+	Before string `form:"before,optional"`
+	Limit  int64  `form:"limit,default=20,range=[1:100]"`
+}
+
+type ManagedCompletionsData struct {
+	Items      []ManagedCompletionData `json:"items"`
+	NextCursor string                  `json:"nextCursor,optional"`
+}
+
+type ManagedCompletionsResponse struct {
+	Code    string                 `json:"code"`
+	Message string                 `json:"message"`
+	Data    ManagedCompletionsData `json:"data"`
+	TraceId string                 `json:"traceId"`
+}
+
+type ManagedDrawData struct {
+	Items             []ManagedDrawVersion `json:"items"`
+	NextCursor        string               `json:"nextCursor,optional"`
+	CurrentVersionIdx string               `json:"currentVersionIdx,optional"`
+	Revision          int64                `json:"revision"`
+	Writable          bool                 `json:"writable"`
+}
+
+type ManagedDrawResponse struct {
+	Code    string          `json:"code"`
+	Message string          `json:"message"`
+	Data    ManagedDrawData `json:"data"`
+	TraceId string          `json:"traceId"`
+}
+
+type ManagedDrawVersion struct {
+	Idx    string          `json:"idx"`
+	Name   string          `json:"name"`
+	Rtp    string          `json:"rtp"`
+	Prizes []DrawPrizeData `json:"prizes"`
+}
+
+type ManagedTaskData struct {
+	Idx         string `json:"idx"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	BasePoints  string `json:"basePoints"`
+	ChannelId   string `json:"channelId"`
+	StartsAt    string `json:"startsAt"`
+	EndsAt      string `json:"endsAt"`
+	Status      string `json:"status"`
+	Revision    int64  `json:"revision"`
+}
+
+type ManagedTaskResponse struct {
+	Code    string          `json:"code"`
+	Message string          `json:"message"`
+	Data    ManagedTaskData `json:"data"`
+	TraceId string          `json:"traceId"`
+}
+
+type ManagedTasksData struct {
+	Items      []ManagedTaskData `json:"items"`
+	NextCursor string            `json:"nextCursor,optional"`
+	Writable   bool              `json:"writable"`
+}
+
+type ManagedTasksResponse struct {
+	Code    string           `json:"code"`
+	Message string           `json:"message"`
+	Data    ManagedTasksData `json:"data"`
+	TraceId string           `json:"traceId"`
 }
 
 type ManagedUserData struct {
@@ -467,6 +579,24 @@ type ReceiveCodeResponse struct {
 	Message string          `json:"message"`
 	Data    ReceiveCodeData `json:"data"`
 	TraceId string          `json:"traceId"`
+}
+
+type ReferralFriendData struct {
+	UserIdx  string `json:"userIdx"`
+	Nickname string `json:"nickname"`
+	BoundAt  string `json:"boundAt"`
+}
+
+type ReferralFriendsData struct {
+	Items      []ReferralFriendData `json:"items"`
+	NextCursor string               `json:"nextCursor,optional"`
+}
+
+type ReferralFriendsResponse struct {
+	Code    string              `json:"code"`
+	Message string              `json:"message"`
+	Data    ReferralFriendsData `json:"data"`
+	TraceId string              `json:"traceId"`
 }
 
 type RewardGrantData struct {
@@ -589,9 +719,42 @@ type RewardTransferStateResponse struct {
 	TraceId string                  `json:"traceId"`
 }
 
+type SaveDrawVersionRequest struct {
+	Name   string          `json:"name"`
+	Rtp    string          `json:"rtp"`
+	Prizes []DrawPrizeData `json:"prizes"`
+	Reason string          `json:"reason"`
+}
+
+type SaveDrawVersionResponse struct {
+	Code    string             `json:"code"`
+	Message string             `json:"message"`
+	Data    ManagedDrawVersion `json:"data"`
+	TraceId string             `json:"traceId"`
+}
+
+type SaveTaskDraftRequest struct {
+	Idx              string `json:"idx,optional"`
+	ExpectedRevision int64  `json:"expectedRevision"`
+	RequestKey       string `json:"requestKey"`
+	Title            string `json:"title"`
+	Description      string `json:"description"`
+	BasePoints       string `json:"basePoints"`
+	ChannelId        string `json:"channelId"`
+	StartsAt         string `json:"startsAt"`
+	EndsAt           string `json:"endsAt"`
+	Reason           string `json:"reason"`
+}
+
 type SendEmailRequest struct {
 	Email  string `json:"email"`
 	Locale string `json:"locale,default=en,options=en|zh-CN"`
+}
+
+type SetDrawControlRequest struct {
+	VersionIdx       string `json:"versionIdx,optional"`
+	ExpectedRevision int64  `json:"expectedRevision"`
+	Reason           string `json:"reason"`
 }
 
 type SubmitTransferRequest struct {
@@ -715,6 +878,13 @@ type TaskResponse struct {
 	Message string   `json:"message"`
 	TraceId string   `json:"traceId"`
 	Data    TaskData `json:"data"`
+}
+
+type TaskStatusRequest struct {
+	Idx              string `path:"idx"`
+	ExpectedRevision int64  `json:"expectedRevision"`
+	Status           string `json:"status,options=active|paused"`
+	Reason           string `json:"reason"`
 }
 
 type TelegramLoginRequest struct {

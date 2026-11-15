@@ -27,6 +27,7 @@ type (
 	taskDefinitionModel interface {
 		Insert(ctx context.Context, data *TaskDefinition) (sql.Result, error)
 		FindOne(ctx context.Context, id int64) (*TaskDefinition, error)
+		FindOneByCreateKey(ctx context.Context, createKey sql.NullString) (*TaskDefinition, error)
 		Update(ctx context.Context, data *TaskDefinition) error
 		Delete(ctx context.Context, id int64) error
 	}
@@ -37,20 +38,22 @@ type (
 	}
 
 	TaskDefinition struct {
-		Id               int64     `db:"id"`
-		Kind             string    `db:"kind"`
-		Status           string    `db:"status"`
-		VerificationMode string    `db:"verification_mode"`
-		Title            string    `db:"title"`
-		Description      string    `db:"description"`
-		BasePoints       int64     `db:"base_points"`
-		ChannelId        int64     `db:"channel_id"`
-		ChannelUrl       string    `db:"channel_url"`
-		StartsAt         time.Time `db:"starts_at"`
-		EndsAt           time.Time `db:"ends_at"`
-		Revision         int64     `db:"revision"`
-		CreatedAt        time.Time `db:"created_at"`
-		UpdatedAt        time.Time `db:"updated_at"`
+		Id               int64          `db:"id"`
+		Kind             string         `db:"kind"`
+		Status           string         `db:"status"`
+		VerificationMode string         `db:"verification_mode"`
+		Title            string         `db:"title"`
+		Description      string         `db:"description"`
+		BasePoints       int64          `db:"base_points"`
+		ChannelId        int64          `db:"channel_id"`
+		ChannelUrl       string         `db:"channel_url"`
+		StartsAt         time.Time      `db:"starts_at"`
+		EndsAt           time.Time      `db:"ends_at"`
+		Revision         int64          `db:"revision"`
+		CreateKey        sql.NullString `db:"create_key"`
+		CreateHash       sql.NullString `db:"create_hash"`
+		CreatedAt        time.Time      `db:"created_at"`
+		UpdatedAt        time.Time      `db:"updated_at"`
 	}
 )
 
@@ -81,15 +84,29 @@ func (m *defaultTaskDefinitionModel) FindOne(ctx context.Context, id int64) (*Ta
 	}
 }
 
+func (m *defaultTaskDefinitionModel) FindOneByCreateKey(ctx context.Context, createKey sql.NullString) (*TaskDefinition, error) {
+	var resp TaskDefinition
+	query := fmt.Sprintf("select %s from %s where `create_key` = ? limit 1", taskDefinitionRows, m.table)
+	err := m.conn.QueryRowCtx(ctx, &resp, query, createKey)
+	switch err {
+	case nil:
+		return &resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
 func (m *defaultTaskDefinitionModel) Insert(ctx context.Context, data *TaskDefinition) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, taskDefinitionRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Kind, data.Status, data.VerificationMode, data.Title, data.Description, data.BasePoints, data.ChannelId, data.ChannelUrl, data.StartsAt, data.EndsAt, data.Revision)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, taskDefinitionRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.Kind, data.Status, data.VerificationMode, data.Title, data.Description, data.BasePoints, data.ChannelId, data.ChannelUrl, data.StartsAt, data.EndsAt, data.Revision, data.CreateKey, data.CreateHash)
 	return ret, err
 }
 
-func (m *defaultTaskDefinitionModel) Update(ctx context.Context, data *TaskDefinition) error {
+func (m *defaultTaskDefinitionModel) Update(ctx context.Context, newData *TaskDefinition) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, taskDefinitionRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, data.Kind, data.Status, data.VerificationMode, data.Title, data.Description, data.BasePoints, data.ChannelId, data.ChannelUrl, data.StartsAt, data.EndsAt, data.Revision, data.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.Kind, newData.Status, newData.VerificationMode, newData.Title, newData.Description, newData.BasePoints, newData.ChannelId, newData.ChannelUrl, newData.StartsAt, newData.EndsAt, newData.Revision, newData.CreateKey, newData.CreateHash, newData.Id)
 	return err
 }
 

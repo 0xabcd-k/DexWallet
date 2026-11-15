@@ -906,3 +906,178 @@ service platform {
     @handler rewardTransferReview
     post /v1/admin/reward-transfers/:idx/review (RewardTransferReviewRequest) returns (RewardTransferAdminResponse)
 }
+
+
+type (
+ ReferralFriendData {
+  UserIdx string `json:"userIdx"`
+  Nickname string `json:"nickname"`
+  BoundAt string `json:"boundAt"`
+ }
+ ReferralFriendsData {
+  Items []ReferralFriendData `json:"items"`
+  NextCursor string `json:"nextCursor,optional"`
+ }
+ ReferralFriendsResponse {
+  Code string `json:"code"`
+  Message string `json:"message"`
+  Data ReferralFriendsData `json:"data"`
+  TraceId string `json:"traceId"`
+ }
+ InvitationEarningsRequest {
+  Before string `form:"before,optional"`
+  Limit int64 `form:"limit,default=20,range=[1:100]"`
+  FriendIdx string `form:"friendIdx,optional"`
+  Reason string `form:"reason,default=all,options=all|assistance|commission"`
+  From string `form:"from,optional"`
+  To string `form:"to,optional"`
+ }
+ InvitationEarningData {
+  GrantIdx string `json:"grantIdx"`
+  PeerIdx string `json:"peerIdx"`
+  PeerNickname string `json:"peerNickname"`
+  Reason string `json:"reason"`
+  Points string `json:"points"`
+  TaskTitle string `json:"taskTitle"`
+  CreatedAt string `json:"createdAt"`
+ }
+ InvitationEarningsData {
+  Items []InvitationEarningData `json:"items"`
+  NextCursor string `json:"nextCursor,optional"`
+ }
+ InvitationEarningsResponse {
+  Code string `json:"code"`
+  Message string `json:"message"`
+  Data InvitationEarningsData `json:"data"`
+  TraceId string `json:"traceId"`
+ }
+ ManagedTaskData {
+  Idx string `json:"idx"`
+  Title string `json:"title"`
+  Description string `json:"description"`
+  BasePoints string `json:"basePoints"`
+  ChannelId string `json:"channelId"`
+  StartsAt string `json:"startsAt"`
+  EndsAt string `json:"endsAt"`
+  Status string `json:"status"`
+  Revision int64 `json:"revision"`
+ }
+ ManagedTasksData {
+  Items []ManagedTaskData `json:"items"`
+  NextCursor string `json:"nextCursor,optional"`
+  Writable bool `json:"writable"`
+ }
+ ManagedTasksResponse {
+  Code string `json:"code"`
+  Message string `json:"message"`
+  Data ManagedTasksData `json:"data"`
+  TraceId string `json:"traceId"`
+ }
+ ManagedTaskResponse {
+  Code string `json:"code"`
+  Message string `json:"message"`
+  Data ManagedTaskData `json:"data"`
+  TraceId string `json:"traceId"`
+ }
+ SaveTaskDraftRequest {
+  Idx string `json:"idx,optional"`
+  ExpectedRevision int64 `json:"expectedRevision"`
+  RequestKey string `json:"requestKey"`
+  Title string `json:"title"`
+  Description string `json:"description"`
+  BasePoints string `json:"basePoints"`
+  ChannelId string `json:"channelId"`
+  StartsAt string `json:"startsAt"`
+  EndsAt string `json:"endsAt"`
+  Reason string `json:"reason"`
+ }
+ TaskStatusRequest {
+  Idx string `path:"idx"`
+  ExpectedRevision int64 `json:"expectedRevision"`
+  Status string `json:"status,options=active|paused"`
+  Reason string `json:"reason"`
+ }
+ ManagedCompletionRequest {
+  Idx string `path:"idx"`
+  Before string `form:"before,optional"`
+  Limit int64 `form:"limit,default=20,range=[1:100]"`
+ }
+ ManagedCompletionData {
+  Idx string `json:"idx"`
+  UserIdx string `json:"userIdx"`
+  TaskTitle string `json:"taskTitle"`
+  Mode string `json:"mode"`
+  TaskRevision int64 `json:"taskRevision"`
+  CompletedAt string `json:"completedAt"`
+ }
+ ManagedCompletionsData {
+  Items []ManagedCompletionData `json:"items"`
+  NextCursor string `json:"nextCursor,optional"`
+ }
+ ManagedCompletionsResponse {
+  Code string `json:"code"`
+  Message string `json:"message"`
+  Data ManagedCompletionsData `json:"data"`
+  TraceId string `json:"traceId"`
+ }
+ ManagedDrawVersion {
+  Idx string `json:"idx"`
+  Name string `json:"name"`
+  Rtp string `json:"rtp"`
+  Prizes []DrawPrizeData `json:"prizes"`
+ }
+ ManagedDrawData {
+  Items []ManagedDrawVersion `json:"items"`
+  NextCursor string `json:"nextCursor,optional"`
+  CurrentVersionIdx string `json:"currentVersionIdx,optional"`
+  Revision int64 `json:"revision"`
+  Writable bool `json:"writable"`
+ }
+ ManagedDrawResponse {
+  Code string `json:"code"`
+  Message string `json:"message"`
+  Data ManagedDrawData `json:"data"`
+  TraceId string `json:"traceId"`
+ }
+ SaveDrawVersionRequest {
+  Name string `json:"name"`
+  Rtp string `json:"rtp"`
+  Prizes []DrawPrizeData `json:"prizes"`
+  Reason string `json:"reason"`
+ }
+ SaveDrawVersionResponse {
+  Code string `json:"code"`
+  Message string `json:"message"`
+  Data ManagedDrawVersion `json:"data"`
+  TraceId string `json:"traceId"`
+ }
+ SetDrawControlRequest {
+  VersionIdx string `json:"versionIdx,optional"`
+  ExpectedRevision int64 `json:"expectedRevision"`
+  Reason string `json:"reason"`
+ }
+)
+@server(group: task middleware: AuthTransport,UserAuth)
+service platform {
+ @handler referralFriends
+ get /v1/user/referral-friends (DrawListRequest) returns (ReferralFriendsResponse)
+ @handler invitationEarnings
+ get /v1/user/invitation-earnings (InvitationEarningsRequest) returns (InvitationEarningsResponse)
+}
+@server(group: backoffice middleware: BackofficeTransport,AdminAuth)
+service platform {
+ @handler managedTasks
+ get /v1/admin/tasks (DrawListRequest) returns (ManagedTasksResponse)
+ @handler saveTaskDraft
+ post /v1/admin/task-drafts (SaveTaskDraftRequest) returns (ManagedTaskResponse)
+ @handler setTaskStatus
+ post /v1/admin/tasks/:idx/status (TaskStatusRequest) returns (ManagedTaskResponse)
+ @handler managedCompletions
+ get /v1/admin/tasks/:idx/completions (ManagedCompletionRequest) returns (ManagedCompletionsResponse)
+ @handler managedDraw
+ get /v1/admin/draw-versions (DrawListRequest) returns (ManagedDrawResponse)
+ @handler saveDrawVersion
+ post /v1/admin/draw-versions (SaveDrawVersionRequest) returns (SaveDrawVersionResponse)
+ @handler setDrawControl
+ post /v1/admin/draw-control (SetDrawControlRequest) returns (ManagedDrawResponse)
+}

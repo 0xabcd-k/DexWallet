@@ -37,6 +37,8 @@ export function createBackofficeRouter(
     { path: '/overview', labelKey: 'overview' },
     ...(realm === 'admin'
       ? [
+          { path: '/tasks', labelKey: 'boTasks' },
+          { path: '/draw-versions', labelKey: 'boDrawVersions' },
           { path: '/accounts', labelKey: 'boAccounts' },
           { path: '/users', labelKey: 'boUsers' },
           { path: '/limits', labelKey: 'boLimits' },
@@ -69,6 +71,11 @@ export function createBackofficeRouter(
                 },
                 ...(realm === 'admin'
                   ? [
+                      {
+                        path: '/tasks', lazy: async () => ({ Component: (await import('./tasks')).ManagedTasks }),
+                      },
+                      { path: '/draw-versions', lazy: async () => ({ Component: (await import('./draw-versions')).DrawVersions }),
+                      },
                       {
                         path: '/reward-transfers', lazy: async () => ({ Component: (await import('./reward-transfers')).RewardTransfers }),
  },

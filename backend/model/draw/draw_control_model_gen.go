@@ -38,6 +38,7 @@ type (
 	DrawControl struct {
 		Id        int64         `db:"id"`
 		VersionId sql.NullInt64 `db:"version_id"`
+		Revision  int64         `db:"revision"`
 	}
 )
 
@@ -69,14 +70,14 @@ func (m *defaultDrawControlModel) FindOne(ctx context.Context, id int64) (*DrawC
 }
 
 func (m *defaultDrawControlModel) Insert(ctx context.Context, data *DrawControl) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?)", m.table, drawControlRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Id, data.VersionId)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?)", m.table, drawControlRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.Id, data.VersionId, data.Revision)
 	return ret, err
 }
 
 func (m *defaultDrawControlModel) Update(ctx context.Context, data *DrawControl) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, drawControlRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, data.VersionId, data.Id)
+	_, err := m.conn.ExecCtx(ctx, query, data.VersionId, data.Revision, data.Id)
 	return err
 }
 

@@ -117,6 +117,12 @@ func New(c Config, cfg auth.Config, conn sqlx.SqlConn, tx *transaction.Runner, u
 	if err != nil {
 		return nil, err
 	}
+	for realm, kind := range map[Realm]idcodec.Kind{Task: idcodec.Task, DrawVersion: idcodec.DrawVersion} {
+		s.codecs[realm], err = idcodec.New(idSecret, kind)
+		if err != nil {
+			return nil, err
+		}
+	}
 	s.dummy, err = bcrypt.GenerateFromPassword([]byte("nonexistent-account-dummy-password"), bcrypt.DefaultCost)
 	return s, err
 }

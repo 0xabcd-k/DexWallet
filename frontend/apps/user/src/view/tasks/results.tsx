@@ -74,17 +74,17 @@ export function InvitationLanding() {
   if (data && /^0\d{16,19}$/.test(data.taskIdx) && /^0\d{16,19}$/.test(data.idx)) return <Navigate to={`/tasks/${data.taskIdx}?invitationIdx=${data.idx}`} replace />;
   return <section className="task-page">{error !== undefined ? <Failure error={error} /> : <p role="status">{t('common:loading')}</p>}<Link to="/tasks">{t('taskAll')}</Link></section>;
 }
-export function RewardOverview() {
+export function RewardOverview({ invitationLink = true }: { invitationLink?: boolean } = {}) {
   const auth = useAuth();
-  return auth.session.credential ? <Summary key={auth.session.generation} /> : null;
+  return auth.session.credential ? <Summary key={auth.session.generation} invitationLink={invitationLink} /> : null;
 }
-function Summary() {
+function Summary({ invitationLink }: { invitationLink: boolean }) {
   const { t } = useTranslation(); const [data, setData] = useState<RewardSummaryData>(); const [error, setError] = useState<unknown>(); const [revision, setRevision] = useState(0);
   useEffect(() => { const controller = new AbortController(); setError(undefined);
     void getRewardSummary(controller.signal).then(d => { if (!controller.signal.aborted) setData(d); }, e => { if (!controller.signal.aborted) setError(e); });
     return () => controller.abort();
   }, [revision]);
-  return <section className="task-card"><h2>{t('claimRewardOverview')}</h2>{data && <>
+  return <section className="task-card"><h2>{t('claimRewardOverview')}</h2>{invitationLink && <Link to="/invitations">{t('inviteResults')}</Link>}{data && <>
     <p>{t(data.pro ? 'claimProUnlocked' : 'claimProProgress', { progress: data.proProgress })}</p>
     <p>{t('claimProRules')}</p><p>{t('claimInviteTotals', { friends: data.friendCount, helps: data.assistanceCount })}</p>
     <p>{t('claimEarnedTotals', { assistance: data.assistancePoints, commission: data.commissionPoints })}</p>

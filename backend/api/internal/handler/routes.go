@@ -263,6 +263,49 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.BackofficeTransport, serverCtx.AdminAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/draw-control",
+					Handler: backoffice.SetDrawControlHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/draw-versions",
+					Handler: backoffice.ManagedDrawHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/draw-versions",
+					Handler: backoffice.SaveDrawVersionHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/task-drafts",
+					Handler: backoffice.SaveTaskDraftHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/tasks",
+					Handler: backoffice.ManagedTasksHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/admin/tasks/:idx/completions",
+					Handler: backoffice.ManagedCompletionsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/admin/tasks/:idx/status",
+					Handler: backoffice.SetTaskStatusHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
 			[]rest.Route{
 				{
@@ -449,6 +492,24 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/v1/user/tasks/:idx/invitation",
 					Handler: task.TaskInvitationCreateHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/invitation-earnings",
+					Handler: task.InvitationEarningsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/referral-friends",
+					Handler: task.ReferralFriendsHandler(serverCtx),
 				},
 			}...,
 		),

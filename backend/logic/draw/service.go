@@ -124,7 +124,7 @@ func (s *Service) State(ctx context.Context, a users.Actor) (*State, error) {
 }
 
 // Publish appends an immutable version and atomically changes the current pointer.
-// This iteration exposes it only through the isolated development tool, not HTTP.
+// The development tool publishes directly; admin HTTP uses audited version/control operations.
 func (s *Service) Publish(ctx context.Context, name string, r Rules) (*model.DrawRuleVersion, error) {
 	if !s.enabled {
 		return nil, apperror.New(apperror.DrawUnavailable, nil)
@@ -143,7 +143,7 @@ func (s *Service) Publish(ctx context.Context, name string, r Rules) (*model.Dra
 	err = s.tx.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
 		conn := sqlx.NewSqlConnFromSession(session)
 		var control model.DrawControl
-		if err := conn.QueryRowCtx(ctx, &control, "SELECT id,version_id FROM draw_control WHERE id=? FOR UPDATE", model.ControlID); err != nil {
+		if err := conn.QueryRowCtx(ctx, &control, "SELECT id,version_id,revision FROM draw_control WHERE id=? FOR UPDATE", model.ControlID); err != nil {
 			return err
 		}
 		m := model.NewDrawRuleVersionModel(conn)
@@ -169,7 +169,7 @@ func (s *Service) Publish(ctx context.Context, name string, r Rules) (*model.Dra
 		} else {
 			return err
 		}
-		_, err = conn.ExecCtx(ctx, "UPDATE draw_control SET version_id=? WHERE id=?", row.Id, model.ControlID)
+		_, err = conn.ExecCtx(ctx, "UPDATE draw_control SET version_id=?,revision=revision+1 WHERE id=? AND NOT (version_id <=> ?)", row.Id, model.ControlID, row.Id)
 		return err
 	})
 	return row, err

@@ -11,9 +11,12 @@ CREATE TABLE `task_definition` (
     `starts_at` DATETIME(6) NOT NULL,
     `ends_at` DATETIME(6) NOT NULL,
     `revision` BIGINT NOT NULL DEFAULT 1,
+    `create_key` VARCHAR(96) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    `create_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_task_create` (`create_key`),
     KEY `ix_task_catalog` (`verification_mode`, `status`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 

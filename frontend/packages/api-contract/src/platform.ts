@@ -430,6 +430,39 @@ export interface IdentityTelegramRequest {
 	purpose: 'bind' | 'replace'
 }
 
+export interface InvitationEarningData {
+	grantIdx: string
+	peerIdx: string
+	peerNickname: string
+	reason: string
+	points: string
+	taskTitle: string
+	createdAt: string
+}
+
+export interface InvitationEarningsData {
+	items: Array<InvitationEarningData>
+	nextCursor?: string
+}
+
+export interface InvitationEarningsRequest {
+}
+export interface InvitationEarningsRequestParams {
+	before?: string
+	limit: number
+	friendIdx?: string
+	reason: string
+	from?: string
+	to?: string
+}
+
+export interface InvitationEarningsResponse {
+	code: string
+	message: string
+	data: InvitationEarningsData
+	traceId: string
+}
+
 export interface LimitPlanResponse {
 	code: 'OK'
 	message: string
@@ -451,6 +484,88 @@ export interface LimitPlansResponse {
 	code: 'OK'
 	message: string
 	data: LimitPlansData
+	traceId: string
+}
+
+export interface ManagedCompletionData {
+	idx: string
+	userIdx: string
+	taskTitle: string
+	mode: string
+	taskRevision: number
+	completedAt: string
+}
+
+export interface ManagedCompletionRequest {
+}
+export interface ManagedCompletionRequestParams {
+	before?: string
+	limit: number
+}
+
+export interface ManagedCompletionsData {
+	items: Array<ManagedCompletionData>
+	nextCursor?: string
+}
+
+export interface ManagedCompletionsResponse {
+	code: string
+	message: string
+	data: ManagedCompletionsData
+	traceId: string
+}
+
+export interface ManagedDrawData {
+	items: Array<ManagedDrawVersion>
+	nextCursor?: string
+	currentVersionIdx?: string
+	revision: number
+	writable: boolean
+}
+
+export interface ManagedDrawResponse {
+	code: string
+	message: string
+	data: ManagedDrawData
+	traceId: string
+}
+
+export interface ManagedDrawVersion {
+	idx: string
+	name: string
+	rtp: string
+	prizes: Array<DrawPrizeData>
+}
+
+export interface ManagedTaskData {
+	idx: string
+	title: string
+	description: string
+	basePoints: string
+	channelId: string
+	startsAt: string
+	endsAt: string
+	status: string
+	revision: number
+}
+
+export interface ManagedTaskResponse {
+	code: string
+	message: string
+	data: ManagedTaskData
+	traceId: string
+}
+
+export interface ManagedTasksData {
+	items: Array<ManagedTaskData>
+	nextCursor?: string
+	writable: boolean
+}
+
+export interface ManagedTasksResponse {
+	code: string
+	message: string
+	data: ManagedTasksData
 	traceId: string
 }
 
@@ -490,6 +605,24 @@ export interface ReceiveCodeResponse {
 	code: 'OK'
 	message: string
 	data: ReceiveCodeData
+	traceId: string
+}
+
+export interface ReferralFriendData {
+	userIdx: string
+	nickname: string
+	boundAt: string
+}
+
+export interface ReferralFriendsData {
+	items: Array<ReferralFriendData>
+	nextCursor?: string
+}
+
+export interface ReferralFriendsResponse {
+	code: string
+	message: string
+	data: ReferralFriendsData
 	traceId: string
 }
 
@@ -616,9 +749,42 @@ export interface RewardTransferStateResponse {
 	traceId: string
 }
 
+export interface SaveDrawVersionRequest {
+	name: string
+	rtp: string
+	prizes: Array<DrawPrizeData>
+	reason: string
+}
+
+export interface SaveDrawVersionResponse {
+	code: string
+	message: string
+	data: ManagedDrawVersion
+	traceId: string
+}
+
+export interface SaveTaskDraftRequest {
+	idx?: string
+	expectedRevision: number
+	requestKey: string
+	title: string
+	description: string
+	basePoints: string
+	channelId: string
+	startsAt: string
+	endsAt: string
+	reason: string
+}
+
 export interface SendEmailRequest {
 	email: string
 	locale: 'en' | 'zh-CN'
+}
+
+export interface SetDrawControlRequest {
+	versionIdx?: string
+	expectedRevision: number
+	reason: string
 }
 
 export interface SubmitTransferRequest {
@@ -747,6 +913,14 @@ export interface TaskResponse {
 	message: string
 	traceId: string
 	data: TaskData
+}
+
+export interface TaskStatusRequest {
+	expectedRevision: number
+	status: 'active' | 'paused'
+	reason: string
+}
+export interface TaskStatusRequestParams {
 }
 
 export interface TelegramLoginRequest {

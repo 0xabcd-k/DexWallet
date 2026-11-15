@@ -10,6 +10,7 @@ CREATE TABLE `draw_rule_version` (
 CREATE TABLE `draw_control` (
     `id` BIGINT NOT NULL,
     `version_id` BIGINT NULL,
+    `revision` BIGINT NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
