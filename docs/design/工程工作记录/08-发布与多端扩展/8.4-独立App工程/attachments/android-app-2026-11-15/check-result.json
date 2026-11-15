@@ -1,0 +1,71 @@
+{
+  "date": "2026-11-15",
+  "scope": "Android first batch; paused after delivery",
+  "branch": "feat/android-app-foundation",
+  "android": {
+    "api": 35,
+    "webview": "124.0.6367.219",
+    "avd": "dexwallet_app_api35",
+    "keeper": "26.10.4",
+    "myWallet": "26.10.7"
+  },
+  "checks": {
+    "common": "passed",
+    "frontendTypes": "passed",
+    "frontendUnitTests": 72,
+    "browserTests": 138,
+    "androidDebugBuild": "passed",
+    "releaseDebugConfigRejected": true
+  },
+  "keeper": {
+    "wallet": "Tonkeeper",
+    "details": [
+      "0:59b8ca44ea04b38cded8c2baae608831d072cf7d6ff9d7752b9e3b0fe19c8106",
+      "TON Mainnet"
+    ],
+    "route": "#/wallet-connections",
+    "chainTransactions": 0
+  },
+  "centralizedBusiness": {
+    "task": "Back\nSettings\nMy completed tasks\nAll tasks\nTask completed and rewards settled\n\nApp mock task\n\n11/15/2026, 06:25:56 PM GMT+8\n\nFirst task reward\nWithdrawable rewards\n$1.00\nTask points\n0\nPro progress added\n1000\nPro progress after this reward\n1000\nRecords\nView completion record",
+    "transfer": "Back\nTransfer details\nTransfer details\nTransfer completed\n1.00 USD\nRecipient\nDexWallet user\n06904923878972857\nFee\n0.00 USD\nBusiness ID\n01698000157015987\nTime\n11/15/2026, 6:25:56 PM",
+    "balances": "DexWallet\nSettings\n\nYour wallet, your way\n\nWallet\nTasks\nReceive\nPay\nUSD balance\n\nConnected wallets\n\nUSD balance\n\nAvailable\n\n99.00 USD\n\nHeld\n0.00 USD\nTotal\n99.00 USD\n\nView reserved funds\n\nView records\nRefresh balances\n\nOn-chain deposits and payments will be available in a later release.\n\nWallet\nRewards\nRecords",
+    "fee": "0.00",
+    "membership": "mock",
+    "backend": "real isolated API"
+  },
+  "paymentRecovery": {
+    "loginRestored": true,
+    "paymentRecovered": true,
+    "balance": "96.00",
+    "payment": "Back\nPay\nPay\nTransfer completed\n1.00 USD\nRecipient\nDexWallet user\n06904923878972857\nFee\n0.00 USD\nBusiness ID\n00116360664944459\nTime\n11/15/2026, 6:46:18 PM\nTransfer detailsMake another transfer"
+  },
+  "chainTransactions": 0,
+  "pending": [
+    "My Wallet real authorization and switching",
+    "native camera scanning",
+    "internal wallet",
+    "standalone Telegram authorization",
+    "iOS and physical devices",
+    "release signing and deployment",
+    "on-chain asset and payment APIs"
+  ],
+  "apkSHA256": "35aad609f8479d3283ab462522875a097a397863455a6c349234b8aba03c0ab3",
+  "apiWriteCount": {
+    "transfersPosted": 4,
+    "expectedExplicitConfirmations": 4,
+    "responseLossRecoveryRuns": 3,
+    "recoveryDidNotRepost": true
+  },
+  "knownEnvironmentIssue": "Emulator graphics contexts failed during some runs; restarting the isolated AVD allowed verification. No long-running stability conclusion.",
+  "keeperDisconnect": {
+    "inApp": "passed",
+    "afterColdRestart": "pending: emulator graphics failure"
+  },
+  "cleanup": {
+    "remainingRecordedResources": 0,
+    "apiStopped": true,
+    "manifestTunnelStopped": true,
+    "isolatedEmulatorStopped": true
+  }
+}

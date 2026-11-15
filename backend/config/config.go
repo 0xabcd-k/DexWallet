@@ -3,8 +3,10 @@ package config
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/background"
@@ -24,6 +26,7 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
+	CORSOrigins       []string           `json:",optional"`
 	RewardRisk        risk.Config        `json:",optional"`
 	Tasks             task.Config        `json:",optional"`
 	Transfer          transfer.Config    `json:",optional"`
@@ -89,6 +92,12 @@ func Load(path string) (Config, error) {
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	for _, origin := range c.CORSOrigins {
+		u, err := url.Parse(origin)
+		if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" || strings.Contains(u.Host, "*") {
+			return fmt.Errorf("CORSOrigins must contain explicit HTTPS origins")
+		}
+	}
 	if err := c.RewardRisk.Check(c.Environment, c.Mode); err != nil {
 		return err
 	}

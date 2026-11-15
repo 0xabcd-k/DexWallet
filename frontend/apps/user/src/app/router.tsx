@@ -36,7 +36,7 @@ function MainLayout() {
 function ChildLayout() {
   const { t } = useTranslation(); const location = useLocation();
   const fallback = location.pathname === '/identities' || location.pathname === '/login' ? '/settings' : '/wallet';
-  return <><header className="mobile-header"><Link to={safeReturn(location.state, fallback)} replace>{t('back')}</Link><strong>{t(location.pathname === '/invitations' ? 'inviteResults' : location.pathname.startsWith('/reward-transfer') ? 'rtTitle' : location.pathname.startsWith('/draw') ? 'drawTitle' : location.pathname.startsWith('/tasks') ? 'tasks' : location.pathname === '/receive' ? 'receive' : location.pathname === '/pay' ? 'pay' : location.pathname === '/balance' ? 'usdBalance' : location.pathname.startsWith('/transfers/') ? 'transferDetail' : location.pathname === '/holds' ? 'holds' : location.pathname === '/login' ? 'signIn' : location.pathname === '/identities' ? 'identities' : 'common:settings')}</strong></header><main><Outlet /></main></>;
+  return <><header className="mobile-header"><Link to={safeReturn(location.state, fallback)} replace>{t('back')}</Link><strong>{t(location.pathname === '/wallet-connections' ? 'nativeWallets' : location.pathname === '/invitations' ? 'inviteResults' : location.pathname.startsWith('/reward-transfer') ? 'rtTitle' : location.pathname.startsWith('/draw') ? 'drawTitle' : location.pathname.startsWith('/tasks') ? 'tasks' : location.pathname === '/receive' ? 'receive' : location.pathname === '/pay' ? 'pay' : location.pathname === '/balance' ? 'usdBalance' : location.pathname.startsWith('/transfers/') ? 'transferDetail' : location.pathname === '/holds' ? 'holds' : location.pathname === '/login' ? 'signIn' : location.pathname === '/identities' ? 'identities' : 'common:settings')}</strong></header><main><Outlet /></main></>;
 }
 function IdentityRedirect() {
   const location = useLocation();
@@ -51,6 +51,7 @@ export function createUserRouter(launch: LaunchContext) {
       ...['wallet', 'rewards', 'records'].map(name => ({ path: `/${name}`, element: <Home section={name} /> })),
     ] },
     { element: <ChildLayout />, children: [
+      ...(import.meta.env.NATIVE_APP ? [{ path: '/wallet-connections', lazy: async () => ({ Component: (await import('../view/wallet-connections')).default }) }] : []),
       { path: '/settings', element: <Settings /> },
       { path: '/reward-transfers', element: <RequireAuth><RewardTransfers /></RequireAuth> },
  { path: '/reward-transfers/:idx', element: <RequireAuth><RewardTransferDetail /></RequireAuth> },

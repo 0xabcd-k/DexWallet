@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:app": "vite build --mode native"
   },
   "dependencies": {
     "@dexwallet/api-client": "workspace:*",
@@ -20,7 +21,12 @@
     "qrcode": "1.5.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router": "7.18.4"
+    "react-router": "7.18.4",
+    "@capacitor/core": "8.6.2",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/app-launcher": "8.0.1",
+    "@tonconnect/sdk": "5.0.1",
+    "@capacitor/preferences": "8.0.1"
   },
   "devDependencies": {
     "@noble/hashes": "2.0.1",

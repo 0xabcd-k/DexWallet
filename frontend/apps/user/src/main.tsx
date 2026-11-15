@@ -13,8 +13,9 @@ if (import.meta.env.DEV && import.meta.env.DEV_TELEGRAM) {
   const { injectTelegram } = await import('./dev/telegram');
   await injectTelegram(navigationType);
 }
-const context = await bootstrapTelegram({ href: location.href,
-  navigationType, storage: sessionStorageOrUndefined() });
+const context = import.meta.env.NATIVE_APP
+  ? (await import('./app/native/lifecycle')).nativeLaunch
+  : await bootstrapTelegram({ href: location.href, navigationType, storage: sessionStorageOrUndefined() });
 const i18n = await createAppI18n('user', appResources, context.language);
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing root element');
@@ -31,5 +32,9 @@ if (context.mode === 'error') {
     history.replaceState(null, '', `${location.pathname}${location.search}#/login?returnTo=${encodeURIComponent(source)}`);
   }
   const router = createUserRouter(context);
+  if (import.meta.env.NATIVE_APP) {
+    const { installNativeLifecycle } = await import('./app/native/lifecycle');
+    await installNativeLifecycle(router);
+  }
   createRoot(root).render(<StrictMode><I18nextProvider i18n={i18n}><RouterProvider router={router} /></I18nextProvider></StrictMode>);
 }

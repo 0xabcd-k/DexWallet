@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DexWallet</string>
+    <string name="title_activity_main">DexWallet</string>
+    <string name="package_name">com.dexwallet.app</string>
+    <string name="custom_url_scheme">com.dexwallet.app</string>
+</resources>

@@ -37,6 +37,7 @@
     "typescript": "5.9.3",
     "@dexwallet/api-client": "workspace:*",
     "@dexwallet/i18n": "workspace:*",
-    "react-router": "7.18.4"
+    "react-router": "7.18.4",
+    "@tonconnect/sdk": "5.0.1"
   }
 }

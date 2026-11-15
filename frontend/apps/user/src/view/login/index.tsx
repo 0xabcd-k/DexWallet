@@ -12,7 +12,7 @@ export default function Login() {
   if (auth.session.credential) return <Navigate to={target} replace />;
   return <section className="auth-page"><p className="eyebrow">DexWallet</p><h1>{t('signIn')}</h1><p className="muted">{t('signInBody')}</p>
     <div className="auth-card"><h2>{t('email')}</h2><EmailForm onSuccess={() => navigate(target, { replace: true })} /></div>
-    <div className="auth-card"><h2>{t('telegram')}</h2><Telegram automatic={!params.has('manual')} onSuccess={() => navigate(target, { replace: true })} /></div>
+    <div className="auth-card"><h2>{t('telegram')}</h2>{import.meta.env.NATIVE_APP ? <p>{t('nativeTelegramPending')}</p> : <Telegram automatic={!params.has('manual')} onSuccess={() => navigate(target, { replace: true })} />}</div>
     <LanguageControl app="user" />
     {!auth.session.persistent && <p role="status">{t('memorySession')}</p>}
   </section>;

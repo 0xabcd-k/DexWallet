@@ -15,3 +15,12 @@ node_modules/
 # Frontend test evidence is local; checked conclusions live in docs.
 /frontend/test-results/
 /frontend/playwright-report/
+
+# Native build artifacts and machine-local SDK paths
+/frontend/apps/user/dist-app/
+/frontend/apps/mobile/android/.gradle/
+/frontend/apps/mobile/android/**/build/
+/frontend/apps/mobile/android/local.properties
+/frontend/apps/mobile/android/app/src/main/assets/public/
+/frontend/apps/mobile/android/app/src/main/assets/capacitor.config.json
+/frontend/apps/mobile/android/app/src/main/assets/capacitor.plugins.json

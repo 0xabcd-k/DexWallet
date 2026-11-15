@@ -8,6 +8,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/httpapi"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/middleware"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
+	"github.com/0xabcd-k/DexWallet/backend/session"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/rest"
@@ -29,7 +30,13 @@ func Build(s *svc.ServiceContext) (*rest.Server, *httpapi.Runtime, error) {
 	c.Middlewares.Recover = false
 	c.Middlewares.MaxConns = false
 	c.Middlewares.MaxBytes = false
-	app, err := rest.NewServer(c, rest.WithRouter(r))
+	options := []rest.RunOption{rest.WithRouter(r)}
+	if len(s.Config.CORSOrigins) > 0 {
+		options = append(options, rest.WithCustomCors(func(h http.Header) {
+			h.Set("Access-Control-Expose-Headers", session.TokenHeader+", "+httpapi.TraceHeader)
+		}, nil, s.Config.CORSOrigins...))
+	}
+	app, err := rest.NewServer(c, options...)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -36,8 +36,9 @@ export default function IdentitySettings() {
       const identity = auth.identities.find(i => i.type === type);
       return <div className="settings-identity" key={type}><h3>{t(type)}</h3>
         {identity ? <><p>{identity.displayName || identity.subject}</p>{identity.displayName && identity.subject !== identity.displayName && <p className="muted">{identity.subject}</p>}</> : <p>{t('notLinked')}</p>}
-        <div className="auth-actions">{!(inTelegram && type === 'telegram' && identity) && <Button disabled={busy || !!editing || (!!identity && auth.identities.length < 2)} onClick={() => setEditing({ type, purpose: identity ? 'replace' : 'bind' })}>{t(identity ? 'replace' : 'link')}</Button>}
+        <div className="auth-actions">{!(inTelegram && type === 'telegram' && identity) && <Button disabled={busy || !!editing || (import.meta.env.NATIVE_APP && type === 'telegram') || (!!identity && auth.identities.length < 2)} onClick={() => setEditing({ type, purpose: identity ? 'replace' : 'bind' })}>{t(identity ? 'replace' : 'link')}</Button>}
           {identity && <Button disabled={busy || !!editing || auth.identities.length < 2 || (type === 'telegram' && inTelegram)} onClick={() => { void remove(type); }}>{t('unlink')}</Button>}</div>
+        {import.meta.env.NATIVE_APP && type === 'telegram' && <p className="muted">{t('nativeTelegramPending')}</p>}
         {identity && type === 'telegram' && inTelegram && <p className="muted">{t('telegramUnlinkBlocked')}</p>}
         {editing?.type === type && <section className="settings-inline-form"><h4>{t(editing.purpose === 'bind' ? 'linkIdentity' : 'replaceIdentity', { identity: t(editing.type) })}</h4>
           {editing.type === 'email' ? <EmailForm purpose={editing.purpose} onSuccess={complete} /> :
