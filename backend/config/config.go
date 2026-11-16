@@ -13,6 +13,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
 	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/risk"
 	"github.com/0xabcd-k/DexWallet/backend/logic/task"
 	"github.com/0xabcd-k/DexWallet/backend/logic/transfer"
@@ -27,6 +28,7 @@ type Config struct {
 	rest.RestConf
 	Environment       string
 	CORSOrigins       []string           `json:",optional"`
+	ChainAssets       chainassets.Config `json:",optional"`
 	RewardRisk        risk.Config        `json:",optional"`
 	Tasks             task.Config        `json:",optional"`
 	Transfer          transfer.Config    `json:",optional"`
@@ -73,6 +75,7 @@ func Load(path string) (Config, error) {
 	}
 	c.MySQL.DSN = os.Getenv("DEXWALLET_MYSQL_DSN")
 	c.IDSecret = os.Getenv("DEXWALLET_ID_SECRET")
+	c.ChainAssets.LoadEnvironment()
 	c.Transfer.ReceiveSecret = os.Getenv("DEXWALLET_RECEIVE_CODE_SECRET")
 	if c.Session != nil {
 		c.Session.Secret = os.Getenv("DEXWALLET_TOKEN_SECRET")
@@ -92,6 +95,12 @@ func Load(path string) (Config, error) {
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if err := c.ChainAssets.Check(); err != nil {
+		return err
+	}
+	if len(c.ChainAssets.Networks) > 0 && !c.Redis.Enabled {
+		return fmt.Errorf("chain asset queries require Redis rate limits")
+	}
 	for _, origin := range c.CORSOrigins {
 		u, err := url.Parse(origin)
 		if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" || strings.Contains(u.Host, "*") {

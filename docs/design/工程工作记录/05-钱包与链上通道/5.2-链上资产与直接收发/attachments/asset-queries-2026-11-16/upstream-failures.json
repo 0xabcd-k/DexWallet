@@ -1,0 +1,20 @@
+[
+  {
+    "@timestamp": "2026-11-16T13:32:13.116+08:00",
+    "network": "solana-devnet",
+    "asset": "solana-devnet:usdt",
+    "cause": "upstream request: context deadline exceeded"
+  },
+  {
+    "@timestamp": "2026-11-16T13:32:13.116+08:00",
+    "network": "solana-devnet",
+    "asset": "solana-devnet:sol",
+    "cause": "upstream request: context deadline exceeded"
+  },
+  {
+    "@timestamp": "2026-11-16T13:32:13.116+08:00",
+    "network": "solana-devnet",
+    "asset": "solana-devnet:usdc",
+    "cause": "upstream request: context deadline exceeded"
+  }
+]

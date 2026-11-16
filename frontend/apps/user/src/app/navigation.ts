@@ -2,7 +2,7 @@ import { isRecord } from '@dexwallet/api-client';
 export function safeDestination(value: unknown, fallback = '/wallet'): string {
   if (typeof value !== 'string' || !/^\/(?!\/)/.test(value) || /[\\\r\n#]/.test(value)) return fallback;
   const path = value.split('?')[0];
-  if (import.meta.env.NATIVE_APP && ['/wallet-connections', '/local-wallets'].includes(path ?? '')) return value;
+  if (import.meta.env.NATIVE_APP && ['/wallet-connections', '/local-wallets', '/chain-assets'].includes(path ?? '')) return value;
   if (/^\/(transfers|tasks)\/0\d{16,19}$/.test(path ?? '')) return value;
   return ['/tasks', '/pay', '/receive', '/balance', '/wallet', '/rewards', '/records', '/holds', '/account', '/identities', '/settings', '/__dev'].includes(path ?? '') ? value : fallback;
 }

@@ -9,6 +9,7 @@ import (
 	account "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/account"
 	auth "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/auth"
 	backoffice "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/backoffice"
+	chainassets "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/chainassets"
 	draw "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/draw"
 	health "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/health"
 	identity "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/identity"
@@ -299,6 +300,24 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/v1/admin/tasks/:idx/status",
 					Handler: backoffice.SetTaskStatusHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/chain-assets",
+					Handler: chainassets.ChainAssetCatalogHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/chain-assets/balances",
+					Handler: chainassets.ChainBalancesHandler(serverCtx),
 				},
 			}...,
 		),

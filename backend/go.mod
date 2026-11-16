@@ -10,10 +10,12 @@ require (
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang-migrate/migrate/v4 v4.19.1
+	github.com/mr-tron/base58 v1.3.0
 	github.com/redis/go-redis/v9 v9.21.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/telegram-mini-apps/init-data-golang v1.5.0
 	github.com/wneessen/go-mail v0.8.1
+	github.com/xssnick/tonutils-go v1.15.5
 	github.com/zeromicro/go-zero v1.10.3
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/trace v1.40.0

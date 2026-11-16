@@ -202,6 +202,59 @@ export interface BackofficeStatusRequest {
 	reason: string
 }
 
+export interface ChainAsset {
+	id: string
+	symbol: string
+	contract: string
+	decimals: number
+	origin: 'native' | 'issuer' | 'test_fixture'
+}
+
+export interface ChainAssetBalance {
+	assetId: string
+	quantity: string
+	status: 'ok' | 'unavailable'
+	errorCode: 'NONE' | 'UPSTREAM_UNAVAILABLE' | 'UPSTREAM_INVALID' | 'NETWORK_MISMATCH'
+	queriedAt: number
+}
+
+export interface ChainAssetCatalogData {
+	networks: Array<ChainNetwork>
+}
+
+export interface ChainAssetCatalogResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: ChainAssetCatalogData
+}
+
+export interface ChainBalancesData {
+	network: string
+	address: string
+	items: Array<ChainAssetBalance>
+}
+
+export interface ChainBalancesRequest {
+	network: string
+	address: string
+}
+
+export interface ChainBalancesResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: ChainBalancesData
+}
+
+export interface ChainNetwork {
+	id: string
+	family: 'ton' | 'base' | 'solana' | 'tron'
+	testnet: boolean
+	enabled: boolean
+	assets: Array<ChainAsset>
+}
+
 export interface ChallengeData {
 	challenge: string
 	expiresAt: number

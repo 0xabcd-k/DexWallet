@@ -1081,3 +1081,58 @@ service platform {
  @handler setDrawControl
  post /v1/admin/draw-control (SetDrawControlRequest) returns (ManagedDrawResponse)
 }
+
+type (
+    ChainAsset {
+        Id string `json:"id"`
+        Symbol string `json:"symbol"`
+        Contract string `json:"contract"`
+        Decimals int `json:"decimals"`
+        Origin string `json:"origin,options=native|issuer|test_fixture"`
+    }
+    ChainNetwork {
+        Id string `json:"id"`
+        Family string `json:"family,options=ton|base|solana|tron"`
+        Testnet bool `json:"testnet"`
+        Enabled bool `json:"enabled"`
+        Assets []ChainAsset `json:"assets"`
+    }
+    ChainAssetCatalogData {
+        Networks []ChainNetwork `json:"networks"`
+    }
+    ChainAssetCatalogResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        TraceId string `json:"traceId"`
+        Data ChainAssetCatalogData `json:"data"`
+    }
+    ChainBalancesRequest {
+        Network string `json:"network"`
+        Address string `json:"address"`
+    }
+    ChainAssetBalance {
+        AssetId string `json:"assetId"`
+        Quantity string `json:"quantity"`
+        Status string `json:"status,options=ok|unavailable"`
+        ErrorCode string `json:"errorCode,options=NONE|UPSTREAM_UNAVAILABLE|UPSTREAM_INVALID|NETWORK_MISMATCH"`
+        QueriedAt int64 `json:"queriedAt"`
+    }
+    ChainBalancesData {
+        Network string `json:"network"`
+        Address string `json:"address"`
+        Items []ChainAssetBalance `json:"items"`
+    }
+    ChainBalancesResponse {
+        Code string `json:"code,options=OK"`
+        Message string `json:"message"`
+        TraceId string `json:"traceId"`
+        Data ChainBalancesData `json:"data"`
+    }
+)
+@server(group: chainassets middleware: AuthTransport,UserAuth)
+service platform {
+    @handler chainAssetCatalog
+    get /v1/user/chain-assets returns (ChainAssetCatalogResponse)
+    @handler chainBalances
+    post /v1/user/chain-assets/balances (ChainBalancesRequest) returns (ChainBalancesResponse)
+}

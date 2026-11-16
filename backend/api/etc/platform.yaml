@@ -64,3 +64,8 @@ Transfer:
 # Sample task verification is opt-in and restricted to Environment=local / Mode=dev.
 Tasks:
   Mode: disabled
+
+# Read-only chain asset queries are opt-in per network via server environment.
+# DEXWALLET_CHAIN_BASE_SEPOLIA_RPC_URL / DEXWALLET_CHAIN_SOLANA_DEVNET_RPC_URL etc.
+# Optional ChainAssets: {Timeout: 3s, PerUserPerMinute: 30}; Redis is required.
+# See docs/engineering/链上资产查询.md; never put RPC credentials into App builds.

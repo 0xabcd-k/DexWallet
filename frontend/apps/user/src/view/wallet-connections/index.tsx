@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Button, Input } from 'antd-mobile';
 import { AppLauncher } from '@capacitor/app-launcher';
@@ -21,7 +22,7 @@ function ConnectionPage({ userIdx }: { userIdx: string }) {
     catch (e) { setError(e); return; }
     return () => c.dispose();
   }, [userIdx]);
-  return <section className="wallet-connections"><h1>{t('nativeWallets')}</h1><p>{t('nativeConnectionScope')}</p>
+  return <section className="wallet-connections"><h1>{t('nativeWallets')}</h1><p>{t('nativeConnectionScope')}</p><p><Link to="/chain-assets">{t('chainAssets')}</Link></p>
     {!import.meta.env.TON_MANIFEST_URL && <p role="status">{t('nativeWalletUnavailable')}</p>}
     {connection && <ConnectedWallet connection={connection}/>}{error !== undefined && <p role="alert">{t('nativeConnectionFailed')}</p>}
   </section>;

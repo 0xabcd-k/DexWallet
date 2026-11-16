@@ -17,6 +17,7 @@ import (
 	accountlogic "github.com/0xabcd-k/DexWallet/backend/logic/account"
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
 	rewardtransfer "github.com/0xabcd-k/DexWallet/backend/logic/rewardtransfer"
 	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
@@ -45,6 +46,7 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
+	ChainAssets           *chainassets.Service
 	ReceiveCodes          *transferlogic.Codes
 	Config                config.Config
 	Background            *background.Runtime
@@ -155,6 +157,14 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 		d.ModelUser = usermodel.NewUserModelWithCache(conn, usermodel.NewUserCache(d.Redis, d.Namespace))
 		d.checks = append(d.checks, health.Check{Name: RedisDependency, Required: c.Redis.Required, Run: func(ctx context.Context) error { return d.Redis.Ping(ctx).Err() }})
 	}
+	var chainLimiter chainassets.Limiter
+	if d.Redis != nil {
+		chainLimiter = chainassets.NewRedisLimiter(d.Redis, d.Namespace, c.ChainAssets.PerUserPerMinute)
+	}
+	d.ChainAssets, err = chainassets.New(c.ChainAssets, chainLimiter)
+	if err != nil {
+		return d, err
+	}
 	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx, c.Transfer.DefaultLimitPlanID)
 	var sender authlogic.Mailer
 	if c.Auth != nil {
@@ -214,6 +224,9 @@ func (d *ServiceContext) RedisKey(parts ...string) string {
 // clients, including when startup failed partway through initialization.
 func (d *ServiceContext) Close() error {
 	d.once.Do(func() {
+		if d.ChainAssets != nil {
+			d.ChainAssets.Close()
+		}
 		if d.Background != nil {
 			d.Background.Stop()
 			ctx, cancel := context.WithTimeout(context.Background(), d.Config.ShutdownTimeout)

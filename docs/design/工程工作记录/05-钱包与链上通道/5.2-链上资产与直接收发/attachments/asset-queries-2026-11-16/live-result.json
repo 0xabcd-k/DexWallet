@@ -1,0 +1,89 @@
+[
+  {
+    "Network": "ton-testnet",
+    "Address": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+    "Items": [
+      {
+        "AssetID": "ton-testnet:ton",
+        "Quantity": "0.12456023",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807534376
+      },
+      {
+        "AssetID": "ton-testnet:usdt:kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy",
+        "Quantity": "9",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807534410
+      }
+    ]
+  },
+  {
+    "Network": "base-sepolia",
+    "Address": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+    "Items": [
+      {
+        "AssetID": "base-sepolia:eth",
+        "Quantity": "0.000996225273988114",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807535125
+      },
+      {
+        "AssetID": "base-sepolia:usdc",
+        "Quantity": "0.03",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807535123
+      }
+    ]
+  },
+  {
+    "Network": "solana-devnet",
+    "Address": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "Items": [
+      {
+        "AssetID": "solana-devnet:sol",
+        "Quantity": "0.004998",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807536122
+      },
+      {
+        "AssetID": "solana-devnet:usdc",
+        "Quantity": "19.97",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807536122
+      },
+      {
+        "AssetID": "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+        "Quantity": "19.97",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807536120
+      }
+    ]
+  },
+  {
+    "Network": "tron-nile",
+    "Address": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "Items": [
+      {
+        "AssetID": "tron-nile:trx",
+        "Quantity": "0",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807537591
+      },
+      {
+        "AssetID": "tron-nile:usdt:TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+        "Quantity": "999.99",
+        "Status": "ok",
+        "ErrorCode": "NONE",
+        "QueriedAt": 1794807537592
+      }
+    ]
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "date": "2026-11-16",
+  "scope": "Read-only queries; no signatures, funding, transactions or broadcasting.",
+  "testSubstitutes": {
+    "ton-testnet": "kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy",
+    "solana-devnet": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+    "tron-nile": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"
+  },
+  "assetIdentityNote": "USDT entries above are test substitutes, not mainnet issuer USDT. Final live-result uses contract-qualified fixture IDs; Android interaction evidence was collected before that ID safeguard and followed by focused unit/live-query checks and a fresh APK build."
+}

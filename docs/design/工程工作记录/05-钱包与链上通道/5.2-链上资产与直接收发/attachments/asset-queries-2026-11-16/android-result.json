@@ -1,0 +1,79 @@
+{
+  "created": true,
+  "noUnlockForViewing": true,
+  "networkOptions": [
+    "ton-mainnet",
+    "base-mainnet",
+    "solana-mainnet",
+    "tron-mainnet",
+    "ton-testnet",
+    "base-sepolia",
+    "solana-devnet",
+    "tron-nile"
+  ],
+  "disabledMainnet": true,
+  "queries": [
+    {
+      "network": "ton-testnet",
+      "rows": [
+        {
+          "id": "asset-ton-testnet:ton",
+          "quantity": "0"
+        },
+        {
+          "id": "asset-ton-testnet:usdt",
+          "quantity": "0"
+        }
+      ]
+    },
+    {
+      "network": "base-sepolia",
+      "rows": [
+        {
+          "id": "asset-base-sepolia:eth",
+          "quantity": "0"
+        },
+        {
+          "id": "asset-base-sepolia:usdc",
+          "quantity": "0"
+        }
+      ]
+    },
+    {
+      "network": "solana-devnet",
+      "rows": [
+        {
+          "id": "asset-solana-devnet:sol",
+          "quantity": "0"
+        },
+        {
+          "id": "asset-solana-devnet:usdc",
+          "quantity": "0"
+        },
+        {
+          "id": "asset-solana-devnet:usdt",
+          "quantity": "0"
+        }
+      ]
+    },
+    {
+      "network": "tron-nile",
+      "rows": [
+        {
+          "id": "asset-tron-nile:trx",
+          "quantity": "0"
+        },
+        {
+          "id": "asset-tron-nile:usdt",
+          "quantity": "0"
+        }
+      ]
+    }
+  ],
+  "search": true,
+  "favorite": true,
+  "favoriteRestored": true,
+  "manualRefresh": true,
+  "removedTestWallet": true,
+  "signedOut": true
+}

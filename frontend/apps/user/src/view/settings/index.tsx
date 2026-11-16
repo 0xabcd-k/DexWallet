@@ -16,7 +16,7 @@ export default function Settings() {
     </section>
     <section className="settings-section"><h2>{t('preferences')}</h2><LanguageControl app="user" /></section>
     {accountReady && <>
-      {import.meta.env.NATIVE_APP && <section className="settings-section"><h2>{t('localWallets')}</h2><Link to="/local-wallets">{t('localWallets')}</Link>{' · '}<Link to="/wallet-connections">{t('nativeWallets')}</Link></section>}
+      {import.meta.env.NATIVE_APP && <section className="settings-section"><h2>{t('localWallets')}</h2><Link to="/chain-assets">{t('chainAssets')}</Link>{' · '}<Link to="/local-wallets">{t('localWallets')}</Link>{' · '}<Link to="/wallet-connections">{t('nativeWallets')}</Link></section>}
       <IdentitySettings />
       {auth.launch.mode !== 'telegram' && <section className="settings-section"><h2>{t('accountActions')}</h2><AccountActions /></section>}
       {!auth.session.persistent && <p role="status" className="muted">{t('memorySession')}</p>}

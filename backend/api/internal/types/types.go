@@ -192,6 +192,59 @@ type BackofficeStatusRequest struct {
 	Reason string `json:"reason"`
 }
 
+type ChainAsset struct {
+	Id       string `json:"id"`
+	Symbol   string `json:"symbol"`
+	Contract string `json:"contract"`
+	Decimals int    `json:"decimals"`
+	Origin   string `json:"origin,options=native|issuer|test_fixture"`
+}
+
+type ChainAssetBalance struct {
+	AssetId   string `json:"assetId"`
+	Quantity  string `json:"quantity"`
+	Status    string `json:"status,options=ok|unavailable"`
+	ErrorCode string `json:"errorCode,options=NONE|UPSTREAM_UNAVAILABLE|UPSTREAM_INVALID|NETWORK_MISMATCH"`
+	QueriedAt int64  `json:"queriedAt"`
+}
+
+type ChainAssetCatalogData struct {
+	Networks []ChainNetwork `json:"networks"`
+}
+
+type ChainAssetCatalogResponse struct {
+	Code    string                `json:"code,options=OK"`
+	Message string                `json:"message"`
+	TraceId string                `json:"traceId"`
+	Data    ChainAssetCatalogData `json:"data"`
+}
+
+type ChainBalancesData struct {
+	Network string              `json:"network"`
+	Address string              `json:"address"`
+	Items   []ChainAssetBalance `json:"items"`
+}
+
+type ChainBalancesRequest struct {
+	Network string `json:"network"`
+	Address string `json:"address"`
+}
+
+type ChainBalancesResponse struct {
+	Code    string            `json:"code,options=OK"`
+	Message string            `json:"message"`
+	TraceId string            `json:"traceId"`
+	Data    ChainBalancesData `json:"data"`
+}
+
+type ChainNetwork struct {
+	Id      string       `json:"id"`
+	Family  string       `json:"family,options=ton|base|solana|tron"`
+	Testnet bool         `json:"testnet"`
+	Enabled bool         `json:"enabled"`
+	Assets  []ChainAsset `json:"assets"`
+}
+
 type ChallengeData struct {
 	Challenge string `json:"challenge"`
 	ExpiresAt int64  `json:"expiresAt"`

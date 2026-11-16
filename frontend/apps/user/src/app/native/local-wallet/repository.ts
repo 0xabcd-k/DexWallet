@@ -38,6 +38,12 @@ function parseCatalog(value: string | null): WalletRecord[] {
 // Metadata writes from a previous page can finish after remount. Serialize the
 // short read/modify/commit section, never the system authentication dialog.
 let catalogWrites: Promise<unknown> = Promise.resolve();
+// Public metadata and existence only; this does not unlock a key or open a protected view.
+export async function listWalletRecords(userIdx: string, catalog: CatalogPort, vault: Pick<VaultPort, 'inspect'>) {
+  await catalogWrites;
+  const items = parseCatalog((await catalog.get({ key: `dexwallet:wallet-catalog:v1:${userIdx}` })).value);
+  return Promise.all(items.map(async record => ({ ...record, available: (await vault.inspect({ userIdx, walletId: record.walletId })).exists })));
+}
 const beforeWriteFailures = new Set(['VAULT_CANCELLED', 'VAULT_BUSY', 'VAULT_DEVICE_LOCK_REQUIRED', 'VAULT_PRIVACY_REQUIRED', 'VAULT_INVALID_INPUT']);
 export function createWalletRepository(userIdx: string, viewToken: string, catalog: CatalogPort, vault: VaultPort) {
   const key = `dexwallet:wallet-catalog:v1:${userIdx}`;
@@ -60,9 +66,7 @@ export function createWalletRepository(userIdx: string, viewToken: string, catal
   }
   return {
     async list() {
-      await catalogWrites;
-      const items = await read();
-      return Promise.all(items.map(async record => ({ ...record, available: (await vault.inspect(identity(record.walletId))).exists })));
+      return listWalletRecords(userIdx, catalog, vault);
     },
     async save(name: string, material: WalletMaterial, accounts: WalletAccount[]) {
       name = name.trim();

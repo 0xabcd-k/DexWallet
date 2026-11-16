@@ -1,0 +1,42 @@
+{
+  "baseline": "ee9e76f",
+  "branch": "feat/onchain-asset-queries",
+  "environment": {
+    "go": "1.26.10",
+    "node": "24.22.1",
+    "androidAPI": 35,
+    "capacitor": "8.6.2"
+  },
+  "passed": [
+    "contract generation check and codegen behavioral tests",
+    "go test -race ./... and go vet ./...; affected Go packages checked again after changes",
+    "TestProductSessionHTTP with real disposable MySQL/Redis, fake HTTP RPC, auth and rate-limit assertions",
+    "frontend typecheck",
+    "94 frontend unit tests; final affected suite 5 tests",
+    "production builds and Mini App native-module isolation",
+    "Chromium/WebKit: 135 initial passes, remaining 3 WebKit cases passed focused rerun",
+    "Android debug build; final APK rebuilt after fixture-ID safeguard",
+    "four-chain, nine-test-asset live queries",
+    "Android API35 wallet creation, query without key unlock, eight network choices, nine zero quantities, refresh, search, favorites and reentry"
+  ],
+  "initialFailuresResolved": [
+    "test-only TypeScript declarations corrected",
+    "three browser assertions timed out during concurrent environment work; focused rerun passed with no behavior or timeout relaxation",
+    "device automation typed before system PIN field became ready; completed after waiting for the field",
+    "one Solana public-node request exceeded 3 seconds; UI showed unavailable, subsequent query returned confirmed zero"
+  ],
+  "cleanup": {
+    "walletRemoved": true,
+    "userSignedOut": true,
+    "testDeviceLockRemoved": true,
+    "adbForwardingRemoved": true,
+    "apiAndEmulatorStopped": true,
+    "databaseResourceJournalEmpty": true
+  },
+  "limits": [
+    "no production node capacity/release validation",
+    "TON/TRON network mapping relies on trusted operator configuration",
+    "TON jetton index may lag; observed balances are not payment authorization",
+    "external TON live connection not reauthorized in this batch; current scope reuses the delivered connector"
+  ]
+}
