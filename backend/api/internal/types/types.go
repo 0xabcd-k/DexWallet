@@ -245,6 +245,48 @@ type ChainNetwork struct {
 	Assets  []ChainAsset `json:"assets"`
 }
 
+type ChainTargetData struct {
+	Network     string `json:"network"`
+	AssetId     string `json:"assetId"`
+	Address     string `json:"address"`
+	ReceiveCode string `json:"receiveCode"`
+}
+
+type ChainTargetRequest struct {
+	Network     string `json:"network,optional"`
+	AssetId     string `json:"assetId,optional"`
+	Address     string `json:"address,optional"`
+	ReceiveCode string `json:"receiveCode,optional"`
+}
+
+type ChainTargetResponse struct {
+	Code    string          `json:"code,options=OK"`
+	Message string          `json:"message"`
+	TraceId string          `json:"traceId"`
+	Data    ChainTargetData `json:"data"`
+}
+
+type ChainTransferPreviewData struct {
+	Target      ChainTargetData `json:"target"`
+	Amount      string          `json:"amount"`
+	CanSubmit   bool            `json:"canSubmit"`
+	BlockReason string          `json:"blockReason,options=CHANNEL_NOT_OPEN"`
+}
+
+type ChainTransferPreviewRequest struct {
+	Network string `json:"network"`
+	AssetId string `json:"assetId"`
+	Address string `json:"address"`
+	Amount  string `json:"amount"`
+}
+
+type ChainTransferPreviewResponse struct {
+	Code    string                   `json:"code,options=OK"`
+	Message string                   `json:"message"`
+	TraceId string                   `json:"traceId"`
+	Data    ChainTransferPreviewData `json:"data"`
+}
+
 type ChallengeData struct {
 	Challenge string `json:"challenge"`
 	ExpiresAt int64  `json:"expiresAt"`

@@ -1,0 +1,10 @@
+{
+  "scope": "Read-only receive codes and transfer preparation; not executable payment orders",
+  "qr": "DexWallet-specific v1 URI; no amount/memo/call data",
+  "funds": "Unfunded generated test wallet, removed after verification. Addresses and codes are test evidence, not live receiving endpoints.",
+  "rpc": "No blockchain RPC or funding was required in this batch.",
+  "decoder": "Nine exact PNG payloads decoded with ZXing PURE_BARCODE for clean images; nine controlled video streams (white background with slight rotation) decoded by the actual default App scanner. Static detector results alone are not an optical-camera certification.",
+  "qrPixels": 960,
+  "screenshots": "Actual Android APK with isolated login API, final native navigation fix and QR density change.",
+  "privateMaterial": "No keys, seed phrases, credentials, mail codes, device PIN, API configuration or APK included."
+}

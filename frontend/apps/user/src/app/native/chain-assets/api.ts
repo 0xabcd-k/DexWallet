@@ -24,13 +24,13 @@ export const decodeCatalog: Decoder<ChainNetwork[]> = value => {
     return { id: n.id, family: n.family as ChainNetwork['family'], testnet: n.testnet, enabled: n.enabled, assets };
   });
 };
-function canonical(network: ChainNetwork, address: string) {
+export function canonicalAddress(network: ChainNetwork, address: string) {
   return network.family === 'ton' ? Address.parse(address).toRawString() : network.family === 'base' ? address.toLowerCase() : address;
 }
 export function decodeQuantities(network: ChainNetwork, address: string): Decoder<ChainAssetBalance[]> {
   return value => {
     if (!isRecord(value) || !isRecord(value.data) || value.data.network !== network.id || typeof value.data.address !== 'string' ||
-      canonical(network, value.data.address) !== canonical(network, address) || !Array.isArray(value.data.items) || value.data.items.length !== network.assets.length) throw new TypeError('Mismatched balance query');
+      canonicalAddress(network, value.data.address) !== canonicalAddress(network, address) || !Array.isArray(value.data.items) || value.data.items.length !== network.assets.length) throw new TypeError('Mismatched balance query');
     const seen = new Set<string>();
     return value.data.items.map((b: unknown): ChainAssetBalance => {
       if (!isRecord(b) || typeof b.assetId !== 'string' || seen.has(b.assetId)) throw new TypeError('Duplicate/missing asset');

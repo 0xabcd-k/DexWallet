@@ -328,6 +328,24 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
 			[]rest.Route{
 				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/chain-transfer-targets/resolve",
+					Handler: chainassets.ChainTargetHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/chain-transfers/preview",
+					Handler: chainassets.ChainTransferPreviewHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
 					Method:  http.MethodGet,
 					Path:    "/v1/user/draw-state",
 					Handler: draw.DrawStateHandler(serverCtx),

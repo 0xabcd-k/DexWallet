@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Button, Input, Popup, Tabs } from 'antd-mobile';
 import { ApiError } from '@dexwallet/api-client';
 import { formatAmount, useTranslation } from '@dexwallet/i18n';
@@ -11,6 +11,7 @@ import { session, type Session } from '../../auth/session';
 import { clearPending, preparePending, readPending, type PendingTransfer } from './pending';
 import { Scanner } from './scanner';
 import { TransferResult } from './detail';
+import { chainPreparationRoute, isChainInput } from '../../app/chain-intent';
 import './style.less';
 interface Review { target: CurrentUserData; policy: TransferPolicyData; balance: string; amount: string; ticket: Session }
 // These reject a new operation before commit. Unknown recovery never discards
@@ -18,7 +19,7 @@ interface Review { target: CurrentUserData; policy: TransferPolicyData; balance:
 const definiteRejections = new Set(['PAYMENT_RESTRICTED', 'TRANSFER_AMOUNT_LIMIT', 'TRANSFER_DAILY_LIMIT', 'INSUFFICIENT_BALANCE', 'TRANSFER_RECIPIENT_UNAVAILABLE', 'INVALID_ARGUMENT']);
 export default function Pay() { const auth = useAuth(); return <Payment key={auth.session.generation} />; }
 function Payment() {
-  const auth = useAuth(); const { t, i18n } = useTranslation(); const [params, setParams] = useSearchParams();
+  const auth = useAuth(); const { t, i18n } = useTranslation(); const navigate = useNavigate(); const [chainHint, setChainHint] = useState(false); const [params, setParams] = useSearchParams();
   const code = params.get('code') ?? '';
   const invalidLink = [...params.keys()].some(k => k !== 'code' && k !== 'manual') || params.getAll('code').length > 1;
   const owner = `${auth.session.credential!.issuer}:${auth.session.credential!.idx}`;
@@ -49,7 +50,18 @@ function Payment() {
     catch (e) { if (active.current) { setUnknown(true); if (!(e instanceof ApiError && e.code === 'NOT_FOUND')) setError(e); } }
     finally { running.current = false; if (active.current) setBusy(false); }
   }
+  function scanned(value: string) {
+    targetVersion.current++;
+    setReview(undefined); setScanning(false); setChainHint(false);
+    if (isChainInput(value)) {
+      setRaw(''); setRecipient(''); setAmount(''); setManual(true); setError(undefined);
+      if (import.meta.env.NATIVE_APP) void navigate(chainPreparationRoute(value)); else setChainHint(true);
+      return;
+    }
+    setRaw(value); setManual(false);
+  }
   async function preview(saved?: PendingTransfer) {
+    if (!saved && !manual && isChainInput(raw.trim())) { scanned(raw.trim()); return; }
     if (running.current) return; running.current = true; setBusy(true); setError(undefined); setReview(undefined);
     const ticket = session.capture(); const version = targetVersion.current;
     try {
@@ -97,7 +109,7 @@ function Payment() {
       <Button disabled={busy} onClick={() => { void recover(pending); }}>{t('recoverTransfer')}</Button>
       <Button disabled={busy || storageError} onClick={() => { void preview(pending); }}>{t('reviewOriginal')}</Button>
     </div> : invalidLink ? <p role="alert">{t('invalidReceiveLink')}</p> : <>
-      {scanning ? <><Scanner onScan={value => { setRaw(value); setManual(false); setScanning(false); setReview(undefined); }} />
+      {scanning ? <><Scanner onScan={scanned} />
         <Button onClick={() => { setScanning(false); setManual(true); }}>{t('manualTransfer')}</Button></> : <>
         <Button disabled={busy} onClick={() => { setScanning(true); setReview(undefined); }}>{t('scanReceive')}</Button>
         <Tabs onChange={() => setReview(undefined)}><Tabs.Tab title={t('transferBalance')} key="balance" disabled={busy}>
@@ -108,9 +120,10 @@ function Payment() {
             <label htmlFor="transfer-amount">{t('transferAmount')}</label><Input id="transfer-amount" inputMode="decimal" value={amount} onChange={v => { setAmount(v); setReview(undefined); }} disabled={busy} maxLength={21} />
             <Button type="submit" color="primary" disabled={busy || storageError || (cents(amount) ?? 0n) <= 0n || !(manual ? recipient : raw).trim()}>{t('reviewPayment')}</Button>
           </form>
-        </Tabs.Tab><Tabs.Tab title={t('transferChain')} key="chain" disabled={busy}><p>{t(auth.launch.mode === 'telegram' ? 'chainRequiresApp' : 'chainPending')}</p></Tabs.Tab></Tabs>
+        </Tabs.Tab><Tabs.Tab title={t('transferChain')} key="chain" disabled={busy}><p>{import.meta.env.NATIVE_APP ? <Link to="/chain-transfer">{t('chainPrepare')}</Link> : t(auth.launch.mode === 'telegram' ? 'chainRequiresApp' : 'chainPending')}</p></Tabs.Tab></Tabs>
       </>}
     </>}
+    {chainHint && <p role="status">{t('chainRequiresApp')}</p>}
     {storageError && <p role="alert">{t('paymentStorageUnavailable')}</p>}
     {error !== undefined && <Failure error={error} />}{busy && <p role="status">{t('common:loading')}</p>}
     <Popup visible={!!review} onMaskClick={() => { if (!busy) setReview(undefined); }} bodyStyle={{ borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>

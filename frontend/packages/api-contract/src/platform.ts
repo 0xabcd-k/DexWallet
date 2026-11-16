@@ -255,6 +255,48 @@ export interface ChainNetwork {
 	assets: Array<ChainAsset>
 }
 
+export interface ChainTargetData {
+	network: string
+	assetId: string
+	address: string
+	receiveCode: string
+}
+
+export interface ChainTargetRequest {
+	network?: string
+	assetId?: string
+	address?: string
+	receiveCode?: string
+}
+
+export interface ChainTargetResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: ChainTargetData
+}
+
+export interface ChainTransferPreviewData {
+	target: ChainTargetData
+	amount: string
+	canSubmit: boolean
+	blockReason: 'CHANNEL_NOT_OPEN'
+}
+
+export interface ChainTransferPreviewRequest {
+	network: string
+	assetId: string
+	address: string
+	amount: string
+}
+
+export interface ChainTransferPreviewResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: ChainTransferPreviewData
+}
+
 export interface ChallengeData {
 	challenge: string
 	expiresAt: number

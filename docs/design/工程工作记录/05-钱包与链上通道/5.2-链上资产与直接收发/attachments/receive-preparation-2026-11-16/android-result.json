@@ -1,0 +1,117 @@
+{
+  "nativeIntentLoginReturn": true,
+  "noWalletStillDisabled": true,
+  "createdTestWallet": true,
+  "receiveCodes": [
+    {
+      "network": "ton-mainnet",
+      "asset": "ton-mainnet:ton",
+      "code": "com.dexwallet.app://chain-transfer?address=UQAim5gVVK2B-FfgpwUVd_7ik4DKQbd_MRK83gIUEEa-M0-4&asset=ton-mainnet%3Aton&network=ton-mainnet&v=1"
+    },
+    {
+      "network": "ton-mainnet",
+      "asset": "ton-mainnet:usdt",
+      "code": "com.dexwallet.app://chain-transfer?address=UQAim5gVVK2B-FfgpwUVd_7ik4DKQbd_MRK83gIUEEa-M0-4&asset=ton-mainnet%3Ausdt&network=ton-mainnet&v=1"
+    },
+    {
+      "network": "base-mainnet",
+      "asset": "base-mainnet:eth",
+      "code": "com.dexwallet.app://chain-transfer?address=0x9d7cff150994c33beb9fe51644c03c007b35e35a&asset=base-mainnet%3Aeth&network=base-mainnet&v=1"
+    },
+    {
+      "network": "base-mainnet",
+      "asset": "base-mainnet:usdc",
+      "code": "com.dexwallet.app://chain-transfer?address=0x9d7cff150994c33beb9fe51644c03c007b35e35a&asset=base-mainnet%3Ausdc&network=base-mainnet&v=1"
+    },
+    {
+      "network": "solana-mainnet",
+      "asset": "solana-mainnet:sol",
+      "code": "com.dexwallet.app://chain-transfer?address=9drJcjQdJ2VsNJXwgcDc8ADPbzufGh3UwJdouH6VrbaY&asset=solana-mainnet%3Asol&network=solana-mainnet&v=1"
+    },
+    {
+      "network": "solana-mainnet",
+      "asset": "solana-mainnet:usdc",
+      "code": "com.dexwallet.app://chain-transfer?address=9drJcjQdJ2VsNJXwgcDc8ADPbzufGh3UwJdouH6VrbaY&asset=solana-mainnet%3Ausdc&network=solana-mainnet&v=1"
+    },
+    {
+      "network": "solana-mainnet",
+      "asset": "solana-mainnet:usdt",
+      "code": "com.dexwallet.app://chain-transfer?address=9drJcjQdJ2VsNJXwgcDc8ADPbzufGh3UwJdouH6VrbaY&asset=solana-mainnet%3Ausdt&network=solana-mainnet&v=1"
+    },
+    {
+      "network": "tron-mainnet",
+      "asset": "tron-mainnet:trx",
+      "code": "com.dexwallet.app://chain-transfer?address=TAg4tAeJAoaw6BvpULZr4Zqiha4rxsvCxK&asset=tron-mainnet%3Atrx&network=tron-mainnet&v=1"
+    },
+    {
+      "network": "tron-mainnet",
+      "asset": "tron-mainnet:usdt",
+      "code": "com.dexwallet.app://chain-transfer?address=TAg4tAeJAoaw6BvpULZr4Zqiha4rxsvCxK&asset=tron-mainnet%3Ausdt&network=tron-mainnet&v=1"
+    }
+  ],
+  "noUnlockForCodes": true,
+  "noHorizontalOverflow": true,
+  "coldIntent": true,
+  "preciseReview": true,
+  "confirmDisabled": true,
+  "noHoldings": true,
+  "scannedVideoFrame": true,
+  "pendingPreserved": true,
+  "cameraDeniedShowsManual": true,
+  "cameraPermissionRequested": true,
+  "cameraGrantedStream": {
+    "width": 480,
+    "height": 640,
+    "active": true
+  },
+  "scannedTestFrames": [
+    {
+      "network": "ton-mainnet",
+      "asset": "ton-mainnet:ton",
+      "address": "UQAim5gVVK2B-FfgpwUVd_7ik4DKQbd_MRK83gIUEEa-M0-4"
+    },
+    {
+      "network": "ton-mainnet",
+      "asset": "ton-mainnet:usdt",
+      "address": "UQAim5gVVK2B-FfgpwUVd_7ik4DKQbd_MRK83gIUEEa-M0-4"
+    },
+    {
+      "network": "base-mainnet",
+      "asset": "base-mainnet:eth",
+      "address": "0x9d7cff150994c33beb9fe51644c03c007b35e35a"
+    },
+    {
+      "network": "base-mainnet",
+      "asset": "base-mainnet:usdc",
+      "address": "0x9d7cff150994c33beb9fe51644c03c007b35e35a"
+    },
+    {
+      "network": "solana-mainnet",
+      "asset": "solana-mainnet:sol",
+      "address": "9drJcjQdJ2VsNJXwgcDc8ADPbzufGh3UwJdouH6VrbaY"
+    },
+    {
+      "network": "solana-mainnet",
+      "asset": "solana-mainnet:usdc",
+      "address": "9drJcjQdJ2VsNJXwgcDc8ADPbzufGh3UwJdouH6VrbaY"
+    },
+    {
+      "network": "solana-mainnet",
+      "asset": "solana-mainnet:usdt",
+      "address": "9drJcjQdJ2VsNJXwgcDc8ADPbzufGh3UwJdouH6VrbaY"
+    },
+    {
+      "network": "tron-mainnet",
+      "asset": "tron-mainnet:trx",
+      "address": "TAg4tAeJAoaw6BvpULZr4Zqiha4rxsvCxK"
+    },
+    {
+      "network": "tron-mainnet",
+      "asset": "tron-mainnet:usdt",
+      "address": "TAg4tAeJAoaw6BvpULZr4Zqiha4rxsvCxK"
+    }
+  ],
+  "removedTestWallet": true,
+  "signedOut": true,
+  "coldUnauthenticatedTargetPreserved": true
+}

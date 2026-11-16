@@ -5,10 +5,9 @@ import { useTranslation } from '@dexwallet/i18n';
 import type { ChainNetwork, ChainAssetBalance } from '@dexwallet/api-contract/platform';
 import { Failure, RequireAuth, useAuth } from '../../auth/context';
 import { getCatalog, getQuantities } from '../../app/native/chain-assets/api';
-import { addressFor, favoritesStore, localWallets, type ViewingWallet } from '../../app/native/chain-assets/wallets';
-import { listWalletRecords } from '../../app/native/local-wallet/repository';
-import { nativeCatalog, nativeVault } from '../../app/native/local-wallet/bridge';
-import { createTonConnection } from '../../app/native/ton';
+import { addressFor, favoritesStore, type ViewingWallet } from '../../app/native/chain-assets/wallets';
+import { nativeCatalog } from '../../app/native/local-wallet/bridge';
+import { useViewingWallets } from '../../app/native/chain-assets/use-wallets';
 import './style.less';
 
 export default function ChainAssets() {
@@ -17,40 +16,17 @@ export default function ChainAssets() {
 }
 function WalletAssets({ userIdx }: { userIdx: string }) {
   const { t } = useTranslation();
-  const [local, setLocal] = useState<ViewingWallet[]>([]), [external, setExternal] = useState<ViewingWallet[]>([]);
-  const [loading, setLoading] = useState(true), [restoring, setRestoring] = useState(false);
-  const [error, setError] = useState<unknown>(), [connectionError, setConnectionError] = useState(false);
-  const [revision, setRevision] = useState(0);
+  const { wallets, loading, error, connectionError, refresh } = useViewingWallets(userIdx);
   const favorites = useMemo(() => favoritesStore(userIdx, nativeCatalog), [userIdx]);
-  useEffect(() => {
-    let active = true; setLoading(true); setError(undefined); setLocal([]);
-    void listWalletRecords(userIdx, nativeCatalog, nativeVault).then(r => { if (active) setLocal(localWallets(r)); }, e => { if (active) setError(e); }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [userIdx, revision]);
-  useEffect(() => {
-    if (!import.meta.env.TON_MANIFEST_URL) return;
-    setRestoring(true); setConnectionError(false); setExternal([]);
-    try {
-      const connection = createTonConnection(userIdx, import.meta.env.TON_MANIFEST_URL);
-      const update = () => {
-        const state = connection.getSnapshot(), wallet = state.wallet;
-        setRestoring(state.restoring); setConnectionError(!!state.error);
-        const network = wallet?.account.chain === '-3' ? 'ton-testnet' : wallet?.account.chain === '-239' ? 'ton-mainnet' : undefined;
-        setExternal(wallet && network ? [{ id: `external:${network}:${wallet.account.address}`, name: wallet.device.appName, source: 'external', accounts: [{ network, address: wallet.account.address }] }] : []);
-      };
-      update(); const stop = connection.subscribe(update);
-      return () => { stop(); connection.dispose(); };
-    } catch { setRestoring(false); setConnectionError(true); }
-  }, [userIdx, revision]);
-  const wallets = useMemo(() => [...local, ...external], [local, external]);
   return <section className="chain-assets"><h1>{t('chainAssets')}</h1>
     <p>{t('chainReadOnly')}</p>
-    {(loading || restoring) && <p role="status">{t('common:loading')}</p>}
+    {loading && <p role="status">{t('common:loading')}</p>}
     {error !== undefined && <Failure error={error}/>}{connectionError && <p role="alert">{t('nativeConnectionFailed')}</p>}
     <AssetBrowser wallets={wallets} favorites={favorites}/>
-    {!loading && !restoring && !wallets.length && <p>{t('chainNoWallet')}</p>}
+    {!loading && !wallets.length && <p>{t('chainNoWallet')}</p>}
+    <p><Link to="/receive?tab=chain">{t('receiveChain')}</Link>{' · '}<Link to="/chain-transfer">{t('transferChain')}</Link></p>
     <p><Link to="/local-wallets">{t('localWallets')}</Link>{' · '}<Link to="/wallet-connections">{t('nativeWallets')}</Link></p>
-    <Button onClick={() => setRevision(n => n + 1)}>{t('localRefresh')}</Button>
+    <Button onClick={refresh}>{t('localRefresh')}</Button>
   </section>;
 }
 interface BrowserProps {

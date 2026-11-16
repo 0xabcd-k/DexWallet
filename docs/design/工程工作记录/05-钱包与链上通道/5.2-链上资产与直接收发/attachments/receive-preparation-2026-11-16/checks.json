@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-16",
+  "baseline": "cf7f38b",
+  "branch": "feat/chain-receive-and-transfer-preparation",
+  "common": {
+    "command": "bash scripts/check.sh common",
+    "passed": true,
+    "atThatRunFrontendTests": 100
+  },
+  "finalFrontend": {
+    "typecheck": true,
+    "unitTests": 101,
+    "passed": true
+  },
+  "contracts": {
+    "generated": 32,
+    "protectedScaffolds": 206,
+    "passed": true
+  },
+  "http": {
+    "test": "TestProductSessionHTTP",
+    "passed": true,
+    "rpcDisabledForTargetAndPreview": true
+  },
+  "browser": {
+    "initialPassed": 135,
+    "initialFailed": 5,
+    "failedTestsRecheckedPassed": 5,
+    "finalTransferSuitePassed": 18,
+    "distinctTestsCovered": 140
+  },
+  "android": {
+    "api": 35,
+    "emulator": "37.1.11",
+    "build": true,
+    "mainnetAssetReceiveCodes": 9,
+    "decodedImagePayloads": 9,
+    "actualScannerWithControlledVideoFrames": 9,
+    "physicalOpticalScan": false,
+    "signingOrBroadcast": false
+  },
+  "cleanup": {
+    "temporaryWalletRemoved": true,
+    "signedOut": true,
+    "devicePINRemoved": true,
+    "cameraPermissionReset": true,
+    "forwardsRemoved": true,
+    "emulatorStopped": true,
+    "fixtureAPIStopped": true,
+    "databaseResourceJournalsEmpty": true
+  },
+  "apkSHA256": "484519cbf5ac217a5ce77f7f26281e42b5d40a11751043f866784e353ab0edad"
+}

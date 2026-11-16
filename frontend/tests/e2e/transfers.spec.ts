@@ -67,7 +67,28 @@ test('receive page renders a reusable QR without amount and personal links rejec
   await expect(page.getByLabel('Transfer amount (USD)')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/receive-code-${test.info().project.name}.png`, fullPage: true });
+  await page.getByRole('tab', { name: 'Receive on chain' }).click();
+  await expect(page.getByRole('img', { name: 'Personal receive QR code' })).toHaveCount(0);
+  await expect(page.getByLabel('Receive link or code')).toHaveCount(0);
   await page.goto(`${base}/#/pay?code=sample-code&amount=10`); await expect(page.getByRole('alert')).toContainText('Personal codes do not support fixed amounts');
+});
+
+test('Mini App recognizes a chain code without resolving a USD payee or creating a payment', async ({ page }) => {
+  await fixture(page); let resolutions = 0, submissions = 0;
+  page.on('request', r => {
+    if (r.url().includes('/transfer-targets/') || r.url().includes('/chain-transfer')) resolutions++;
+    if (r.url().endsWith('/user/transfers') && r.method() === 'POST') submissions++;
+  });
+  await page.goto(`${base}/#/pay?manual=1`);
+  await page.getByRole('button', { name: 'Enter receive link or code' }).click();
+  await page.getByLabel('Receive link or code').fill('com.dexwallet.app://chain-transfer?address=0x0000000000000000000000000000000000000001&asset=base-sepolia%3Aeth&network=base-sepolia&v=1');
+  await page.getByLabel('Transfer amount (USD)').fill('10');
+  await page.getByRole('button', { name: 'Review payment', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('App');
+  await expect(page.getByLabel('Recipient ID', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Transfer amount (USD)')).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'Confirm payment' })).toHaveCount(0);
+  expect(resolutions).toBe(0); expect(submissions).toBe(0);
 });
 test('replacement warning can be cancelled without sending identity mutation', async ({ page }) => {
   const state = await mockAccount(page); state.telegram = true; await seedSession(page); let mutations = 0;

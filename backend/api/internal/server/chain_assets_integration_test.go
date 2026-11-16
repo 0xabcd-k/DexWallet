@@ -34,6 +34,28 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	request := types.ChainBalancesRequest{Network: chainassets.BaseSepolia, Address: "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"}
 	call("POST", "/v1/user/chain-assets/balances", "", request, 401, "UNAUTHENTICATED")
 	call("POST", "/v1/user/chain-assets/balances", token, request, 503, "SERVICE_UNAVAILABLE")
+	// Preparation works with all RPCs disabled, and never authorizes a payment.
+	targetInput := types.ChainTargetRequest{Network: request.Network, AssetId: request.Network + ":eth", Address: request.Address}
+	call("POST", "/v1/user/chain-transfer-targets/resolve", "", targetInput, 401, "UNAUTHENTICATED")
+	_, targetRaw := call("POST", "/v1/user/chain-transfer-targets/resolve", token, targetInput, 200, "OK")
+	var target types.ChainTargetData
+	if err := json.Unmarshal(targetRaw, &target); err != nil {
+		t.Fatal(err)
+	}
+	call("POST", "/v1/user/chain-transfer-targets/resolve", token, types.ChainTargetRequest{ReceiveCode: target.ReceiveCode}, 200, "OK")
+	call("POST", "/v1/user/chain-transfer-targets/resolve", token, types.ChainTargetRequest{ReceiveCode: target.ReceiveCode + "&amount=1"}, 400, "INVALID_ARGUMENT")
+	previewInput := types.ChainTransferPreviewRequest{Network: target.Network, AssetId: target.AssetId, Address: target.Address, Amount: "1.000000000000000001"}
+	call("POST", "/v1/user/chain-transfers/preview", "", previewInput, 401, "UNAUTHENTICATED")
+	_, previewRaw := call("POST", "/v1/user/chain-transfers/preview", token, previewInput, 200, "OK")
+	var preview types.ChainTransferPreviewData
+	if err := json.Unmarshal(previewRaw, &preview); err != nil {
+		t.Fatal(err)
+	}
+	if preview.Target != target || preview.Amount != previewInput.Amount || preview.CanSubmit || preview.BlockReason != chainassets.ChannelNotOpen {
+		t.Fatal(preview)
+	}
+	previewInput.Amount = "0.0000000000000000001"
+	call("POST", "/v1/user/chain-transfers/preview", token, previewInput, 400, "INVALID_ARGUMENT")
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var input struct{ Method string }
 		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {

@@ -31,6 +31,12 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.dexwallet.app" android:host="wallet-return" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.dexwallet.app" android:host="chain-transfer" />
+            </intent-filter>
         </activity>
 
         <provider
@@ -47,4 +53,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

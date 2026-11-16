@@ -1136,3 +1136,51 @@ service platform {
     @handler chainBalances
     post /v1/user/chain-assets/balances (ChainBalancesRequest) returns (ChainBalancesResponse)
 }
+
+// Read-only chain destination preparation. These are not payment orders.
+type ChainTargetRequest {
+    Network string `json:"network,optional"`
+    AssetId string `json:"assetId,optional"`
+    Address string `json:"address,optional"`
+    ReceiveCode string `json:"receiveCode,optional"`
+}
+type ChainTargetData {
+    Network string `json:"network"`
+    AssetId string `json:"assetId"`
+    Address string `json:"address"`
+    ReceiveCode string `json:"receiveCode"`
+}
+type ChainTargetResponse {
+    Code string `json:"code,options=OK"`
+    Message string `json:"message"`
+    TraceId string `json:"traceId"`
+    Data ChainTargetData `json:"data"`
+}
+type ChainTransferPreviewRequest {
+    Network string `json:"network"`
+    AssetId string `json:"assetId"`
+    Address string `json:"address"`
+    Amount string `json:"amount"`
+}
+type ChainTransferPreviewData {
+    Target ChainTargetData `json:"target"`
+    Amount string `json:"amount"`
+    CanSubmit bool `json:"canSubmit"`
+    BlockReason string `json:"blockReason,options=CHANNEL_NOT_OPEN"`
+}
+type ChainTransferPreviewResponse {
+    Code string `json:"code,options=OK"`
+    Message string `json:"message"`
+    TraceId string `json:"traceId"`
+    Data ChainTransferPreviewData `json:"data"`
+}
+@server (
+    group: chainassets
+    middleware: AuthTransport,UserAuth
+)
+service platform {
+    @handler chainTarget
+    post /v1/user/chain-transfer-targets/resolve (ChainTargetRequest) returns (ChainTargetResponse)
+    @handler chainTransferPreview
+    post /v1/user/chain-transfers/preview (ChainTransferPreviewRequest) returns (ChainTransferPreviewResponse)
+}
