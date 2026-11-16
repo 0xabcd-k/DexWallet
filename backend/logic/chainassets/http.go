@@ -73,6 +73,21 @@ func (s *Service) request(ctx context.Context, n Network, e Endpoint, path strin
 	return nil
 }
 func (s *Service) rpc(ctx context.Context, n Network, e Endpoint, method string, params any, out any) error {
+	raw, err := s.rpcRaw(ctx, n, e, method, params)
+	if err != nil {
+		return err
+	}
+	if string(raw) == "null" {
+		return invalid("missing RPC result")
+	}
+	if err = json.Unmarshal(raw, out); err != nil {
+		return invalid("invalid RPC result shape")
+	}
+	return nil
+}
+
+// Some transaction queries legitimately return null; balance queries do not.
+func (s *Service) rpcRaw(ctx context.Context, n Network, e Endpoint, method string, params any) (json.RawMessage, error) {
 	var response struct {
 		JSONRPC string          `json:"jsonrpc"`
 		ID      int             `json:"id"`
@@ -82,18 +97,15 @@ func (s *Service) rpc(ctx context.Context, n Network, e Endpoint, method string,
 		} `json:"error"`
 	}
 	if err := s.request(ctx, n, e, "", nil, map[string]any{"jsonrpc": "2.0", "id": rpcRequestID, "method": method, "params": params}, &response); err != nil {
-		return err
+		return nil, err
 	}
 	if response.Error != nil {
-		return fmt.Errorf("RPC %s returned code %d", method, response.Error.Code)
+		return nil, fmt.Errorf("RPC %s returned code %d", method, response.Error.Code)
 	}
-	if response.JSONRPC != "2.0" || response.ID != rpcRequestID || len(response.Result) == 0 || string(response.Result) == "null" {
-		return invalid("missing RPC result or mismatched id")
+	if response.JSONRPC != "2.0" || response.ID != rpcRequestID || len(response.Result) == 0 {
+		return nil, invalid("missing RPC result or mismatched id")
 	}
-	if err := json.Unmarshal(response.Result, out); err != nil {
-		return invalid("invalid RPC result shape")
-	}
-	return nil
+	return response.Result, nil
 }
 func decimalInteger(raw string) (*big.Int, error) {
 	if len(raw) > 78 || !integerPattern.MatchString(raw) {

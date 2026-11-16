@@ -18,6 +18,7 @@ import (
 	authlogic "github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
 	rewardtransfer "github.com/0xabcd-k/DexWallet/backend/logic/rewardtransfer"
 	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
@@ -46,6 +47,7 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
+	ChainReceipts         *chainreceipt.Service
 	ChainAssets           *chainassets.Service
 	ReceiveCodes          *transferlogic.Codes
 	Config                config.Config
@@ -165,6 +167,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	if err != nil {
 		return d, err
 	}
+	d.ChainReceipts = chainreceipt.New(conn, d.Tx, d.ChainAssets)
 	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx, c.Transfer.DefaultLimitPlanID)
 	var sender authlogic.Mailer
 	if c.Auth != nil {

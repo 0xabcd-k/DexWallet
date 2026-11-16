@@ -1,0 +1,176 @@
+{
+  "date": "2026-11-16",
+  "baseline": "fa9c0d3",
+  "branch": "feat/solana-receipt-verification",
+  "businessSchema": 16,
+  "tools": {
+    "go": "1.26.10"
+  },
+  "checks": [
+    {
+      "command": "python3 scripts/generate.py --check",
+      "result": "passed; 34 owned files, 209 protected scaffolds"
+    },
+    {
+      "command": "python3 scripts/test_codegen.py",
+      "result": "passed; 10 tests"
+    },
+    {
+      "command": "go test -race ./...",
+      "cwd": "backend",
+      "result": "passed"
+    },
+    {
+      "command": "go vet ./...",
+      "cwd": "backend",
+      "result": "passed"
+    },
+    {
+      "command": "go run ./tools/testenv run go test -p 1 -tags=integration ./tests/integration ./api/internal/server -count=1 -timeout=180s",
+      "cwd": "backend",
+      "result": "passed; integration 166.413s, server 12.110s"
+    },
+    {
+      "command": "TestChainReceiptSchemaAndPersistence",
+      "result": "passed; DDL equivalence, 20 concurrent requests / 2 unique events / 1 transaction fee, immutable evidence, conflict, commit recovery and unknown outcome, nonempty rollback guard, unchanged funds tables"
+    },
+    {
+      "command": "DEXWALLET_TEST_CHAIN_RECEIPTS_LIVE=1 go test -tags=integration ./logic/chainreceipt -run ^TestLiveHistoricalReceipts$ -v -count=1",
+      "cwd": "backend",
+      "result": "passed; 3 historical Devnet transactions; read-only"
+    },
+    {
+      "command": "chain_receipts CLI default read-only historical SOL verification",
+      "result": "passed"
+    },
+    {
+      "command": "python3 scripts/check_docs.py; git diff --check",
+      "result": "passed"
+    }
+  ],
+  "liveSnapshots": [
+    {
+      "name": "sol",
+      "path": "backend/logic/chainreceipt/testdata/sol.json",
+      "sha256": "74b92a750f35d96a6a743271c3d75b1bafda3c38256b861962ba780a6c631cdb",
+      "request": {
+        "network": "solana-devnet",
+        "signature": "3uechSmrGT1Axu3zhxVj6URgbMgoLXLyzSd1rS2EnJ88LpRRfMkB8ahZ4Csh13o6VzFmiyoAnHmmoMQ2yYxv5FJn",
+        "instruction": 0,
+        "assetId": "solana-devnet:sol",
+        "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+        "atoms": "1000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "solana-devnet",
+          "signature": "3uechSmrGT1Axu3zhxVj6URgbMgoLXLyzSd1rS2EnJ88LpRRfMkB8ahZ4Csh13o6VzFmiyoAnHmmoMQ2yYxv5FJn",
+          "slot": 517805174,
+          "feePayer": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+          "feeAtoms": "10000",
+          "fingerprint": "659e4292e120b52e1659f1416df8bfdc450945c6c34304fb399c272256cd55e0"
+        },
+        "event": {
+          "instruction": 0,
+          "assetId": "solana-devnet:sol",
+          "programId": "11111111111111111111111111111111",
+          "mint": "",
+          "decimals": 9,
+          "sourceAccount": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+          "sourceOwner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+          "recipientAccount": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+          "recipientOwner": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+          "atoms": "1000"
+        }
+      }
+    },
+    {
+      "name": "usdc",
+      "path": "backend/logic/chainreceipt/testdata/usdc.json",
+      "sha256": "d063a9378d9ab1006c39eba88c953d3b0148de73a93dabc26cee0bfd767dbbfd",
+      "request": {
+        "network": "solana-devnet",
+        "signature": "4KyfkNqosDFzAd4sAQwmGEtqEmmGZmp7hHFs8BNz5Za5TpuL9rREueodng2L1wNvpJgzmdhBdSkk2BQFxpqLf7pf",
+        "instruction": 1,
+        "assetId": "solana-devnet:usdc",
+        "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+        "atoms": "10000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "solana-devnet",
+          "signature": "4KyfkNqosDFzAd4sAQwmGEtqEmmGZmp7hHFs8BNz5Za5TpuL9rREueodng2L1wNvpJgzmdhBdSkk2BQFxpqLf7pf",
+          "slot": 517827592,
+          "feePayer": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+          "feeAtoms": "10000",
+          "fingerprint": "82fe5d9d5e1bc8d5426f17679b04919ed7989460d80627a7e1cc6d881b533f5e"
+        },
+        "event": {
+          "instruction": 1,
+          "assetId": "solana-devnet:usdc",
+          "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "decimals": 6,
+          "sourceAccount": "78j9szZm4GTNojYZG2WKKc1BGZJX1wJQnf537Tsq2Tu5",
+          "sourceOwner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+          "recipientAccount": "J7PRVxqgPXaXQ9dvZuetPR6UdXFrbEKo7rSzfqS8Yr4o",
+          "recipientOwner": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+          "atoms": "10000"
+        }
+      }
+    },
+    {
+      "name": "usdt-fixture",
+      "path": "backend/logic/chainreceipt/testdata/usdt-fixture.json",
+      "sha256": "8e6bdff198b7bfad3cb9c57bb2f8081b0bf2441f94f921f56749511061936d12",
+      "request": {
+        "network": "solana-devnet",
+        "signature": "4589sfUuPKo6gsG9dqppgxtCgiFwkePZg4doFPdQp2rKgbE4BjEm7mmGoCUAkAgQeWbJhQ4guBc3xbYTeTNP8nK5",
+        "instruction": 1,
+        "assetId": "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+        "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+        "atoms": "10000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "solana-devnet",
+          "signature": "4589sfUuPKo6gsG9dqppgxtCgiFwkePZg4doFPdQp2rKgbE4BjEm7mmGoCUAkAgQeWbJhQ4guBc3xbYTeTNP8nK5",
+          "slot": 518267731,
+          "feePayer": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+          "feeAtoms": "10000",
+          "fingerprint": "f039818a2a1ea3254a840804b03bb893e0dc16c57f6c32c6929b0c7e9ef8e163"
+        },
+        "event": {
+          "instruction": 1,
+          "assetId": "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+          "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+          "decimals": 6,
+          "sourceAccount": "G3fPnGibrCdEUDURrYFxk8Y1KfUmNWGPFsobTCRRbAdt",
+          "sourceOwner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+          "recipientAccount": "DT3EUVqAxQ4ZL6bvo419FiA9vpd4efKsn6Htmt4SLE5J",
+          "recipientOwner": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+          "atoms": "10000"
+        }
+      }
+    }
+  ],
+  "cleanup": {
+    "targetedDatabaseRun": "3ba2dfceaa478abb",
+    "fullDatabaseRun": "51ef75cb01d7af8d",
+    "registeredResourcesRemaining": 0
+  },
+  "scope": {
+    "signing": false,
+    "broadcast": false,
+    "ledgerCredit": false,
+    "publicAPI": false,
+    "mainnetValidation": false,
+    "frontendChanged": false
+  },
+  "notes": [
+    "USDT fixture is self-issued Devnet test token, not official Tether USDT.",
+    "Real RPC checks preceded the final malformed-response refinements; ordinary offline snapshot regression passed against final verifier.",
+    "This is RPC-trusted transfer-event evidence, not order ownership or net-credit proof."
+  ]
+}

@@ -1,0 +1,36 @@
+CREATE TABLE `chain_observed_transaction` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `network` VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `signature` VARCHAR(88) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `slot` BIGINT NOT NULL,
+    `fee_payer` VARCHAR(44) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `fee_atoms` VARCHAR(20) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `fingerprint` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `evidence_json` MEDIUMTEXT NOT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_chain_observed_transaction` (`network`, `signature`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `chain_transfer_event` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `transaction_id` BIGINT NOT NULL,
+    `instruction_index` INT NOT NULL,
+    `asset_id` VARCHAR(180) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `program_id` VARCHAR(44) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `mint` VARCHAR(44) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `decimals` INT NOT NULL,
+    `source_account` VARCHAR(44) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `source_owner` VARCHAR(44) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `recipient_account` VARCHAR(44) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `recipient_owner` VARCHAR(44) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `amount_atoms` VARCHAR(20) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_chain_transfer_event` (`transaction_id`, `instruction_index`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+ALTER TABLE `chain_transfer_event`
+ ADD CONSTRAINT `fk_chain_event_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `chain_observed_transaction` (`id`),
+ ADD CONSTRAINT `ck_chain_event_index` CHECK (`instruction_index` >= 0),
+ ADD CONSTRAINT `ck_chain_event_decimals` CHECK (`decimals` BETWEEN 0 AND 18);
