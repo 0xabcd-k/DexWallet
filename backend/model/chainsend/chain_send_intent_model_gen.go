@@ -46,6 +46,7 @@ type (
 		Recipient   string         `db:"recipient"`
 		AssetId     string         `db:"asset_id"`
 		AmountAtoms string         `db:"amount_atoms"`
+		JettonJson  string         `db:"jetton_json"`
 		PublicKey   string         `db:"public_key"`
 		SubwalletId int64          `db:"subwallet_id"`
 		Seqno       int64          `db:"seqno"`
@@ -118,14 +119,14 @@ func (m *defaultChainSendIntentModel) FindOneByNetworkSenderSeqno(ctx context.Co
 }
 
 func (m *defaultChainSendIntentModel) Insert(ctx context.Context, data *ChainSendIntent) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, chainSendIntentRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Network, data.RequestKey, data.Sender, data.Recipient, data.AssetId, data.AmountAtoms, data.PublicKey, data.SubwalletId, data.Seqno, data.ValidUntil, data.PayloadHash, data.SignedBoc, data.MessageHash, data.BodyHash, data.State, data.Attempts, data.LastError)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, chainSendIntentRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.Network, data.RequestKey, data.Sender, data.Recipient, data.AssetId, data.AmountAtoms, data.JettonJson, data.PublicKey, data.SubwalletId, data.Seqno, data.ValidUntil, data.PayloadHash, data.SignedBoc, data.MessageHash, data.BodyHash, data.State, data.Attempts, data.LastError)
 	return ret, err
 }
 
 func (m *defaultChainSendIntentModel) Update(ctx context.Context, newData *ChainSendIntent) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, chainSendIntentRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.Network, newData.RequestKey, newData.Sender, newData.Recipient, newData.AssetId, newData.AmountAtoms, newData.PublicKey, newData.SubwalletId, newData.Seqno, newData.ValidUntil, newData.PayloadHash, newData.SignedBoc, newData.MessageHash, newData.BodyHash, newData.State, newData.Attempts, newData.LastError, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.Network, newData.RequestKey, newData.Sender, newData.Recipient, newData.AssetId, newData.AmountAtoms, newData.JettonJson, newData.PublicKey, newData.SubwalletId, newData.Seqno, newData.ValidUntil, newData.PayloadHash, newData.SignedBoc, newData.MessageHash, newData.BodyHash, newData.State, newData.Attempts, newData.LastError, newData.Id)
 	return err
 }
 

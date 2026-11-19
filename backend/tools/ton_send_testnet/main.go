@@ -145,7 +145,7 @@ func run() error {
 	}
 	defer db.Close()
 	conn, tx := sqlx.NewSqlConnFromDB(db), transaction.New(db)
-	assets, err := chainassets.New(chainassets.Config{Timeout: 30 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TONTestnet, URL: *rpc, APIKey: os.Getenv("DEXWALLET_CHAIN_TON_TESTNET_API_KEY")}}}, nil)
+	assets, err := chainassets.New(chainassets.Config{Timeout: 30 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TONTestnet, URL: *rpc, TestUSDTContract: p.Wallet.JettonMaster, APIKey: os.Getenv("DEXWALLET_CHAIN_TON_TESTNET_API_KEY")}}}, nil)
 	if err != nil {
 		return err
 	}

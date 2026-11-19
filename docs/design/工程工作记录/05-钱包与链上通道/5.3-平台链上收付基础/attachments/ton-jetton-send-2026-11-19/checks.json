@@ -1,0 +1,64 @@
+{
+  "date": "2026-11-19",
+  "baseline": "9716e31",
+  "branch": "feat/ton-jetton-send",
+  "businessSchema": 21,
+  "network": "ton-testnet",
+  "assetOrigin": "community test fixture, not mainnet USDT",
+  "amountAtoms": "100000",
+  "decimals": 6,
+  "recipientTransaction": "b9d829cac3612fc27af46ecec1fe5e4563898505e3ecce2d55d0bf3ab436550e",
+  "senderTransaction": "805d3a00ce2dbef4a23d3d5aab0e1035ac6ab97f6fe692338ca78cff536e32b0",
+  "signedBodyHash": "434313ff85fa7f98f7db8da5945abf663a82607b769aa54f21cbb74e160fe1a5",
+  "attempts": 1,
+  "repeatedExecuteWithoutSignerOrRPC": "identical persisted view",
+  "repeatedReconcile": "reused=true; original event",
+  "attachBudgetNanoton": "50000000",
+  "observedTraceCostNanoton": "2771965",
+  "receiptFeeNanoton": "849141",
+  "goRace": "pass",
+  "goVet": "pass",
+  "contractChecks": "pass",
+  "tonRaceIntegrationSeconds": 19.102,
+  "fullIntegrationSeconds": 211.483,
+  "httpIntegrationSeconds": 9.838,
+  "nodeSyntax": "pass",
+  "resources": [
+    {
+      "run": "590330791d939743",
+      "remainingResources": 0
+    },
+    {
+      "run": "131a07222b971d8b",
+      "remainingResources": 0
+    },
+    {
+      "run": "1c8137f261cb01a3",
+      "remainingResources": 0
+    },
+    {
+      "run": "880e3968112513ce",
+      "remainingResources": 0
+    },
+    {
+      "run": "f56bf73eedb7cf8d",
+      "remainingResources": 0
+    }
+  ],
+  "limits": [
+    "No mainnet, public API, user authorization, business settlement or fee charging",
+    "Same OS user process split is not production signer privilege isolation",
+    "Current get_wallet_address and trusted indexer observations are not historical state or consensus proofs"
+  ],
+  "docs": {
+    "result": "pass; staged export excludes existing user draft",
+    "documents": 280,
+    "localLinks": 2612,
+    "archiveFiles": 112
+  },
+  "fixture": {
+    "path": "backend/logic/chainreceipt/testdata/ton-jetton-send.json",
+    "sha256": "c91a739b0e083aff52d1f86c15678d2c33e404b6e15c1386747a627d726cdf53",
+    "authorization": "expired; seqno consumed by verified transaction"
+  }
+}

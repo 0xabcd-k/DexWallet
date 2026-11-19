@@ -6,6 +6,7 @@ CREATE TABLE `chain_send_intent` (
     `recipient` VARCHAR(68) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     `asset_id` VARCHAR(180) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     `amount_atoms` VARCHAR(39) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `jetton_json` VARCHAR(1024) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
     `public_key` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     `subwallet_id` BIGINT NOT NULL,
     `seqno` BIGINT NOT NULL,

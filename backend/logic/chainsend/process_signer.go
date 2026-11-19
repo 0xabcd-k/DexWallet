@@ -77,7 +77,7 @@ func SignTestnet(r SigningRequest, p TestPolicy, key ed25519.PrivateKey) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	if r.Proposal != canonical || r.Network != chainassets.TONTestnet || r.AssetID != tonAsset || r.Sender != a.StringRaw() || r.PublicKey != hex.EncodeToString(p.Wallet.PublicKey) || r.SubwalletID != p.Wallet.SubwalletID || r.State != Prepared {
+	if r.Proposal != canonical || r.Network != chainassets.TONTestnet || r.AssetID != proposalAsset(canonical) || r.Sender != a.StringRaw() || r.PublicKey != hex.EncodeToString(p.Wallet.PublicKey) || r.SubwalletID != p.Wallet.SubwalletID || r.State != Prepared {
 		return nil, ErrConflict
 	}
 	const testSigningWindow = 15 * time.Minute
@@ -85,7 +85,13 @@ func SignTestnet(r SigningRequest, p TestPolicy, key ed25519.PrivateKey) ([]byte
 	if int64(r.ValidUntil) <= now || int64(r.ValidUntil) > now+int64(testSigningWindow.Seconds()) {
 		return nil, ErrExpired
 	}
-	body, err := payload(canonical, p.Wallet.SubwalletID)
+	if canonical.Jetton.Master != "" {
+		allowed, e := rawTONAddress(p.Wallet.JettonMaster)
+		if e != nil || allowed != canonical.Jetton.Master {
+			return nil, ErrConflict
+		}
+	}
+	body, err := payload(canonical, p.Wallet.SubwalletID, a.StringRaw())
 	if err != nil {
 		return nil, err
 	}

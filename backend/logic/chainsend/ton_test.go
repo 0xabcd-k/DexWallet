@@ -28,8 +28,8 @@ func TestTONPayloadAndSignatureBindOneNativeTransfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := Proposal{"test-order", "0:" + strings.Repeat("ab", 32), "10000000", 7, 2000000000}
-	body, err := payload(p, wallet.DefaultSubwallet)
+	p := Proposal{Key: "test-order", Recipient: "0:" + strings.Repeat("ab", 32), Atoms: "10000000", Seqno: 7, ValidUntil: 2000000000}
+	body, err := payload(p, wallet.DefaultSubwallet, a.StringRaw())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestTONPayloadAndSignatureBindOneNativeTransfer(t *testing.T) {
 		t.Fatal("unexpected payment or extra action")
 	}
 	r := &model.ChainSendIntent{SignedBoc: sql.NullString{String: base64.StdEncoding.EncodeToString(raw), Valid: true}, MessageHash: hash, BodyHash: bodyHash}
-	executor := &TON{wallet: Wallet{pub, wallet.DefaultSubwallet}, sender: a.StringRaw()}
+	executor := &TON{wallet: Wallet{PublicKey: pub, SubwalletID: wallet.DefaultSubwallet}, sender: a.StringRaw()}
 	if got, err := executor.checkedArtifact(r, body); err != nil || !bytes.Equal(got, raw) {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestTONPayloadAndSignatureBindOneNativeTransfer(t *testing.T) {
 	} {
 		other := p
 		edit(&other)
-		changed, err := payload(other, wallet.DefaultSubwallet)
+		changed, err := payload(other, wallet.DefaultSubwallet, a.StringRaw())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -98,7 +98,7 @@ func TestTONPayloadAndSignatureBindOneNativeTransfer(t *testing.T) {
 }
 
 func TestTONProposalRejectsAmbiguityAndUnsupportedMessages(t *testing.T) {
-	p := Proposal{"order-1", "0:" + strings.Repeat("ab", 32), "1", 1, 2000000000}
+	p := Proposal{Key: "order-1", Recipient: "0:" + strings.Repeat("ab", 32), Atoms: "1", Seqno: 1, ValidUntil: 2000000000}
 	sender := "0:" + strings.Repeat("cd", 32)
 	for _, edit := range []func(*Proposal){
 		func(p *Proposal) { p.Key = "" }, func(p *Proposal) { p.Key = "other order" },
@@ -124,7 +124,12 @@ func TestTONProposalRejectsAmbiguityAndUnsupportedMessages(t *testing.T) {
 }
 
 func TestTONRealAcceptedV4Artifact(t *testing.T) {
-	raw, err := os.ReadFile("../chainreceipt/testdata/ton-v4-send.json")
+	for _, name := range []string{"ton-v4-send", "ton-jetton-send"} {
+		t.Run(name, func(t *testing.T) { testTONRealAcceptedArtifact(t, name) })
+	}
+}
+func testTONRealAcceptedArtifact(t *testing.T, name string) {
+	raw, err := os.ReadFile("../chainreceipt/testdata/" + name + ".json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,21 +137,30 @@ func TestTONRealAcceptedV4Artifact(t *testing.T) {
 		Intent   View
 		Wallet   Wallet
 		Evidence struct {
-			Parent struct {
-				Transactions []struct {
-					In struct {
-						Content struct {
-							Body string `json:"body"`
-						} `json:"message_content"`
-					} `json:"in_msg"`
-				} `json:"transactions"`
-			} `json:"parent"`
+			Parent   json.RawMessage `json:"parent"`
+			Dispatch json.RawMessage `json:"dispatch"`
 		}
 	}
 	if err = json.Unmarshal(raw, &f); err != nil {
 		t.Fatal(err)
 	}
-	encoded, err := base64.StdEncoding.DecodeString(f.Evidence.Parent.Transactions[0].In.Content.Body)
+	proof := f.Evidence.Parent
+	if f.Intent.Jetton.Master != "" {
+		proof = f.Evidence.Dispatch
+	}
+	var parent struct {
+		Transactions []struct {
+			In struct {
+				Content struct {
+					Body string `json:"body"`
+				} `json:"message_content"`
+			} `json:"in_msg"`
+		} `json:"transactions"`
+	}
+	if err = json.Unmarshal(proof, &parent); err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := base64.StdEncoding.DecodeString(parent.Transactions[0].In.Content.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +172,7 @@ func TestTONRealAcceptedV4Artifact(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	body, err := payload(f.Intent.Proposal, f.Wallet.SubwalletID)
+	body, err := payload(f.Intent.Proposal, f.Wallet.SubwalletID, f.Intent.Sender)
 	if err != nil {
 		t.Fatal(err)
 	}

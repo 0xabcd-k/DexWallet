@@ -21,11 +21,13 @@ const TONTestnetZeroState = "gj+B8wb/AmlPk1z1AhVI484rhrUpgSr2oSFIh56VoSg="
 const tonPublicRequestInterval = 1100 * time.Millisecond
 
 type TONEvidence struct {
-	Masterchain json.RawMessage `json:"masterchain"`
-	Transaction json.RawMessage `json:"transaction"`
-	Parent      json.RawMessage `json:"parent"`
-	Block       json.RawMessage `json:"block"`
-	Wallet      json.RawMessage `json:"wallet,omitempty"`
+	Dispatch     json.RawMessage `json:"dispatch,omitempty"`
+	SenderWallet json.RawMessage `json:"senderWallet,omitempty"`
+	Masterchain  json.RawMessage `json:"masterchain"`
+	Transaction  json.RawMessage `json:"transaction"`
+	Parent       json.RawMessage `json:"parent"`
+	Block        json.RawMessage `json:"block"`
+	Wallet       json.RawMessage `json:"wallet,omitempty"`
 }
 
 // Hash identifies the recipient transaction, not the sending wallet's external

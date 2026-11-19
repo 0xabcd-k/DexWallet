@@ -88,7 +88,7 @@ func TestTONSendSchemaReservationAndMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	for _, v := range []uint{19, 20, 19, 20} {
+	for _, v := range []uint{19, 20, 19, 20, 21, 20, 21} {
 		if err = m.Migrate(v); err != nil {
 			t.Fatal(err)
 		}
@@ -109,7 +109,7 @@ func TestTONSendSchemaReservationAndMigration(t *testing.T) {
 	if err = db.QueryRow("SHOW CREATE TABLE chain_send_intent").Scan(&table, &a); err != nil {
 		t.Fatal(err)
 	}
-	if err = full.QueryRow("SHOW CREATE TABLE chain_send_intent").Scan(&table, &b); err != nil || a != b {
+	if err = full.QueryRow("SHOW CREATE TABLE chain_send_intent").Scan(&table, &b); err != nil || strings.ReplaceAll(a, "_ascii'", "_utf8mb4'") != strings.ReplaceAll(b, "_ascii'", "_utf8mb4'") {
 		t.Fatal("DDL/migration differ", err, a, b)
 	}
 	w, signer := tonSendKey(t)
@@ -148,6 +148,15 @@ func TestTONSendSchemaReservationAndMigration(t *testing.T) {
 	expired.ValidUntil = 1
 	if _, err = sender.Prepare(ctx, expired); !errors.Is(err, chainsend.ErrExpired) {
 		t.Fatal(err)
+	}
+	// Native intents survive the optional Jetton column round trip.
+	for _, v := range []uint{20, 21} {
+		if err = m.Migrate(v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := tonFind(t, db, p.Key); got.Proposal != p {
+		t.Fatal("native intent changed", got)
 	}
 	// Expired intent cannot be silently deleted by a rollback, even before signing.
 	if err = m.Migrate(19); err == nil {

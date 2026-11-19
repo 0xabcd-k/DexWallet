@@ -21,10 +21,10 @@ func TestTestSignerOnlySignsPinnedIntent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := Wallet{pub, wallet.DefaultSubwallet}
+	w := Wallet{PublicKey: pub, SubwalletID: wallet.DefaultSubwallet}
 	a, _ := wallet.AddressFromPubKey(pub, wallet.V4R2, w.SubwalletID)
-	p := Proposal{"allowed", "0:" + strings.Repeat("ab", 32), "10000", 1, uint32(time.Now().Add(time.Minute).Unix())}
-	body, _ := payload(p, w.SubwalletID)
+	p := Proposal{Key: "allowed", Recipient: "0:" + strings.Repeat("ab", 32), Atoms: "10000", Seqno: 1, ValidUntil: uint32(time.Now().Add(time.Minute).Unix())}
+	body, _ := payload(p, w.SubwalletID, a.StringRaw())
 	r := SigningRequest{View: View{Proposal: p, Network: chainassets.TONTestnet, Sender: a.StringRaw(), AssetID: tonAsset, State: Prepared, PayloadHash: hex.EncodeToString(body.Hash())}, PublicKey: hex.EncodeToString(pub), SubwalletID: w.SubwalletID}
 	policy := TestPolicy{w, p}
 	sig, err := SignTestnet(r, policy, key)

@@ -36,14 +36,21 @@ func (s *Store) load(ctx context.Context, key string) (*model.ChainSendIntent, e
 	if !requestKey.MatchString(key) {
 		return nil, ErrInvalidRequest
 	}
-	return model.NewChainSendIntentModel(s.conn).FindOneByNetworkRequestKey(ctx, chainassets.TONTestnet, key)
+	r, err := model.NewChainSendIntentModel(s.conn).FindOneByNetworkRequestKey(ctx, chainassets.TONTestnet, key)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = parseJetton(r.JettonJson); err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 func sameIntent(a, b *model.ChainSendIntent) bool {
 	return a.Network == b.Network && a.RequestKey == b.RequestKey && a.Sender == b.Sender &&
 		a.Recipient == b.Recipient && a.AssetId == b.AssetId && a.AmountAtoms == b.AmountAtoms &&
 		a.PublicKey == b.PublicKey && a.SubwalletId == b.SubwalletId && a.Seqno == b.Seqno &&
-		a.ValidUntil == b.ValidUntil && a.PayloadHash == b.PayloadHash
+		a.ValidUntil == b.ValidUntil && a.PayloadHash == b.PayloadHash && a.JettonJson == b.JettonJson
 }
 
 func unknownCommit(err error) bool {

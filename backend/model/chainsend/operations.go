@@ -9,9 +9,9 @@ import (
 // Reserve serializes competing keys/nonces. Expired new proposals cannot reserve
 // a nonce; an already persisted proposal can still be read after its expiry.
 func Reserve(ctx context.Context, conn sqlx.SqlConn, r *ChainSendIntent) error {
-	_, err := conn.ExecCtx(ctx, `INSERT INTO chain_send_intent(network,request_key,sender,recipient,asset_id,amount_atoms,public_key,subwallet_id,seqno,valid_until,payload_hash,state,last_error)
-	 SELECT ?,?,?,?,?,?,?,?,?,?,?,?,'' FROM DUAL WHERE ? > UNIX_TIMESTAMP()
-	 ON DUPLICATE KEY UPDATE id=id`, r.Network, r.RequestKey, r.Sender, r.Recipient, r.AssetId, r.AmountAtoms, r.PublicKey, r.SubwalletId, r.Seqno, r.ValidUntil, r.PayloadHash, r.State, r.ValidUntil)
+	_, err := conn.ExecCtx(ctx, `INSERT INTO chain_send_intent(network,request_key,sender,recipient,asset_id,amount_atoms,jetton_json,public_key,subwallet_id,seqno,valid_until,payload_hash,state,last_error)
+	 SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,'' FROM DUAL WHERE ? > UNIX_TIMESTAMP()
+	 ON DUPLICATE KEY UPDATE id=id`, r.Network, r.RequestKey, r.Sender, r.Recipient, r.AssetId, r.AmountAtoms, r.JettonJson, r.PublicKey, r.SubwalletId, r.Seqno, r.ValidUntil, r.PayloadHash, r.State, r.ValidUntil)
 	return err
 }
 

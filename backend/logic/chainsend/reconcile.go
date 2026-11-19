@@ -25,7 +25,14 @@ func (s *TON) Reconcile(ctx context.Context, key string, receipts *chainreceipt.
 	if _, err = s.checkedArtifact(r, body); err != nil {
 		return chainreceipt.TONSentStored{}, err
 	}
-	result, err := receipts.RecordSent(ctx, chainreceipt.TONSentRequest{Sender: r.Sender, Recipient: r.Recipient, Atoms: r.AmountAtoms, BodyHash: r.BodyHash})
+	request := chainreceipt.TONSentRequest{Sender: r.Sender, Recipient: r.Recipient, Atoms: r.AmountAtoms, BodyHash: r.BodyHash}
+	var result chainreceipt.TONSentStored
+	j := view(r).Jetton
+	if j.Master == "" {
+		result, err = receipts.RecordSent(ctx, request)
+	} else {
+		result, err = receipts.RecordJettonSent(ctx, chainreceipt.TONJettonSentRequest{TONSentRequest: request, AssetID: r.AssetId, Master: j.Master, Wallet: j.Wallet, AttachTON: j.AttachTON, ForwardTON: j.ForwardTON, QueryID: j.QueryID})
+	}
 	if err != nil {
 		return result, err
 	}

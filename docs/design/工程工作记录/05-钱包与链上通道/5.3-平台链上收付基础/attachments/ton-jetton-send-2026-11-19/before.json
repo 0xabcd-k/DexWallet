@@ -1,0 +1,26 @@
+{
+  "observedAt": "2026-11-19T08:42:13.051Z",
+  "network": "ton-testnet",
+  "master": "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+  "masterCode": "GNW254D/C7RRJUwsdg0J1uSFY4zRQHq7lweHUsPBye4=",
+  "tokenCode": "j0Utek39dAZraCNlF3JZ7QVzRDW+drX9S9XYryt8PWg=",
+  "sender": "0:946a8fab314a8d2b92104dc2f3a8253bc6ccbdf7a964148ab895d6faa6bf2212",
+  "publicKey": "aDCqMlawwY6+wtuodw01VDspH+7XOQLf2TNGXmrSZ+I=",
+  "seqno": 2,
+  "balance": "87712387",
+  "senderToken": {
+    "address": "0:67e3cb5a0100716f20507fac834c6a96b2f146c72411ec57ee7416a5bd8f1325",
+    "state": "uninitialized",
+    "status": 0,
+    "balance": "0",
+    "tonBalance": "0"
+  },
+  "recipient": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+  "platformToken": {
+    "address": "0:db0cadcf093b72ab1d5cdd0db6daec3be55fab0c6a0665a99cbdc561a81248a0",
+    "state": "active",
+    "status": 0,
+    "balance": "1000000",
+    "tonBalance": "974433"
+  }
+}

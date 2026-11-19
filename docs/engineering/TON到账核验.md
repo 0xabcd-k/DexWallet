@@ -72,4 +72,4 @@ go test -tags=integration ./logic/chainreceipt \
   -run '^TestLiveTONHistoricalReceipts$' -count=1 -v
 ```
 
-`DEXWALLET_TEST_TON_RECEIPTS_EVIDENCE` 可设为本机已有输出目录。隔离数据库用 `TestTONReceiptMigrationPersistenceAndRecovery`，同时回归原三链事实存储；详细结果见 [5.3 验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。Base 内部 ETH 历史核验已补齐；已建立 [TON 平台出款执行基础](TON平台出款执行.md)，已完成测试网独立签名/广播及发送到收款关联，继续接入 Jetton 出款、监听与订单分配。
+`DEXWALLET_TEST_TON_RECEIPTS_EVIDENCE` 可设为本机已有输出目录。隔离数据库用 `TestTONReceiptMigrationPersistenceAndRecovery`，同时回归原三链事实存储；详细结果见 [5.3 验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。Base 内部 ETH 历史核验已补齐；已建立 [TON 平台出款执行基础](TON平台出款执行.md)，已完成原生 TON 与测试 USDT 独立签名/广播及发送到收款关联；Jetton 出款要求核对 V4 发出指令、发送方代币钱包、收款方代币钱包三段交易，并校验发送方派生地址、固定 query_id、TON 预算及余款目标。该扩展不改变既有收款事件指纹；监听、订单分配和业务入账仍待接入。

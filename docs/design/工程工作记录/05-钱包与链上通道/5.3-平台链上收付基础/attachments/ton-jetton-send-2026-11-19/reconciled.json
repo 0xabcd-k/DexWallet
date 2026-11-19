@@ -1,0 +1,54 @@
+{
+  "intent": {
+    "key": "ton-jetton-live-20261119-01",
+    "recipient": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+    "atoms": "100000",
+    "seqno": 2,
+    "validUntil": 1795078529,
+    "jetton": {
+      "master": "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+      "wallet": "0:67e3cb5a0100716f20507fac834c6a96b2f146c72411ec57ee7416a5bd8f1325",
+      "attachTon": "50000000",
+      "forwardTon": "1",
+      "queryId": "2026111901"
+    },
+    "network": "ton-testnet",
+    "sender": "0:946a8fab314a8d2b92104dc2f3a8253bc6ccbdf7a964148ab895d6faa6bf2212",
+    "assetId": "ton-testnet:usdt:0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+    "state": "submitted",
+    "payloadHash": "c351b655696dede94e0fcdf565bb44c66289e7732f902b403c8e5b9d7472a411",
+    "messageHash": "6725c8e181e095a4e8c72922ae58bc94ae0c35f9c7eae5a6aac854aec0f372a0",
+    "bodyHash": "434313ff85fa7f98f7db8da5945abf663a82607b769aa54f21cbb74e160fe1a5",
+    "attempts": 1
+  },
+  "delivery": {
+    "receipt": {
+      "transaction": {
+        "network": "ton-testnet",
+        "signature": "b9d829cac3612fc27af46ecec1fe5e4563898505e3ecce2d55d0bf3ab436550e",
+        "slot": 98945232,
+        "feePayer": "0:db0cadcf093b72ab1d5cdd0db6daec3be55fab0c6a0665a99cbdc561a81248a0",
+        "feeAtoms": "849141",
+        "fingerprint": "3c652207f677d26465e7878d71d7a55831b700547e5c42c9d940051f73f3e057",
+        "blockHash": "4495a9ddb08ef0a94536c640701a5c49e0ba1d28eab1834ebec65c1e6663bfb9"
+      },
+      "event": {
+        "kind": "ton_jetton",
+        "instruction": 0,
+        "assetId": "ton-testnet:usdt:0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+        "programId": "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+        "mint": "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+        "decimals": 6,
+        "sourceAccount": "0:67e3cb5a0100716f20507fac834c6a96b2f146c72411ec57ee7416a5bd8f1325",
+        "sourceOwner": "0:946a8fab314a8d2b92104dc2f3a8253bc6ccbdf7a964148ab895d6faa6bf2212",
+        "recipientAccount": "0:db0cadcf093b72ab1d5cdd0db6daec3be55fab0c6a0665a99cbdc561a81248a0",
+        "recipientOwner": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+        "atoms": "100000"
+      }
+    },
+    "reused": false,
+    "senderHash": "805d3a00ce2dbef4a23d3d5aab0e1035ac6ab97f6fe692338ca78cff536e32b0",
+    "messageHash": "e63207aeb39b9a926151be95931ece09afe0fbdd00f9c0a304566fe31ff8eee5"
+  },
+  "cleaned": false
+}

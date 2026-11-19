@@ -45,15 +45,17 @@ var requestKey = regexp.MustCompile(`^[A-Za-z0-9._:-]{1,64}$`)
 // Wallet is trusted deployment configuration for a dedicated TESTNET V4R2 key.
 // The store and executor receive no private key. Mainnet is deliberately absent.
 type Wallet struct {
-	PublicKey   ed25519.PublicKey
-	SubwalletID uint32
+	PublicKey    ed25519.PublicKey
+	SubwalletID  uint32
+	JettonMaster string `json:",omitempty"`
 }
 type Proposal struct {
-	Key        string `json:"key"`
-	Recipient  string `json:"recipient"`
-	Atoms      string `json:"atoms"`
-	Seqno      uint32 `json:"seqno"`
-	ValidUntil uint32 `json:"validUntil"`
+	Key        string         `json:"key"`
+	Recipient  string         `json:"recipient"`
+	Atoms      string         `json:"atoms"`
+	Seqno      uint32         `json:"seqno"`
+	ValidUntil uint32         `json:"validUntil"`
+	Jetton     JettonTransfer `json:"jetton,omitzero"`
 }
 type View struct {
 	Proposal
@@ -98,6 +100,13 @@ func NewTON(store *Store, w Wallet, signer Signer, broadcaster Broadcaster) (*TO
 	if store == nil || len(w.PublicKey) != ed25519.PublicKeySize || signer == nil || broadcaster == nil {
 		return nil, ErrInvalidRequest
 	}
+	if w.JettonMaster != "" {
+		var err error
+		w.JettonMaster, err = rawTONAddress(w.JettonMaster)
+		if err != nil {
+			return nil, err
+		}
+	}
 	w.PublicKey = append(ed25519.PublicKey(nil), w.PublicKey...)
 	a, err := wallet.AddressFromPubKey(w.PublicKey, wallet.V4R2, w.SubwalletID)
 	if err != nil {
@@ -127,13 +136,14 @@ func canonicalProposal(p Proposal, sender string) (Proposal, error) {
 	if p.Recipient == sender || bytes.Equal(a.Data(), make([]byte, 32)) {
 		return p, ErrInvalidRequest
 	}
-	return p, nil
+	p.Jetton, err = canonicalJetton(p.Jetton, sender, p.Recipient)
+	return p, err
 }
 
 // The SDK's regular BuildMessage reads its own clock/seqno on every call. Here
 // the exact V4R2 payload must instead be fixed BEFORE asking the signer. Cell,
 // TL-B serialization and address derivation still use the existing TON SDK.
-func payload(p Proposal, subwallet uint32) (*cell.Cell, error) {
+func payload(p Proposal, subwallet uint32, sender string) (*cell.Cell, error) {
 	a, err := address.ParseRawAddr(p.Recipient)
 	if err != nil {
 		return nil, err
@@ -142,7 +152,14 @@ func payload(p Proposal, subwallet uint32) (*cell.Cell, error) {
 	if !ok {
 		return nil, ErrInvalidRequest
 	}
-	msg, err := tlb.ToCell(&tlb.InternalMessage{IHRDisabled: true, Bounce: false, DstAddr: a, Amount: tlb.FromNanoTON(n), Body: cell.BeginCell().EndCell()})
+	internal := &tlb.InternalMessage{IHRDisabled: true, Bounce: false, DstAddr: a, Amount: tlb.FromNanoTON(n), Body: cell.BeginCell().EndCell()}
+	if p.Jetton.Master != "" {
+		internal, err = jettonMessage(p, sender)
+		if err != nil {
+			return nil, err
+		}
+	}
+	msg, err := tlb.ToCell(internal)
 	if err != nil {
 		return nil, err
 	}
@@ -153,11 +170,14 @@ func (s *TON) Prepare(ctx context.Context, p Proposal) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
-	body, err := payload(p, s.wallet.SubwalletID)
+	body, err := payload(p, s.wallet.SubwalletID, s.sender)
 	if err != nil {
 		return View{}, err
 	}
-	row := &model.ChainSendIntent{Network: chainassets.TONTestnet, RequestKey: p.Key, Sender: s.sender, Recipient: p.Recipient, AssetId: tonAsset, AmountAtoms: p.Atoms, PublicKey: hex.EncodeToString(s.wallet.PublicKey), SubwalletId: int64(s.wallet.SubwalletID), Seqno: int64(p.Seqno), ValidUntil: int64(p.ValidUntil), PayloadHash: hex.EncodeToString(body.Hash()), State: Prepared}
+	row := &model.ChainSendIntent{Network: chainassets.TONTestnet, RequestKey: p.Key, Sender: s.sender, Recipient: p.Recipient, AssetId: proposalAsset(p), AmountAtoms: p.Atoms, JettonJson: jettonJSON(p.Jetton), PublicKey: hex.EncodeToString(s.wallet.PublicKey), SubwalletId: int64(s.wallet.SubwalletID), Seqno: int64(p.Seqno), ValidUntil: int64(p.ValidUntil), PayloadHash: hex.EncodeToString(body.Hash()), State: Prepared}
+	if err = s.checkJetton(ctx, p); err != nil {
+		return View{}, err
+	}
 	saved, err := s.store.prepare(ctx, row)
 	if err != nil {
 		return View{}, err
@@ -165,21 +185,29 @@ func (s *TON) Prepare(ctx context.Context, p Proposal) (View, error) {
 	return view(saved), nil
 }
 func view(r *model.ChainSendIntent) View {
-	return View{Proposal: Proposal{r.RequestKey, r.Recipient, r.AmountAtoms, uint32(r.Seqno), uint32(r.ValidUntil)}, Network: r.Network, Sender: r.Sender, AssetID: r.AssetId, State: r.State, PayloadHash: r.PayloadHash, MessageHash: r.MessageHash, BodyHash: r.BodyHash, Attempts: r.Attempts, LastError: r.LastError}
+	j, _ := parseJetton(r.JettonJson)
+	return View{Proposal: Proposal{Key: r.RequestKey, Recipient: r.Recipient, Atoms: r.AmountAtoms, Seqno: uint32(r.Seqno), ValidUntil: uint32(r.ValidUntil), Jetton: j}, Network: r.Network, Sender: r.Sender, AssetID: r.AssetId, State: r.State, PayloadHash: r.PayloadHash, MessageHash: r.MessageHash, BodyHash: r.BodyHash, Attempts: r.Attempts, LastError: r.LastError}
 }
 func (s *TON) checkedPayload(r *model.ChainSendIntent) (*cell.Cell, error) {
-	if r.Network != chainassets.TONTestnet || r.AssetId != tonAsset || r.Sender != s.sender || r.PublicKey != hex.EncodeToString(s.wallet.PublicKey) || r.SubwalletId != int64(s.wallet.SubwalletID) {
+	if r.Network != chainassets.TONTestnet || r.Sender != s.sender || r.PublicKey != hex.EncodeToString(s.wallet.PublicKey) || r.SubwalletId != int64(s.wallet.SubwalletID) {
+		return nil, ErrConflict
+	}
+	j, err := parseJetton(r.JettonJson)
+	if err != nil {
+		return nil, err
+	}
+	if j.Master != "" && j.Master != s.wallet.JettonMaster {
 		return nil, ErrConflict
 	}
 	p, err := canonicalProposal(view(r).Proposal, s.sender)
 	if err != nil {
 		return nil, err
 	}
-	c, err := payload(p, s.wallet.SubwalletID)
+	c, err := payload(p, s.wallet.SubwalletID, s.sender)
 	if err != nil {
 		return nil, err
 	}
-	if hex.EncodeToString(c.Hash()) != r.PayloadHash {
+	if r.AssetId != proposalAsset(p) || jettonJSON(p.Jetton) != r.JettonJson || hex.EncodeToString(c.Hash()) != r.PayloadHash {
 		return nil, ErrConflict
 	}
 	return c, nil
@@ -240,6 +268,9 @@ func (s *TON) Execute(ctx context.Context, key string) (View, error) {
 	}
 	if s.now().Unix() >= r.ValidUntil {
 		return view(r), ErrExpired
+	}
+	if err = s.checkJetton(ctx, view(r).Proposal); err != nil {
+		return view(r), err
 	}
 	if r.State == Prepared {
 		signature, err := s.signer.SignTON(ctx, SigningRequest{View: view(r), PublicKey: r.PublicKey, SubwalletID: s.wallet.SubwalletID, PayloadBOC: body.ToBOC()})

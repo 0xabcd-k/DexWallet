@@ -1,4 +1,5 @@
 ALTER TABLE `chain_send_intent`
+ ADD CONSTRAINT `ck_chain_send_jetton_json` CHECK (`jetton_json` = '' OR JSON_VALID(`jetton_json`)),
  ADD CONSTRAINT `ck_chain_send_seqno` CHECK (`seqno` BETWEEN 1 AND 4294967295),
  ADD CONSTRAINT `ck_chain_send_subwallet` CHECK (`subwallet_id` BETWEEN 0 AND 4294967295),
  ADD CONSTRAINT `ck_chain_send_expiry` CHECK (`valid_until` BETWEEN 1 AND 4294967295),
