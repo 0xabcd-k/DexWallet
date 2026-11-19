@@ -1,0 +1,239 @@
+{
+  "date": "2026-11-19",
+  "baseline": "91dad89",
+  "branch": "feat/ton-receipt-verification",
+  "businessSchema": 18,
+  "checks": [
+    {
+      "command": "go test -race ./...",
+      "cwd": "backend",
+      "result": "passed"
+    },
+    {
+      "command": "go vet ./...",
+      "cwd": "backend",
+      "result": "passed"
+    },
+    {
+      "command": "python3 scripts/generate.py and --check",
+      "result": "passed; 34 generated / 209 protected; no generated field changes"
+    },
+    {
+      "command": "python3 scripts/test_codegen.py",
+      "result": "passed; 10 tests"
+    },
+    {
+      "command": "TestTONReceiptMigrationPersistenceAndRecovery plus Solana/Base/TRON receipt integration tests",
+      "result": "passed; 4.942s; 17/18 round trip preserves previous receipts; 12 concurrent calls create one TON event and one fee; commit recovery and rollback guard"
+    },
+    {
+      "command": "go run ./tools/testenv run go test -p 1 -tags=integration ./tests/integration ./api/internal/server -count=1 -timeout=180s",
+      "cwd": "backend",
+      "result": "passed; 163.439s / 9.648s"
+    },
+    {
+      "command": "DEXWALLET_TEST_TON_RECEIPTS_LIVE=1 DEXWALLET_CHAIN_TON_TESTNET_RPC_URL=https://testnet.toncenter.com go test -tags=integration ./logic/chainreceipt -run ^TestLiveTONHistoricalReceipts$ -count=1 -v",
+      "cwd": "backend",
+      "result": "passed; three historical receipts; 16.330s"
+    },
+    {
+      "command": "chain_receipts CLI native TON default query",
+      "result": "passed; recorded=false; matches historical snapshot"
+    },
+    {
+      "command": "python3 scripts/check_docs.py in working tree",
+      "result": "failed solely on preexisting untracked UI draft trailing spaces, currently lines 411, 412, 414; unchanged and excluded"
+    },
+    {
+      "command": "python3 scripts/check_docs.py in exported staged tree",
+      "result": "passed; 279 documents and 112 archived files; preexisting untracked files excluded"
+    },
+    {
+      "command": "git diff --cached --check",
+      "result": "passed"
+    }
+  ],
+  "snapshots": [
+    {
+      "path": "backend/logic/chainreceipt/testdata/ton-native.json",
+      "sha256": "dbf4bd4f19e422977213a785d6ee782ad64f2f019a91476d98f16314dc1681a9",
+      "request": {
+        "network": "ton-testnet",
+        "hash": "53d778fb27fe4ed339ba2514b5f3938964dcbc48b6b88a66fdea326cf5e25e98",
+        "assetId": "ton-testnet:ton",
+        "recipient": "0QAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0Edp",
+        "atoms": "10000000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "ton-testnet",
+          "signature": "53d778fb27fe4ed339ba2514b5f3938964dcbc48b6b88a66fdea326cf5e25e98",
+          "slot": 95524260,
+          "feePayer": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+          "feeAtoms": "36401",
+          "fingerprint": "51992bd1789c4b1910654fb10db21b8681d5b8b67cea74f03034429209b125e8",
+          "blockHash": "88b86a7362237b626d64021450c09ee32324e6b7d7c6176070ec3f0a905468cd"
+        },
+        "event": {
+          "kind": "ton_incoming",
+          "instruction": 0,
+          "assetId": "ton-testnet:ton",
+          "programId": "ton",
+          "mint": "",
+          "decimals": 9,
+          "sourceAccount": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+          "sourceOwner": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+          "recipientAccount": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+          "recipientOwner": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+          "atoms": "10000000"
+        }
+      },
+      "incomingMessage": "oofFGgp/MM30/MYca9hWAgwdXBC2HYqzpTlchQXeS5Y=",
+      "lt": "107312433000005",
+      "compute": {
+        "skipped": false,
+        "success": true,
+        "msg_state_used": false,
+        "account_activated": false,
+        "gas_fees": "36401",
+        "gas_used": "546",
+        "gas_limit": "149999",
+        "mode": 0,
+        "exit_code": 0,
+        "vm_steps": 12,
+        "vm_init_state_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "vm_final_state_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "origin": "read-only TON Center testnet historical query"
+    },
+    {
+      "path": "backend/logic/chainreceipt/testdata/ton-jetton.json",
+      "sha256": "2a347a403df2a3a95c8fe65ef410481d7c533a48e8144ab3c574ba55190108bf",
+      "request": {
+        "network": "ton-testnet",
+        "hash": "d50f0d7f4d8691b09b8951c37306be48e0002e59bb7e68c25d1f19002025a230",
+        "assetId": "ton-testnet:usdt:kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy",
+        "recipient": "0QAQB2nm2uV5z7xcoWN8iNbIOmwhlbPlcfHjXyC0Wy-k0Edp",
+        "atoms": "1000000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "ton-testnet",
+          "signature": "d50f0d7f4d8691b09b8951c37306be48e0002e59bb7e68c25d1f19002025a230",
+          "slot": 95543880,
+          "feePayer": "0:db0cadcf093b72ab1d5cdd0db6daec3be55fab0c6a0665a99cbdc561a81248a0",
+          "feeAtoms": "849136",
+          "fingerprint": "a8daeb6e8244e89122409a6e6e9ae5bcb2c8de86484c218a761d6759ba8c19a3",
+          "blockHash": "bb806d1b828f93a94ccb2bcda1c0dfbd7ab9b42ab70c897b2a74e96bcb9864f2"
+        },
+        "event": {
+          "kind": "ton_jetton",
+          "instruction": 0,
+          "assetId": "ton-testnet:usdt:kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy",
+          "programId": "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+          "mint": "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e",
+          "decimals": 6,
+          "sourceAccount": "0:90a51a0fd3524a8db2fd03b66567fa3c4c6f5b2153df8340558a440e10e897c2",
+          "sourceOwner": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+          "recipientAccount": "0:db0cadcf093b72ab1d5cdd0db6daec3be55fab0c6a0665a99cbdc561a81248a0",
+          "recipientOwner": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+          "atoms": "1000000"
+        }
+      },
+      "incomingMessage": "EIm7UEdEEapqhkBKZjfigF0TJm+PZMT+8tiWTUVbTv0=",
+      "lt": "107332237000007",
+      "compute": {
+        "skipped": false,
+        "success": true,
+        "msg_state_used": false,
+        "account_activated": false,
+        "gas_fees": "683001",
+        "gas_used": "10245",
+        "gas_limit": "729516",
+        "mode": 0,
+        "exit_code": 0,
+        "vm_steps": 196,
+        "vm_init_state_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "vm_final_state_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "origin": "read-only TON Center testnet historical query"
+    },
+    {
+      "path": "backend/logic/chainreceipt/testdata/ton-no-state.json",
+      "sha256": "85a1f1cce26e924c5bf14198a5a7341f11dcb822f81f7d00e66e22732ba74c10",
+      "request": {
+        "network": "ton-testnet",
+        "hash": "2b61c56d406a8bcafe9badb4ba06593655dfa81de141df1fb2cffa1435936096",
+        "assetId": "ton-testnet:ton",
+        "recipient": "0QCjk6WUaIpT9hONiPNEeomRCTzDh_BGPQrNlVKJ-tvveqrM",
+        "atoms": "50000000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "ton-testnet",
+          "signature": "2b61c56d406a8bcafe9badb4ba06593655dfa81de141df1fb2cffa1435936096",
+          "slot": 95522202,
+          "feePayer": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+          "feeAtoms": "0",
+          "fingerprint": "9a40affa0ae3040f0e032abd736fab886e59b74d6b631b498d8116664fbbe86d",
+          "blockHash": "b7589faed152392e0764941409b763c7a50be498d4a5ef92a725dfbbfa0b7afb"
+        },
+        "event": {
+          "kind": "ton_incoming",
+          "instruction": 0,
+          "assetId": "ton-testnet:ton",
+          "programId": "ton",
+          "mint": "",
+          "decimals": 9,
+          "sourceAccount": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+          "sourceOwner": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+          "recipientAccount": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+          "recipientOwner": "0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a",
+          "atoms": "50000000"
+        }
+      },
+      "incomingMessage": "BDmzB0TAMkjbO7l99DPrqxhBat/P9aZEtUR/qTMJIHk=",
+      "lt": "107310348000003",
+      "compute": {
+        "skipped": true,
+        "reason": "no_state"
+      },
+      "origin": "read-only TON Center testnet historical query"
+    }
+  ],
+  "networkIdentity": {
+    "mainnetZeroState": "F6OpKZKqvqeFp6CQmFomXNMfMj2EnaUSOXN+Mh+wVWk=",
+    "testnetZeroState": "gj+B8wb/AmlPk1z1AhVI484rhrUpgSr2oSFIh56VoSg=",
+    "sources": [
+      "https://ton.org/global-config.json",
+      "https://ton.org/testnet-global.config.json"
+    ]
+  },
+  "cleanup": {
+    "runs": [
+      "6df2cd6ca10f706e",
+      "e244626c1b4eb5da"
+    ],
+    "remainingRegisteredResources": 0
+  },
+  "scope": {
+    "signing": false,
+    "broadcast": false,
+    "ledgerCredit": false,
+    "mainnetLiveTransfers": false,
+    "frontendChanged": false,
+    "historicalGetMethodProof": false
+  },
+  "notes": [
+    "Transaction hash identifies the recipient transaction. The event identity uses one inbound message at position zero.",
+    "FeeAtoms records recipient transaction total_fees plus its outgoing remaining fwd_fee, not the payment trace total or platform subsidy.",
+    "Jetton get_wallet_address is a current allowlisted-master mapping, not a historical state proof. Mapping mismatch rejects.",
+    "Non-bounce no-state credit is a real historical snapshot. No-gas and adversarial/concurrent cases are deterministic derived fakes, never broadcast.",
+    "Snapshot message BoCs are public on-chain historical bodies already consumed; no private keys or local wallet authorization captures were used.",
+    "One early parallel public probe returned HTTP 429. The final reader spaces a keyless observation by 1.1s between responses and does not retry."
+  ],
+  "tools": {
+    "go": "1.26.10 (module-selected toolchain)",
+    "tonutilsGo": "1.15.5 (existing dependency)"
+  }
+}

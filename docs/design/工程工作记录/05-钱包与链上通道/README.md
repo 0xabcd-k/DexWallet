@@ -61,3 +61,5 @@
 2026-11-19 5.3 第二批接通 [Base 普通 ETH 与 USDC 到账核验](../../../engineering/Base到账核验.md)，数据库 business 17；智能账户内部 ETH 明确不支持，TON/TRON 核验及签名广播继续分批。
 
 2026-11-19 第三批已接通 [TRON TRX 与 USDT 到账核验](../../../engineering/TRON到账核验.md)，复用 business 17 的事实存储。三笔已有 Nile 交易只读核验通过，资源使用与燃烧费用分别保留；TON 核验、签名广播及订单入账继续后续实施。
+
+2026-11-19 第四批已接通 [TON 原生币与 USDT（Jetton）到账核验](../../../engineering/TON到账核验.md)，business 18 扩宽地址列并保留旧事实。三笔已有测试网收款只读复查通过；Base 内部 ETH、发送通道和订单入账仍待后续。

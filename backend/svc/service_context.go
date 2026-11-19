@@ -50,6 +50,7 @@ type ServiceContext struct {
 	ChainReceipts         *chainreceipt.Service
 	BaseReceipts          *chainreceipt.BaseService
 	TRONReceipts          *chainreceipt.TRONService
+	TONReceipts           *chainreceipt.TONService
 	ChainAssets           *chainassets.Service
 	ReceiveCodes          *transferlogic.Codes
 	Config                config.Config
@@ -172,6 +173,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.ChainReceipts = chainreceipt.New(conn, d.Tx, d.ChainAssets)
 	d.BaseReceipts = chainreceipt.NewBase(conn, d.Tx, d.ChainAssets)
 	d.TRONReceipts = chainreceipt.NewTRON(conn, d.Tx, d.ChainAssets)
+	d.TONReceipts = chainreceipt.NewTON(conn, d.Tx, d.ChainAssets)
 	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx, c.Transfer.DefaultLimitPlanID)
 	var sender authlogic.Mailer
 	if c.Auth != nil {

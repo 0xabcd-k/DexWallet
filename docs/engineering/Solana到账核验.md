@@ -51,7 +51,7 @@ go run ./tools/chain_receipts \
   --recipient 7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5 --atoms 1000
 ```
 
-显式 `--record` 才使用 `DEXWALLET_MYSQL_DSN` 写入两张事实表，要求 business ≥17 且 dirty=false；输出 receipt/recorded/reused。默认总 RPC 超时 10 秒，可用 `--timeout` 设置，最大 30 秒，另预留 5 秒给数据库；服务内默认沿用 `ChainAssets.Timeout`。配置和 HTTP 响应限制沿用 [链上资产查询](链上资产查询.md)，内部工具不暴露公开用户请求入口。
+显式 `--record` 才使用 `DEXWALLET_MYSQL_DSN` 写入两张事实表，要求 business ≥18 且 dirty=false；输出 receipt/recorded/reused。默认总 RPC 超时 10 秒，可用 `--timeout` 设置，最大 30 秒，另预留 5 秒给数据库；服务内默认沿用 `ChainAssets.Timeout`。配置和 HTTP 响应限制沿用 [链上资产查询](链上资产查询.md)，内部工具不暴露公开用户请求入口。
 
 普通 `go test ./logic/chainreceipt ./logic/chainassets` 使用 fake/本机 httptest 和公开历史快照，不连接真实链。隔离 MySQL 行为在 `TestChainReceiptSchemaAndPersistence`，使用 `tools/testenv`，不得指向生产库。
 

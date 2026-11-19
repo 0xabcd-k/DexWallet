@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-2026-11-19 接通 TRON 主网/Nile 固定目录下的普通 TRX 转账、TRC-20 USDT Transfer 日志核验、持久去重和提交异常恢复。真实只读验收使用三笔已有 Nile 交易；主网未实测。数据库继续使用 business 17，没有新增迁移、依赖或公开 API。
+2026-11-19 接通 TRON 主网/Nile 固定目录下的普通 TRX 转账、TRC-20 USDT Transfer 日志核验、持久去重和提交异常恢复。真实只读验收使用三笔已有 Nile 交易；主网未实测。TRON 这批复用 business 17；后续 [TON 接入](TON到账核验.md) 将当前数据库要求升级至 business 18。TRON 无新增依赖或公开 API。
 
 本批仅记录转账事实，充值订单归属、平台净实收、唯一事件分配及美元入账由后续业务接入。签名广播、监听任务、资源委托和用户付款入口仍未开放；逐场景费用规则继续按原审核清单处理。
 
@@ -62,7 +62,7 @@ go run ./tools/chain_receipts \
   --atoms 1000 --timeout 30s
 ```
 
-USDT 另配置 `DEXWALLET_CHAIN_TRON_NILE_TEST_USDT_CONTRACT`，使用对应完整资产 ID 和 `--log-index 0`。`--instruction` 只用于 Solana。显式 `--record` 才使用 `DEXWALLET_MYSQL_DSN` 写库，并要求 clean business ≥17；此开关仍不执行产品入账。配置文件和秘密留在本机，不提交仓库。
+USDT 另配置 `DEXWALLET_CHAIN_TRON_NILE_TEST_USDT_CONTRACT`，使用对应完整资产 ID 和 `--log-index 0`。`--instruction` 只用于 Solana。显式 `--record` 才使用 `DEXWALLET_MYSQL_DSN` 写库，并要求 clean business ≥18；此开关仍不执行产品入账。配置文件和秘密留在本机，不提交仓库。
 
 确定性测试使用 `backend/logic/chainreceipt/testdata/tron-*.json`，不连接真实节点。真实历史查询为独立入口：
 

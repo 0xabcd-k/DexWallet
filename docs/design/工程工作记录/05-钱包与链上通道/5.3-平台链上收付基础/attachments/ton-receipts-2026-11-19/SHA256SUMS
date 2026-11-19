@@ -1,0 +1,4 @@
+7507ddd35627d4fe36e79fe292481ffd20164b694d46ab7e00f9eb7e4f8799e5  docs/design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/attachments/ton-receipts-2026-11-19/checks.json
+dbf4bd4f19e422977213a785d6ee782ad64f2f019a91476d98f16314dc1681a9  backend/logic/chainreceipt/testdata/ton-native.json
+2a347a403df2a3a95c8fe65ef410481d7c533a48e8144ab3c574ba55190108bf  backend/logic/chainreceipt/testdata/ton-jetton.json
+85a1f1cce26e924c5bf14198a5a7341f11dcb822f81f7d00e66e22732ba74c10  backend/logic/chainreceipt/testdata/ton-no-state.json
