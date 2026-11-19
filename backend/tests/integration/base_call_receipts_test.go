@@ -158,3 +158,46 @@ func TestBaseCallReceiptMigrationDedupAndRecovery(t *testing.T) {
 	}
 	t.Log("business 18/19, preserved USDC evidence, 18 concurrent observations/3 events/1 fee, trace conflicts, commit recovery, rollback guard and unchanged funds passed")
 }
+
+func TestBaseHistoricalInternalETHReceiptPersistence(t *testing.T) {
+	db, _ := userDatabase(t, "base_historical_call")
+	ctx := context.Background()
+	request, source := baseReceiptFixture(t, "base-internal-eth")
+	conn, runner := sqlx.NewSqlConnFromDB(db), transaction.New(db)
+	// The real historical trace must survive storage and a lost commit response.
+	saved, err := chainreceipt.NewBase(conn, receiptCommitLost{runner, true}, source).Record(ctx, request)
+	if err != nil || !saved.Reused {
+		t.Fatal(saved, err)
+	}
+	service := chainreceipt.NewBase(conn, runner, source)
+	again, err := service.Record(ctx, request)
+	if err != nil || !again.Reused || again.Receipt.Transaction != saved.Receipt.Transaction || again.Receipt.Event != saved.Receipt.Event {
+		t.Fatal(again, err)
+	}
+	found, err := service.Find(ctx, request.Network, request.Hash, chainreceipt.EVMCall, 16)
+	if err != nil || found.Event.Atoms != "1000000000000" || found.Transaction.FeeAtoms != "1935996009267" || found.Event.SourceOwner != "0xecd14f7586f5053cecae148ae26309c2277d86a8" || found.Transaction.FeePayer != request.Recipient {
+		t.Fatal(found, err)
+	}
+	var transactions, events int
+	var trace, evidence, fingerprint string
+	if err = db.QueryRow("SELECT COUNT(*),MAX(call_trace_json),MAX(evidence_json),MAX(call_trace_fingerprint) FROM chain_observed_transaction").Scan(&transactions, &trace, &evidence, &fingerprint); err != nil {
+		t.Fatal(err)
+	}
+	if err = db.QueryRow("SELECT COUNT(*) FROM chain_transfer_event").Scan(&events); err != nil {
+		t.Fatal(err)
+	}
+	if transactions != 1 || events != 1 || trace != string(source.proof.CallTrace) || len(fingerprint) != 64 {
+		t.Fatal("historical receipt duplicated or trace changed", transactions, events)
+	}
+	var base chainassets.BaseEvidence
+	if err = json.Unmarshal([]byte(evidence), &base); err != nil || len(base.CallTrace) != 0 {
+		t.Fatal("trace must remain in its separate immutable column", err)
+	}
+	for _, table := range []string{"user_account", "ledger_voucher", "ledger_entry", "account_hold", "transfer_order", "event_outbox"} {
+		var count int
+		if err = db.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&count); err != nil || count != 0 {
+			t.Fatal(table, count, err)
+		}
+	}
+	t.Log("historical Base ETH call 16: one event, one fee, preserved raw trace, commit recovery and unchanged funds passed")
+}

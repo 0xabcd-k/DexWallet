@@ -47,7 +47,7 @@ func baseSample(t *testing.T, name string) (baseFixture, *baseFixtureSource) {
 	return f, &baseFixtureSource{catalog: assets.Catalog(), proof: f.Evidence}
 }
 func TestBaseHistoricalSnapshotsAndCaseIdentity(t *testing.T) {
-	for _, name := range []string{"base-eth", "base-usdc"} {
+	for _, name := range []string{"base-eth", "base-usdc", "base-internal-eth"} {
 		t.Run(name, func(t *testing.T) {
 			f, s := baseSample(t, name)
 			f.Request.Hash = "0x" + strings.ToUpper(f.Request.Hash[2:])

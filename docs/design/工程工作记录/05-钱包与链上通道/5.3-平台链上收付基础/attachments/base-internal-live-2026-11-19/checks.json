@@ -1,0 +1,209 @@
+{
+  "date": "2026-11-19",
+  "baseline": "31b7b0e",
+  "branch": "feat/base-internal-eth-receipts",
+  "network": "base-sepolia",
+  "endpoint": "https://base-testnet.api.pocket.network",
+  "configuration": {
+    "GODEBUG": "http2client=0",
+    "timeoutSeconds": 30,
+    "automaticRetries": false
+  },
+  "request": {
+    "network": "base-sepolia",
+    "hash": "0x1c3509c224c12725106e47b57e5f5627934edf229ae51fb42861173fb36c2852",
+    "callIndex": 16,
+    "assetId": "base-sepolia:eth",
+    "recipient": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+    "atoms": "1000000000000"
+  },
+  "receipt": {
+    "transaction": {
+      "network": "base-sepolia",
+      "signature": "0x1c3509c224c12725106e47b57e5f5627934edf229ae51fb42861173fb36c2852",
+      "slot": 53792630,
+      "feePayer": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+      "feeAtoms": "1935996009267",
+      "fingerprint": "2be8c57cb28db0b8349fc26d44156f690394b9262662410847522ed471247476",
+      "blockHash": "0xd138eb9396ade360310e97fbf55e2a2a7d0dfbd9ddeb035e7814a903e69f9b37",
+      "executionFeeAtoms": "1935996000000",
+      "l1FeeAtoms": "9267",
+      "operatorFeeAtoms": "0"
+    },
+    "event": {
+      "kind": "evm_call",
+      "instruction": 16,
+      "assetId": "base-sepolia:eth",
+      "programId": "evm",
+      "mint": "",
+      "decimals": 18,
+      "sourceAccount": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+      "sourceOwner": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+      "recipientAccount": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+      "recipientOwner": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+      "atoms": "1000000000000"
+    }
+  },
+  "traceFrameCount": 29,
+  "selectedFrame": {
+    "index": 16,
+    "path": [
+      13,
+      0
+    ],
+    "type": "CALL",
+    "from": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+    "to": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+    "value": "0xe8d4a51000",
+    "error": null
+  },
+  "snapshot": {
+    "path": "backend/logic/chainreceipt/testdata/base-internal-eth.json",
+    "sha256": "af1c397a09231cd4f4698f2a31a9713a874013a99d5b56014aac3874ea06a6df",
+    "origin": "same-node production ReadBaseCallEvidence + TestLiveBaseInternalETHReceipt; no synthetic edits"
+  },
+  "probes": [
+    {
+      "endpoint": "onfinality",
+      "url": "https://base-sepolia.api.onfinality.io/public",
+      "method": "eth_chainId",
+      "http": "200",
+      "exit": 0,
+      "seconds": 1.927,
+      "rpcError": null,
+      "resultType": "str",
+      "chainId": "0x14a34"
+    },
+    {
+      "endpoint": "onfinality",
+      "url": "https://base-sepolia.api.onfinality.io/public",
+      "method": "debug_traceTransaction",
+      "http": "429",
+      "exit": 0,
+      "seconds": 0.597,
+      "rpcError": {
+        "code": -32029,
+        "message": "Too Many Requests, Please apply an OnFinality API key or contact us to receive a higher rate limit"
+      },
+      "resultType": "NoneType"
+    },
+    {
+      "endpoint": "nodies",
+      "url": "https://base-sepolia-public.nodies.app",
+      "method": "eth_chainId",
+      "http": "200",
+      "exit": 0,
+      "seconds": 0.711,
+      "rpcError": null,
+      "resultType": "str",
+      "chainId": "0x14a34"
+    },
+    {
+      "endpoint": "nodies",
+      "url": "https://base-sepolia-public.nodies.app",
+      "method": "debug_traceTransaction",
+      "http": "200",
+      "exit": 0,
+      "seconds": 0.717,
+      "rpcError": {
+        "code": -32601,
+        "message": "Method not available on this plan: debug_traceTransaction. Upgrade your subscription at https://nodies.app/pricing for full method access."
+      },
+      "resultType": "NoneType"
+    },
+    {
+      "endpoint": "pocket",
+      "url": "https://base-testnet.api.pocket.network",
+      "method": "eth_chainId",
+      "http": "200",
+      "exit": 0,
+      "seconds": 1.674,
+      "rpcError": null,
+      "resultType": "str",
+      "chainId": "0x14a34"
+    },
+    {
+      "endpoint": "pocket",
+      "url": "https://base-testnet.api.pocket.network",
+      "method": "debug_traceTransaction",
+      "http": "200",
+      "exit": 0,
+      "seconds": 1.33,
+      "rpcError": null,
+      "resultType": "dict"
+    }
+  ],
+  "attempts": [
+    {
+      "name": "live default transport attempts 1 and 2",
+      "result": "failed: missing trace surfaced as unexpected end of JSON input; diagnostic improved in test harness"
+    },
+    {
+      "name": "standalone Go default transport",
+      "result": "failed: unexpected EOF"
+    },
+    {
+      "name": "standalone Go with HTTP/2 disabled",
+      "result": "complete evidence acquired, verified by the production verifier; receipt facts match final live test"
+    },
+    {
+      "name": "live HTTP/1 first attempt",
+      "result": "failed: RPC eth_call returned code -32603",
+      "seconds": 3.16
+    },
+    {
+      "name": "live HTTP/1 final attempt",
+      "result": "passed",
+      "seconds": 5.078
+    },
+    {
+      "name": "CLI independent read-only query",
+      "result": "ErrUnconfirmed; no recorded receipt, signature or broadcast"
+    }
+  ],
+  "checks": [
+    {
+      "command": "go test -race ./logic/chainreceipt ./logic/chainassets",
+      "result": "passed; includes exact real historical ETH receipt fixture"
+    },
+    {
+      "command": "go vet ./logic/chainreceipt ./logic/chainassets",
+      "result": "passed"
+    },
+    {
+      "command": "testenv: TestBaseHistoricalInternalETHReceiptPersistence and TestBaseCallReceiptMigrationDedupAndRecovery",
+      "result": "passed",
+      "seconds": 4.879
+    },
+    {
+      "command": "python3 scripts/check_docs.py in exported staged tree",
+      "result": "passed; 279 documents, 112 archived files; existing untracked UI draft excluded"
+    },
+    {
+      "command": "git diff --cached --check",
+      "result": "passed"
+    }
+  ],
+  "cleanup": {
+    "testenvRun": "1cfc00ff442e508b",
+    "remainingRegisteredResources": 0
+  },
+  "scope": {
+    "liveHistoricalETHVerification": true,
+    "productionNodeReliability": false,
+    "HTTP2RootCauseProven": false,
+    "newChainTransfers": false,
+    "signing": false,
+    "broadcast": false,
+    "ledgerCredit": false,
+    "businessSchema": 19,
+    "runtimeLogicChanged": false,
+    "walletCompatibilityRevalidated": false
+  },
+  "notes": [
+    "A successful historical verification is distinct from RPC availability. Empty observations never override recorded facts or cause a second payment.",
+    "HTTP/1 also returned transient upstream errors. Do not claim disabling HTTP/2 solves every failure or change the application default globally.",
+    "Default regression uses captured public evidence only; live calls remain opt-in.",
+    "No user credentials, new faucet requests or paid subscriptions were needed."
+  ]
+}

@@ -31,6 +31,12 @@ func TestLiveBaseInternalETHReceipt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if null(proof.Transaction) || null(proof.Receipt) {
+		t.Fatal(ErrUnconfirmed)
+	}
+	if null(proof.CallTrace) {
+		t.Fatal("historical node did not return a complete call trace")
+	}
 	// Discover the position from the complete node response, then run all normal
 	// validations on that exact response. No claimed browser index is trusted.
 	var root baseCall

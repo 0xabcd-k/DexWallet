@@ -6,7 +6,7 @@
 
 2026-11-19 接通 Base 主网/Sepolia 固定目录下的普通 ETH 外层转账及 USDC Transfer 日志核验、持久去重和提交异常恢复。真实只读验收使用两笔已有 Base Sepolia 交易，没有签名、广播、充值或支付动作。主网未实测。
 
-平台代付 USDC 时，外层交易发送人是付费方，实际出资人来自 USDC 日志。本批不根据 tx.from 猜测充值用户，也不把调用成功等同于代币到账。此前 MetaMask 智能账户 ETH 代付属于内部调用，外层 value=0。第五批已新增显式内部 CALL 核验及持久化，本地验证与实际节点验收分别记录；当前公共节点未返回所需历史轨迹，真实内部 ETH 核验尚未通过。不能仅信任外层成功、授权事件或调用参数。
+平台代付 USDC 时，外层交易发送人是付费方，实际出资人来自 USDC 日志。本批不根据 tx.from 猜测充值用户，也不把调用成功等同于代币到账。此前 MetaMask 智能账户 ETH 代付属于内部调用，外层 value=0。第五批已新增显式内部 CALL 核验及持久化；后续通过 Pocket 公共 Base Sepolia 节点取得完整历史轨迹，真实核验及隔离持久化通过。公共节点仍存在偶发空响应、历史调用错误和连接异常，不能把一次成功当作生产可用性验收。不能仅信任外层成功、授权事件或调用参数。
 
 与 Solana 一致，本批仅记录转账事件事实。它不证明产品订单归属，也不保证整笔交易的净实收；自动入账仍需不可变订单、平台控制的收款目标、允许的交易形态及唯一事件分配。链上签名广播、平台收费、失败 Gas 回收和用户页面没有开放。
 
@@ -88,11 +88,18 @@ go test -tags=integration ./logic/chainreceipt -run '^TestLiveBaseHistoricalRece
 可选 `DEXWALLET_TEST_BASE_RECEIPTS_EVIDENCE` 指向已存在目录的绝对路径，保存两笔成功核验的公开请求、结果和证据；第三笔内部 ETH 仍检查未提供 `callIndex` 时明确返回不支持；显式内部模式使用下列独立入口。完整结果及未开放范围见 [5.3 验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。
 
 
-内部 ETH 真实验收单独启用，节点 URL 从本机配置加载，不写入文档中的密钥：
+内部 ETH 真实验收单独启用。本次通过的公开节点和一次性进程参数如下，不包含密钥：
 
 ```bash
+GODEBUG=http2client=0 \
+DEXWALLET_CHAIN_BASE_SEPOLIA_RPC_URL=https://base-testnet.api.pocket.network \
 DEXWALLET_TEST_BASE_CALL_RECEIPTS_LIVE=1 \
 go test -tags=integration ./logic/chainreceipt -run '^TestLiveBaseInternalETHReceipt$' -count=1 -v
 ```
 
-该入口只查询此前 `0x1c3509c224c12725106e47b57e5f5627934edf229ae51fb42861173fb36c2852`，从完整轨迹找出唯一匹配的内部 CALL 位置，再做正式核验并可保存公开证据。位置未经查询不能猜填；离线构造样例的 callIndex=6 不代表该真实交易的位置。需要一个支持 Base Sepolia 历史 `callTracer`、历史 Operator 费及普通查询的服务端 RPC。当前实链状态和各公共节点错误见 [第五批验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)；不要求用户重新付款或购买测试币。
+该入口只查询此前 `0x1c3509c224c12725106e47b57e5f5627934edf229ae51fb42861173fb36c2852`，从完整轨迹找出唯一匹配的内部 CALL 位置，再做正式核验并可保存公开证据。真实轨迹共 29 帧，转账位置为 callIndex=16、子调用路径 `[13,0]`；离线构造样例的 callIndex=6 仍只属于合成交易。正式节点需要支持历史 `callTracer`、历史 Operator 费及普通查询。当前实链状态和各公共节点结果见 [第五批及补验记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)；不要求用户重新付款或购买测试币。
+
+
+此次真实事件的数量是 1000000000000 wei（0.000001 ETH），源为 `0xecd14f7586f5053cecae148ae26309c2277d86a8`，收款人和外层付费人为 `0xa59c992aa84657df4ebff6f04e11a1632f6db1fa`。区块 53792630 已 finalized；L2 1935996000000 + L1 9267 + Operator 0 = 1935996009267 wei。真实快照保存为 `backend/logic/chainreceipt/testdata/base-internal-eth.json`，与合成的 `base-internal-eth-fixture.json` 分开。
+
+本机默认 HTTP 客户端访问曾遇到空证据与 unexpected EOF；显式 `GODEBUG=http2client=0` 后取得完整采集及实时测试成功，但同设置也出现过上游 eth_call -32603 和查不到交易的响应，因此尚不能将问题完全归因于 HTTP/2。该开关仅用于本次验收进程，含义见 [Go HTTP 文档](https://pkg.go.dev/net/http#hdr-HTTP_2)，没有更改项目默认传输设置或加入自动重试。CLI 的一次独立复查保留 `ErrUnconfirmed`，不把空响应记作失败、退款或到账。后续部署仍需验证节点稳定性；本批没有主网、广播或新付款。
