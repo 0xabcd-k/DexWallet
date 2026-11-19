@@ -59,3 +59,5 @@
 2026-11-16 5.3 首批接通 Solana 顶层转账核验、交易证据与指令事件持久去重；SOL、USDC、测试 USDT 替代币历史交易已只读复查，数据库 business 16。未签名、广播或入账，见 [Solana 到账核验](../../../engineering/Solana到账核验.md)。
 
 2026-11-19 5.3 第二批接通 [Base 普通 ETH 与 USDC 到账核验](../../../engineering/Base到账核验.md)，数据库 business 17；智能账户内部 ETH 明确不支持，TON/TRON 核验及签名广播继续分批。
+
+2026-11-19 第三批已接通 [TRON TRX 与 USDT 到账核验](../../../engineering/TRON到账核验.md)，复用 business 17 的事实存储。三笔已有 Nile 交易只读核验通过，资源使用与燃烧费用分别保留；TON 核验、签名广播及订单入账继续后续实施。

@@ -19,9 +19,9 @@ import (
 
 func run() error {
 	var request chainreceipt.Request
-	flag.StringVar(&request.Network, "network", "", "configured Solana or Base network")
-	flag.StringVar(&request.Signature, "signature", "", "Solana first signature or Base transaction hash")
-	logIndex := flag.Int("log-index", -1, "Base USDC receipt logIndex; omit for ordinary ETH")
+	flag.StringVar(&request.Network, "network", "", "configured Solana, Base or TRON network")
+	flag.StringVar(&request.Signature, "signature", "", "Solana first signature, Base hash or TRON txID")
+	logIndex := flag.Int("log-index", -1, "Base receipt logIndex or TRON info.log array index; omit for native transfers")
 	flag.IntVar(&request.Instruction, "instruction", -1, "top-level instruction index, zero-based")
 	flag.StringVar(&request.AssetID, "asset", "", "exact catalog asset ID")
 	flag.StringVar(&request.Recipient, "recipient", "", "expected receiving wallet owner (not SPL token account)")
@@ -42,17 +42,22 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout+5*time.Second)
 	defer cancel()
 	isBase := request.Network == chainassets.BaseMainnet || request.Network == chainassets.BaseSepolia
+	isTRON := request.Network == chainassets.TRONMainnet || request.Network == chainassets.TRONNile
+	tronRequest := chainreceipt.TRONRequest{Network: request.Network, Hash: request.Signature, AssetID: request.AssetID, Recipient: request.Recipient, Atoms: request.Atoms}
 	baseRequest := chainreceipt.BaseRequest{Network: request.Network, Hash: request.Signature, AssetID: request.AssetID, Recipient: request.Recipient, Atoms: request.Atoms}
 	if *logIndex >= 0 {
 		baseRequest.LogIndex = logIndex
+		tronRequest.LogIndex = logIndex
 	}
-	if *logIndex < -1 || (isBase && request.Instruction != -1) || (!isBase && *logIndex != -1) {
+	if *logIndex < -1 || ((isBase || isTRON) && request.Instruction != -1) || (!isBase && !isTRON && *logIndex != -1) {
 		return fmt.Errorf("event position does not match network")
 	}
 	var receipt chainreceipt.Receipt
 	reused := false
 	if !*record {
-		if isBase {
+		if isTRON {
+			receipt, err = chainreceipt.NewTRONVerifier(source).Verify(ctx, tronRequest)
+		} else if isBase {
 			receipt, err = chainreceipt.NewBaseVerifier(source).Verify(ctx, baseRequest)
 		} else {
 			receipt, err = chainreceipt.NewVerifier(source).Verify(ctx, request)
@@ -77,7 +82,9 @@ func run() error {
 		}
 		var saved chainreceipt.Stored
 		conn, tx := sqlx.NewSqlConnFromDB(db), transaction.New(db)
-		if isBase {
+		if isTRON {
+			saved, e = chainreceipt.NewTRON(conn, tx, source).Record(ctx, tronRequest)
+		} else if isBase {
 			saved, e = chainreceipt.NewBase(conn, tx, source).Record(ctx, baseRequest)
 		} else {
 			saved, e = chainreceipt.New(conn, tx, source).Record(ctx, request)

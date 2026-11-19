@@ -1,0 +1,5 @@
+8ec051eba4f1a84b1d04aba498b03abac52590feea3acbd4d804b8162eafd16b  docs/design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/attachments/tron-receipts-2026-11-19/checks.json
+a4cdf9418c21fac0fca4cde3e68cd4a689995782fea349ff2d807694678503aa  docs/design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/attachments/tron-receipts-2026-11-19/genesis.json
+0997deb8c05fba146315438543335e03010bab6bc52edaf2edd743adc2442d92  backend/logic/chainreceipt/testdata/tron-trx.json
+415032cb2cbfb7fb59c6dd7a2936f7e24ec6548fd0cc66c3ae8df4e51118ab54  backend/logic/chainreceipt/testdata/tron-usdt.json
+b76b0c4fe4b1d2264e4e9c2f6a297a5940dd0901a8494c0c32cccdafd12bf37e  backend/logic/chainreceipt/testdata/tron-usdt-fixture.json

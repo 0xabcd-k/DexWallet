@@ -1,0 +1,200 @@
+{
+  "date": "2026-11-19",
+  "baseline": "d0340ad",
+  "branch": "feat/tron-receipt-verification",
+  "businessSchema": 17,
+  "checks": [
+    {
+      "command": "go test -race ./...",
+      "cwd": "backend",
+      "result": "passed"
+    },
+    {
+      "command": "go vet ./...",
+      "cwd": "backend",
+      "result": "passed"
+    },
+    {
+      "command": "python3 scripts/generate.py --check",
+      "result": "passed; 34 owned files / 209 protected scaffolds"
+    },
+    {
+      "command": "go run ./tools/testenv run go test -tags=integration ./tests/integration -run '^(TestTRONReceiptPersistenceAndRecovery|TestBaseReceiptUpgradeAndPersistence|TestChainReceiptSchemaAndPersistence)$' -count=1 -timeout=180s",
+      "cwd": "backend",
+      "result": "passed; 3.752s; TRON, Base and Solana receipt persistence"
+    },
+    {
+      "command": "DEXWALLET_TEST_TRON_RECEIPTS_LIVE=1 DEXWALLET_CHAIN_TRON_NILE_RPC_URL=https://nile.trongrid.io go test -tags=integration ./logic/chainreceipt -run ^TestLiveTRONHistoricalReceipts$ -count=1 -v",
+      "cwd": "backend",
+      "result": "passed; three historical Nile transactions; 4.236s"
+    },
+    {
+      "command": "chain_receipts CLI read-only TRX query",
+      "result": "passed; recorded=false; receipt matches saved fixture despite solid head advancement"
+    },
+    {
+      "command": "python3 scripts/check_docs.py in working tree",
+      "result": "failed solely on preexisting untracked UI document trailing spaces, currently lines 424, 425, 427; preserved and excluded from commit"
+    },
+    {
+      "command": "python3 scripts/check_docs.py in exported staged tree",
+      "result": "passed; 278 documents, 112 archived files; preexisting untracked files excluded"
+    },
+    {
+      "command": "git diff --cached --check",
+      "result": "passed"
+    }
+  ],
+  "snapshots": [
+    {
+      "path": "backend/logic/chainreceipt/testdata/tron-trx.json",
+      "sha256": "0997deb8c05fba146315438543335e03010bab6bc52edaf2edd743adc2442d92",
+      "request": {
+        "network": "tron-nile",
+        "hash": "c08fc0d615c4dc8546ce592e2d3bdbe711c282c68b437c18549395ac1979ac3e",
+        "assetId": "tron-nile:trx",
+        "recipient": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+        "atoms": "1000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "tron-nile",
+          "signature": "c08fc0d615c4dc8546ce592e2d3bdbe711c282c68b437c18549395ac1979ac3e",
+          "slot": 72384389,
+          "feePayer": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "feeAtoms": "0",
+          "fingerprint": "ff943e637c15ba61659a2207092f362e88710d417320d4f777d1a5695f260207",
+          "blockHash": "0000000004507f859025159e4041acecb071abf68041da3dd1e2437aa497a656"
+        },
+        "event": {
+          "kind": "tron_transfer",
+          "instruction": 0,
+          "assetId": "tron-nile:trx",
+          "programId": "TransferContract",
+          "mint": "",
+          "decimals": 6,
+          "sourceAccount": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sourceOwner": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "recipientAccount": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+          "recipientOwner": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+          "atoms": "1000"
+        }
+      },
+      "resources": {
+        "net_usage": 266
+      }
+    },
+    {
+      "path": "backend/logic/chainreceipt/testdata/tron-usdt.json",
+      "sha256": "415032cb2cbfb7fb59c6dd7a2936f7e24ec6548fd0cc66c3ae8df4e51118ab54",
+      "request": {
+        "network": "tron-nile",
+        "hash": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006",
+        "logIndex": 0,
+        "assetId": "tron-nile:usdt:TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+        "recipient": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+        "atoms": "10000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "tron-nile",
+          "signature": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006",
+          "slot": 72386419,
+          "feePayer": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "feeAtoms": "0",
+          "fingerprint": "c84979ac1e25cb2eed1aa6e79a2865fe8dd4be356f01394285ea0e8e3d95be47",
+          "blockHash": "00000000045087733a685fbeeb00b4c4c144fbc0b2d95e8257464f4f2cbfe3b4"
+        },
+        "event": {
+          "kind": "tron_log",
+          "instruction": 0,
+          "assetId": "tron-nile:usdt:TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+          "programId": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+          "mint": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+          "decimals": 6,
+          "sourceAccount": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sourceOwner": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "recipientAccount": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+          "recipientOwner": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+          "atoms": "10000"
+        }
+      },
+      "resources": {
+        "origin_energy_usage": 29650,
+        "energy_usage_total": 29650,
+        "net_usage": 345,
+        "result": "SUCCESS"
+      }
+    },
+    {
+      "path": "backend/logic/chainreceipt/testdata/tron-usdt-fixture.json",
+      "sha256": "b76b0c4fe4b1d2264e4e9c2f6a297a5940dd0901a8494c0c32cccdafd12bf37e",
+      "request": {
+        "network": "tron-nile",
+        "hash": "82734cb0e229e0f5c8fe3716fd8ccee522e49a603afa1a1e6654f52cc49f2182",
+        "logIndex": 0,
+        "assetId": "tron-nile:usdt:TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn",
+        "recipient": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+        "atoms": "10000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "tron-nile",
+          "signature": "82734cb0e229e0f5c8fe3716fd8ccee522e49a603afa1a1e6654f52cc49f2182",
+          "slot": 72395838,
+          "feePayer": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "feeAtoms": "0",
+          "fingerprint": "fd60b16b9ccfa7f3dd0e538a46ca626e54e8cc9c738b889a7e91a130ca6e8b43",
+          "blockHash": "000000000450ac3ebd46f2d9b95dcf00bff5c204c2ec870808eff2b9f9359332"
+        },
+        "event": {
+          "kind": "tron_log",
+          "instruction": 0,
+          "assetId": "tron-nile:usdt:TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn",
+          "programId": "TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn",
+          "mint": "TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn",
+          "decimals": 6,
+          "sourceAccount": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "sourceOwner": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+          "recipientAccount": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+          "recipientOwner": "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH",
+          "atoms": "10000"
+        }
+      },
+      "resources": {
+        "energy_usage": 14650,
+        "energy_usage_total": 14650,
+        "net_usage": 345,
+        "result": "SUCCESS"
+      }
+    }
+  ],
+  "genesisEvidence": {
+    "path": "docs/design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/attachments/tron-receipts-2026-11-19/genesis.json",
+    "sha256": "a4cdf9418c21fac0fca4cde3e68cd4a689995782fea349ff2d807694678503aa"
+  },
+  "cleanup": {
+    "runs": [
+      "2feacecfef665b98",
+      "d0659eba8f29eaed"
+    ],
+    "remainingRegisteredResources": 0
+  },
+  "scope": {
+    "signing": false,
+    "broadcast": false,
+    "ledgerCredit": false,
+    "mainnetLiveTransferValidation": false,
+    "frontendChanged": false,
+    "schemaChanged": false
+  },
+  "notes": [
+    "12 concurrent calls create two TRC-20 events and one transaction fee. Concurrency, wide amounts, resource conflicts and failure cases use derived fake evidence, never broadcast.",
+    "Official Nile faucet token energy came from the contract origin. Zero TRX burn alone does not establish project sponsorship.",
+    "Genesis block contains a historical system allocation with a negative amount; block membership parsing uses only block header, txID and raw_data_hex. Selected transfer amounts still require positive integers.",
+    "RPC-trusted transfer facts do not establish product order ownership or net receipts."
+  ],
+  "tools": {
+    "go": "1.26.10 (module-selected toolchain)"
+  }
+}
