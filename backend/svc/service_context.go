@@ -19,6 +19,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainsend"
 	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
 	rewardtransfer "github.com/0xabcd-k/DexWallet/backend/logic/rewardtransfer"
 	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
@@ -47,6 +48,7 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
+	TONSendIntents        *chainsend.Store
 	ChainReceipts         *chainreceipt.Service
 	BaseReceipts          *chainreceipt.BaseService
 	TRONReceipts          *chainreceipt.TRONService
@@ -174,6 +176,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.BaseReceipts = chainreceipt.NewBase(conn, d.Tx, d.ChainAssets)
 	d.TRONReceipts = chainreceipt.NewTRON(conn, d.Tx, d.ChainAssets)
 	d.TONReceipts = chainreceipt.NewTON(conn, d.Tx, d.ChainAssets)
+	d.TONSendIntents = chainsend.NewStore(conn, d.Tx)
 	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx, c.Transfer.DefaultLimitPlanID)
 	var sender authlogic.Mailer
 	if c.Auth != nil {
