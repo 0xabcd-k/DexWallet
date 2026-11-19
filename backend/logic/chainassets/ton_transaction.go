@@ -74,29 +74,7 @@ func (s *Service) ReadTONEvidence(ctx context.Context, network, hash, master, ow
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 	e := s.endpoints[network]
-	var completed time.Time
-	read := func(path string, query url.Values, body any, target *json.RawMessage) error {
-		// Public TON Center is limited to 1 RPS. Do not retry or conceal HTTP errors.
-		// This spaces one observation; production concurrent workers need API quotas.
-		if e.APIKey == "" && !completed.IsZero() {
-			timer := time.NewTimer(time.Until(completed.Add(tonPublicRequestInterval)))
-			defer timer.Stop()
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-timer.C:
-			}
-		}
-		if err := s.request(ctx, n, e, path, query, body, target); err != nil {
-			return err
-		}
-		completed = time.Now()
-		var object map[string]json.RawMessage
-		if json.Unmarshal(*target, &object) != nil || object == nil || object["error"] != nil {
-			return invalid("invalid TON response: " + path)
-		}
-		return nil
-	}
+	read := s.tonReader(ctx, n, e)
 	if err := read("/api/v2/getMasterchainInfo", nil, nil, &out.Masterchain); err != nil {
 		return out, err
 	}
@@ -158,4 +136,31 @@ func (s *Service) ReadTONEvidence(ctx context.Context, network, hash, master, ow
 		}
 	}
 	return out, nil
+}
+
+// One observation spaces public requests without retrying side effects.
+func (s *Service) tonReader(ctx context.Context, n Network, e Endpoint) func(string, url.Values, any, *json.RawMessage) error {
+	var completed time.Time
+	return func(path string, query url.Values, body any, target *json.RawMessage) error {
+		// Public TON Center is limited to 1 RPS. Do not retry or conceal HTTP errors.
+		// This spaces one observation; production concurrent workers need API quotas.
+		if e.APIKey == "" && !completed.IsZero() {
+			timer := time.NewTimer(time.Until(completed.Add(tonPublicRequestInterval)))
+			defer timer.Stop()
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-timer.C:
+			}
+		}
+		if err := s.request(ctx, n, e, path, query, body, target); err != nil {
+			return err
+		}
+		completed = time.Now()
+		var object map[string]json.RawMessage
+		if json.Unmarshal(*target, &object) != nil || object == nil || object["error"] != nil {
+			return invalid("invalid TON response: " + path)
+		}
+		return nil
+	}
 }

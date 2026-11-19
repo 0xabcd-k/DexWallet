@@ -6,7 +6,7 @@
 
 2026-11-19 新增平台出款意图持久化、签名核验和单次广播执行入口，数据库 **business 20**。本批支持专用测试网 V4R2 平台钱包发出一条原生 TON 转账；签名接口与广播接口分别注入，已经用临时 Ed25519 密钥、模拟外部通道和真实隔离 MySQL 验证。
 
-当前没有生产签名服务、真实节点发送适配器、后台扫描调度或公开付款接口，也没有发起新的链上实转。共享 `ServiceContext.TONSendIntents` 只组装数据库存储；应用启动不会自动签名、广播或迁移。内置/外部用户钱包授权、Jetton 出款、主网及其他链仍按后续批次接入。
+第七批已接通独立测试签名进程、测试网节点发送及发送消息到收款事件的核验，并完成 0.01 TON 真实实转，详见下节。生产签名服务、后台扫描调度或公开付款接口仍未接通。共享 `ServiceContext.TONSendIntents` 只组装数据库存储；应用启动不会自动签名、广播或迁移。内置/外部用户钱包授权、Jetton 出款、主网及其他链仍按后续批次接入。
 
 这不是提现业务单：不检查用户资格、报价、限额或占用，不修改美元余额、账本、订单、通知或实收表。未来 5.6/6.8/6.9 调用前必须有自己的授权、资金占用和稳定业务身份；同一业务不能用新请求键绕开原意图。平台钱包签名与用户钱包签名责任保持分离。本批也不批准尚待审核的费用承担规则。
 
@@ -44,7 +44,7 @@ V4R2 消息编码依据锁定 SDK 的 `ton/wallet/v4r2.go`；防重放和有效�
 - 并发执行可能多次提交同一条消息，TON 钱包 seqno 防重放限制同一签名请求的执行。首个持久签名不能被后来者覆盖，迟到的错误不能把 `submitted` 改回未知。无需在数据库长时间持锁等待节点。
 - 有效期已过：本地检查及广播标记事务的数据库时钟检查拒绝继续提交，返回 `ErrExpired`。`signed` 或 `broadcast_unknown` 原状态和消息仍保留；过期不证明之前没有付款，不退款、不释放 seqno、不另开替代付款。
 
-节点接收不是执行成功，`MessageHash` 不是收款交易 hash。TON 索引器可能规范化外部消息，因此同时保留 signed body hash 作为后续关联材料。当前尚未实现从外部消息定位付款交易、逐消息追踪到收款事件和最终结算；不能把 `submitted` 用作产品“付款成功”。完整核验需要结合 [TON 到账核验](TON到账核验.md) 的收款事实并核对发送来源及原意图。
+节点接收不是执行成功，`MessageHash` 不是收款交易 hash。TON 索引器可能规范化外部消息，因此同时保留 signed body hash 作为后续关联材料。第七批已实现按签名 body 定位付款交易和单条原生币收款，最终业务结算仍未接通；不能把 `submitted` 用作产品“付款成功”。完整核验需要结合 [TON 到账核验](TON到账核验.md) 的收款事实并核对发送来源及原意图。
 
 ## 迁移与验证
 
@@ -67,3 +67,44 @@ go run ./tools/testenv run go test -race -tags=integration ./tests/integration \
 ```
 
 覆盖金额/目标/授权字段篡改、错误签名、持久消息损坏、12 并发同键、seqno 冲突、各提交边界应答丢失、超时后新实例恢复、迟到失败、签名后过期及资金表不变。签名使用真实密码学计算，广播与时钟故障为确定性测试替身；这不计为真实钱包、节点或链上付款验收。实际结果见 [5.3 验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。
+
+
+## 第七批：真实测试网发送与实收关联
+
+2026-11-19 已通过新发送执行器完成 **0.01 TON** 实转，平台出资为专用测试网 V4R2 钱包；收款是此前专用测试 W5 平台钱包。数据库保持 business 20，没有新 API、迁移或美元余额写入。此前第六批的模拟结论与本批真实证据分别保留。
+
+`ProcessSigner` 直接调用配置的可执行文件，不经 shell。业务进程通过 stdin 传递公共付款事实，子进程读取独立的测试 seed 文件和预先固定的单意图 policy，重建目标、金额、seqno、有效期、网络和 payload hash，只返回签名。测试签名器拒绝 policy 外的请求与超过 15 分钟的授权窗口；测试 seed 必须是仅所有者可访问的小型文件。执行器仍独立核对返回的签名。本机同一操作系统用户的两个进程只验证接口隔离，**不等于生产密钥权限隔离/HSM 已部署**；生产需独立身份/权限与业务授权政策。
+
+`chainassets.SubmitTON` 只接受测试网，先核对节点 zero-state，再提交已持久化的 BoC；节点回执 hash 必须等于本地外部消息 cell hash。HTTP 错误、ok=false、哈希不符或超时都不能视作安全未付款，不自动重签/重发。沿用固定节点配置、超时和响应大小约束，公开无 key 请求间隔 1.1 秒。接口依据 [TON Center 发送接口](https://docs.ton.org/api/v2/send/send-boc-return-hash)。
+
+`TON.Reconcile(ctx, key, receipts)` 先重新验证原意图及持久签名，再通过 [transactionsByMessage](https://docs.ton.org/api/v3/blockchain-data/get-transactions-by-message) 的 body_hash 定位付款交易，用 adjacentTransactions 的 out 方向取得收款交易。它不接受用户提交的“付款成功 tx”，也不凭金额相同借用另一笔交易。
+
+- 必须只有一笔候选发送交易及一条对应原生币消息；发送账户、外部 signed body hash、无 StateInit、目标、金额、空 body、non-bounce 均须符合原意图。发送钱包计算/action 成功，收款按既有 TON 事实规则核验。
+- 复用 TON 到账核验的 finalized、非模拟、主链/分片块、消息 hash/完整内容、LT 顺序、数量与目标校验。此为可信节点/索引器证据核验，仍不是本地轻客户端共识证明。
+- 查不到/未最终确认保持未确认，失败或错误证据明确报错；不退款、不重新付款。Reconcile 不受原签名到期限制，因为到期不能否定此前付款。
+- 实收事实先提交，再将发送记录至少推进到 submitted。两次短事务之间宕机可用原意图重查并复用同一事件；不会丢实收、重复记账或重新广播。submitted 仍只表达已被接收，查询结果另返回经核验的实收、付款交易及内部消息身份，不借此新增“用户提现成功”业务状态。
+
+### 显式探针与恢复
+
+已有 Node 探针依赖安装于 `scripts/payment_probe/`；本批未新增依赖。`scripts/payment_probe/ton-send-setup.mjs` 的 key/inspect/fund/initialize/policy 分别创建专用测试密钥、只读检查、转入 0.1 测试 TON、独立初始化 V4R2（转回 0.001 TON）、保存 0.01 TON 测试意图。fund/initialize 在发送前独占创建本地记录与 BoC；已有记录时拒绝另建，未知结果先查原交易，不能删除文件来重跑。seqno 0 初始化仅为测试准备，不纳入正式发送器支持范围；准备及主测试的数量和费用分开记录。
+
+主探针位于 `backend/tools/ton_send_testnet`，只使用 `testenv` 验证过的本机专用数据库账号，第一次 prepare 创建独立数据库和资源登记，保留在 `--state` 文件。后续进程加载同一数据库与意图；失败不自动删除数据库或改变付款键。
+
+在 `backend/` 构建：
+
+```bash
+go build -o ../.tools/ton-live-send/ton_test_signer ./tools/ton_test_signer
+go build -o ../.tools/ton-live-send/ton_send_testnet ./tools/ton_send_testnet
+```
+
+在仓库根加载 [本机隔离配置](开发与测试环境.md) 后，命令形态如下（路径须指向本次专用测试配置）：
+
+```bash
+.tools/ton-live-send/ton_send_testnet --action prepare --state .tools/ton-live-send/run.json --policy .tools/ton-live-send/policy.json
+.tools/ton-live-send/ton_send_testnet --action execute --state .tools/ton-live-send/run.json --policy .tools/ton-live-send/policy.json --signer /绝对路径/ton_test_signer --seed-file .tools/ton-live-send/v4-test.seed
+.tools/ton-live-send/ton_send_testnet --action reconcile --state .tools/ton-live-send/run.json --policy .tools/ton-live-send/policy.json --evidence .tools/ton-live-send/confirmed-evidence.json
+```
+
+status 只查库。cleanup 必须重新核验成功且通过 `--evidence` 保存公共实收证据后才清理登记的数据库；未知结果不得使用通用清理命令删除发送记录。清理会输出资源诊断及结果 JSON，state 文件保留，不能将已清理的运行误当成新付款。普通检查不联网；真实探针必须显式调用，账户余额、节点不满足时保留诊断。
+
+本次重复 execute 故意配置不存在的签名器和不可达 RPC，仍返回同一结果、attempts=1；再次 Reconcile 复用原实收事件，随后数据库已清理。公开证明与验证结果见 [第七批记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)，真实快照进入单元回归。后续继续 TON USDT/Jetton 出款、持久扫描与业务接入，用户提现和费用扣取仍未开放。

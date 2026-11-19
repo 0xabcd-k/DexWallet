@@ -1,0 +1,14 @@
+{
+  "address": "0:946a8fab314a8d2b92104dc2f3a8253bc6ccbdf7a964148ab895d6faa6bf2212",
+  "state": "uninitialized",
+  "seqno": 0,
+  "balance": "0",
+  "lastTransaction": null,
+  "platform": {
+    "balance": "1955384278",
+    "lastTransaction": {
+      "lt": "107332237000010",
+      "hash": "2ZS2uh7AkbS3feOpePCcA946HMSHdmNEoYEDOVj/b/w="
+    }
+  }
+}

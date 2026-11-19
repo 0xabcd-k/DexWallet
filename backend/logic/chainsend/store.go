@@ -187,7 +187,7 @@ func (s *Store) broadcastResult(ctx context.Context, id int64, accepted bool, no
 		if r.State == Submitted {
 			return nil
 		} // A late failure cannot downgrade acceptance.
-		if r.State != BroadcastUnknown {
+		if r.State != BroadcastUnknown && !(accepted && r.State == Signed) {
 			return ErrConflict
 		}
 		if accepted {

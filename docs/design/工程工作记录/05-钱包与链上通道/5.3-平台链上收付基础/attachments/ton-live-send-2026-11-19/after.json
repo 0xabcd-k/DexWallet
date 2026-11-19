@@ -1,0 +1,17 @@
+{
+  "address": "0:946a8fab314a8d2b92104dc2f3a8253bc6ccbdf7a964148ab895d6faa6bf2212",
+  "state": "active",
+  "seqno": 2,
+  "balance": "87712387",
+  "lastTransaction": {
+    "lt": "110731099000001",
+    "hash": "IB+umU8SklpJQyv6+twt+X0Dn0Jn1QzbmvCTL3wDaKw="
+  },
+  "platform": {
+    "balance": "1865736955",
+    "lastTransaction": {
+      "lt": "110731099000003",
+      "hash": "LOFtSyBYyexr6syQxIbQfJ7tKIY4ll6tYvTql0u8Bd4="
+    }
+  }
+}

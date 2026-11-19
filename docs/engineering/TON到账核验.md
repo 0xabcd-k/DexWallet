@@ -72,4 +72,4 @@ go test -tags=integration ./logic/chainreceipt \
   -run '^TestLiveTONHistoricalReceipts$' -count=1 -v
 ```
 
-`DEXWALLET_TEST_TON_RECEIPTS_EVIDENCE` 可设为本机已有输出目录。隔离数据库用 `TestTONReceiptMigrationPersistenceAndRecovery`，同时回归原三链事实存储；详细结果见 [5.3 验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。Base 内部 ETH 历史核验已补齐；已建立 [TON 平台出款执行基础](TON平台出款执行.md)，继续接入真实签名/广播、发送到收款关联、监听与订单分配。
+`DEXWALLET_TEST_TON_RECEIPTS_EVIDENCE` 可设为本机已有输出目录。隔离数据库用 `TestTONReceiptMigrationPersistenceAndRecovery`，同时回归原三链事实存储；详细结果见 [5.3 验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。Base 内部 ETH 历史核验已补齐；已建立 [TON 平台出款执行基础](TON平台出款执行.md)，已完成测试网独立签名/广播及发送到收款关联，继续接入 Jetton 出款、监听与订单分配。

@@ -1,0 +1,12 @@
+{
+  "network": "ton-testnet",
+  "role": "test-wallet-bootstrap",
+  "sender": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+  "recipient": "0:946a8fab314a8d2b92104dc2f3a8253bc6ccbdf7a964148ab895d6faa6bf2212",
+  "atoms": "100000000",
+  "seqno": 4,
+  "messageHash": "2e24eca585899dc36010078c804e3f8718883b48394778c071d751e5031b292c",
+  "bodyHash": "8dab3220c95790008a07ae7f42b9d1cba7c52e51386aeab4311405a766fff630",
+  "createdAt": "2026-11-19T08:09:09.444Z",
+  "status": "node-accepted-needs-verification"
+}

@@ -6,7 +6,9 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -118,5 +120,58 @@ func TestTONProposalRejectsAmbiguityAndUnsupportedMessages(t *testing.T) {
 	friendly.Recipient = a.String()
 	if got, err := canonicalProposal(friendly, sender); err != nil || got != p {
 		t.Fatal(got, err)
+	}
+}
+
+func TestTONRealAcceptedV4Artifact(t *testing.T) {
+	raw, err := os.ReadFile("../chainreceipt/testdata/ton-v4-send.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var f struct {
+		Intent   View
+		Wallet   Wallet
+		Evidence struct {
+			Parent struct {
+				Transactions []struct {
+					In struct {
+						Content struct {
+							Body string `json:"body"`
+						} `json:"message_content"`
+					} `json:"in_msg"`
+				} `json:"transactions"`
+			} `json:"parent"`
+		}
+	}
+	if err = json.Unmarshal(raw, &f); err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := base64.StdEncoding.DecodeString(f.Evidence.Parent.Transactions[0].In.Content.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accepted, err := cell.FromBOC(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signature, err := accepted.BeginParse().LoadSlice(512)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := payload(f.Intent.Proposal, f.Wallet.SubwalletID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ed25519.Verify(f.Wallet.PublicKey, body.Hash(), signature) {
+		t.Fatal("actual chain body differs from fixed intent")
+	}
+	boc, messageHash, bodyHash, err := envelope(f.Intent.Sender, body, signature)
+	if err != nil || messageHash != f.Intent.MessageHash || bodyHash != f.Intent.BodyHash {
+		t.Fatal(messageHash, bodyHash, err)
+	}
+	row := &model.ChainSendIntent{SignedBoc: sql.NullString{String: base64.StdEncoding.EncodeToString(boc), Valid: true}, MessageHash: messageHash, BodyHash: bodyHash}
+	executor := &TON{wallet: f.Wallet, sender: f.Intent.Sender}
+	if _, err = executor.checkedArtifact(row, body); err != nil {
+		t.Fatal(err)
 	}
 }

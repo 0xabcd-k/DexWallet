@@ -1,0 +1,34 @@
+{
+  "network": "ton-testnet",
+  "asset": "TON",
+  "principalAtoms": "10000000",
+  "signer": "separate pinned-intent test signer process",
+  "sender": "0:946a8fab314a8d2b92104dc2f3a8253bc6ccbdf7a964148ab895d6faa6bf2212",
+  "recipient": "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0",
+  "externalMessageHash": "39e103464608a9896da51efc4505a88451ec6be1067a0eae51bfb51e8a34675c",
+  "signedBodyHash": "ffe5ad4847c7707dd7a432ab77d417bd585f1750e8e3d0357669746267267013",
+  "senderTransaction": "201fae994f12925a49432bfafadc2df97d039f4267d50cdb9af0932f7c0368ac",
+  "transferMessageHash": "9d96ea52ac7f200d0d52fcc76fc950518a914d027d29e0507bc099a1efe0c747",
+  "recipientTransaction": "2ce16d4b2058c9ec6beacc90c486d07c9eed288638965ead62f4ea974bbc05de",
+  "masterchainSeqno": 98940334,
+  "senderFeeAtoms": "387743",
+  "recipientFeeAtoms": "36409",
+  "totalObservedFeeAtoms": "424152",
+  "repeatedExecution": {
+    "sameView": true,
+    "attempts": 1,
+    "unreachableSignerAndRPC": true
+  },
+  "repeatedReconciliation": {
+    "reused": true
+  },
+  "run": "3ea39765a2d320f0",
+  "registeredResources": 0,
+  "notImplemented": [
+    "production signer isolation",
+    "user withdrawal authorization and holds",
+    "fee charging",
+    "Jetton outbound",
+    "background scanning"
+  ]
+}

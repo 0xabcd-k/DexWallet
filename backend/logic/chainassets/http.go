@@ -38,7 +38,7 @@ func (s *Service) request(ctx context.Context, n Network, e Endpoint, path strin
 		return invalid("request construction")
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "DexWallet/chain-assets-readonly")
+	req.Header.Set("User-Agent", "DexWallet/chain-rpc")
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
