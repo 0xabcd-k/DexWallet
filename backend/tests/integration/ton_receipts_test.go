@@ -60,7 +60,7 @@ func TestTONReceiptMigrationPersistenceAndRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	if err = m.Migrate(17); err != nil {
+	if err = m.Up(); err != nil {
 		t.Fatal(err)
 	}
 	conn := sqlx.NewSqlConnFromDB(db)
@@ -81,11 +81,19 @@ func TestTONReceiptMigrationPersistenceAndRecovery(t *testing.T) {
 		}
 		originals = append(originals, s.Receipt)
 	}
-	for _, version := range []uint{18, 17, 18} {
+	for _, version := range []uint{18, 17, businessSchemaVersion} {
 		if err = m.Migrate(version); err != nil {
 			t.Fatal(err)
 		}
 		for i, record := range records {
+			if version < businessSchemaVersion {
+				var fingerprint string
+				x := originals[i].Transaction
+				if err = db.QueryRow("SELECT fingerprint FROM chain_observed_transaction WHERE network=? AND signature=?", x.Network, x.Signature).Scan(&fingerprint); err != nil || fingerprint != x.Fingerprint {
+					t.Fatal("legacy facts lost", version, err)
+				}
+				continue
+			}
 			s, err := record()
 			if err != nil || !s.Reused || s.Receipt.Transaction != originals[i].Transaction || s.Receipt.Event != originals[i].Event {
 				t.Fatal("legacy identity changed", version, err)

@@ -228,8 +228,11 @@ func TestBaseReceiptUpgradeAndPersistence(t *testing.T) {
 	if err = m.Migrate(16); err == nil || !strings.Contains(err.Error(), "base_receipt_rollback_guard") {
 		t.Fatal("Base evidence rollback not guarded", err)
 	}
-	if _, err = service.Find(ctx, request.Network, request.Hash, chainreceipt.EVMLog, 0); err != nil {
-		t.Fatal("rollback lost event", err)
+	// A multi-step rollback can remove newer columns before the business-17 guard.
+	// Verify preserved data directly; the current binary requires the latest schema.
+	var remaining int
+	if err = db.QueryRow("SELECT COUNT(*) FROM chain_transfer_event WHERE event_kind='evm_log' AND instruction_index=0").Scan(&remaining); err != nil || remaining != 1 {
+		t.Fatal("rollback lost event", remaining, err)
 	}
 	t.Log("business 16/17 Solana preservation, 18 concurrent requests / 3 events / 1 Base fee, uint256, immutable evidence, conflict, commit recovery, unchanged funds and rollback guard passed")
 }

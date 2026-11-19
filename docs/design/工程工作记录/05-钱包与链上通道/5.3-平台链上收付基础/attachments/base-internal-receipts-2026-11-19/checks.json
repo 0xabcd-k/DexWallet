@@ -1,0 +1,75 @@
+{
+  "date": "2026-11-19",
+  "baseline": "e560aa9",
+  "branch": "feat/base-internal-eth-receipts",
+  "businessSchema": 19,
+  "tools": {
+    "go": "1.26.10",
+    "node": "24.22.1",
+    "newDependencies": false
+  },
+  "checks": [
+    {
+      "command": "go test -race ./...",
+      "result": "passed; after final failed-CREATE case change, chainreceipt package rerun passed"
+    },
+    {
+      "command": "go vet ./...",
+      "result": "passed; chainreceipt package rerun passed after final change"
+    },
+    {
+      "command": "bash scripts/check_contracts.sh",
+      "result": "passed with locked Node 24.22.1; codegen ownership, generator regression, all Go unit tests and API contract typecheck"
+    },
+    {
+      "command": "go run ./tools/testenv run go test -p 1 -tags=integration ./tests/integration ./api/internal/server -count=1 -timeout=240s",
+      "result": "passed",
+      "seconds": [
+        161.597,
+        9.612
+      ]
+    },
+    {
+      "command": "DEXWALLET_TEST_BASE_CALL_RECEIPTS_LIVE=1 go test -tags=integration ./logic/chainreceipt -run ^TestLiveBaseInternalETHReceipt$ -count=1 -v",
+      "result": "failed: upstream HTTP status 401; NOT a live receipt success",
+      "seconds": 3.859
+    },
+    {
+      "command": "python3 scripts/check_docs.py (working tree)",
+      "result": "failed solely on preexisting untracked UI draft trailing spaces at lines 411,412,414; excluded and unchanged"
+    },
+    {
+      "command": "python3 scripts/check_docs.py (exported staged tree)",
+      "result": "passed; 279 documents and 112 archived files"
+    },
+    {
+      "command": "git diff --cached --check",
+      "result": "passed"
+    }
+  ],
+  "initialFailuresResolved": [
+    "Incremental DDL column order: added explicit AFTER clauses; full integration then passed.",
+    "Default shell Node 20: reran contract checks with required Node 24.22.1."
+  ],
+  "syntheticFixture": {
+    "path": "backend/logic/chainreceipt/testdata/base-internal-eth-fixture.json",
+    "sha256": "d495c31f94fdd2b910a8364e549bdd669f3bf8004ddbdbcf90ca59401c51d17d",
+    "broadcast": false,
+    "provesLiveTrace": false
+  },
+  "cleanup": {
+    "testenvRuns": [
+      "6248c64ffe291e8c",
+      "6c7566b1fe9113d2"
+    ],
+    "remainingRegisteredResources": 0
+  },
+  "scope": {
+    "localImplementation": "complete",
+    "liveInternalETH": "pending historical trace capable RPC",
+    "signing": false,
+    "broadcast": false,
+    "ledgerCredit": false,
+    "frontendChanged": false
+  }
+}

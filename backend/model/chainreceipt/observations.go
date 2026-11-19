@@ -17,3 +17,9 @@ func LockTransaction(ctx context.Context, conn sqlx.SqlConn, row *ChainObservedT
 	err = conn.QueryRowCtx(ctx, &found, "SELECT "+chainObservedTransactionRows+" FROM chain_observed_transaction WHERE network=? AND signature=? FOR UPDATE", row.Network, row.Signature)
 	return &found, err
 }
+
+// Caller holds the transaction row lock and has checked the trace is absent.
+func SaveCallTrace(ctx context.Context, conn sqlx.SqlConn, id int64, fingerprint, raw string) error {
+	_, err := conn.ExecCtx(ctx, "UPDATE chain_observed_transaction SET call_trace_fingerprint=?,call_trace_json=? WHERE id=?", fingerprint, raw, id)
+	return err
+}

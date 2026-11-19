@@ -64,9 +64,11 @@ type Event struct {
 	Atoms            string `json:"atoms"`
 }
 type Receipt struct {
-	Transaction Transaction `json:"transaction"`
-	Event       Event       `json:"event"`
-	evidence    any
+	Transaction      Transaction `json:"transaction"`
+	Event            Event       `json:"event"`
+	evidence         any
+	traceFingerprint string
+	callTrace        json.RawMessage
 }
 type Source interface {
 	Catalog() []chainassets.Network

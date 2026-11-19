@@ -1,0 +1,91 @@
+{
+  "date": "2026-11-19",
+  "network": "base-sepolia",
+  "request": {
+    "method": "debug_traceTransaction",
+    "params": [
+      "0x1c3509c224c12725106e47b57e5f5627934edf229ae51fb42861173fb36c2852",
+      {
+        "tracer": "callTracer",
+        "timeout": "15s",
+        "tracerConfig": {
+          "onlyTopCall": false
+        }
+      }
+    ]
+  },
+  "probes": [
+    {
+      "probe": "base-official",
+      "url": "https://sepolia.base.org",
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "error": {
+          "code": -32611,
+          "message": "rejected due to request filter settings"
+        }
+      }
+    },
+    {
+      "probe": "publicnode",
+      "url": "https://base-sepolia-rpc.publicnode.com",
+      "response": {
+        "jsonrpc": "2.0",
+        "error": {
+          "code": -32601,
+          "message": "the method debug_traceTransaction does not exist/is not available"
+        },
+        "id": 1
+      }
+    },
+    {
+      "probe": "drpc",
+      "url": "https://base-sepolia.drpc.org",
+      "response": {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "error": {
+          "message": "Temporary internal error. Please retry, trace-id: 35d0a4b90f04236490ffa79b724fe3aa",
+          "code": 19
+        }
+      }
+    },
+    {
+      "probe": "drpc-retry",
+      "url": "https://base-sepolia.drpc.org",
+      "response": {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "error": {
+          "message": "Request timeout on the free plan, please upgrade to paid plan",
+          "code": 30
+        }
+      }
+    },
+    {
+      "probe": "blockreq",
+      "url": "https://base-sepolia-rpc.blockreq.com/v1/rpc/public",
+      "transportError": "curl exit 28: connection timed out after 25002 milliseconds; no response body"
+    },
+    {
+      "probe": "tenderly",
+      "url": "https://base-sepolia.gateway.tenderly.co",
+      "response": {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "error": {
+          "code": -32005,
+          "message": "rate limit exceeded"
+        }
+      }
+    }
+  ],
+  "productionReaderAttempt": {
+    "endpoint": "https://sepolia.base.org",
+    "test": "TestLiveBaseInternalETHReceipt",
+    "result": "failed before successful trace verification: upstream HTTP status 401",
+    "seconds": 3.859
+  },
+  "conclusion": "No complete historical call trace received. Live internal ETH receipt verification has NOT passed. No transaction submitted."
+}

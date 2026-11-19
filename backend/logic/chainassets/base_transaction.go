@@ -19,11 +19,21 @@ type BaseEvidence struct {
 	Finalized   json.RawMessage `json:"finalized"`
 	Block       json.RawMessage `json:"block"`
 	OperatorFee json.RawMessage `json:"operatorFee"`
+	CallTrace   json.RawMessage `json:"callTrace,omitempty"`
 }
 
 // Fixed, configured Base endpoints only. The caller still verifies finality,
 // transfer identity and fees; no client can supply these facts.
 func (s *Service) ReadBaseEvidence(ctx context.Context, network, hash string) (BaseEvidence, error) {
+	return s.readBaseEvidence(ctx, network, hash, false)
+}
+
+// ReadBaseCallEvidence additionally requires a complete callTracer tree from the same node.
+func (s *Service) ReadBaseCallEvidence(ctx context.Context, network, hash string) (BaseEvidence, error) {
+	return s.readBaseEvidence(ctx, network, hash, true)
+}
+
+func (s *Service) readBaseEvidence(ctx context.Context, network, hash string, trace bool) (BaseEvidence, error) {
 	var out BaseEvidence
 	if len(hash) != 66 || !strings.HasPrefix(hash, "0x") {
 		return out, fmt.Errorf("invalid Base transaction hash")
@@ -86,5 +96,9 @@ func (s *Service) ReadBaseEvidence(ctx context.Context, network, hash string) (B
 	data := "0x" + hex.EncodeToString(h.Sum(nil)[:4]) + fmt.Sprintf("%064x", gas)
 	// Historical rules at the exact canonical block, never today's price.
 	out.OperatorFee, err = s.rpcRaw(ctx, n, e, "eth_call", []any{map[string]string{"to": BaseGasPriceOracle, "data": data}, map[string]any{"blockHash": receipt.BlockHash, "requireCanonical": true}})
+	if err != nil || !trace {
+		return out, err
+	}
+	out.CallTrace, err = s.rpcRaw(ctx, n, e, "debug_traceTransaction", []any{hash, map[string]any{"tracer": "callTracer", "timeout": "15s", "tracerConfig": map[string]bool{"onlyTopCall": false}}})
 	return out, err
 }

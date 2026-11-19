@@ -11,6 +11,8 @@ CREATE TABLE `chain_observed_transaction` (
     `operator_fee_atoms` VARCHAR(78) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
     `fingerprint` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     `evidence_json` MEDIUMTEXT NOT NULL,
+    `call_trace_fingerprint` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+    `call_trace_json` MEDIUMTEXT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_chain_observed_transaction` (`network`, `signature`)

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	model "github.com/0xabcd-k/DexWallet/backend/model/chainreceipt"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -41,7 +42,13 @@ func (s *Service) Record(ctx context.Context, r Request) (Stored, error) {
 
 // Only verified facts from the chain-specific verifiers enter this shared store.
 func (s *Service) record(ctx context.Context, receipt Receipt) (Stored, error) {
-	raw, err := json.Marshal(receipt.evidence)
+	evidence := receipt.evidence
+	if base, ok := evidence.(chainassets.BaseEvidence); ok {
+		// Trace is immutable supplementary evidence; existing receipt evidence stays untouched.
+		base.CallTrace = nil
+		evidence = base
+	}
+	raw, err := json.Marshal(evidence)
 	if err != nil {
 		return Stored{}, err
 	}
@@ -55,6 +62,15 @@ func (s *Service) record(ctx context.Context, receipt Receipt) (Stored, error) {
 		}
 		if transactionFacts(row) != t {
 			return ErrConflict
+		}
+		if receipt.traceFingerprint != "" {
+			if row.CallTraceFingerprint == "" {
+				if err := model.SaveCallTrace(ctx, conn, row.Id, receipt.traceFingerprint, string(receipt.callTrace)); err != nil {
+					return err
+				}
+			} else if row.CallTraceFingerprint != receipt.traceFingerprint {
+				return ErrConflict
+			}
 		}
 		events := model.NewChainTransferEventModel(conn)
 		previous, err := events.FindOneByTransactionIdEventKindInstructionIndex(ctx, row.Id, receipt.Event.Kind, int64(receipt.Event.Instruction))
@@ -81,7 +97,7 @@ func (s *Service) record(ctx context.Context, receipt Receipt) (Stored, error) {
 	var failure *transaction.Failure
 	if errors.As(err, &failure) && failure.Unknown() {
 		found, lookupErr := s.findEvent(ctx, receipt.Transaction.Network, receipt.Transaction.Signature, receipt.Event.Kind, receipt.Event.Instruction)
-		if lookupErr == nil && found.Transaction == receipt.Transaction && found.Event == receipt.Event {
+		if lookupErr == nil && found.Transaction == receipt.Transaction && found.Event == receipt.Event && found.traceFingerprint == receipt.traceFingerprint {
 			return Stored{Receipt: found, Reused: true}, nil
 		}
 		if lookupErr == nil {
@@ -103,7 +119,11 @@ func (s *Service) findEvent(ctx context.Context, network, signature, kind string
 	if err != nil {
 		return Receipt{}, err
 	}
-	return Receipt{Transaction: transactionFacts(row), Event: eventFacts(event)}, nil
+	found := Receipt{Transaction: transactionFacts(row), Event: eventFacts(event)}
+	if kind == EVMCall {
+		found.traceFingerprint = row.CallTraceFingerprint
+	}
+	return found, nil
 }
 func transactionFacts(t *model.ChainObservedTransaction) Transaction {
 	return Transaction{Network: t.Network, Signature: t.Signature, Slot: t.Slot, FeePayer: t.FeePayer, FeeAtoms: t.FeeAtoms, BlockHash: t.BlockHash, ExecutionFeeAtoms: t.ExecutionFeeAtoms, L1FeeAtoms: t.L1FeeAtoms, OperatorFeeAtoms: t.OperatorFeeAtoms, Fingerprint: t.Fingerprint}

@@ -21,6 +21,7 @@ func run() error {
 	var request chainreceipt.Request
 	flag.StringVar(&request.Network, "network", "", "configured Solana, Base, TRON or TON network")
 	flag.StringVar(&request.Signature, "signature", "", "Solana signature, Base/TRON hash, or TON recipient transaction hash")
+	callIndex := flag.Int("call-index", -1, "Base internal ETH callTracer preorder index; root 0 excluded")
 	logIndex := flag.Int("log-index", -1, "Base receipt logIndex or TRON info.log array index; omit for native transfers")
 	flag.IntVar(&request.Instruction, "instruction", -1, "top-level instruction index, zero-based")
 	flag.StringVar(&request.AssetID, "asset", "", "exact catalog asset ID")
@@ -47,11 +48,14 @@ func run() error {
 	isTRON := request.Network == chainassets.TRONMainnet || request.Network == chainassets.TRONNile
 	tronRequest := chainreceipt.TRONRequest{Network: request.Network, Hash: request.Signature, AssetID: request.AssetID, Recipient: request.Recipient, Atoms: request.Atoms}
 	baseRequest := chainreceipt.BaseRequest{Network: request.Network, Hash: request.Signature, AssetID: request.AssetID, Recipient: request.Recipient, Atoms: request.Atoms}
+	if *callIndex >= 0 {
+		baseRequest.CallIndex = callIndex
+	}
 	if *logIndex >= 0 {
 		baseRequest.LogIndex = logIndex
 		tronRequest.LogIndex = logIndex
 	}
-	if *logIndex < -1 || ((isBase || isTRON || isTON) && request.Instruction != -1) || (!isBase && !isTRON && *logIndex != -1) {
+	if *callIndex < -1 || (*callIndex != -1 && (!isBase || *logIndex != -1)) || *logIndex < -1 || ((isBase || isTRON || isTON) && request.Instruction != -1) || (!isBase && !isTRON && *logIndex != -1) {
 		return fmt.Errorf("event position does not match network")
 	}
 	var receipt chainreceipt.Receipt
@@ -81,8 +85,8 @@ func run() error {
 		if e = db.QueryRowContext(ctx, "SELECT version,dirty FROM schema_migrations_business").Scan(&version, &dirty); e != nil {
 			return e
 		}
-		if version < 18 || dirty {
-			return fmt.Errorf("record requires clean business schema >=18")
+		if version < 19 || dirty {
+			return fmt.Errorf("record requires clean business schema >=19")
 		}
 		var saved chainreceipt.Stored
 		conn, tx := sqlx.NewSqlConnFromDB(db), transaction.New(db)

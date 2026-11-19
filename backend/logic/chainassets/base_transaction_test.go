@@ -24,6 +24,7 @@ func TestBaseEvidenceCanonicalHistoricalFeeQueries(t *testing.T) {
 	calls := 0
 	badNetwork := false
 	missing := false
+	traceError := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Method string
@@ -55,6 +56,23 @@ func TestBaseEvidenceCanonicalHistoricalFeeQueries(t *testing.T) {
 			} else {
 				t.Error("unexpected block tag", tag)
 			}
+		case "debug_traceTransaction":
+			var hash string
+			var config struct {
+				Tracer       string
+				Timeout      string
+				TracerConfig map[string]bool
+			}
+			_ = json.Unmarshal(req.Params[0], &hash)
+			_ = json.Unmarshal(req.Params[1], &config)
+			if hash != "0xdb945055aa01454df203b52e16cecf1548e6c826627da9aaba98f908db3a3d17" || config.Tracer != "callTracer" || config.Timeout != "15s" || config.TracerConfig["onlyTopCall"] || len(config.TracerConfig) != 1 {
+				t.Error("incomplete trace request", config)
+			}
+			if traceError {
+				_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1, "error": map[string]any{"code": -32601, "message": "method unavailable"}, "result": map[string]any{"type": "CALL"}})
+				return
+			}
+			result = map[string]any{"type": "CALL", "calls": []any{}}
 		case "eth_call":
 			var call map[string]string
 			var block map[string]any
@@ -81,6 +99,17 @@ func TestBaseEvidenceCanonicalHistoricalFeeQueries(t *testing.T) {
 	if err != nil || calls != 6 || string(proof.OperatorFee) != string(f.Evidence.OperatorFee) {
 		t.Fatal(err, calls)
 	}
+	calls = 0
+	proof, err = source.ReadBaseCallEvidence(context.Background(), BaseSepolia, hash)
+	if err != nil || calls != 7 || len(proof.CallTrace) == 0 {
+		t.Fatal(err, calls)
+	}
+	traceError = true
+	calls = 0
+	if _, err = source.ReadBaseCallEvidence(context.Background(), BaseSepolia, hash); err == nil || calls != 7 {
+		t.Fatal(err, calls)
+	}
+	traceError = false
 	badNetwork = true
 	calls = 0
 	if _, err = source.ReadBaseEvidence(context.Background(), BaseSepolia, hash); err == nil || calls != 1 {

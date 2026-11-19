@@ -6,7 +6,7 @@
 
 2026-11-19 接通 TON 主网/测试网固定目录下的原生币与 USDT（Jetton）到账核验、持久去重和提交异常恢复。真实只读验收复查三笔已有测试网收款：0.01 TON、1 枚测试 USDT 和未初始化账户收到的 0.05 TON。主网转账未实测。
 
-记录入口使用 **business 18**，在原事实表扩宽地址列；沿用现有 tonutils-go 1.15.5，不新增 SDK、资金 API 或页面。本批仍是转账事实存储，订单绑定、唯一分配、美元入账、签名广播及完整支付链路费用结算由后续业务接入。
+TON 批次以 business 18 扩宽地址列；当前记录入口统一要求 **business 19**，见 [Base 内部轨迹](Base到账核验.md)。沿用现有 tonutils-go 1.15.5，不新增 SDK、资金 API 或页面。本批仍是转账事实存储，订单绑定、唯一分配、美元入账、签名广播及完整支付链路费用结算由后续业务接入。
 
 ## 定位与确认
 
@@ -59,7 +59,7 @@ go run ./tools/chain_receipts \
   --atoms 10000000 --timeout 30s
 ```
 
-测试 USDT 另配置 `DEXWALLET_CHAIN_TON_TESTNET_TEST_USDT_CONTRACT`，资产 ID 使用 `ton-testnet:usdt:<配置的完整 master>`。显式 `--record` 才使用 `DEXWALLET_MYSQL_DSN` 写入事实表，并要求 clean business ≥18；不会给用户加余额。`--instruction`、`--log-index` 均不用于 TON。
+测试 USDT 另配置 `DEXWALLET_CHAIN_TON_TESTNET_TEST_USDT_CONTRACT`，资产 ID 使用 `ton-testnet:usdt:<配置的完整 master>`。显式 `--record` 才使用 `DEXWALLET_MYSQL_DSN` 写入事实表，并要求 clean business ≥19；不会给用户加余额。`--instruction`、`--log-index` 均不用于 TON。
 
 无 API key 的公共 TON Center 限制 1 RPS，本轮实际遇到过 429；单次证据观察在各响应完成后间隔 1.1 秒，超时/取消仍生效，没有自动重试。并发观察可能继续遇到配额限制，正式接入需配置相应 `DEXWALLET_CHAIN_TON_*_API_KEY` 和节点配额。服务默认查询预算 3 秒不足以完成无 key 的多次读取，本内部核验应配置 `ChainAssets.Timeout` 为 10–30 秒；独立工具建议上述 30 秒。配额来源见 [官方接口说明](https://docs.ton.org/api/v3/blockchain-data/get-transactions)。
 

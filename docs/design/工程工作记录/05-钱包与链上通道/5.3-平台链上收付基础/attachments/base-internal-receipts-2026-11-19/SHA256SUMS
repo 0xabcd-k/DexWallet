@@ -1,0 +1,3 @@
+d2401baa999d005476bc5f0d88bbbc864f32a7b3d43e4defa2571018afde469a  docs/design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/attachments/base-internal-receipts-2026-11-19/checks.json
+3e95b978e2dc8b6f990e368e6d6d3277f08a2625116d3a30ce48b16b18cac4ce  docs/design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/attachments/base-internal-receipts-2026-11-19/rpc-probes.json
+d495c31f94fdd2b910a8364e549bdd669f3bf8004ddbdbcf90ca59401c51d17d  backend/logic/chainreceipt/testdata/base-internal-eth-fixture.json

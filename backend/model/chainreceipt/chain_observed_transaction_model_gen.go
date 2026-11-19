@@ -38,19 +38,21 @@ type (
 	}
 
 	ChainObservedTransaction struct {
-		Id                int64     `db:"id"`
-		Network           string    `db:"network"`
-		Signature         string    `db:"signature"`
-		Slot              int64     `db:"slot"`
-		FeePayer          string    `db:"fee_payer"`
-		FeeAtoms          string    `db:"fee_atoms"`
-		BlockHash         string    `db:"block_hash"`
-		ExecutionFeeAtoms string    `db:"execution_fee_atoms"`
-		L1FeeAtoms        string    `db:"l1_fee_atoms"`
-		OperatorFeeAtoms  string    `db:"operator_fee_atoms"`
-		Fingerprint       string    `db:"fingerprint"`
-		EvidenceJson      string    `db:"evidence_json"`
-		CreatedAt         time.Time `db:"created_at"`
+		Id                   int64          `db:"id"`
+		Network              string         `db:"network"`
+		Signature            string         `db:"signature"`
+		Slot                 int64          `db:"slot"`
+		FeePayer             string         `db:"fee_payer"`
+		FeeAtoms             string         `db:"fee_atoms"`
+		BlockHash            string         `db:"block_hash"`
+		ExecutionFeeAtoms    string         `db:"execution_fee_atoms"`
+		L1FeeAtoms           string         `db:"l1_fee_atoms"`
+		OperatorFeeAtoms     string         `db:"operator_fee_atoms"`
+		Fingerprint          string         `db:"fingerprint"`
+		EvidenceJson         string         `db:"evidence_json"`
+		CallTraceFingerprint string         `db:"call_trace_fingerprint"`
+		CallTraceJson        sql.NullString `db:"call_trace_json"`
+		CreatedAt            time.Time      `db:"created_at"`
 	}
 )
 
@@ -96,14 +98,14 @@ func (m *defaultChainObservedTransactionModel) FindOneByNetworkSignature(ctx con
 }
 
 func (m *defaultChainObservedTransactionModel) Insert(ctx context.Context, data *ChainObservedTransaction) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, chainObservedTransactionRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Network, data.Signature, data.Slot, data.FeePayer, data.FeeAtoms, data.BlockHash, data.ExecutionFeeAtoms, data.L1FeeAtoms, data.OperatorFeeAtoms, data.Fingerprint, data.EvidenceJson)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, chainObservedTransactionRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.Network, data.Signature, data.Slot, data.FeePayer, data.FeeAtoms, data.BlockHash, data.ExecutionFeeAtoms, data.L1FeeAtoms, data.OperatorFeeAtoms, data.Fingerprint, data.EvidenceJson, data.CallTraceFingerprint, data.CallTraceJson)
 	return ret, err
 }
 
 func (m *defaultChainObservedTransactionModel) Update(ctx context.Context, newData *ChainObservedTransaction) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, chainObservedTransactionRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.Network, newData.Signature, newData.Slot, newData.FeePayer, newData.FeeAtoms, newData.BlockHash, newData.ExecutionFeeAtoms, newData.L1FeeAtoms, newData.OperatorFeeAtoms, newData.Fingerprint, newData.EvidenceJson, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.Network, newData.Signature, newData.Slot, newData.FeePayer, newData.FeeAtoms, newData.BlockHash, newData.ExecutionFeeAtoms, newData.L1FeeAtoms, newData.OperatorFeeAtoms, newData.Fingerprint, newData.EvidenceJson, newData.CallTraceFingerprint, newData.CallTraceJson, newData.Id)
 	return err
 }
 

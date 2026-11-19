@@ -16,6 +16,7 @@ import (
 
 const EVMValue = "evm_value"
 const EVMLog = "evm_log"
+const EVMCall = "evm_call"
 const EVMNativeProgram = "evm"
 const ERC20TransferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 const zeroEVMAddress = "0x0000000000000000000000000000000000000000"
@@ -24,6 +25,7 @@ type BaseRequest struct {
 	Network   string `json:"network"`
 	Hash      string `json:"hash"`
 	LogIndex  *int   `json:"logIndex,omitempty"`
+	CallIndex *int   `json:"callIndex,omitempty"`
 	AssetID   string `json:"assetId"`
 	Recipient string `json:"recipient"`
 	Atoms     string `json:"atoms"`
@@ -31,6 +33,9 @@ type BaseRequest struct {
 type BaseSource interface {
 	Catalog() []chainassets.Network
 	ReadBaseEvidence(context.Context, string, string) (chainassets.BaseEvidence, error)
+}
+type BaseCallSource interface {
+	ReadBaseCallEvidence(context.Context, string, string) (chainassets.BaseEvidence, error)
 }
 type BaseVerifier struct{ source BaseSource }
 
@@ -54,7 +59,7 @@ func (s *BaseService) Record(ctx context.Context, r BaseRequest) (Stored, error)
 
 // Find recovers an already recorded event, without claiming an order or querying RPC.
 func (s *BaseService) Find(ctx context.Context, network, hash, kind string, index int) (Receipt, error) {
-	if (network != chainassets.BaseMainnet && network != chainassets.BaseSepolia) || (kind != EVMValue && kind != EVMLog) || index < 0 || (kind == EVMValue && index != 0) || !hexData(hash, 32) {
+	if (network != chainassets.BaseMainnet && network != chainassets.BaseSepolia) || (kind != EVMValue && kind != EVMLog && kind != EVMCall) || index < 0 || index > math.MaxInt32 || (kind == EVMCall && index == 0) || (kind == EVMValue && index != 0) || !hexData(hash, 32) {
 		return Receipt{}, ErrInvalidRequest
 	}
 	return s.store.findEvent(ctx, network, strings.ToLower(hash), kind, index)
@@ -99,6 +104,9 @@ func (v *BaseVerifier) Verify(ctx context.Context, r BaseRequest) (Receipt, erro
 	if !hexData(r.Hash, 32) || !hexData(r.Recipient, 20) || strings.EqualFold(r.Recipient, zeroEVMAddress) || !decimal256(r.Atoms) || (r.LogIndex != nil && (*r.LogIndex < 0 || *r.LogIndex > math.MaxInt32)) {
 		return Receipt{}, ErrInvalidRequest
 	}
+	if r.CallIndex != nil && (*r.CallIndex <= 0 || *r.CallIndex > math.MaxInt32 || r.LogIndex != nil) {
+		return Receipt{}, ErrInvalidRequest
+	}
 	var asset chainassets.Asset
 	for _, n := range v.source.Catalog() {
 		if n.ID == r.Network && n.Family == chainassets.Base {
@@ -110,12 +118,22 @@ func (v *BaseVerifier) Verify(ctx context.Context, r BaseRequest) (Receipt, erro
 			}
 		}
 	}
-	if asset.ID == "" || (asset.Origin == chainassets.Native) != (r.LogIndex == nil) {
+	if asset.ID == "" || (asset.Origin == chainassets.Native) != (r.LogIndex == nil) || (r.CallIndex != nil && asset.Origin != chainassets.Native) {
 		return Receipt{}, ErrInvalidRequest
 	}
 	r.Hash = strings.ToLower(r.Hash)
 	r.Recipient = strings.ToLower(r.Recipient)
-	evidence, err := v.source.ReadBaseEvidence(ctx, r.Network, r.Hash)
+	var evidence chainassets.BaseEvidence
+	var err error
+	if r.CallIndex != nil {
+		source, ok := v.source.(BaseCallSource)
+		if !ok {
+			return Receipt{}, fmt.Errorf("%w: Base source does not provide call traces", ErrUnsupported)
+		}
+		evidence, err = source.ReadBaseCallEvidence(ctx, r.Network, r.Hash)
+	} else {
+		evidence, err = v.source.ReadBaseEvidence(ctx, r.Network, r.Hash)
+	}
 	if err != nil {
 		return Receipt{}, fmt.Errorf("read Base receipt %s/%s: %w", r.Network, r.Hash, err)
 	}
@@ -260,7 +278,13 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 		}
 	}
 	event := Event{AssetID: asset.ID, Decimals: asset.Decimals}
-	if asset.Origin == chainassets.Native {
+	var traceFingerprint string
+	if r.CallIndex != nil {
+		event, traceFingerprint, err = verifyBaseCall(*r.CallIndex, asset, tx, receipt, e.CallTrace)
+		if err != nil {
+			return out, err
+		}
+	} else if asset.Origin == chainassets.Native {
 		if tx.Input != "0x" || value.Sign() == 0 {
 			return out, ErrUnsupported
 		}
@@ -299,6 +323,6 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 		Operator    string
 	}{tx, receipt, operator.String()})
 	digest := sha256.Sum256(normalized)
-	out = Receipt{Transaction: Transaction{Network: r.Network, Signature: r.Hash, Slot: height.Int64(), FeePayer: tx.From, FeeAtoms: total.String(), Fingerprint: fmt.Sprintf("%x", digest), BlockHash: tx.BlockHash, ExecutionFeeAtoms: execution.String(), L1FeeAtoms: l1.String(), OperatorFeeAtoms: operator.String()}, Event: event, evidence: e}
+	out = Receipt{Transaction: Transaction{Network: r.Network, Signature: r.Hash, Slot: height.Int64(), FeePayer: tx.From, FeeAtoms: total.String(), Fingerprint: fmt.Sprintf("%x", digest), BlockHash: tx.BlockHash, ExecutionFeeAtoms: execution.String(), L1FeeAtoms: l1.String(), OperatorFeeAtoms: operator.String()}, Event: event, evidence: e, traceFingerprint: traceFingerprint, callTrace: e.CallTrace}
 	return out, nil
 }
