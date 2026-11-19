@@ -48,6 +48,7 @@ const (
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
 	ChainReceipts         *chainreceipt.Service
+	BaseReceipts          *chainreceipt.BaseService
 	ChainAssets           *chainassets.Service
 	ReceiveCodes          *transferlogic.Codes
 	Config                config.Config
@@ -168,6 +169,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 		return d, err
 	}
 	d.ChainReceipts = chainreceipt.New(conn, d.Tx, d.ChainAssets)
+	d.BaseReceipts = chainreceipt.NewBase(conn, d.Tx, d.ChainAssets)
 	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx, c.Transfer.DefaultLimitPlanID)
 	var sender authlogic.Mailer
 	if c.Auth != nil {

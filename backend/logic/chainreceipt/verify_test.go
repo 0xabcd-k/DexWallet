@@ -207,6 +207,8 @@ func TestHistoricalReceiptSnapshots(t *testing.T) {
 			}
 			defer assets.Close()
 			src := &fixtureSource{catalog: assets.Catalog(), proof: sample.Evidence}
+			// Snapshot predates explicit event kinds; its immutable RPC evidence is unchanged.
+			sample.Receipt.Event.Kind = SolanaInstruction
 			actual, err := NewVerifier(src).Verify(context.Background(), sample.Request)
 			if err != nil || actual.Transaction != sample.Receipt.Transaction || actual.Event != sample.Receipt.Event {
 				t.Fatalf("snapshot %s differs: %+v, %v", name, actual, err)

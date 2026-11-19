@@ -43,9 +43,9 @@ func TestLiveHistoricalReceipts(t *testing.T) {
 			}
 			if path := os.Getenv("DEXWALLET_TEST_CHAIN_RECEIPTS_EVIDENCE"); path != "" {
 				b, err := json.MarshalIndent(struct {
-					Request  Request                    `json:"request"`
-					Receipt  Receipt                    `json:"receipt"`
-					Evidence chainassets.SolanaEvidence `json:"evidence"`
+					Request  Request `json:"request"`
+					Receipt  Receipt `json:"receipt"`
+					Evidence any     `json:"evidence"`
 				}{request, receipt, receipt.evidence}, "", "  ")
 				if err != nil {
 					t.Fatal(err)

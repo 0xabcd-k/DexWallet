@@ -18,6 +18,7 @@ import (
 const SystemProgram = "11111111111111111111111111111111"
 const TokenProgram = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 const Finalized = "finalized"
+const SolanaInstruction = "solana_instruction"
 
 var (
 	ErrInvalidRequest  = errors.New("invalid receipt request")
@@ -38,14 +39,19 @@ type Request struct {
 	Atoms       string `json:"atoms"`
 }
 type Transaction struct {
-	Network     string `json:"network"`
-	Signature   string `json:"signature"`
-	Slot        int64  `json:"slot"`
-	FeePayer    string `json:"feePayer"`
-	FeeAtoms    string `json:"feeAtoms"`
-	Fingerprint string `json:"fingerprint"`
+	Network           string `json:"network"`
+	Signature         string `json:"signature"`
+	Slot              int64  `json:"slot"`
+	FeePayer          string `json:"feePayer"`
+	FeeAtoms          string `json:"feeAtoms"`
+	Fingerprint       string `json:"fingerprint"`
+	BlockHash         string `json:"blockHash,omitempty"`
+	ExecutionFeeAtoms string `json:"executionFeeAtoms,omitempty"`
+	L1FeeAtoms        string `json:"l1FeeAtoms,omitempty"`
+	OperatorFeeAtoms  string `json:"operatorFeeAtoms,omitempty"`
 }
 type Event struct {
+	Kind             string `json:"kind"`
 	Instruction      int    `json:"instruction"`
 	AssetID          string `json:"assetId"`
 	ProgramID        string `json:"programId"`
@@ -60,7 +66,7 @@ type Event struct {
 type Receipt struct {
 	Transaction Transaction `json:"transaction"`
 	Event       Event       `json:"event"`
-	evidence    chainassets.SolanaEvidence
+	evidence    any
 }
 type Source interface {
 	Catalog() []chainassets.Network
@@ -255,7 +261,7 @@ func verify(r Request, asset chainassets.Asset, evidence chainassets.SolanaEvide
 	if !sourceOK || !destOK || sourceIndex == destIndex || !keys[sourceIndex].Writable || !keys[destIndex].Writable {
 		return out, bad("transfer accounts absent, same, or readonly")
 	}
-	event := Event{Instruction: r.Instruction, AssetID: asset.ID, ProgramID: ix.ProgramID, Mint: asset.Contract, Decimals: asset.Decimals, SourceAccount: info.Source, RecipientAccount: info.Destination}
+	event := Event{Kind: SolanaInstruction, Instruction: r.Instruction, AssetID: asset.ID, ProgramID: ix.ProgramID, Mint: asset.Contract, Decimals: asset.Decimals, SourceAccount: info.Source, RecipientAccount: info.Destination}
 	if asset.Origin == chainassets.Native {
 		if ix.ProgramID != SystemProgram || transfer.Type != "transfer" {
 			return out, ErrUnsupported

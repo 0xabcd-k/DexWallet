@@ -27,7 +27,7 @@ type (
 	chainTransferEventModel interface {
 		Insert(ctx context.Context, data *ChainTransferEvent) (sql.Result, error)
 		FindOne(ctx context.Context, id int64) (*ChainTransferEvent, error)
-		FindOneByTransactionIdInstructionIndex(ctx context.Context, transactionId int64, instructionIndex int64) (*ChainTransferEvent, error)
+		FindOneByTransactionIdEventKindInstructionIndex(ctx context.Context, transactionId int64, eventKind string, instructionIndex int64) (*ChainTransferEvent, error)
 		Update(ctx context.Context, data *ChainTransferEvent) error
 		Delete(ctx context.Context, id int64) error
 	}
@@ -40,6 +40,7 @@ type (
 	ChainTransferEvent struct {
 		Id               int64     `db:"id"`
 		TransactionId    int64     `db:"transaction_id"`
+		EventKind        string    `db:"event_kind"`
 		InstructionIndex int64     `db:"instruction_index"`
 		AssetId          string    `db:"asset_id"`
 		ProgramId        string    `db:"program_id"`
@@ -81,10 +82,10 @@ func (m *defaultChainTransferEventModel) FindOne(ctx context.Context, id int64) 
 	}
 }
 
-func (m *defaultChainTransferEventModel) FindOneByTransactionIdInstructionIndex(ctx context.Context, transactionId int64, instructionIndex int64) (*ChainTransferEvent, error) {
+func (m *defaultChainTransferEventModel) FindOneByTransactionIdEventKindInstructionIndex(ctx context.Context, transactionId int64, eventKind string, instructionIndex int64) (*ChainTransferEvent, error) {
 	var resp ChainTransferEvent
-	query := fmt.Sprintf("select %s from %s where `transaction_id` = ? and `instruction_index` = ? limit 1", chainTransferEventRows, m.table)
-	err := m.conn.QueryRowCtx(ctx, &resp, query, transactionId, instructionIndex)
+	query := fmt.Sprintf("select %s from %s where `transaction_id` = ? and `event_kind` = ? and `instruction_index` = ? limit 1", chainTransferEventRows, m.table)
+	err := m.conn.QueryRowCtx(ctx, &resp, query, transactionId, eventKind, instructionIndex)
 	switch err {
 	case nil:
 		return &resp, nil
@@ -96,14 +97,14 @@ func (m *defaultChainTransferEventModel) FindOneByTransactionIdInstructionIndex(
 }
 
 func (m *defaultChainTransferEventModel) Insert(ctx context.Context, data *ChainTransferEvent) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, chainTransferEventRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.TransactionId, data.InstructionIndex, data.AssetId, data.ProgramId, data.Mint, data.Decimals, data.SourceAccount, data.SourceOwner, data.RecipientAccount, data.RecipientOwner, data.AmountAtoms)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, chainTransferEventRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.TransactionId, data.EventKind, data.InstructionIndex, data.AssetId, data.ProgramId, data.Mint, data.Decimals, data.SourceAccount, data.SourceOwner, data.RecipientAccount, data.RecipientOwner, data.AmountAtoms)
 	return ret, err
 }
 
 func (m *defaultChainTransferEventModel) Update(ctx context.Context, newData *ChainTransferEvent) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, chainTransferEventRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.TransactionId, newData.InstructionIndex, newData.AssetId, newData.ProgramId, newData.Mint, newData.Decimals, newData.SourceAccount, newData.SourceOwner, newData.RecipientAccount, newData.RecipientOwner, newData.AmountAtoms, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.TransactionId, newData.EventKind, newData.InstructionIndex, newData.AssetId, newData.ProgramId, newData.Mint, newData.Decimals, newData.SourceAccount, newData.SourceOwner, newData.RecipientAccount, newData.RecipientOwner, newData.AmountAtoms, newData.Id)
 	return err
 }
 

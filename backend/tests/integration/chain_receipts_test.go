@@ -223,5 +223,5 @@ func TestChainReceiptSchemaAndPersistence(t *testing.T) {
 	if err = db.QueryRow("SELECT COUNT(*) FROM chain_observed_transaction").Scan(&txs); err != nil || txs != 3 {
 		t.Fatal(txs, err)
 	}
-	t.Log("business 16 full DDL, concurrent event dedup, single tx fee, immutable evidence, conflict, commit recovery, rollback guard and unchanged funds verified")
+	t.Log("current receipt DDL, concurrent event dedup, single tx fee, immutable evidence, conflict, commit recovery, rollback guard and unchanged funds verified")
 }

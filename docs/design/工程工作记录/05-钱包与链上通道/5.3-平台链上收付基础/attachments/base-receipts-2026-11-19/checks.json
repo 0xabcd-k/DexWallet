@@ -1,0 +1,163 @@
+{
+  "date": "2026-11-19",
+  "baseline": "5973aab",
+  "branch": "feat/base-receipt-verification",
+  "businessSchema": 17,
+  "checks": [
+    {
+      "command": "python3 scripts/generate.py --check",
+      "result": "passed; 34 owned / 209 protected"
+    },
+    {
+      "command": "python3 scripts/test_codegen.py",
+      "result": "passed; 10 tests"
+    },
+    {
+      "command": "go test -race ./...",
+      "cwd": "backend",
+      "result": "passed"
+    },
+    {
+      "command": "go vet ./...",
+      "cwd": "backend",
+      "result": "passed"
+    },
+    {
+      "command": "TestBaseReceiptUpgradeAndPersistence and TestChainReceiptSchemaAndPersistence in isolated MySQL",
+      "result": "passed; legacy Solana 16/17 round trip, 18 concurrent requests / 3 events / 1 Base transaction fee, uint256 persistence, immutable evidence, conflict, commit recovery and rollback guard"
+    },
+    {
+      "command": "go run ./tools/testenv run go test -p 1 -tags=integration ./tests/integration ./api/internal/server -count=1 -timeout=180s",
+      "cwd": "backend",
+      "result": "passed; 136.594s / 11.785s"
+    },
+    {
+      "command": "DEXWALLET_TEST_BASE_RECEIPTS_LIVE=1 go test -tags=integration ./logic/chainreceipt -run ^TestLiveBaseHistoricalReceipts$ -count=1 -v",
+      "cwd": "backend",
+      "result": "passed; two historical Sepolia receipts and explicit rejection of internal ETH"
+    },
+    {
+      "command": "chain_receipts CLI read-only Base USDC query",
+      "result": "passed; recorded=false"
+    },
+    {
+      "command": "python3 scripts/check_docs.py in working tree",
+      "result": "failed solely on preexisting untracked UI task document trailing spaces at lines 411, 412, 414; file preserved and excluded from commit"
+    },
+    {
+      "command": "python3 scripts/check_docs.py in exported staged repository tree",
+      "result": "passed; exported staged tree excludes only preexisting untracked files; 277 documents and 112 archived files checked"
+    },
+    {
+      "command": "git diff --cached --check",
+      "result": "passed"
+    }
+  ],
+  "snapshots": [
+    {
+      "path": "backend/logic/chainreceipt/testdata/base-eth.json",
+      "sha256": "f6f8981deca93dd8c5cbefb465e3323090a56934a2e19117514c8d2d679582d2",
+      "request": {
+        "network": "base-sepolia",
+        "hash": "0xdc7f376ee9736fa371a93e90c8c4b3c33c12cc3c4720b1781ad2bd4c135a76a8",
+        "assetId": "base-sepolia:eth",
+        "recipient": "0xecd14F7586f5053CECae148Ae26309C2277D86A8",
+        "atoms": "1000000000000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "base-sepolia",
+          "signature": "0xdc7f376ee9736fa371a93e90c8c4b3c33c12cc3c4720b1781ad2bd4c135a76a8",
+          "slot": 53792342,
+          "feePayer": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+          "feeAtoms": "126330001877",
+          "fingerprint": "7bec225b7c02d81df8ead59c67d5f426bcec765ff1bee215106de9784b0f4367",
+          "blockHash": "0x7d7f777803fb8bd6bd836115e91a7b389d8b175771da6f9b1403b7ba00be4f8c",
+          "executionFeeAtoms": "126330000000",
+          "l1FeeAtoms": "1877",
+          "operatorFeeAtoms": "0"
+        },
+        "event": {
+          "kind": "evm_value",
+          "instruction": 0,
+          "assetId": "base-sepolia:eth",
+          "programId": "evm",
+          "mint": "",
+          "decimals": 18,
+          "sourceAccount": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+          "sourceOwner": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+          "recipientAccount": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+          "recipientOwner": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+          "atoms": "1000000000000"
+        }
+      }
+    },
+    {
+      "path": "backend/logic/chainreceipt/testdata/base-usdc.json",
+      "sha256": "e3f15ddab0843371567582b5421f646dcf1b3ecf0324dbb1f5a438fef552329d",
+      "request": {
+        "network": "base-sepolia",
+        "hash": "0xdb945055aa01454df203b52e16cecf1548e6c826627da9aaba98f908db3a3d17",
+        "logIndex": 5,
+        "assetId": "base-sepolia:usdc",
+        "recipient": "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA",
+        "atoms": "10000"
+      },
+      "receipt": {
+        "transaction": {
+          "network": "base-sepolia",
+          "signature": "0xdb945055aa01454df203b52e16cecf1548e6c826627da9aaba98f908db3a3d17",
+          "slot": 53543602,
+          "feePayer": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+          "feeAtoms": "617208000196",
+          "fingerprint": "2d3c1d6f9c5d37f34a96ff1760ae237e2aee3956c7ff8b757ed824b03c652090",
+          "blockHash": "0x2530a479a7fb591b9e36a916960092ea3d03dceeedf1989e141198866e6cbbf4",
+          "executionFeeAtoms": "617208000000",
+          "l1FeeAtoms": "196",
+          "operatorFeeAtoms": "0"
+        },
+        "event": {
+          "kind": "evm_log",
+          "instruction": 5,
+          "assetId": "base-sepolia:usdc",
+          "programId": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "mint": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "decimals": 6,
+          "sourceAccount": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+          "sourceOwner": "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+          "recipientAccount": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+          "recipientOwner": "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+          "atoms": "10000"
+        }
+      }
+    }
+  ],
+  "unsupportedHistoricalETH": {
+    "hash": "0x1c3509c224c12725106e47b57e5f5627934edf229ae51fb42861173fb36c2852",
+    "result": "ErrUnsupported; no inference of internal value transfer from outer success"
+  },
+  "cleanup": {
+    "runs": [
+      "94bcf1e7c53e8e0c",
+      "a947065e1f459c18"
+    ],
+    "remainingRegisteredResources": 0
+  },
+  "scope": {
+    "signing": false,
+    "broadcast": false,
+    "ledgerCredit": false,
+    "mainnetLiveValidation": false,
+    "frontendChanged": false
+  },
+  "notes": [
+    "ETH snapshot is the prior ordinary funding transfer; it does not prove coverage of the smart-account sponsored ETH transfer.",
+    "Concurrency and uint256 database cases use derived fake evidence; they were not broadcast or presented as actual chain transactions.",
+    "RPC-trusted event facts do not establish product order ownership or net receipts."
+  ],
+  "tools": {
+    "go": "1.26.10 (module-selected toolchain)",
+    "hostGo": "1.24.11",
+    "toolchainSelection": "auto"
+  }
+}

@@ -36,6 +36,11 @@ func (s *Service) Record(ctx context.Context, r Request) (Stored, error) {
 	if err != nil {
 		return Stored{}, err
 	}
+	return s.record(ctx, receipt)
+}
+
+// Only verified facts from the chain-specific verifiers enter this shared store.
+func (s *Service) record(ctx context.Context, receipt Receipt) (Stored, error) {
 	raw, err := json.Marshal(receipt.evidence)
 	if err != nil {
 		return Stored{}, err
@@ -44,7 +49,7 @@ func (s *Service) Record(ctx context.Context, r Request) (Stored, error) {
 	err = s.tx.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
 		conn := sqlx.NewSqlConnFromSession(session)
 		t := receipt.Transaction
-		row, err := model.LockTransaction(ctx, conn, &model.ChainObservedTransaction{Network: t.Network, Signature: t.Signature, Slot: t.Slot, FeePayer: t.FeePayer, FeeAtoms: t.FeeAtoms, Fingerprint: t.Fingerprint, EvidenceJson: string(raw)})
+		row, err := model.LockTransaction(ctx, conn, &model.ChainObservedTransaction{Network: t.Network, Signature: t.Signature, Slot: t.Slot, FeePayer: t.FeePayer, FeeAtoms: t.FeeAtoms, BlockHash: t.BlockHash, ExecutionFeeAtoms: t.ExecutionFeeAtoms, L1FeeAtoms: t.L1FeeAtoms, OperatorFeeAtoms: t.OperatorFeeAtoms, Fingerprint: t.Fingerprint, EvidenceJson: string(raw)})
 		if err != nil {
 			return err
 		}
@@ -52,7 +57,7 @@ func (s *Service) Record(ctx context.Context, r Request) (Stored, error) {
 			return ErrConflict
 		}
 		events := model.NewChainTransferEventModel(conn)
-		previous, err := events.FindOneByTransactionIdInstructionIndex(ctx, row.Id, int64(r.Instruction))
+		previous, err := events.FindOneByTransactionIdEventKindInstructionIndex(ctx, row.Id, receipt.Event.Kind, int64(receipt.Event.Instruction))
 		if err == nil {
 			if eventFacts(previous) != receipt.Event {
 				return ErrConflict
@@ -64,7 +69,7 @@ func (s *Service) Record(ctx context.Context, r Request) (Stored, error) {
 			return err
 		}
 		e := receipt.Event
-		_, err = events.Insert(ctx, &model.ChainTransferEvent{TransactionId: row.Id, InstructionIndex: int64(e.Instruction), AssetId: e.AssetID, ProgramId: e.ProgramID, Mint: e.Mint, Decimals: int64(e.Decimals), SourceAccount: e.SourceAccount, SourceOwner: e.SourceOwner, RecipientAccount: e.RecipientAccount, RecipientOwner: e.RecipientOwner, AmountAtoms: e.Atoms})
+		_, err = events.Insert(ctx, &model.ChainTransferEvent{TransactionId: row.Id, EventKind: e.Kind, InstructionIndex: int64(e.Instruction), AssetId: e.AssetID, ProgramId: e.ProgramID, Mint: e.Mint, Decimals: int64(e.Decimals), SourceAccount: e.SourceAccount, SourceOwner: e.SourceOwner, RecipientAccount: e.RecipientAccount, RecipientOwner: e.RecipientOwner, AmountAtoms: e.Atoms})
 		if err == nil {
 			result = Stored{Receipt: receipt}
 		}
@@ -75,7 +80,7 @@ func (s *Service) Record(ctx context.Context, r Request) (Stored, error) {
 	}
 	var failure *transaction.Failure
 	if errors.As(err, &failure) && failure.Unknown() {
-		found, lookupErr := s.Find(ctx, r.Network, r.Signature, r.Instruction)
+		found, lookupErr := s.findEvent(ctx, receipt.Transaction.Network, receipt.Transaction.Signature, receipt.Event.Kind, receipt.Event.Instruction)
 		if lookupErr == nil && found.Transaction == receipt.Transaction && found.Event == receipt.Event {
 			return Stored{Receipt: found, Reused: true}, nil
 		}
@@ -87,19 +92,22 @@ func (s *Service) Record(ctx context.Context, r Request) (Stored, error) {
 	return Stored{}, err
 }
 func (s *Service) Find(ctx context.Context, network, signature string, instruction int) (Receipt, error) {
+	return s.findEvent(ctx, network, signature, SolanaInstruction, instruction)
+}
+func (s *Service) findEvent(ctx context.Context, network, signature, kind string, instruction int) (Receipt, error) {
 	row, err := model.NewChainObservedTransactionModel(s.conn).FindOneByNetworkSignature(ctx, network, signature)
 	if err != nil {
 		return Receipt{}, err
 	}
-	event, err := model.NewChainTransferEventModel(s.conn).FindOneByTransactionIdInstructionIndex(ctx, row.Id, int64(instruction))
+	event, err := model.NewChainTransferEventModel(s.conn).FindOneByTransactionIdEventKindInstructionIndex(ctx, row.Id, kind, int64(instruction))
 	if err != nil {
 		return Receipt{}, err
 	}
 	return Receipt{Transaction: transactionFacts(row), Event: eventFacts(event)}, nil
 }
 func transactionFacts(t *model.ChainObservedTransaction) Transaction {
-	return Transaction{Network: t.Network, Signature: t.Signature, Slot: t.Slot, FeePayer: t.FeePayer, FeeAtoms: t.FeeAtoms, Fingerprint: t.Fingerprint}
+	return Transaction{Network: t.Network, Signature: t.Signature, Slot: t.Slot, FeePayer: t.FeePayer, FeeAtoms: t.FeeAtoms, BlockHash: t.BlockHash, ExecutionFeeAtoms: t.ExecutionFeeAtoms, L1FeeAtoms: t.L1FeeAtoms, OperatorFeeAtoms: t.OperatorFeeAtoms, Fingerprint: t.Fingerprint}
 }
 func eventFacts(e *model.ChainTransferEvent) Event {
-	return Event{Instruction: int(e.InstructionIndex), AssetID: e.AssetId, ProgramID: e.ProgramId, Mint: e.Mint, Decimals: int(e.Decimals), SourceAccount: e.SourceAccount, SourceOwner: e.SourceOwner, RecipientAccount: e.RecipientAccount, RecipientOwner: e.RecipientOwner, Atoms: e.AmountAtoms}
+	return Event{Kind: e.EventKind, Instruction: int(e.InstructionIndex), AssetID: e.AssetId, ProgramID: e.ProgramId, Mint: e.Mint, Decimals: int(e.Decimals), SourceAccount: e.SourceAccount, SourceOwner: e.SourceOwner, RecipientAccount: e.RecipientAccount, RecipientOwner: e.RecipientOwner, Atoms: e.AmountAtoms}
 }

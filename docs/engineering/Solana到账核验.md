@@ -10,6 +10,8 @@
 
 本批没有平台签名、广播、订单状态机、监听游标、后台重试或自动入账；没有收取手续费。失败交易也不写成功转账事件，故本表不是完整的失败 Gas 账单。费用承担仍遵循 [逐项审核清单](../design/链上资金费用逐项审核.md)，不能把本批实施解释为待审核规则已批准。
 
+2026-11-19 [Base 核验](Base到账核验.md) 扩展共享事实表至 business 17；Solana 的输入和核验规则保持，事件增加 `kind=solana_instruction`，升级后原证据和指纹继续复用。
+
 ## 输入及核验规则
 
 内部 `chainreceipt.Request` 包含 `network/signature/instruction/assetId/recipient/atoms`。`instruction` 从 0 开始，只指向顶层指令；`recipient` 是接收钱包 owner，SPL 场景不是 token account；`atoms` 为正的规范十进制最小单位整数，最大为 u64，不接受浮点数或带前导零的字符串。
@@ -49,7 +51,7 @@ go run ./tools/chain_receipts \
   --recipient 7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5 --atoms 1000
 ```
 
-显式 `--record` 才使用 `DEXWALLET_MYSQL_DSN` 写入两张事实表，要求 business ≥16 且 dirty=false；输出 receipt/recorded/reused。默认总 RPC 超时 10 秒，可用 `--timeout` 设置，最大 30 秒，另预留 5 秒给数据库；服务内默认沿用 `ChainAssets.Timeout`。配置和 HTTP 响应限制沿用 [链上资产查询](链上资产查询.md)，内部工具不暴露公开用户请求入口。
+显式 `--record` 才使用 `DEXWALLET_MYSQL_DSN` 写入两张事实表，要求 business ≥17 且 dirty=false；输出 receipt/recorded/reused。默认总 RPC 超时 10 秒，可用 `--timeout` 设置，最大 30 秒，另预留 5 秒给数据库；服务内默认沿用 `ChainAssets.Timeout`。配置和 HTTP 响应限制沿用 [链上资产查询](链上资产查询.md)，内部工具不暴露公开用户请求入口。
 
 普通 `go test ./logic/chainreceipt ./logic/chainassets` 使用 fake/本机 httptest 和公开历史快照，不连接真实链。隔离 MySQL 行为在 `TestChainReceiptSchemaAndPersistence`，使用 `tools/testenv`，不得指向生产库。
 
