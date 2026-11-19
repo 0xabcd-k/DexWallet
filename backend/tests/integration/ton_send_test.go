@@ -88,7 +88,7 @@ func TestTONSendSchemaReservationAndMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	for _, v := range []uint{19, 20, 19, 20, 21, 20, 21} {
+	for _, v := range []uint{19, 20, 19, 20, 21, 20, 21, 22, 21, 22} {
 		if err = m.Migrate(v); err != nil {
 			t.Fatal(err)
 		}
@@ -150,7 +150,7 @@ func TestTONSendSchemaReservationAndMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Native intents survive the optional Jetton column round trip.
-	for _, v := range []uint{20, 21} {
+	for _, v := range []uint{20, 21, 22} {
 		if err = m.Migrate(v); err != nil {
 			t.Fatal(err)
 		}

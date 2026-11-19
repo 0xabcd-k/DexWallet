@@ -33,12 +33,13 @@ const (
 )
 
 var (
-	ErrInvalidRequest   = errors.New("invalid TON send proposal")
-	ErrConflict         = errors.New("send proposal differs from the reserved intent")
-	ErrSeqnoReserved    = errors.New("TON wallet seqno already reserved by another intent")
-	ErrInvalidSignature = errors.New("signer did not sign the exact reserved payload")
-	ErrExpired          = errors.New("send validity expired; original execution must still be reconciled")
-	ErrOutcomeUnknown   = errors.New("send persistence or broadcast outcome unknown; retain original intent")
+	ErrInvalidRequest     = errors.New("invalid TON send proposal")
+	ErrConflict           = errors.New("send proposal differs from the reserved intent")
+	ErrSeqnoReserved      = errors.New("TON wallet seqno already reserved by another intent")
+	ErrInvalidSignature   = errors.New("signer did not sign the exact reserved payload")
+	ErrSigningUnavailable = errors.New("TON signing capability not configured")
+	ErrExpired            = errors.New("send validity expired; original execution must still be reconciled")
+	ErrOutcomeUnknown     = errors.New("send persistence or broadcast outcome unknown; retain original intent")
 )
 var requestKey = regexp.MustCompile(`^[A-Za-z0-9._:-]{1,64}$`)
 
@@ -97,7 +98,7 @@ type TON struct {
 }
 
 func NewTON(store *Store, w Wallet, signer Signer, broadcaster Broadcaster) (*TON, error) {
-	if store == nil || len(w.PublicKey) != ed25519.PublicKeySize || signer == nil || broadcaster == nil {
+	if store == nil || len(w.PublicKey) != ed25519.PublicKeySize || broadcaster == nil {
 		return nil, ErrInvalidRequest
 	}
 	if w.JettonMaster != "" {
@@ -273,6 +274,9 @@ func (s *TON) Execute(ctx context.Context, key string) (View, error) {
 		return view(r), err
 	}
 	if r.State == Prepared {
+		if s.signer == nil {
+			return view(r), ErrSigningUnavailable
+		}
 		signature, err := s.signer.SignTON(ctx, SigningRequest{View: view(r), PublicKey: r.PublicKey, SubwalletID: s.wallet.SubwalletID, PayloadBOC: body.ToBOC()})
 		if err != nil {
 			return view(r), fmt.Errorf("sign TON reserved payload: %w", err)

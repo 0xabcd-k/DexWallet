@@ -1,0 +1,16 @@
+ALTER TABLE `chain_send_intent`
+ ADD COLUMN `recovery_state` VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'ready' AFTER `last_error`,
+ ADD COLUMN `recovery_attempts` BIGINT NOT NULL DEFAULT 0 AFTER `recovery_state`,
+ ADD COLUMN `recovery_generation` BIGINT NOT NULL DEFAULT 0 AFTER `recovery_attempts`,
+ ADD COLUMN `recovery_next_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) AFTER `recovery_generation`,
+ ADD COLUMN `recovery_lease_until` DATETIME(6) NULL AFTER `recovery_next_at`,
+ ADD COLUMN `recovery_checked_at` DATETIME(6) NULL AFTER `recovery_lease_until`,
+ ADD COLUMN `recovery_error` VARCHAR(2048) NOT NULL DEFAULT '' AFTER `recovery_checked_at`,
+ ADD COLUMN `recovery_receipt_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '' AFTER `recovery_error`,
+ ADD COLUMN `recovery_retry_note` VARCHAR(512) NOT NULL DEFAULT '' AFTER `recovery_receipt_hash`,
+ ADD KEY `ix_chain_send_recovery_due` (`network`, `sender`, `recovery_state`, `recovery_next_at`, `id`),
+ ADD KEY `ix_chain_send_recovery_lease` (`network`, `sender`, `recovery_state`, `recovery_lease_until`, `id`),
+ ADD CONSTRAINT `ck_chain_send_recovery_state` CHECK (`recovery_state` IN ('ready','running','confirmed','review')),
+ ADD CONSTRAINT `ck_chain_send_recovery_counts` CHECK (`recovery_attempts` >= 0 AND `recovery_generation` >= `recovery_attempts`),
+ ADD CONSTRAINT `ck_chain_send_recovery_lease` CHECK ((`recovery_state` = 'running' AND `recovery_lease_until` IS NOT NULL) OR (`recovery_state` <> 'running' AND `recovery_lease_until` IS NULL)),
+ ADD CONSTRAINT `ck_chain_send_recovery_receipt` CHECK ((`recovery_state` = 'confirmed' AND CHAR_LENGTH(`recovery_receipt_hash`) = 64 AND `recovery_checked_at` IS NOT NULL) OR (`recovery_state` <> 'confirmed' AND `recovery_receipt_hash` = ''));

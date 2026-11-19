@@ -170,7 +170,7 @@ func (s *Store) beginBroadcast(ctx context.Context, original *model.ChainSendInt
 			return ErrExpired
 		}
 		saved.State, saved.Attempts = BroadcastUnknown, saved.Attempts+1
-		if err := model.UpdateExecution(ctx, conn, saved); err != nil {
+		if err := model.UpdateStatus(ctx, conn, saved); err != nil {
 			return err
 		}
 		send = true
@@ -207,6 +207,6 @@ func (s *Store) broadcastResult(ctx context.Context, id int64, accepted bool, no
 			}
 			r.LastError = string(text)
 		}
-		return model.UpdateExecution(ctx, conn, r)
+		return model.UpdateStatus(ctx, conn, r)
 	})
 }

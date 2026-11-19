@@ -51,13 +51,13 @@ func run() (err error) {
 	if err = svcCtx.StartBackground(ctx); err != nil { return err }
 	if err = ctx.Err(); err != nil { return err }
 	var backgroundErr error
-	if svcCtx.Background != nil {
-		proc.AddWrapUpListener(svcCtx.Background.Stop)
+	if svcCtx.Background != nil || svcCtx.TONRecovery != nil {
+		proc.AddWrapUpListener(svcCtx.StopBackground)
 		proc.AddShutdownListener(func() {
-			svcCtx.Background.Stop()
+			svcCtx.StopBackground()
 			drain, cancel := context.WithTimeout(context.Background(), c.ShutdownTimeout)
 			defer cancel()
-			backgroundErr = svcCtx.Background.Wait(drain)
+			backgroundErr = svcCtx.WaitBackground(drain)
 			if backgroundErr != nil { logx.Errorf("background drain: %v", backgroundErr) }
 		})
 	}

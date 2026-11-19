@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/internal/migration"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
@@ -160,7 +161,7 @@ func TestTONJettonSendReconcileHistoricalIntentAfterCommitLoss(t *testing.T) {
 	}
 	j, _ := json.Marshal(f.Intent.Jetton)
 	// Restore already signed historical public bytes. Do not generate fresh payment authorization.
-	row := &sendmodel.ChainSendIntent{Network: f.Intent.Network, RequestKey: f.Intent.Key, Sender: f.Intent.Sender, Recipient: f.Intent.Recipient, AssetId: f.Intent.AssetID, AmountAtoms: f.Intent.Atoms, JettonJson: string(j), PublicKey: hex.EncodeToString(f.Wallet.PublicKey), SubwalletId: int64(f.Wallet.SubwalletID), Seqno: int64(f.Intent.Seqno), ValidUntil: int64(f.Intent.ValidUntil), PayloadHash: f.Intent.PayloadHash, SignedBoc: sql.NullString{String: base64.StdEncoding.EncodeToString(external.ToBOC()), Valid: true}, MessageHash: f.Intent.MessageHash, BodyHash: f.Intent.BodyHash, State: chainsend.BroadcastUnknown, Attempts: 1}
+	row := &sendmodel.ChainSendIntent{Network: f.Intent.Network, RequestKey: f.Intent.Key, Sender: f.Intent.Sender, Recipient: f.Intent.Recipient, AssetId: f.Intent.AssetID, AmountAtoms: f.Intent.Atoms, JettonJson: string(j), PublicKey: hex.EncodeToString(f.Wallet.PublicKey), SubwalletId: int64(f.Wallet.SubwalletID), Seqno: int64(f.Intent.Seqno), ValidUntil: int64(f.Intent.ValidUntil), PayloadHash: f.Intent.PayloadHash, SignedBoc: sql.NullString{String: base64.StdEncoding.EncodeToString(external.ToBOC()), Valid: true}, MessageHash: f.Intent.MessageHash, BodyHash: f.Intent.BodyHash, State: chainsend.BroadcastUnknown, Attempts: 1, RecoveryState: chainsend.RecoveryReady, RecoveryNextAt: time.Now().Add(-time.Minute)}
 	if _, err = sendmodel.NewChainSendIntentModel(conn).Insert(ctx, row); err != nil {
 		t.Fatal(err)
 	}

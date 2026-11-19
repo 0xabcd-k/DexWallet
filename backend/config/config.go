@@ -14,6 +14,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainsend"
 	"github.com/0xabcd-k/DexWallet/backend/logic/risk"
 	"github.com/0xabcd-k/DexWallet/backend/logic/task"
 	"github.com/0xabcd-k/DexWallet/backend/logic/transfer"
@@ -27,21 +28,22 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
-	CORSOrigins       []string           `json:",optional"`
-	ChainAssets       chainassets.Config `json:",optional"`
-	RewardRisk        risk.Config        `json:",optional"`
-	Tasks             task.Config        `json:",optional"`
-	Transfer          transfer.Config    `json:",optional"`
-	Background        *background.Config `json:",optional"`
-	Backoffice        *backoffice.Config `json:",optional"`
-	Auth              *auth.Config       `json:",optional"`
-	Session           *session.Config    `json:",optional"`
-	IDSecret          string             `json:",optional"`
-	DependencyTimeout time.Duration      `json:",default=3s"`
-	ProbeTimeout      time.Duration      `json:",default=1s"`
-	ProbeInterval     time.Duration      `json:",default=5s"`
-	ProbeFreshness    time.Duration      `json:",default=15s"`
-	ShutdownTimeout   time.Duration      `json:",default=30s"`
+	CORSOrigins       []string                  `json:",optional"`
+	ChainAssets       chainassets.Config        `json:",optional"`
+	RewardRisk        risk.Config               `json:",optional"`
+	Tasks             task.Config               `json:",optional"`
+	Transfer          transfer.Config           `json:",optional"`
+	TONRecovery       *chainsend.RecoveryConfig `json:",optional"`
+	Background        *background.Config        `json:",optional"`
+	Backoffice        *backoffice.Config        `json:",optional"`
+	Auth              *auth.Config              `json:",optional"`
+	Session           *session.Config           `json:",optional"`
+	IDSecret          string                    `json:",optional"`
+	DependencyTimeout time.Duration             `json:",default=3s"`
+	ProbeTimeout      time.Duration             `json:",default=1s"`
+	ProbeInterval     time.Duration             `json:",default=5s"`
+	ProbeFreshness    time.Duration             `json:",default=15s"`
+	ShutdownTimeout   time.Duration             `json:",default=30s"`
 	MySQL             MySQL
 	Redis             Redis
 	RocketMQ          RocketMQ
@@ -134,6 +136,30 @@ func (c Config) Check() error {
 		}
 	}
 
+	if c.TONRecovery != nil {
+		if err := c.TONRecovery.Check(); err != nil {
+			return err
+		}
+		if (c.Environment != "local" && c.Environment != "dev") || c.Mode != service.DevMode {
+			return fmt.Errorf("TON recovery currently requires local/dev environment and dev mode")
+		}
+		if c.TONRecovery.OperationTimeout > c.ShutdownTimeout {
+			return fmt.Errorf("TON recovery operation timeout exceeds shutdown drain budget")
+		}
+		w, _ := c.TONRecovery.Wallet()
+		found := false
+		for _, e := range c.ChainAssets.Networks {
+			if e.Network == chainassets.TONTestnet {
+				found = true
+				if w.JettonMaster != "" && e.TestUSDTContract != w.JettonMaster {
+					return fmt.Errorf("TON recovery test USDT must use the same canonical raw master as the endpoint asset identity")
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("TON recovery requires a configured TON testnet endpoint")
+		}
+	}
 	if c.Background != nil {
 		if err := c.Background.Check(); err != nil {
 			return err

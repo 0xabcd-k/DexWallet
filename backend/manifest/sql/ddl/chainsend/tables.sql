@@ -18,9 +18,20 @@ CREATE TABLE `chain_send_intent` (
     `state` VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     `attempts` BIGINT NOT NULL DEFAULT 0,
     `last_error` TEXT NOT NULL,
+    `recovery_state` VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'ready',
+    `recovery_attempts` BIGINT NOT NULL DEFAULT 0,
+    `recovery_generation` BIGINT NOT NULL DEFAULT 0,
+    `recovery_next_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `recovery_lease_until` DATETIME(6) NULL,
+    `recovery_checked_at` DATETIME(6) NULL,
+    `recovery_error` VARCHAR(2048) NOT NULL DEFAULT '',
+    `recovery_receipt_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+    `recovery_retry_note` VARCHAR(512) NOT NULL DEFAULT '',
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_chain_send_request` (`network`, `request_key`),
-    UNIQUE KEY `uk_chain_send_seqno` (`network`, `sender`, `seqno`)
+    UNIQUE KEY `uk_chain_send_seqno` (`network`, `sender`, `seqno`),
+    KEY `ix_chain_send_recovery_due` (`network`, `sender`, `recovery_state`, `recovery_next_at`, `id`),
+    KEY `ix_chain_send_recovery_lease` (`network`, `sender`, `recovery_state`, `recovery_lease_until`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

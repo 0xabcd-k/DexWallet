@@ -4,11 +4,11 @@
 
 ## 当前交付范围
 
-2026-11-19 已接通平台出款意图持久化、签名核验和单次广播执行入口，当前数据库 **business 21**。支持专用测试网 V4R2 平台钱包发送原生 TON 或固定 master 的测试 USDT（Jetton），签名接口与广播接口分别注入；普通检查使用确定性测试替身，真实测试网实转单独验收。
+2026-11-19 已接通平台出款意图持久化、签名核验和单次广播执行入口，当前数据库 **business 22**。支持专用测试网 V4R2 平台钱包发送原生 TON 或固定 master 的测试 USDT（Jetton），签名接口与广播接口分别注入；普通检查使用确定性测试替身，真实测试网实转单独验收。
 
-第七批完成 0.01 TON 实转，第八批完成 0.1 测试 USDT 实转和三段交易关联，详见下节。生产签名服务、后台扫描调度或公开付款接口仍未接通。共享 `ServiceContext.TONSendIntents` 只组装数据库存储；应用启动不会自动签名、广播或迁移。内置/外部用户钱包授权、主网及其他链出款仍按后续批次接入。
+第七批完成 0.01 TON 实转，第八批完成 0.1 测试 USDT 实转和三段交易关联，详见下节。第九批已接通已签名原请求的持久恢复调度，生产签名服务和公开付款接口仍未接通。共享 `ServiceContext.TONSendIntents` 默认只组装存储；只有显式配置 TONRecovery 才启动扫描，允许恢复已签名的原消息，不自动签名或迁移。内置/外部用户钱包授权、主网及其他链出款仍按后续批次接入。
 
-这不是提现业务单：不检查用户资格、报价、限额或占用，不修改美元余额、账本、订单、通知或实收表。未来 5.6/6.8/6.9 调用前必须有自己的授权、资金占用和稳定业务身份；同一业务不能用新请求键绕开原意图。平台钱包签名与用户钱包签名责任保持分离。本批也不批准尚待审核的费用承担规则。
+这不是提现业务单：不检查用户资格、报价、限额或占用，不修改美元余额、账本、订单或通知；Reconcile 仅保存经核验的链上实收事实。未来 5.6/6.8/6.9 调用前必须有自己的授权、资金占用和稳定业务身份；同一业务不能用新请求键绕开原意图。平台钱包签名与用户钱包签名责任保持分离。本批也不批准尚待审核的费用承担规则。
 
 ## 内部调用与可信边界
 
@@ -23,7 +23,7 @@
 
 签名内容在调用 Signer **之前**固定：subwallet、有效期、seqno、操作、发送模式、收款目标及金额均进入 payload hash。Signer 只返回 Ed25519 签名，不能自行广播；执行器验证该签名确实对应固定 payload，再自行构造外部消息，保存完整 BoC、外部消息 cell hash 和 signed body hash。恢复时重新核对公钥策略、付款事实、签名、完整字节及两种哈希；不能只信任数据库状态标签。
 
-生产 Signer 仍需在独立信任边界校验钱包及业务授权、额度和费用政策；当前接口不代表已部署密钥隔离。Broadcaster 将来必须限定受信任节点并核对测试网身份，不能接受用户提供任意 RPC。V4R2 签名本身不绑定网络，**测试网必须使用专用密钥**，不能复用主网出资密钥。普通检查使用内存临时密钥；显式真实探针仅使用本机不入库的专用测试网密钥，不使用生产密钥。
+生产 Signer 仍需在独立信任边界校验钱包及业务授权、额度和费用政策；当前接口不代表已部署密钥隔离。Broadcaster 限定受信任节点并核对测试网身份，不能接受用户提供任意 RPC。V4R2 签名本身不绑定网络，**测试网必须使用专用密钥**，不能复用主网出资密钥。普通检查使用内存临时密钥；显式真实探针仅使用本机不入库的专用测试网密钥，不使用生产密钥。
 
 V4R2 消息编码依据锁定 SDK 的 `ton/wallet/v4r2.go`；防重放和有效期语义参见 [TON 钱包工作原理](https://docs.ton.org/contracts/standard/wallets/how-it-works)，钱包能力参见 [V4 文档](https://docs.ton.org/contracts/standard/wallets/v4)。本实现固定单次请求的时间和 seqno，不使用 SDK 每次读取当前时间/seqno 的常规构造流程。
 
@@ -107,7 +107,7 @@ go build -o ../.tools/ton-live-send/ton_send_testnet ./tools/ton_send_testnet
 
 status 只查库。cleanup 必须重新核验成功且通过 `--evidence` 保存公共实收证据后才清理登记的数据库；未知结果不得使用通用清理命令删除发送记录。清理会输出资源诊断及结果 JSON，state 文件保留，不能将已清理的运行误当成新付款。普通检查不联网；真实探针必须显式调用，账户余额、节点不满足时保留诊断。
 
-本次重复 execute 故意配置不存在的签名器和不可达 RPC，仍返回同一结果、attempts=1；再次 Reconcile 复用原实收事件，随后数据库已清理。公开证明与验证结果见 [第七批记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)，真实快照进入单元回归。第八批的 Jetton 出款见下节；持久扫描与业务接入、用户提现和费用扣取仍未开放。
+本次重复 execute 故意配置不存在的签名器和不可达 RPC，仍返回同一结果、attempts=1；再次 Reconcile 复用原实收事件，随后数据库已清理。公开证明与验证结果见 [第七批记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)，真实快照进入单元回归。第八批的 Jetton 出款、第九批的持久恢复调度见下节；业务接入、用户提现和费用扣取仍未开放。
 
 
 ## 第八批：测试 USDT / Jetton 平台出款
@@ -140,3 +140,75 @@ business 21 增加 `chain_send_intent.jetton_json`，存储规范 JSON；旧原�
 `scripts/payment_probe/ton-jetton-send-setup.mjs` 固定测试网、已有测试 master 与专用钱包，提供 inspect / fund / policy / report。fund 仅为本次测试从已有 W5 转入 0.1 测试 USDT，提交前以独占文件保存记录和 BoC；policy 固定 Go 执行器转回的单一付款，report 读取已确认的链上公开证据和两条后续通知/余款交易。重复运行不能删除原记录或改 key 绕开未知付款。主流程复用 `ton_send_testnet`，工作目录 `.tools/ton-jetton-send/`，不增加线上 API、自动任务或测试依赖。
 
 本次是社区测试代币，不是主网官方 USDT；测试 master 与代码 hash、全部三段交易、余款和费用已保存于 [第八批验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。0.05 TON 仅为本次预留预算；完整路径观察成本为 2,771,965 nanoton，收款事实表的 FeeAtoms 只记录收款代币钱包交易的 849,141 nanoton。两者不能混用，也没有扣取用户费用。生产预算估计、费用政策、独立签名权限、持久扫描和业务结算仍待接入。
+
+
+## 第九批：持久扫描与原请求恢复
+
+当前数据库 business 22。新增 `chainsend.Recovery` 与 `RecoveryRuntime`，只扫描固定测试钱包下已持久签名的 signed / broadcast_unknown / submitted 请求；prepared 不自动处理。运行时不持有 Signer，`NewTON` 允许只读/恢复执行器不配置签名器，此时显式 Execute 未签名请求返回 ErrSigningUnavailable。它不会创建新付款、续签、换 seqno 或延长有效期。
+
+调度规则以原消息为单位：
+
+1. 先用原 signed body hash 核验发送与收款事实。核验通过时复用已有事件去重，保存实收，再推进发送状态及调度确认标记。
+2. 原请求尚未确认、仍在有效期内，且发送状态为 signed / broadcast_unknown 时，最多执行一次原 BoC 恢复。submitted 只查询，不再次广播；RPC 错误或异常证据也不触发广播。
+3. 原签名过期后继续只读核验。查询次数用尽、签名/证据不符或链上执行失败时转为 review，保留原消息和原因；review 不是付款失败、退款许可或资金释放。
+4. 运营核实问题后可按原请求 key 恢复一轮有上限的核验。重试不修改任何签名事实、数量、目标、预算、有效期或 nonce，旧租约代次继续失效。
+
+### 调度状态和并发
+
+新增字段放在原 `chain_send_intent` 行内，避免签名已提交却丢失入队动作；旧 signed 记录在显式启用后同样可发现。原 `state` 仍表示发送进度，独立的 recovery_state 表示调度进度：
+
+| 调度状态 | 含义 |
+| --- | --- |
+| ready | 已签名请求等待到期检查；未签名行也使用默认值，但不参与扫描 |
+| running | 领取已提交，外部核验/原消息恢复进行中 |
+| confirmed | 已核验并保存原收款交易 hash；不是用户订单或账本结算完成 |
+| review | 证据异常或自动检查次数用尽，停止自动处理，等待核查 |
+
+同钱包副本使用相同公钥、subwallet、代币白名单和恢复策略。数据库 READ COMMITTED 短事务、分别索引的到期/过期查询和 FOR UPDATE SKIP LOCKED 完成领取；时间使用数据库 UTC，generation 每次领取递增。RPC、广播和长等待不在领取事务内。结果只能由仍持有效租约的同代次写回；进程退出、超时或领取提交应答丢失由过期租约重新领取。
+
+租约不能撤回已经发出的网络请求。极端停顿下，两个实例可能观察或提交同一 BoC；资金保护仍由原消息不可变、钱包 seqno 防重放及收款事件去重共同承担。旧实例不能覆盖新实例的调度结果。实收提交后、调度回写前失败，可在下次领取复用同一实收；发送状态更新只修改 state/attempts/last_error，不反复写出签名 BoC。
+
+recovery_attempts 是领取次数，包含领取后未完成就退出的情况；与原 attempts（广播标记次数）分开。默认最多 60 次，每次未完成后间隔 30 秒，不是新的产品订单有效期或退款等待时限。没有新增消息队列、通用任务框架或链上费用规则。
+
+### 显式配置与生命周期
+
+仅 Environment=local/dev 且 Mode=dev 允许启用，网络固定 ton-testnet；不配置 TONRecovery 时完全不启动。使用专用测试钱包公钥，不复用主网钱包。配置示意如下，公钥须替换为既有已签名请求所属的专用钱包公钥；仅使用原生 TON 时可省略 JettonMaster。
+
+```yaml
+ChainAssets:
+  Timeout: 30s
+  Networks:
+    - Network: ton-testnet
+      URL: https://testnet.toncenter.com
+      TestUSDTContract: 0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e
+TONRecovery:
+  PublicKey: '<专用测试钱包的 base64 公钥>'
+  SubwalletID: 698983191
+  JettonMaster: 0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e
+  Workers: 1
+  PollInterval: 5s
+  OperationTimeout: 30s
+  LeaseDuration: 60s
+  RetryInterval: 30s
+  MaxAttempts: 60
+```
+
+Workers 允许 1–8；租约须大于单次操作期限，操作期限不得超过 ShutdownTimeout。原生币和 Jetton 混用同钱包时，JettonMaster 必须与节点资产配置的规范 raw master 一致；缺少或错误的白名单会使不匹配的原请求进入 review，不能依靠换配置自动重新归属。沿用 ChainAssets 的 Redis/API 配额配置要求；无 API key 的公共节点只适合低并发验证。TON 恢复不依赖 RocketMQ 开关。
+
+与 API 共用进程和依赖，通过 ServiceContext.StartBackground 显式启动；主模板和实际 main 同步调用 StopBackground / WaitBackground。停机先停止两个后台池的新领取，再等待既有工作，最后关闭链节点客户端和数据库。排空超时取消操作并报告错误，依赖保留到进程结束，未完成租约留待下一实例；不伪造完成标记。启动缺少迁移会明确失败，不自动建表。
+
+### 运维与迁移
+
+`backend/tools/ton_recovery` 默认只列出固定钱包的已签名记录，显示原目标/资产/金额/body hash、发送与调度状态、次数/代次、到期与租约时间、实收 hash 及错误；不输出 BoC。加载显式配置后，从 backend 执行：
+
+```bash
+go run ./tools/ton_recovery -f /本机配置/ton-recovery.yaml -action list -state review
+go run ./tools/ton_recovery -f /本机配置/ton-recovery.yaml -action retry -key '<原请求key>' -reason '核实节点恢复，继续检查原消息'
+go run ./tools/ton_recovery -f /本机配置/ton-recovery.yaml -action run-once
+```
+
+retry 仅接受 review，保留最后一次 OS 操作者和原因，重置本轮领取次数并增加 generation；不重置发送状态或已存在的链上事实，不提供强制成功/失败入口。run-once 显式执行一项到期工作，未确认或失败会返回非零并保留诊断，不能把命令退出码当成付款失败。工具不启动 API 或后台循环，也不持有签名能力。
+
+business 22 新增调度字段、两个索引与状态/租约/计数/确认 hash 约束。空库和未签名、未调度的 prepared 历史可回退；存在已签名请求或恢复历史时拒绝 22 → 21，避免丢失待恢复付款或核验结果。迁移失败按既有流程保留 dirty 与诊断，不删除付款来解除保护。
+
+本批已通过真实隔离数据库的并发、租约、故障和停机验证，并对之前已消费且过期的 TON / USDT 历史消息完成真实节点只读恢复。未读取私钥、未新增链上交易；证据见 [第九批验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。生产签名隔离、prepared 请求的业务授权调度、充值归属/订单入账、其他链出款及正式用户开放仍待实施。

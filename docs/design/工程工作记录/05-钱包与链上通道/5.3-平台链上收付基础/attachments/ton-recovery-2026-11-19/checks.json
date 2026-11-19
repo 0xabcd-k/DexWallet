@@ -1,0 +1,123 @@
+{
+  "date": "2026-11-19",
+  "baseline": "dbc29ac",
+  "branch": "feat/ton-recovery-scheduler",
+  "businessSchemaVersion": 22,
+  "scope": "Persistent recovery of already signed TON testnet V4R2 native TON and fixed-master test USDT intents; no signer, new payment, mainnet, user ledger or public API.",
+  "checks": [
+    {
+      "command": "go test -race ./...",
+      "result": "passed",
+      "scope": "backend ordinary packages"
+    },
+    {
+      "command": "go vet ./...",
+      "result": "passed"
+    },
+    {
+      "command": "bash scripts/check_contracts.sh",
+      "result": "passed",
+      "nodeVersion": "24.22.1",
+      "ownedFiles": 35,
+      "protectedScaffolds": 211,
+      "generatorRegressions": 10
+    },
+    {
+      "command": "testenv run go test -race -tags=integration ./tests/integration -run TestTONRecovery -count=1 -timeout=180s",
+      "result": "passed",
+      "durationSeconds": 12.331,
+      "run": "ad9ca881cdf9c10e"
+    },
+    {
+      "command": "testenv run go test -p 1 -tags=integration ./tests/integration ./api/internal/server -count=1 -timeout=360s",
+      "result": "passed",
+      "integrationSeconds": 173.272,
+      "httpSeconds": 9.488,
+      "run": "4ddf655d74557ed6"
+    },
+    {
+      "command": "DEXWALLET_TEST_TON_RECOVERY_LIVE=1 testenv run go test -tags=integration ./tests/integration -run TestLiveTONRecoveryHistoricalMessages -count=1",
+      "result": "passed",
+      "durationSeconds": 16.748,
+      "run": "80b52c2de8bba78c",
+      "network": "ton-testnet",
+      "signerConfigured": false,
+      "broadcastImplementation": "denial fake; any broadcast fails the test",
+      "observedNativeReceipt": "2ce16d4b2058c9ec6beacc90c486d07c9eed288638965ead62f4ea974bbc05de",
+      "observedJettonReceipt": "b9d829cac3612fc27af46ecec1fe5e4563898505e3ecce2d55d0bf3ab436550e"
+    },
+    {
+      "command": "python3 scripts/check_docs.py",
+      "scope": "staged exported tree excluding pre-existing untracked files",
+      "result": "passed",
+      "documents": 280,
+      "localLinks": 2621,
+      "archivedFilesVerified": 112
+    },
+    {
+      "command": "git diff --cached --check",
+      "result": "passed"
+    },
+    {
+      "command": "go build ./tools/ton_recovery; ton_recovery -h",
+      "result": "passed",
+      "scope": "CLI build and help entry"
+    }
+  ],
+  "verifiedBehaviors": [
+    "Prepared intents cannot be signed or scheduled by recovery.",
+    "SQL claim commits before RPC; another SQL writer progresses while RPC is blocked.",
+    "A live lease excludes another claimant; expiry permits recovery and rejects a stale generation result.",
+    "RPC outage or unrelated/invalid evidence never triggers replay; valid unconfirmed original authorization replays identical BoC only.",
+    "Submitted and expired intents are observation-only; attempt exhaustion moves to review and does not fail/refund the payment.",
+    "Review retry requires original key and operator reason; original payment facts and signature remain unchanged.",
+    "Receipt commit survives schedule-write failure; a new instance reuses one receipt without payment duplication.",
+    "Graceful stop drains work before closing clients; drain timeout cancels work and leaves dependencies and lease recoverable.",
+    "Missing migration blocks start; rollback refuses signed/recovery history; empty/prepared migration roundtrip matches DDL.",
+    "Recovery and receipt tests leave user accounts, ledger, holds, orders and outbox unchanged."
+  ],
+  "resources": [
+    {
+      "run": "1b3bf117732c48b4",
+      "remainingResources": 0
+    },
+    {
+      "run": "2a67c2951705c053",
+      "remainingResources": 0
+    },
+    {
+      "run": "3a2fbb48652796ae",
+      "remainingResources": 0
+    },
+    {
+      "run": "4736444b177f4e72",
+      "remainingResources": 0
+    },
+    {
+      "run": "4ddf655d74557ed6",
+      "remainingResources": 0
+    },
+    {
+      "run": "80b52c2de8bba78c",
+      "remainingResources": 0
+    },
+    {
+      "run": "ad9ca881cdf9c10e",
+      "remainingResources": 0
+    },
+    {
+      "run": "e2f8894551348849",
+      "remainingResources": 0
+    }
+  ],
+  "resolvedTestSetupIssues": [
+    "Corrected fixture labels, DDL/migration column/index order; no published migration rewritten.",
+    "Replaced a trigger-based failure injector requiring SUPER with a temporary CHECK constraint in the isolated test database; no privileges or global settings changed.",
+    "One overlong schema name could never be created; exact information_schema lookup proved absence before removing only its stale journal entry. Public proof is included, original journal retained locally."
+  ],
+  "limitations": [
+    "Testnet only; community test USDT is not mainnet USDT.",
+    "Recovery confirmation is a verified chain receipt, not business settlement.",
+    "Production signing isolation, business authorization and hold/settlement, other-chain send execution and public user rollout remain pending."
+  ]
+}

@@ -39,27 +39,36 @@ type (
 	}
 
 	ChainSendIntent struct {
-		Id          int64          `db:"id"`
-		Network     string         `db:"network"`
-		RequestKey  string         `db:"request_key"`
-		Sender      string         `db:"sender"`
-		Recipient   string         `db:"recipient"`
-		AssetId     string         `db:"asset_id"`
-		AmountAtoms string         `db:"amount_atoms"`
-		JettonJson  string         `db:"jetton_json"`
-		PublicKey   string         `db:"public_key"`
-		SubwalletId int64          `db:"subwallet_id"`
-		Seqno       int64          `db:"seqno"`
-		ValidUntil  int64          `db:"valid_until"`
-		PayloadHash string         `db:"payload_hash"`
-		SignedBoc   sql.NullString `db:"signed_boc"`
-		MessageHash string         `db:"message_hash"`
-		BodyHash    string         `db:"body_hash"`
-		State       string         `db:"state"`
-		Attempts    int64          `db:"attempts"`
-		LastError   string         `db:"last_error"`
-		CreatedAt   time.Time      `db:"created_at"`
-		UpdatedAt   time.Time      `db:"updated_at"`
+		Id                  int64          `db:"id"`
+		Network             string         `db:"network"`
+		RequestKey          string         `db:"request_key"`
+		Sender              string         `db:"sender"`
+		Recipient           string         `db:"recipient"`
+		AssetId             string         `db:"asset_id"`
+		AmountAtoms         string         `db:"amount_atoms"`
+		JettonJson          string         `db:"jetton_json"`
+		PublicKey           string         `db:"public_key"`
+		SubwalletId         int64          `db:"subwallet_id"`
+		Seqno               int64          `db:"seqno"`
+		ValidUntil          int64          `db:"valid_until"`
+		PayloadHash         string         `db:"payload_hash"`
+		SignedBoc           sql.NullString `db:"signed_boc"`
+		MessageHash         string         `db:"message_hash"`
+		BodyHash            string         `db:"body_hash"`
+		State               string         `db:"state"`
+		Attempts            int64          `db:"attempts"`
+		LastError           string         `db:"last_error"`
+		RecoveryState       string         `db:"recovery_state"`
+		RecoveryAttempts    int64          `db:"recovery_attempts"`
+		RecoveryGeneration  int64          `db:"recovery_generation"`
+		RecoveryNextAt      time.Time      `db:"recovery_next_at"`
+		RecoveryLeaseUntil  sql.NullTime   `db:"recovery_lease_until"`
+		RecoveryCheckedAt   sql.NullTime   `db:"recovery_checked_at"`
+		RecoveryError       string         `db:"recovery_error"`
+		RecoveryReceiptHash string         `db:"recovery_receipt_hash"`
+		RecoveryRetryNote   string         `db:"recovery_retry_note"`
+		CreatedAt           time.Time      `db:"created_at"`
+		UpdatedAt           time.Time      `db:"updated_at"`
 	}
 )
 
@@ -119,14 +128,14 @@ func (m *defaultChainSendIntentModel) FindOneByNetworkSenderSeqno(ctx context.Co
 }
 
 func (m *defaultChainSendIntentModel) Insert(ctx context.Context, data *ChainSendIntent) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, chainSendIntentRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Network, data.RequestKey, data.Sender, data.Recipient, data.AssetId, data.AmountAtoms, data.JettonJson, data.PublicKey, data.SubwalletId, data.Seqno, data.ValidUntil, data.PayloadHash, data.SignedBoc, data.MessageHash, data.BodyHash, data.State, data.Attempts, data.LastError)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, chainSendIntentRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.Network, data.RequestKey, data.Sender, data.Recipient, data.AssetId, data.AmountAtoms, data.JettonJson, data.PublicKey, data.SubwalletId, data.Seqno, data.ValidUntil, data.PayloadHash, data.SignedBoc, data.MessageHash, data.BodyHash, data.State, data.Attempts, data.LastError, data.RecoveryState, data.RecoveryAttempts, data.RecoveryGeneration, data.RecoveryNextAt, data.RecoveryLeaseUntil, data.RecoveryCheckedAt, data.RecoveryError, data.RecoveryReceiptHash, data.RecoveryRetryNote)
 	return ret, err
 }
 
 func (m *defaultChainSendIntentModel) Update(ctx context.Context, newData *ChainSendIntent) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, chainSendIntentRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.Network, newData.RequestKey, newData.Sender, newData.Recipient, newData.AssetId, newData.AmountAtoms, newData.JettonJson, newData.PublicKey, newData.SubwalletId, newData.Seqno, newData.ValidUntil, newData.PayloadHash, newData.SignedBoc, newData.MessageHash, newData.BodyHash, newData.State, newData.Attempts, newData.LastError, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.Network, newData.RequestKey, newData.Sender, newData.Recipient, newData.AssetId, newData.AmountAtoms, newData.JettonJson, newData.PublicKey, newData.SubwalletId, newData.Seqno, newData.ValidUntil, newData.PayloadHash, newData.SignedBoc, newData.MessageHash, newData.BodyHash, newData.State, newData.Attempts, newData.LastError, newData.RecoveryState, newData.RecoveryAttempts, newData.RecoveryGeneration, newData.RecoveryNextAt, newData.RecoveryLeaseUntil, newData.RecoveryCheckedAt, newData.RecoveryError, newData.RecoveryReceiptHash, newData.RecoveryRetryNote, newData.Id)
 	return err
 }
 

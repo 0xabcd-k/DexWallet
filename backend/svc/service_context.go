@@ -48,6 +48,7 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
+	TONRecovery           *chainsend.RecoveryRuntime
 	TONSendIntents        *chainsend.Store
 	ChainReceipts         *chainreceipt.Service
 	BaseReceipts          *chainreceipt.BaseService
@@ -236,18 +237,16 @@ func (d *ServiceContext) RedisKey(parts ...string) string {
 // clients, including when startup failed partway through initialization.
 func (d *ServiceContext) Close() error {
 	d.once.Do(func() {
+		d.StopBackground()
+		ctx, cancel := context.WithTimeout(context.Background(), d.Config.ShutdownTimeout)
+		err := d.WaitBackground(ctx)
+		cancel()
+		if err != nil {
+			d.closeErr = fmt.Errorf("background did not drain; dependencies retained until process exit: %w", err)
+			return
+		}
 		if d.ChainAssets != nil {
 			d.ChainAssets.Close()
-		}
-		if d.Background != nil {
-			d.Background.Stop()
-			ctx, cancel := context.WithTimeout(context.Background(), d.Config.ShutdownTimeout)
-			err := d.Background.Wait(ctx)
-			cancel()
-			if err != nil {
-				d.closeErr = fmt.Errorf("background did not drain; dependencies retained until process exit: %w", err)
-				return
-			}
 		}
 		if d.Health != nil {
 			d.Health.Stop()

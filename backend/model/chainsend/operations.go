@@ -38,3 +38,10 @@ func UpdateExecution(ctx context.Context, conn sqlx.SqlConn, r *ChainSendIntent)
 	_, err := conn.ExecCtx(ctx, `UPDATE chain_send_intent SET signed_boc=?,message_hash=?,body_hash=?,state=?,attempts=?,last_error=?,updated_at=UTC_TIMESTAMP(6) WHERE id=?`, r.SignedBoc, r.MessageHash, r.BodyHash, r.State, r.Attempts, r.LastError, r.Id)
 	return err
 }
+
+// UpdateStatus never rewrites the immutable signed artifact. In particular the
+// recovery daemon does not place reusable BoC bytes in SQL write diagnostics.
+func UpdateStatus(ctx context.Context, conn sqlx.SqlConn, r *ChainSendIntent) error {
+	_, err := conn.ExecCtx(ctx, `UPDATE chain_send_intent SET state=?,attempts=?,last_error=?,updated_at=UTC_TIMESTAMP(6) WHERE id=?`, r.State, r.Attempts, r.LastError, r.Id)
+	return err
+}

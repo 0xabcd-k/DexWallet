@@ -6,3 +6,9 @@ ALTER TABLE `chain_send_intent`
  ADD CONSTRAINT `ck_chain_send_attempts` CHECK (`attempts` >= 0),
  ADD CONSTRAINT `ck_chain_send_state` CHECK (`state` IN ('prepared','signed','broadcast_unknown','submitted')),
  ADD CONSTRAINT `ck_chain_send_artifact` CHECK ((`state`='prepared' AND `signed_boc` IS NULL AND `message_hash`='' AND `body_hash`='') OR (`state`<>'prepared' AND `signed_boc` IS NOT NULL AND CHAR_LENGTH(`message_hash`)=64 AND CHAR_LENGTH(`body_hash`)=64));
+
+ALTER TABLE `chain_send_intent`
+ ADD CONSTRAINT `ck_chain_send_recovery_state` CHECK (`recovery_state` IN ('ready','running','confirmed','review')),
+ ADD CONSTRAINT `ck_chain_send_recovery_counts` CHECK (`recovery_attempts` >= 0 AND `recovery_generation` >= `recovery_attempts`),
+ ADD CONSTRAINT `ck_chain_send_recovery_lease` CHECK ((`recovery_state` = 'running' AND `recovery_lease_until` IS NOT NULL) OR (`recovery_state` <> 'running' AND `recovery_lease_until` IS NULL)),
+ ADD CONSTRAINT `ck_chain_send_recovery_receipt` CHECK ((`recovery_state` = 'confirmed' AND CHAR_LENGTH(`recovery_receipt_hash`) = 64 AND `recovery_checked_at` IS NOT NULL) OR (`recovery_state` <> 'confirmed' AND `recovery_receipt_hash` = ''));
