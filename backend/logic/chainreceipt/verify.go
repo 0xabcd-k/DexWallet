@@ -91,10 +91,7 @@ func atoms(raw string) bool {
 func bad(detail string) error       { return fmt.Errorf("%w: %s", ErrInvalidEvidence, detail) }
 func null(raw json.RawMessage) bool { return bytes.Equal(bytes.TrimSpace(raw), []byte("null")) }
 
-func (v *Verifier) Verify(ctx context.Context, r Request) (Receipt, error) {
-	if r.Instruction < 0 || !key(r.Signature, 64) || !key(r.Recipient, 32) || !atoms(r.Atoms) {
-		return Receipt{}, ErrInvalidRequest
-	}
+func (v *Verifier) solanaAsset(r Request) (chainassets.Asset, error) {
 	var asset chainassets.Asset
 	for _, n := range v.source.Catalog() {
 		if n.ID == r.Network && n.Family == chainassets.Solana {
@@ -107,7 +104,18 @@ func (v *Verifier) Verify(ctx context.Context, r Request) (Receipt, error) {
 		}
 	}
 	if asset.ID == "" {
+		return asset, ErrInvalidRequest
+	}
+	return asset, nil
+}
+
+func (v *Verifier) Verify(ctx context.Context, r Request) (Receipt, error) {
+	if r.Instruction < 0 || !key(r.Signature, 64) || !key(r.Recipient, 32) || !atoms(r.Atoms) {
 		return Receipt{}, ErrInvalidRequest
+	}
+	asset, err := v.solanaAsset(r)
+	if err != nil {
+		return Receipt{}, err
 	}
 	evidence, err := v.source.ReadSolanaEvidence(ctx, r.Network, r.Signature)
 	if err != nil {

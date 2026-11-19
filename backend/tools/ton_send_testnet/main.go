@@ -4,22 +4,18 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/0xabcd-k/DexWallet/backend/internal/migration"
-	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
+	"github.com/0xabcd-k/DexWallet/backend/internal/sendprobe"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainsend"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
-	"github.com/golang-migrate/migrate/v4"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
@@ -58,92 +54,12 @@ func run() error {
 	if err = json.Unmarshal(raw, &p); err != nil {
 		return err
 	}
-	var stateData struct{ RunDir string }
-	raw, err = os.ReadFile(*state)
-	var run *testenv.Run
-	if errors.Is(err, os.ErrNotExist) && *action == "prepare" {
-		run, err = testenv.NewRun()
-		if err != nil {
-			return err
-		}
-		stateData.RunDir = run.Dir
-		raw, _ = json.Marshal(stateData)
-		file, err := os.OpenFile(*state, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
-		if err != nil {
-			return err
-		}
-		_, writeErr := file.Write(raw)
-		closeErr := file.Close()
-		if err = errors.Join(writeErr, closeErr); err != nil {
-			return err
-		}
-		_, _, db, err := run.NewDatabase(context.Background(), "ton_send_live")
-		if err != nil {
-			return err
-		}
-		db.Close()
-	} else {
-		if err != nil {
-			return err
-		}
-		if err = json.Unmarshal(raw, &stateData); err != nil {
-			return err
-		}
-		run, err = testenv.LoadRun(stateData.RunDir)
-		if err != nil {
-			return err
-		}
-	}
-	lock, err := testenv.Lock(run.Dir)
+	isolated, err := sendprobe.OpenSendDatabase(*state, "ton_send_live", *action == "prepare")
 	if err != nil {
 		return err
 	}
-	defer lock.Close()
-	cfg, err := testenv.AdminConfig()
-	if err != nil {
-		return err
-	}
-	cfg.DBName = run.Name("database", "ton_send_live")
-	owns := false
-	for _, r := range run.Resources {
-		if r.Kind == "database" && r.Name == cfg.DBName {
-			owns = true
-		}
-	}
-	if !owns {
-		return errors.New("isolated DB is no longer registered; do not recreate a completed send")
-	}
-	cfg.ParseTime = true
-	cfg.Loc = time.UTC
-	cfg.MultiStatements = true
-	if cfg.Params == nil {
-		cfg.Params = map[string]string{}
-	}
-	cfg.Params["time_zone"] = "'+00:00'"
-	dsn := cfg.FormatDSN()
-	if *action == "prepare" {
-		root, err := testenv.Root()
-		if err != nil {
-			return err
-		}
-		m, err := migration.Open(dsn, cfg.DBName, filepath.Join(root, "backend/manifest/sql/diff/business"), "business")
-		if err != nil {
-			return err
-		}
-		err = m.Up()
-		a, b := m.Close()
-		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-			return err
-		}
-		if err = errors.Join(a, b); err != nil {
-			return err
-		}
-	}
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+	defer isolated.Close()
+	db, run := isolated.DB, isolated.Run
 	conn, tx := sqlx.NewSqlConnFromDB(db), transaction.New(db)
 	assets, err := chainassets.New(chainassets.Config{Timeout: 30 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TONTestnet, URL: *rpc, TestUSDTContract: p.Wallet.JettonMaster, APIKey: os.Getenv("DEXWALLET_CHAIN_TON_TESTNET_API_KEY")}}}, nil)
 	if err != nil {

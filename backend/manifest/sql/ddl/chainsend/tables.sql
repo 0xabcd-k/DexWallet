@@ -35,3 +35,22 @@ CREATE TABLE `chain_send_intent` (
     KEY `ix_chain_send_recovery_due` (`network`, `sender`, `recovery_state`, `recovery_next_at`, `id`),
     KEY `ix_chain_send_recovery_lease` (`network`, `sender`, `recovery_state`, `recovery_lease_until`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `solana_payout` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `request_key` VARCHAR(64) NOT NULL,
+    `sender` VARCHAR(44) NOT NULL,
+    `recipient` VARCHAR(44) NOT NULL,
+    `lamports` VARCHAR(20) NOT NULL,
+    `blockhash` VARCHAR(44) NOT NULL,
+    `last_valid_height` BIGINT NOT NULL,
+    `message_hash` CHAR(64) NOT NULL,
+    `signature` VARCHAR(88) NOT NULL DEFAULT '',
+    `state` VARCHAR(24) NOT NULL,
+    `attempts` BIGINT NOT NULL DEFAULT 0,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_sol_payout_key` (`request_key`),
+    UNIQUE KEY `uk_sol_payout_message` (`message_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;

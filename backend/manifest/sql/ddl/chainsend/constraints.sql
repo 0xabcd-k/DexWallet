@@ -12,3 +12,7 @@ ALTER TABLE `chain_send_intent`
  ADD CONSTRAINT `ck_chain_send_recovery_counts` CHECK (`recovery_attempts` >= 0 AND `recovery_generation` >= `recovery_attempts`),
  ADD CONSTRAINT `ck_chain_send_recovery_lease` CHECK ((`recovery_state` = 'running' AND `recovery_lease_until` IS NOT NULL) OR (`recovery_state` <> 'running' AND `recovery_lease_until` IS NULL)),
  ADD CONSTRAINT `ck_chain_send_recovery_receipt` CHECK ((`recovery_state` = 'confirmed' AND CHAR_LENGTH(`recovery_receipt_hash`) = 64 AND `recovery_checked_at` IS NOT NULL) OR (`recovery_state` <> 'confirmed' AND `recovery_receipt_hash` = ''));
+
+ALTER TABLE `solana_payout`
+ ADD CONSTRAINT `ck_sol_payout_height` CHECK (`last_valid_height` > 0 AND `attempts` >= 0),
+ ADD CONSTRAINT `ck_sol_payout_state` CHECK ((`state` = 'prepared' AND `signature` = '' AND `attempts` = 0) OR (`state` IN ('signed','submitted','confirmed') AND CHAR_LENGTH(`signature`) BETWEEN 64 AND 88));
