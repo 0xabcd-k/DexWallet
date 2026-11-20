@@ -36,3 +36,8 @@ ALTER TABLE `base_payout`
     OR (`asset_id`='base-sepolia:usdc' AND `wei_amount`='0' AND CHAR_LENGTH(`token_atoms`)>0
         AND ((`state`='confirmed' AND `transfer_log_index` IS NOT NULL AND `transfer_log_index` BETWEEN 0 AND 2147483647)
              OR (`state`<>'confirmed' AND `transfer_log_index` IS NULL))));
+
+ALTER TABLE `base_payout`
+ ADD CONSTRAINT `ck_base_recovery_state` CHECK (`recovery_state` IN ('ready','running','review','confirmed') AND ((`state`='confirmed')=(`recovery_state`='confirmed'))),
+ ADD CONSTRAINT `ck_base_recovery_counts` CHECK (`recovery_attempts` >= 0 AND `recovery_generation` >= `recovery_attempts`),
+ ADD CONSTRAINT `ck_base_recovery_lease` CHECK ((`recovery_state`='running')=(`recovery_lease_until` IS NOT NULL));

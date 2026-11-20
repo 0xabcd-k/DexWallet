@@ -1,6 +1,6 @@
 # Base Sepolia 平台 ETH 与 USDC 出款
 
-5.3 第十三、十四批提供内部执行器 `chainsend.NewBase` 和显式测试工具 `backend/tools/base_payout_sepolia`。平台测试账户可向收款地址发送原生 ETH 或 Circle 测试 USDC，两种出款都由平台用 ETH 支付网络费。用户订单、账本结算、生产签名和自动调度由后续阶段接入。
+5.3 第十三至十五批提供内部执行器 `chainsend.NewBase` 和显式测试工具 `backend/tools/base_payout_sepolia`。平台测试账户可向收款地址发送原生 ETH 或 Circle 测试 USDC，两种出款都由平台用 ETH 支付网络费。第十五批增加已签名交易的后台恢复。用户提现订单、账本结算与生产签名仍待接入。
 
 ## 授权与确认
 
@@ -22,7 +22,7 @@
 
 ## 隔离复验
 
-从项目根目录加载本机专用测试配置。测试工具复用隔离库登记、迁移和清理机制。数据库要求 business 27。26 中的 ETH 出款单升级后保留原哈希和签名。有 USDC 意图时拒绝降至 26，有任一资产的意图时拒绝降至 25。
+从项目根目录加载本机专用测试配置。测试工具复用隔离库登记、迁移和清理机制。数据库要求 business 28。26 中的 ETH 出款单升级后保留原哈希和签名。有 USDC 意图时拒绝降至 26，有任一资产的意图时拒绝降至 25。
 
 在本机私有工作目录保存独立的 policy JSON。字段为 `ChainID`（84532）、`Key`、`Sender`、`Recipient`、`WeiAmount`、`GasLimit`、`FeeCap`、`TipCap` 和签名进程独立核对的十进制字符串 `Nonce`。ETH 按 wei 填写本金，默认资产为 `base-sepolia:eth`。USDC 填 `AssetID` 为 `base-sepolia:usdc`、`WeiAmount` 为字符串 `"0"`，`TokenAtoms` 为正整数字符串，例如 `"1000"` 表示 0.001 USDC。测试合约为 `0x036CbD53842c5426634e7929541eC2318f3dCF7e`。复验前按测试账户当前 pending nonce 和对应交易的节点估算准备授权。测试密钥文件是只在本机读取的 JSON 私钥字符串。[Circle 测试网 USDC 地址](https://developers.circle.com/stablecoins/usdc-contract-addresses#testnet) · [ERC-20 转账和事件](https://eips.ethereum.org/EIPS/eip-20)
 
@@ -37,4 +37,27 @@ probe -action step
 probe -action status
 ```
 
-`work` 使用绝对路径。签名脚本通过锁定的 viem 重建交易并校验摘要，签名输出文件只创建一次。可指定 `-rpc` 选择可信 Base Sepolia 节点。等待最终性时，通过同一 run 和 key 再次执行 `step`。确认后用 `evidence` 导出原意图、费用和链上证据，`cleanup` 清理该次专用库。真实交易与隔离故障测试见[第十三、十四批验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。
+`work` 使用绝对路径。签名脚本通过锁定的 viem 重建交易并校验摘要，签名输出文件只创建一次。可指定 `-rpc` 选择可信 Base Sepolia 节点。等待最终性时，通过同一 run 和 key 再次执行 `step`。确认后用 `evidence` 导出原意图、费用和链上证据，`cleanup` 清理该次专用库。真实交易与隔离故障测试见[测试网实转与恢复验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。
+
+## 自动恢复与人工复查
+
+在 local/dev 环境、dev 运行模式中，配置 `DEXWALLET_CHAIN_BASE_SEPOLIA_RPC_URL` 并在服务 YAML 加入平台付款地址，即可让后台接手该地址的 signed、submitted 出款。省略 `BaseRecovery` 时关闭扫描。调度进程只需公开地址。准备与签名仍由原有显式入口执行。
+
+```yaml
+BaseRecovery:
+  Sender: "替换为本环境 Base Sepolia 平台付款地址"
+```
+
+默认使用 1 个 worker，空闲轮询间隔 5 秒，单次操作超时 30 秒、租约 60 秒、重试间隔 30 秒，最多领取 60 次。可通过 `Workers`、`PollInterval`、`OperationTimeout`、`LeaseDuration`、`RetryInterval`、`MaxAttempts` 配置。操作超时须在服务排空预算内，租约须长于操作超时。部署 business 28 前先暂停旧版 Base 出款进程和显式执行工具，完成迁移后再启动新版。
+
+- 服务重启后先查原哈希。看到待打包交易或尚未最终确认的回执就延后再查。节点明确查不到交易及回执、pending nonce 仍匹配时，允许重播已保存的原字节，包括曾广播成功后又被节点丢弃的情形。
+- 出现 nonce 分歧、签名或回执与原单冲突、链上执行失败，或耗尽检查次数时，调度进入 `review`。人工按原哈希和付款地址的 nonce 查明情况，再决定是否继续检查原单。应用层资金保持原状态。
+- 租约到期后其他实例可接手，旧实例失去登记新广播的资格。查到最终实收时，一起写回出款确认、调度确认和 USDC 日志序号。实收已保存而写回中断时，重启可从本地证据完成确认。停机时先停止领取，再等待正在执行的查询和写入。
+
+在 backend 目录使用运维工具。列表提供原交易哈希、nonce、资产和最小单位金额、广播次数、调度次数、最近错误和重试说明。重试记录操作系统用户及原因，恢复同一原单的检查预算。
+
+```bash
+go run ./tools/ton_recovery -network base-sepolia -f /本机配置/base.yaml -action list -state review
+go run ./tools/ton_recovery -network base-sepolia -f /本机配置/base.yaml -action retry -key '<原请求键>' -reason '已核对原哈希与付款地址 nonce'
+go run ./tools/ton_recovery -network base-sepolia -f /本机配置/base.yaml -action run-once
+```

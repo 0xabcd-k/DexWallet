@@ -89,9 +89,19 @@ CREATE TABLE `base_payout` (
     `signed_tx` VARCHAR(512) NOT NULL DEFAULT '',
     `state` VARCHAR(24) NOT NULL,
     `attempts` BIGINT NOT NULL DEFAULT 0,
+    `recovery_state` VARCHAR(24) NOT NULL DEFAULT 'ready',
+    `recovery_attempts` BIGINT NOT NULL DEFAULT 0,
+    `recovery_generation` BIGINT NOT NULL DEFAULT 0,
+    `recovery_next_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `recovery_lease_until` DATETIME(6) NULL,
+    `recovery_checked_at` DATETIME(6) NULL,
+    `recovery_error` VARCHAR(2048) CHARACTER SET utf8mb4 NOT NULL DEFAULT '',
+    `recovery_retry_note` VARCHAR(512) CHARACTER SET utf8mb4 NOT NULL DEFAULT '',
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_base_payout_request` (`request_key`),
-    UNIQUE KEY `uk_base_payout_nonce` (`sender`, `nonce`)
+    UNIQUE KEY `uk_base_payout_nonce` (`sender`, `nonce`),
+    KEY `ix_base_recovery_due` (`sender`, `recovery_state`, `recovery_next_at`, `id`),
+    KEY `ix_base_recovery_lease` (`sender`, `recovery_state`, `recovery_lease_until`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;

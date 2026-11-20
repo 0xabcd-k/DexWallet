@@ -181,7 +181,8 @@ func (s *Base) Prepare(ctx context.Context, key string, payment BaseTransfer) (*
 		return nil, err
 	}
 	row.SigningHash = baseSigner.Hash(tx).Hex()
-	_, err = s.rows.Insert(ctx, row)
+	// Let MySQL initialize the schedule and its UTC clock.
+	_, err = s.conn.ExecCtx(ctx, "INSERT INTO base_payout(request_key,chain_id,sender,recipient,asset_id,wei_amount,token_atoms,nonce,gas_limit,fee_cap,tip_cap,signing_hash,state) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", key, row.ChainId, row.Sender, row.Recipient, row.AssetId, row.WeiAmount, row.TokenAtoms, row.Nonce, row.GasLimit, row.FeeCap, row.TipCap, row.SigningHash, Prepared)
 	var duplicate *mysql.MySQLError
 	if errors.As(err, &duplicate) && duplicate.Number == 1062 {
 		row, err = existing()
@@ -243,6 +244,10 @@ func (s *Base) Bind(ctx context.Context, key, wire string) (*model.BasePayout, e
 	return row, nil
 }
 func (s *Base) Step(ctx context.Context, key string) (*model.BasePayout, error) {
+	return s.step(ctx, key, nil)
+}
+
+func (s *Base) step(ctx context.Context, key string, claim *recoveryClaim) (*model.BasePayout, error) {
 	row, err := s.Find(ctx, key)
 	if err != nil {
 		return nil, err
@@ -271,7 +276,7 @@ func (s *Base) Step(ctx context.Context, key string) (*model.BasePayout, error) 
 		_, err = s.receipts.RecordNativePayout(ctx, row.TxHash, s.sender, row.Recipient, row.WeiAmount)
 	}
 	if err == nil {
-		_, err = s.conn.ExecCtx(ctx, "UPDATE base_payout SET state=?,transfer_log_index=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", BaseConfirmed, logIndex, row.Id, Signed, Submitted)
+		_, err = s.conn.ExecCtx(ctx, "UPDATE base_payout SET state=?,transfer_log_index=?,recovery_state=?,recovery_lease_until=NULL,recovery_checked_at=UTC_TIMESTAMP(6),recovery_error='',updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", BaseConfirmed, logIndex, RecoveryConfirmed, row.Id, Signed, Submitted)
 		if err != nil {
 			return row, err
 		}
@@ -293,7 +298,15 @@ func (s *Base) Step(ctx context.Context, key string) (*model.BasePayout, error) 
 	}
 	// Reserve one attempt before the network call. After a lost response the
 	// only possible replay has exactly the same signed bytes, nonce and hash.
-	res, err := s.conn.ExecCtx(ctx, "UPDATE base_payout SET attempts=attempts+1,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=? AND attempts=?", row.Id, row.State, row.Attempts)
+	update := "UPDATE base_payout SET attempts=attempts+1,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=? AND attempts=? AND recovery_state=?"
+	args := []any{row.Id, row.State, row.Attempts}
+	if claim == nil {
+		args = append(args, RecoveryReady)
+	} else {
+		update += " AND recovery_generation=? AND recovery_lease_until>UTC_TIMESTAMP(6)"
+		args = append(args, RecoveryRunning, claim.Generation)
+	}
+	res, err := s.conn.ExecCtx(ctx, update, args...)
 	if err != nil {
 		return row, err
 	}
@@ -302,7 +315,16 @@ func (s *Base) Step(ctx context.Context, key string) (*model.BasePayout, error) 
 		return row, err
 	}
 	if n == 0 {
-		return s.Find(ctx, key)
+		current, err := s.Find(ctx, key)
+		if err == nil && current.State != BaseConfirmed {
+			if claim != nil && (current.RecoveryState != RecoveryRunning || current.RecoveryGeneration != claim.Generation) {
+				return current, ErrRecoveryLeaseLost
+			}
+			if claim == nil && current.RecoveryState != RecoveryReady {
+				return current, fmt.Errorf("Base replay unavailable while recovery is %s", current.RecoveryState)
+			}
+		}
+		return current, err
 	}
 	row.Attempts++
 	if err = submit(ctx, tx); err != nil {

@@ -20,6 +20,20 @@ func (d *ServiceContext) StartBackground(ctx context.Context) error {
 	if err := d.startTONRecovery(ctx); err != nil {
 		return err
 	}
+	if err := d.startSolanaRecovery(ctx); err != nil {
+		return err
+	}
+	if d.Config.BaseRecovery == nil {
+		return nil
+	}
+	recovery, err := chainsend.NewBaseRecovery(d.DB, d.ChainAssets, d.BaseReceipts, *d.Config.BaseRecovery)
+	if err != nil {
+		return err
+	}
+	d.BaseRecovery = chainsend.NewRecoveryRuntime(recovery)
+	return d.BaseRecovery.Start(ctx)
+}
+func (d *ServiceContext) startSolanaRecovery(ctx context.Context) error {
 	if d.Config.SolanaRecovery == nil {
 		return nil
 	}
@@ -77,6 +91,9 @@ func (d *ServiceContext) StopBackground() {
 	if d.TONRecovery != nil {
 		d.TONRecovery.Stop()
 	}
+	if d.BaseRecovery != nil {
+		d.BaseRecovery.Stop()
+	}
 	if d.SolanaRecovery != nil {
 		d.SolanaRecovery.Stop()
 	}
@@ -88,6 +105,9 @@ func (d *ServiceContext) WaitBackground(ctx context.Context) error {
 	}
 	if d.TONRecovery != nil {
 		err = errors.Join(err, d.TONRecovery.Wait(ctx))
+	}
+	if d.BaseRecovery != nil {
+		err = errors.Join(err, d.BaseRecovery.Wait(ctx))
 	}
 	if d.SolanaRecovery != nil {
 		err = errors.Join(err, d.SolanaRecovery.Wait(ctx))

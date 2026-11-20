@@ -86,3 +86,38 @@ func TestSolanaRecoveryConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestBaseRecoveryConfiguration(t *testing.T) {
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
+	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
+	t.Setenv("DEXWALLET_CHAIN_BASE_SEPOLIA_RPC_URL", "http://127.0.0.1:1")
+	raw, err := os.ReadFile("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw = append(raw, []byte("\nBaseRecovery:\n  Sender: \"0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA\"\n  Workers: 3\n")...)
+	path := filepath.Join(t.TempDir(), "base.yaml")
+	if err = os.WriteFile(path, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.BaseRecovery.Workers != 3 || c.BaseRecovery.MaxAttempts != 60 || c.TONRecovery != nil || c.SolanaRecovery != nil {
+		t.Fatal("unexpected recovery policy")
+	}
+	for _, change := range []func(*Config){
+		func(c *Config) { c.Environment = "prod" }, func(c *Config) { c.Mode = "pro" },
+		func(c *Config) { c.BaseRecovery.Sender = "bad" }, func(c *Config) { c.BaseRecovery.Sender = "0x" + strings.Repeat("0", 40) }, func(c *Config) { c.ChainAssets.Networks = nil },
+		func(c *Config) { c.ShutdownTimeout = time.Second }, func(c *Config) { c.BaseRecovery.LeaseDuration = c.BaseRecovery.OperationTimeout },
+	} {
+		bad := c
+		policy := *c.BaseRecovery
+		bad.BaseRecovery = &policy
+		change(&bad)
+		if err := bad.Check(); err == nil {
+			t.Fatal("invalid recovery policy accepted")
+		}
+	}
+}

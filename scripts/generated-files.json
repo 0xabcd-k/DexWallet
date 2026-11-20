@@ -14,7 +14,7 @@
     "backend/model/backoffice/merchant_user_model_gen.go": "cae3d2365267248dff497a58a2d71cb2fe116b221510426073f4f59e1be82e84",
     "backend/model/chainreceipt/chain_observed_transaction_model_gen.go": "1c7f43a5f9c4322c066af1c8bcac3e521fd44998312572545d312feb83b9fd7c",
     "backend/model/chainreceipt/chain_transfer_event_model_gen.go": "582ed350286a3678508323151cabdd13bdf8d6369d3f44173b85ed7795b8adf2",
-    "backend/model/chainsend/base_payout_model_gen.go": "f4505c8532dd5016a09dfb7d0d4d67dd2247a4a07a96a6115efe2777602ba415",
+    "backend/model/chainsend/base_payout_model_gen.go": "40cb0261d43fc426805ad29514fc13c3a03e0cc55475183a0ea0464f1a2619e9",
     "backend/model/chainsend/chain_send_intent_model_gen.go": "b36663abfa057ac310b11452c2bc00cb9b3fe1c45bff7d11b35ae71fcef2de98",
     "backend/model/chainsend/solana_payout_model_gen.go": "3d3380a43fcb8ec22965849e30734378786ff5197434355d4400ee9191dec8fb",
     "backend/model/draw/draw_control_model_gen.go": "74c5701f90ce50253e2ddb38b63d3de3022c9cf164c191264370c5cc1d3bf801",

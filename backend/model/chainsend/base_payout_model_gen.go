@@ -39,26 +39,34 @@ type (
 	}
 
 	BasePayout struct {
-		Id               int64         `db:"id"`
-		RequestKey       string        `db:"request_key"`
-		ChainId          int64         `db:"chain_id"`
-		Sender           string        `db:"sender"`
-		Recipient        string        `db:"recipient"`
-		WeiAmount        string        `db:"wei_amount"`
-		AssetId          string        `db:"asset_id"`
-		TokenAtoms       string        `db:"token_atoms"`
-		TransferLogIndex sql.NullInt64 `db:"transfer_log_index"`
-		Nonce            string        `db:"nonce"`
-		GasLimit         int64         `db:"gas_limit"`
-		FeeCap           string        `db:"fee_cap"`
-		TipCap           string        `db:"tip_cap"`
-		SigningHash      string        `db:"signing_hash"`
-		TxHash           string        `db:"tx_hash"`
-		SignedTx         string        `db:"signed_tx"`
-		State            string        `db:"state"`
-		Attempts         int64         `db:"attempts"`
-		CreatedAt        time.Time     `db:"created_at"`
-		UpdatedAt        time.Time     `db:"updated_at"`
+		Id                 int64         `db:"id"`
+		RequestKey         string        `db:"request_key"`
+		ChainId            int64         `db:"chain_id"`
+		Sender             string        `db:"sender"`
+		Recipient          string        `db:"recipient"`
+		WeiAmount          string        `db:"wei_amount"`
+		AssetId            string        `db:"asset_id"`
+		TokenAtoms         string        `db:"token_atoms"`
+		TransferLogIndex   sql.NullInt64 `db:"transfer_log_index"`
+		Nonce              string        `db:"nonce"`
+		GasLimit           int64         `db:"gas_limit"`
+		FeeCap             string        `db:"fee_cap"`
+		TipCap             string        `db:"tip_cap"`
+		SigningHash        string        `db:"signing_hash"`
+		TxHash             string        `db:"tx_hash"`
+		SignedTx           string        `db:"signed_tx"`
+		State              string        `db:"state"`
+		Attempts           int64         `db:"attempts"`
+		RecoveryState      string        `db:"recovery_state"`
+		RecoveryAttempts   int64         `db:"recovery_attempts"`
+		RecoveryGeneration int64         `db:"recovery_generation"`
+		RecoveryNextAt     time.Time     `db:"recovery_next_at"`
+		RecoveryLeaseUntil sql.NullTime  `db:"recovery_lease_until"`
+		RecoveryCheckedAt  sql.NullTime  `db:"recovery_checked_at"`
+		RecoveryError      string        `db:"recovery_error"`
+		RecoveryRetryNote  string        `db:"recovery_retry_note"`
+		CreatedAt          time.Time     `db:"created_at"`
+		UpdatedAt          time.Time     `db:"updated_at"`
 	}
 )
 
@@ -118,14 +126,14 @@ func (m *defaultBasePayoutModel) FindOneBySenderNonce(ctx context.Context, sende
 }
 
 func (m *defaultBasePayoutModel) Insert(ctx context.Context, data *BasePayout) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, basePayoutRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.RequestKey, data.ChainId, data.Sender, data.Recipient, data.WeiAmount, data.AssetId, data.TokenAtoms, data.TransferLogIndex, data.Nonce, data.GasLimit, data.FeeCap, data.TipCap, data.SigningHash, data.TxHash, data.SignedTx, data.State, data.Attempts)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, basePayoutRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.RequestKey, data.ChainId, data.Sender, data.Recipient, data.WeiAmount, data.AssetId, data.TokenAtoms, data.TransferLogIndex, data.Nonce, data.GasLimit, data.FeeCap, data.TipCap, data.SigningHash, data.TxHash, data.SignedTx, data.State, data.Attempts, data.RecoveryState, data.RecoveryAttempts, data.RecoveryGeneration, data.RecoveryNextAt, data.RecoveryLeaseUntil, data.RecoveryCheckedAt, data.RecoveryError, data.RecoveryRetryNote)
 	return ret, err
 }
 
 func (m *defaultBasePayoutModel) Update(ctx context.Context, newData *BasePayout) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, basePayoutRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.RequestKey, newData.ChainId, newData.Sender, newData.Recipient, newData.WeiAmount, newData.AssetId, newData.TokenAtoms, newData.TransferLogIndex, newData.Nonce, newData.GasLimit, newData.FeeCap, newData.TipCap, newData.SigningHash, newData.TxHash, newData.SignedTx, newData.State, newData.Attempts, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.RequestKey, newData.ChainId, newData.Sender, newData.Recipient, newData.WeiAmount, newData.AssetId, newData.TokenAtoms, newData.TransferLogIndex, newData.Nonce, newData.GasLimit, newData.FeeCap, newData.TipCap, newData.SigningHash, newData.TxHash, newData.SignedTx, newData.State, newData.Attempts, newData.RecoveryState, newData.RecoveryAttempts, newData.RecoveryGeneration, newData.RecoveryNextAt, newData.RecoveryLeaseUntil, newData.RecoveryCheckedAt, newData.RecoveryError, newData.RecoveryRetryNote, newData.Id)
 	return err
 }
 

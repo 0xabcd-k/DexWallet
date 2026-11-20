@@ -34,6 +34,7 @@ type Config struct {
 	RewardRisk        risk.Config                     `json:",optional"`
 	Tasks             task.Config                     `json:",optional"`
 	Transfer          transfer.Config                 `json:",optional"`
+	BaseRecovery      *chainsend.BaseRecoveryConfig   `json:",optional"`
 	SolanaRecovery    *chainsend.SolanaRecoveryConfig `json:",optional"`
 	TONRecovery       *chainsend.RecoveryConfig       `json:",optional"`
 	Background        *background.Config              `json:",optional"`
@@ -138,18 +139,20 @@ func (c Config) Check() error {
 		}
 	}
 
+	if c.BaseRecovery != nil {
+		if err := c.BaseRecovery.Check(); err != nil {
+			return err
+		}
+		if err := c.checkRecoveryNetwork(chainassets.BaseSepolia, c.BaseRecovery.OperationTimeout); err != nil {
+			return err
+		}
+	}
 	if c.SolanaRecovery != nil {
 		if err := c.SolanaRecovery.Check(); err != nil {
 			return err
 		}
-		if (c.Environment != "local" && c.Environment != "dev") || c.Mode != service.DevMode {
-			return fmt.Errorf("Solana recovery requires local/dev environment and dev mode")
-		}
-		if c.SolanaRecovery.OperationTimeout > c.ShutdownTimeout {
-			return fmt.Errorf("Solana recovery operation timeout exceeds shutdown drain budget")
-		}
-		if !slices.ContainsFunc(c.ChainAssets.Networks, func(e chainassets.Endpoint) bool { return e.Network == chainassets.SolanaDevnet }) {
-			return fmt.Errorf("Solana recovery requires a configured Solana Devnet endpoint")
+		if err := c.checkRecoveryNetwork(chainassets.SolanaDevnet, c.SolanaRecovery.OperationTimeout); err != nil {
+			return err
 		}
 	}
 	if c.TONRecovery != nil {
@@ -288,3 +291,16 @@ func (c Config) Namespace() string { return "dexwallet_" + c.Environment }
 
 // RestConf.Timeout uses milliseconds; application budgets use time.Duration.
 func (c Config) RequestDuration() time.Duration { return time.Duration(c.Timeout) * time.Millisecond }
+
+func (c Config) checkRecoveryNetwork(network string, operationTimeout time.Duration) error {
+	if (c.Environment != "local" && c.Environment != "dev") || c.Mode != service.DevMode {
+		return fmt.Errorf("%s recovery requires local/dev environment and dev mode", network)
+	}
+	if operationTimeout > c.ShutdownTimeout {
+		return fmt.Errorf("%s recovery operation timeout exceeds shutdown drain budget", network)
+	}
+	if !slices.ContainsFunc(c.ChainAssets.Networks, func(e chainassets.Endpoint) bool { return e.Network == network }) {
+		return fmt.Errorf("%s recovery requires a configured endpoint", network)
+	}
+	return nil
+}

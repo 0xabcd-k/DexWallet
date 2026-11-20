@@ -108,9 +108,9 @@ func (s *recoveryStore) finish(ctx context.Context, c recoveryClaim, state, rece
 	if cause != nil {
 		detail = cause.Error()
 	}
-	// Solana.Step commits the chain-confirmed outcome and clears the lease in
+	// The Base and Solana executors commit confirmation and clear the lease in
 	// one update. A verified receipt takes precedence over any observation lease.
-	if s.network == chainassets.SolanaDevnet && state == RecoveryConfirmed {
+	if state == RecoveryConfirmed && s.network != chainassets.TONTestnet {
 		return nil
 	}
 	receiptSet := ""
@@ -170,9 +170,13 @@ func (s *recoveryStore) retry(ctx context.Context, key, operator, reason string)
 }
 func newRecoveryStore(db *sql.DB, network, sender string, policy RecoveryPolicy) *recoveryStore {
 	s := &recoveryStore{conn: sqlx.NewSqlConnFromDB(db), claimTx: transaction.NewWithIsolation(db, sql.LevelReadCommitted), sender: sender, config: policy, network: network}
-	if network == chainassets.SolanaDevnet {
-		s.table, s.scope, s.pending = "solana_payout", "sender=?", "state IN ('"+Signed+"','"+Submitted+"')"
-	} else {
+	s.scope, s.pending = "sender=?", "state IN ('"+Signed+"','"+Submitted+"')"
+	switch network {
+	case chainassets.BaseSepolia:
+		s.table = "base_payout"
+	case chainassets.SolanaDevnet:
+		s.table = "solana_payout"
+	case chainassets.TONTestnet:
 		s.table, s.scope, s.pending = "chain_send_intent", "network='"+chainassets.TONTestnet+"' AND sender=?", "state IN ('"+Signed+"','"+BroadcastUnknown+"','"+Submitted+"')"
 	}
 	return s

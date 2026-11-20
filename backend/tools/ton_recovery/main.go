@@ -19,7 +19,7 @@ import (
 
 func run() (err error) {
 	path := flag.String("f", "api/etc/platform.yaml", "application config with explicit recovery policy")
-	network := flag.String("network", chainassets.TONTestnet, "ton-testnet or solana-devnet")
+	network := flag.String("network", chainassets.TONTestnet, "ton-testnet, solana-devnet or base-sepolia")
 	action := flag.String("action", "list", "list, retry or run-once")
 	state := flag.String("state", "", "recovery state; empty for all signed intents")
 	limit := flag.Int("limit", 20, "list limit 1..1000")
@@ -33,7 +33,7 @@ func run() (err error) {
 	if err != nil {
 		return err
 	}
-	ton, sol := c.TONRecovery, c.SolanaRecovery
+	ton, sol, base := c.TONRecovery, c.SolanaRecovery, c.BaseRecovery
 	timeout := c.ShutdownTimeout
 	switch *network {
 	case chainassets.TONTestnet:
@@ -41,6 +41,11 @@ func run() (err error) {
 			return fmt.Errorf("TONRecovery configuration required")
 		}
 		timeout = ton.OperationTimeout
+	case chainassets.BaseSepolia:
+		if base == nil {
+			return fmt.Errorf("BaseRecovery configuration required")
+		}
+		timeout = base.OperationTimeout
 	case chainassets.SolanaDevnet:
 		if sol == nil {
 			return fmt.Errorf("SolanaRecovery configuration required")
@@ -49,7 +54,7 @@ func run() (err error) {
 	default:
 		return fmt.Errorf("unsupported recovery network %q", *network)
 	}
-	c.Background, c.TONRecovery, c.SolanaRecovery = nil, nil, nil
+	c.Background, c.TONRecovery, c.SolanaRecovery, c.BaseRecovery = nil, nil, nil, nil
 	c.RocketMQ.Enabled, c.RocketMQ.Required = false, false
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -58,6 +63,13 @@ func run() (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, s.Close()) }()
+	if *network == chainassets.BaseSepolia {
+		recovery, err := chainsend.NewBaseRecovery(s.DB, s.ChainAssets, s.BaseReceipts, *base)
+		if err != nil {
+			return err
+		}
+		return runAction(ctx, recovery, *action, *state, *limit, *key, *reason)
+	}
 	if *network == chainassets.SolanaDevnet {
 		recovery, err := chainsend.NewSolanaRecovery(s.DB, s.ChainAssets, s.ChainReceipts, *sol)
 		if err != nil {

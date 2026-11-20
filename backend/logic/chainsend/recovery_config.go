@@ -21,6 +21,18 @@ type SolanaRecoveryConfig struct {
 	Sender string
 }
 
+type BaseRecoveryConfig struct {
+	RecoveryPolicy
+	Sender string
+}
+
+func (c BaseRecoveryConfig) Check() error {
+	if _, err := baseAddress(c.Sender); err != nil {
+		return fmt.Errorf("Base recovery requires a Sepolia sender address: %w", err)
+	}
+	return c.RecoveryPolicy.Check()
+}
+
 type RecoveryPolicy struct {
 	Workers          int           `json:",default=1"`
 	PollInterval     time.Duration `json:",default=5s"`

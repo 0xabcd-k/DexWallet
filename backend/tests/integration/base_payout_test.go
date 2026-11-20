@@ -368,7 +368,7 @@ func TestBasePayoutUSDCMigrationPreservesETH(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustExec(t, db, "INSERT INTO base_payout(request_key,chain_id,sender,recipient,wei_amount,nonce,gas_limit,fee_cap,tip_cap,signing_hash,tx_hash,signed_tx,state) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", "old", 84532, strings.ToLower(from.Hex()), strings.ToLower(req.Recipient), req.Atoms, tx.Nonce(), tx.Gas(), tx.GasFeeCap().String(), tx.GasTipCap().String(), signer.Hash(&tx).Hex(), req.Hash, hexutil.Encode(wire), chainsend.Signed)
-	for _, v := range []uint{27, 26, 27} {
+	for _, v := range []uint{27, 26, 27, businessSchemaVersion} {
 		if err = m.Migrate(v); err != nil {
 			t.Fatal(err)
 		}
@@ -392,11 +392,15 @@ func TestBasePayoutUSDCMigrationPreservesETH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err = m.Migrate(27); err != nil {
+		t.Fatal(err)
+	}
 	if err = m.Migrate(26); err == nil {
 		t.Fatal("downgrade discarded token history")
 	}
-	found, err := tokenSender.Find(ctx, "token")
-	if err != nil || found.SigningHash != token.SigningHash || found.TokenAtoms != "1000" {
-		t.Fatal(found, err)
+	var digest, atoms string
+	err = db.QueryRowContext(ctx, "SELECT signing_hash,token_atoms FROM base_payout WHERE request_key=?", "token").Scan(&digest, &atoms)
+	if err != nil || digest != token.SigningHash || atoms != "1000" {
+		t.Fatal(digest, atoms, err)
 	}
 }
