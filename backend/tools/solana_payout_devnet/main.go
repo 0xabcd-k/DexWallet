@@ -1,4 +1,4 @@
-// solana_payout_devnet runs one explicit SOL payout in a retained local test database.
+// solana_payout_devnet runs one explicit SOL or SPL payout in a retained local test database.
 package main
 
 import (
@@ -22,7 +22,7 @@ import (
 
 func run() error {
 	state := flag.String("state", "", "retained local run reference")
-	policy := flag.String("policy", "", "public JSON with key, sender, recipient and lamports")
+	policy := flag.String("policy", "", "public payout policy: key, sender, recipient, and lamports (SOL) or assetID/tokenAtoms/createATA (SPL)")
 	action := flag.String("action", "status", "prepare, bind, step, status, evidence or cleanup")
 	sigFile := flag.String("signature-file", "", "file containing the detached base58 signature")
 	rpc := flag.String("rpc", "https://api.devnet.solana.com", "trusted Devnet RPC")
@@ -35,7 +35,10 @@ func run() error {
 	if *state == "" || *policy == "" {
 		return errors.New("state and policy required")
 	}
-	var p struct{ Key, Sender, Recipient, Lamports string }
+	var p struct {
+		Key, Sender, Recipient, Lamports, AssetID, TokenAtoms string
+		CreateATA                                             bool
+	}
 	b, err := os.ReadFile(*policy)
 	if err != nil {
 		return err
@@ -43,12 +46,19 @@ func run() error {
 	if err = json.Unmarshal(b, &p); err != nil {
 		return err
 	}
+	if p.AssetID == "" {
+		p.AssetID = chainassets.SolanaDevnet + ":sol"
+	}
+	native := p.AssetID == chainassets.SolanaDevnet+":sol"
+	if (native && (p.Lamports == "" || p.TokenAtoms != "" || p.CreateATA)) || (!native && (p.Lamports != "" || p.TokenAtoms == "")) {
+		return errors.New("use lamports for SOL or tokenAtoms and an explicit SPL asset ID")
+	}
 	isolated, err := sendprobe.OpenSendDatabase(*state, "sol_payout", *action == "prepare")
 	if err != nil {
 		return err
 	}
 	defer isolated.Close()
-	assets, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: *rpc}}}, nil)
+	assets, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: *rpc, TestUSDTContract: os.Getenv("DEXWALLET_CHAIN_SOLANA_DEVNET_TEST_USDT_CONTRACT")}}}, nil)
 	if err != nil {
 		return err
 	}
@@ -63,6 +73,13 @@ func run() error {
 	defer cancel()
 	out := json.NewEncoder(os.Stdout)
 	if *action == "prepare" {
+		if !native {
+			row, err := service.PrepareToken(ctx, p.Key, p.Recipient, p.AssetID, p.TokenAtoms, p.CreateATA)
+			if err != nil {
+				return err
+			}
+			return out.Encode(row)
+		}
 		row, err := service.Prepare(ctx, p.Key, p.Recipient, p.Lamports)
 		if err != nil {
 			return err
@@ -73,7 +90,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if row.Recipient != p.Recipient || row.Lamports != p.Lamports {
+	if row.Recipient != p.Recipient || row.AssetId != p.AssetID || (native && row.Lamports != p.Lamports) || row.TokenAtoms != p.TokenAtoms || (row.CreateAta == 1) != p.CreateATA {
 		return chainsend.ErrConflict
 	}
 	switch *action {
@@ -99,7 +116,7 @@ func run() error {
 	if row.State != chainsend.SolanaConfirmed {
 		return errors.New("confirmed payout required")
 	}
-	receipt, err := receipts.Find(ctx, chainassets.SolanaDevnet, row.Signature, 0)
+	receipt, err := receipts.Find(ctx, chainassets.SolanaDevnet, row.Signature, int(row.CreateAta))
 	if err != nil {
 		return err
 	}

@@ -11,12 +11,13 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/solanaspl"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/mr-tron/base58"
 )
 
-const SystemProgram = "11111111111111111111111111111111"
-const TokenProgram = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+const SystemProgram = solanaspl.SystemProgram
+const TokenProgram = solanaspl.Program
 const Finalized = "finalized"
 const SolanaInstruction = "solana_instruction"
 

@@ -16,3 +16,7 @@ ALTER TABLE `chain_send_intent`
 ALTER TABLE `solana_payout`
  ADD CONSTRAINT `ck_sol_payout_height` CHECK (`last_valid_height` > 0 AND `attempts` >= 0),
  ADD CONSTRAINT `ck_sol_payout_state` CHECK ((`state` = 'prepared' AND `signature` = '' AND `attempts` = 0) OR (`state` IN ('signed','submitted','confirmed') AND CHAR_LENGTH(`signature`) BETWEEN 64 AND 88));
+
+ALTER TABLE `solana_payout`
+ ADD CONSTRAINT `ck_sol_payout_asset` CHECK ((`asset_id`='solana-devnet:sol' AND `mint`='' AND `token_atoms`='' AND `create_ata`=0) OR (`asset_id`<>'solana-devnet:sol' AND `mint`<>'' AND `token_atoms`<>'' AND `lamports`='0' AND `create_ata` IN (0,1))),
+ ADD CONSTRAINT `ck_sol_payout_funding` CHECK (`ata_funding_lamports`=0 OR (`ata_funding_lamports`>0 AND `create_ata`=1 AND `state`='confirmed'));

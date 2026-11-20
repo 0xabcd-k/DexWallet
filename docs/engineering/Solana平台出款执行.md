@@ -1,8 +1,8 @@
 # Solana 平台出款执行
 
-5.3 第十批接通 Devnet 原生 SOL 平台出款。专用测试账户同时支付本金和网络费。内部调用入口是 `backend/logic/chainsend.NewSolana`，显式运维入口是 `backend/tools/solana_payout_devnet`。SPL 代币出款、自动扫描、订单结算与生产签名属于后续批次。已有 SOL、USDC、测试 USDT 的收款能力见 [Solana 到账核验](Solana到账核验.md)。
+5.3 第十批接通 Devnet 原生 SOL 平台出款，第十一批接通 Devnet USDC 和项目自建的测试 USDT 出款。专用测试账户同时支付本金和网络费。内部调用入口是 `backend/logic/chainsend.NewSolana`，显式运维入口是 `backend/tools/solana_payout_devnet`。Solana 自动扫描、订单结算与生产签名属于后续批次。已有 SOL、USDC、测试 USDT 的收款能力见 [Solana 到账核验](Solana到账核验.md)。
 
-## 一笔出款如何执行
+## 原生 SOL 出款
 
 1. 调用方以稳定的业务请求键、目标地址和正整数 lamports 调用 `Prepare`。执行器向配置的 Devnet RPC 校验 genesis，再取得 confirmed 区块哈希及最后有效区块高度。它保存付款地址、金额、区块信息和待签消息的 SHA-256。同键重试读取原请求，同键改金额或目标返回冲突。
 2. 签名进程用独立的付款授权核对目标和金额。测试签名脚本使用 Solana SDK 重建一条 legacy System Program transfer，并核对消息摘要。平台账户是唯一签名者。Go 执行器的 `Bind` 验证原消息的 Ed25519 签名并提交数据库。第一签名就是交易 ID，可在广播前持久保存。[Solana 交易结构](https://solana.com/docs/core/transactions/transaction-structure)
@@ -40,3 +40,31 @@ probe -action status
 business 23 新增独立的 `solana_payout` 表，额度以规范的 u64 十进制保存。22 → 23 保留既有 TON 发送记录。若已存在任何 Solana 意图，23 → 22 会拒绝删除它。当前确认结果供内部链上执行使用，用户提现、美元账本与费用扣取仍待业务阶段接入。
 
 离线回归使用公开的已消费签名，结合专用数据库覆盖重启、并发和过期边界。从 backend 执行 `go run ./tools/testenv run go test -race -tags=integration ./tests/integration -run '^TestSolanaPayout' -count=1`。真实结果和验证条件见 [第十批验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。
+
+## SPL 代币出款
+
+调用 `PrepareToken(ctx, key, recipient, assetID, atoms, createATA)`，随后沿用 `Bind` 和 `Step`。recipient 是收款钱包地址，atoms 是规范十进制的正整数，当前两个资产均为六位精度。Devnet USDC 由固定资产目录识别，项目测试 USDT 使用节点配置白名单，资产 ID 包含完整 mint。出款地址同时持有代币并提供 SOL。服务按付款人、收款人、mint 和原版 Token Program 推导两端的关联代币账户（ATA）。[关联账户规范](https://solana.com/docs/tokens/basics/create-token-account)
+
+- **已有账户**：`createATA=false`，只签一条 `TransferChecked`。收款账户缺失时准备阶段报错。
+- **允许开户**：`createATA=true`，签名覆盖 `CreateIdempotent` 和随后的 `TransferChecked`。两条指令属于同一交易。签名后若其他人先开好了账户，幂等创建可以继续，核算以该交易真实垫付的 SOL 为准。[代币转账规范](https://solana.com/docs/tokens/basics/transfer-tokens)
+
+准备时在同一次节点查询中检查两端账户的程序、owner、mint、精度、冻结状态及出资账户可用数量。重复准备读取原意图，变更资产、金额、目标或开户权限会返回冲突。签名前后按固定字段重建消息，重启继续使用原区块哈希和原签名。
+
+确认时逐项核对账户表、签名者和可写权限、指令、mint、最终执行状态及两端代币余额差。开户指令还须与原付款人、目标 ATA、收款钱包及程序一致。`receipt.transaction.feeAtoms` 为本次网络费，`intent.AtaFundingLamports` 为目标 ATA 实际增加且由付款人提供的 SOL。付款人 SOL 减少量须等于这两项之和。开户垫资成为目标账户的存储余额。两项分别保存，用户收费规则沿用[逐项审核清单](../design/链上资金费用逐项审核.md)。
+
+business 24 为既有出款表增加资产、mint、代币数量、开户权限和实际垫资字段。原生 SOL 历史记录保留原消息摘要，已有代币意图时禁止回退到 23。本批通过本机工具显式执行，用户端开放和自动扫描仍在后续阶段。
+
+测试工具沿用上一节的 `prepare/bind/step/status/evidence/cleanup`。SPL policy 使用 `Key/Sender/Recipient/AssetID/TokenAtoms/CreateATA`。测试 USDT 需显式配置 `DEXWALLET_CHAIN_SOLANA_DEVNET_TEST_USDT_CONTRACT`，与资产 ID 中的 mint 一致。本机独立签名样例为 `scripts/payment_probe/solana-spl-payout-sign.mjs`，它以锁定的 SDK 核对本次四个样例的固定授权。在 `probe -action prepare` 成功后、bind 前运行：
+
+```bash
+node scripts/payment_probe/solana-spl-payout-sign.mjs "$work/prepared.json" .tools/payment-feasibility/solana-test-keys.json "$work/detached.sig"
+```
+
+历史实转可在隔离数据库中离线复验：
+
+```bash
+cd backend
+go run ./tools/testenv run go test -race -tags=integration ./tests/integration -run 'TestSolana(Payout|TokenPayout)' -count=1
+```
+
+四笔实际数量、费用、交易签名和原始 RPC 证据见[第十一批验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。两笔新建账户交易完成后，对应 ATA 已存在，重做开户成本实验需要另选尚未开户的测试收款账户。

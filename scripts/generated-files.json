@@ -15,7 +15,7 @@
     "backend/model/chainreceipt/chain_observed_transaction_model_gen.go": "1c7f43a5f9c4322c066af1c8bcac3e521fd44998312572545d312feb83b9fd7c",
     "backend/model/chainreceipt/chain_transfer_event_model_gen.go": "582ed350286a3678508323151cabdd13bdf8d6369d3f44173b85ed7795b8adf2",
     "backend/model/chainsend/chain_send_intent_model_gen.go": "b36663abfa057ac310b11452c2bc00cb9b3fe1c45bff7d11b35ae71fcef2de98",
-    "backend/model/chainsend/solana_payout_model_gen.go": "f2d80180504c55533c762f8fa9a87f0050a18ba0e6cc147f1e582b4be61f8a52",
+    "backend/model/chainsend/solana_payout_model_gen.go": "9dc36426e0693dc978d779bb2c1aeeb0916c8f21a593121f59a59f60ed1c3d43",
     "backend/model/draw/draw_control_model_gen.go": "74c5701f90ce50253e2ddb38b63d3de3022c9cf164c191264370c5cc1d3bf801",
     "backend/model/draw/draw_rule_version_model_gen.go": "3109b1b77332d01f6a73dba64dca0c1f2573701e20e3a9567e2d71def0fc5dc8",
     "backend/model/draw/point_draw_model_gen.go": "0e743aad84341cc033c469523261d314ea1faac71773f83bc08c9276d486c2af",

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/solanaspl"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 	model "github.com/0xabcd-k/DexWallet/backend/model/chainsend"
@@ -19,6 +20,7 @@ import (
 )
 
 const SolanaConfirmed = "confirmed"
+const solanaNativeAsset = chainassets.SolanaDevnet + ":sol"
 
 var ErrSolanaIntent = errors.New("invalid Solana payout intent")
 var ErrSolanaExpired = errors.New("Solana blockhash expired; reconcile original signature")
@@ -34,6 +36,7 @@ type Solana struct {
 	rows     model.SolanaPayoutModel
 	sender   string
 	node     SolanaNode
+	tokens   solanaTokens
 	receipts *chainreceipt.Service
 }
 
@@ -54,7 +57,8 @@ func NewSolana(conn sqlx.SqlConn, sender string, node SolanaNode, receipts *chai
 	if conn == nil || node == nil || receipts == nil {
 		return nil, ErrSolanaIntent
 	}
-	return &Solana{conn, model.NewSolanaPayoutModel(conn), sender, node, receipts}, nil
+	tokens, _ := node.(solanaTokens)
+	return &Solana{conn: conn, rows: model.NewSolanaPayoutModel(conn), sender: sender, node: node, tokens: tokens, receipts: receipts}, nil
 }
 
 // SolanaPayoutMessage builds the single supported legacy SystemProgram transfer.
@@ -103,9 +107,52 @@ func (s *Solana) Find(ctx context.Context, key string) (*model.SolanaPayout, err
 	return row, nil
 }
 func (s *Solana) Prepare(ctx context.Context, key, recipient, lamports string) (*model.SolanaPayout, error) {
+	return s.prepare(ctx, &model.SolanaPayout{RequestKey: key, Sender: s.sender, Recipient: recipient, Lamports: lamports, AssetId: solanaNativeAsset})
+}
+
+type solanaTokens interface {
+	Catalog() []chainassets.Network
+	CheckSolanaTokenAccounts(context.Context, solanaspl.Transfer) error
+}
+
+func (s *Solana) PrepareToken(ctx context.Context, key, recipient, assetID, atoms string, createATA bool) (*model.SolanaPayout, error) {
+	if s.tokens == nil {
+		return nil, ErrSolanaIntent
+	}
+	for _, network := range s.tokens.Catalog() {
+		if network.ID != chainassets.SolanaDevnet || !network.Enabled {
+			continue
+		}
+		for _, asset := range network.Assets {
+			if asset.ID != assetID || asset.Contract == "" || asset.Decimals != solanaspl.Decimals {
+				continue
+			}
+			row := &model.SolanaPayout{RequestKey: key, Sender: s.sender, Recipient: recipient, AssetId: asset.ID, Mint: asset.Contract, TokenAtoms: atoms, Lamports: "0"}
+			if createATA {
+				row.CreateAta = 1
+			}
+			return s.prepare(ctx, row)
+		}
+	}
+	return nil, fmt.Errorf("%w: unsupported Devnet token %s", ErrSolanaIntent, assetID)
+}
+
+func payoutMessage(row *model.SolanaPayout) ([]byte, error) {
+	if row.AssetId == solanaNativeAsset {
+		return SolanaPayoutMessage(row.Sender, row.Recipient, row.Lamports, row.Blockhash)
+	}
+	t, err := solanaspl.New(row.Sender, row.Recipient, row.Mint, row.TokenAtoms, row.CreateAta == 1)
+	if err != nil {
+		return nil, err
+	}
+	return t.Message(row.Blockhash)
+}
+
+func (s *Solana) prepare(ctx context.Context, proposal *model.SolanaPayout) (*model.SolanaPayout, error) {
+	key := proposal.RequestKey
 	existing := func() (*model.SolanaPayout, error) {
 		row, err := s.Find(ctx, key)
-		if err == nil && (row.Recipient != recipient || row.Lamports != lamports) {
+		if err == nil && (row.Recipient != proposal.Recipient || row.Lamports != proposal.Lamports || row.AssetId != proposal.AssetId || row.Mint != proposal.Mint || row.TokenAtoms != proposal.TokenAtoms || row.CreateAta != proposal.CreateAta) {
 			return nil, ErrConflict
 		}
 		return row, err
@@ -114,19 +161,31 @@ func (s *Solana) Prepare(ctx context.Context, key, recipient, lamports string) (
 	if !errors.Is(err, model.ErrNotFound) {
 		return row, err
 	}
+	if proposal.AssetId != solanaNativeAsset {
+		t, err := solanaspl.New(s.sender, proposal.Recipient, proposal.Mint, proposal.TokenAtoms, proposal.CreateAta == 1)
+		if err != nil {
+			return nil, err
+		}
+		if err = s.tokens.CheckSolanaTokenAccounts(ctx, t); err != nil {
+			return nil, err
+		}
+	}
 	block, err := s.node.LatestSolanaBlock(ctx)
 	if err != nil {
 		return nil, err
 	}
-	msg, err := SolanaPayoutMessage(s.sender, recipient, lamports, block.Blockhash)
+	proposal.Blockhash = block.Blockhash
+	msg, err := payoutMessage(proposal)
 	if err != nil {
 		return nil, err
 	}
 	if block.LastValidBlockHeight <= 0 {
 		return nil, ErrSolanaIntent
 	}
-	row = &model.SolanaPayout{RequestKey: key, Sender: s.sender, Recipient: recipient, Lamports: lamports, Blockhash: block.Blockhash, LastValidHeight: block.LastValidBlockHeight, MessageHash: solanaDigest(msg), State: Prepared}
-	_, err = s.rows.Insert(ctx, row)
+	proposal.MessageHash = solanaDigest(msg)
+	proposal.LastValidHeight = block.LastValidBlockHeight
+	proposal.State = Prepared
+	_, err = s.rows.Insert(ctx, proposal)
 	var duplicate *mysql.MySQLError
 	if errors.As(err, &duplicate) && duplicate.Number == 1062 {
 		row, err = existing()
@@ -141,7 +200,7 @@ func (s *Solana) Prepare(ctx context.Context, key, recipient, lamports string) (
 	return s.Find(ctx, key)
 }
 func (s *Solana) signedWire(row *model.SolanaPayout, signature string) ([]byte, error) {
-	msg, err := SolanaPayoutMessage(s.sender, row.Recipient, row.Lamports, row.Blockhash)
+	msg, err := payoutMessage(row)
 	if err != nil {
 		return nil, err
 	}
@@ -201,10 +260,17 @@ func (s *Solana) Step(ctx context.Context, key string) (*model.SolanaPayout, err
 	if row.State == SolanaConfirmed {
 		return row, nil
 	}
-	req := chainreceipt.Request{Network: chainassets.SolanaDevnet, AssetID: chainassets.SolanaDevnet + ":sol", Signature: row.Signature, Recipient: row.Recipient, Atoms: row.Lamports}
-	_, err = s.receipts.RecordSolanaPayout(ctx, req, s.sender, row.Blockhash)
+	req := chainreceipt.Request{Network: chainassets.SolanaDevnet, AssetID: row.AssetId, Signature: row.Signature, Recipient: row.Recipient, Atoms: row.Lamports}
+	var funding int64
+	if row.AssetId == solanaNativeAsset {
+		_, err = s.receipts.RecordSolanaPayout(ctx, req, s.sender, row.Blockhash)
+	} else {
+		req.Atoms = row.TokenAtoms
+		req.Instruction = int(row.CreateAta)
+		funding, err = s.receipts.RecordSolanaTokenPayout(ctx, req, s.sender, row.Blockhash, row.Mint)
+	}
 	if err == nil {
-		_, err = s.conn.ExecCtx(ctx, "UPDATE solana_payout SET state=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", SolanaConfirmed, row.Id, Signed, Submitted)
+		_, err = s.conn.ExecCtx(ctx, "UPDATE solana_payout SET state=?,ata_funding_lamports=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", SolanaConfirmed, funding, row.Id, Signed, Submitted)
 		if err != nil {
 			return row, err
 		}

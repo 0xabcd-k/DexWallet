@@ -1,0 +1,214 @@
+{
+  "evidence": {
+    "transaction": {
+      "blockTime": 1795160235,
+      "meta": {
+        "computeUnitsConsumed": 105,
+        "costUnits": 1759,
+        "err": null,
+        "fee": 5000,
+        "innerInstructions": [],
+        "logMessages": [
+          "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]",
+          "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 105 of 200000 compute units",
+          "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success"
+        ],
+        "postBalances": [
+          3494560,
+          1488440,
+          1488440,
+          20508277856,
+          1066800
+        ],
+        "postTokenBalances": [
+          {
+            "accountIndex": 1,
+            "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+            "owner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+            "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "uiTokenAmount": {
+              "amount": "19969000",
+              "decimals": 6,
+              "uiAmount": 19.969,
+              "uiAmountString": "19.969"
+            }
+          },
+          {
+            "accountIndex": 2,
+            "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+            "owner": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+            "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "uiTokenAmount": {
+              "amount": "31000",
+              "decimals": 6,
+              "uiAmount": 0.031,
+              "uiAmountString": "0.031"
+            }
+          }
+        ],
+        "preBalances": [
+          3499560,
+          1488440,
+          1488440,
+          20508277856,
+          1066800
+        ],
+        "preTokenBalances": [
+          {
+            "accountIndex": 1,
+            "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+            "owner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+            "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "uiTokenAmount": {
+              "amount": "19970000",
+              "decimals": 6,
+              "uiAmount": 19.97,
+              "uiAmountString": "19.97"
+            }
+          },
+          {
+            "accountIndex": 2,
+            "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+            "owner": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+            "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+            "uiTokenAmount": {
+              "amount": "30000",
+              "decimals": 6,
+              "uiAmount": 0.03,
+              "uiAmountString": "0.03"
+            }
+          }
+        ],
+        "rewards": [],
+        "status": {
+          "Ok": null
+        }
+      },
+      "slot": 524279300,
+      "transaction": {
+        "message": {
+          "accountKeys": [
+            {
+              "pubkey": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+              "signer": true,
+              "source": "transaction",
+              "writable": true
+            },
+            {
+              "pubkey": "G3fPnGibrCdEUDURrYFxk8Y1KfUmNWGPFsobTCRRbAdt",
+              "signer": false,
+              "source": "transaction",
+              "writable": true
+            },
+            {
+              "pubkey": "DT3EUVqAxQ4ZL6bvo419FiA9vpd4efKsn6Htmt4SLE5J",
+              "signer": false,
+              "source": "transaction",
+              "writable": true
+            },
+            {
+              "pubkey": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+              "signer": false,
+              "source": "transaction",
+              "writable": false
+            },
+            {
+              "pubkey": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+              "signer": false,
+              "source": "transaction",
+              "writable": false
+            }
+          ],
+          "instructions": [
+            {
+              "parsed": {
+                "info": {
+                  "authority": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+                  "destination": "DT3EUVqAxQ4ZL6bvo419FiA9vpd4efKsn6Htmt4SLE5J",
+                  "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+                  "source": "G3fPnGibrCdEUDURrYFxk8Y1KfUmNWGPFsobTCRRbAdt",
+                  "tokenAmount": {
+                    "amount": "1000",
+                    "decimals": 6,
+                    "uiAmount": 0.001,
+                    "uiAmountString": "0.001"
+                  }
+                },
+                "type": "transferChecked"
+              },
+              "program": "spl-token",
+              "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+              "stackHeight": 1
+            }
+          ],
+          "recentBlockhash": "ifA9EbdoVWc6e3RJ1254dS1tG5Ft4GE33ewgAeoPJ6E"
+        },
+        "signatures": [
+          "5Towpdm5L56BUQYdpsFhpuw5KBWHt4cMssjyBPQBDwhHCibqTXNyFWaZc6NRiyof3nvqDg9k87AbMeeXKNp1cEcp"
+        ]
+      },
+      "transactionIndex": 7,
+      "version": "legacy"
+    },
+    "status": {
+      "context": {
+        "apiVersion": "4.5.0-beta.0",
+        "slot": 524279311
+      },
+      "value": [
+        {
+          "confirmationStatus": "finalized",
+          "confirmations": null,
+          "err": null,
+          "slot": 524279300,
+          "status": {
+            "Ok": null
+          }
+        }
+      ]
+    }
+  },
+  "intent": {
+    "Id": 1,
+    "RequestKey": "spl-devnet-usdt-fixture-existing-01",
+    "Sender": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "Recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+    "Lamports": "0",
+    "AssetId": "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+    "Mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+    "TokenAtoms": "1000",
+    "CreateAta": 0,
+    "AtaFundingLamports": 0,
+    "Blockhash": "ifA9EbdoVWc6e3RJ1254dS1tG5Ft4GE33ewgAeoPJ6E",
+    "LastValidHeight": 511386694,
+    "MessageHash": "1d1f28c4abc84f1525dd2aeadea0008708c8fe6737d29c51298bb9bcd5c9b93e",
+    "Signature": "5Towpdm5L56BUQYdpsFhpuw5KBWHt4cMssjyBPQBDwhHCibqTXNyFWaZc6NRiyof3nvqDg9k87AbMeeXKNp1cEcp",
+    "State": "confirmed",
+    "Attempts": 1,
+    "CreatedAt": "2026-11-20T07:37:12.867594Z",
+    "UpdatedAt": "2026-11-20T07:37:18.74294Z"
+  },
+  "receipt": {
+    "transaction": {
+      "network": "solana-devnet",
+      "signature": "5Towpdm5L56BUQYdpsFhpuw5KBWHt4cMssjyBPQBDwhHCibqTXNyFWaZc6NRiyof3nvqDg9k87AbMeeXKNp1cEcp",
+      "slot": 524279300,
+      "feePayer": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+      "feeAtoms": "5000",
+      "fingerprint": "1b8e4701da812e5d1afc384929d42cad1336ff48176bcd43add452e3d1bee850"
+    },
+    "event": {
+      "kind": "solana_instruction",
+      "instruction": 0,
+      "assetId": "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+      "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+      "decimals": 6,
+      "sourceAccount": "G3fPnGibrCdEUDURrYFxk8Y1KfUmNWGPFsobTCRRbAdt",
+      "sourceOwner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+      "recipientAccount": "DT3EUVqAxQ4ZL6bvo419FiA9vpd4efKsn6Htmt4SLE5J",
+      "recipientOwner": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5",
+      "atoms": "1000"
+    }
+  }
+}

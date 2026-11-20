@@ -3,6 +3,7 @@ module github.com/0xabcd-k/DexWallet/backend
 go 1.26.10
 
 require (
+	filippo.io/edwards25519 v1.2.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/apache/rocketmq-client-go/v2 v2.1.3-0.20230904112025-4de354a4c07d
 	github.com/capitalone/fpe v1.2.1
@@ -23,7 +24,6 @@ require (
 )
 
 require (
-	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
