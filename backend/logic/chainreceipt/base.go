@@ -258,6 +258,10 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 	}
 	seen := map[int]bool{}
 	var selected *baseLog
+	var selectedIndex int
+	// Public receipt lookups specify the index. A direct platform token payout
+	// discovers its unique Transfer only after checking finality and execution.
+	discoverTransfer := asset.Origin == chainassets.Issuer && r.LogIndex == nil
 	for i := range *receipt.Logs {
 		l := &(*receipt.Logs)[i]
 		normalizeHexFields(&l.Address, &l.BlockHash, &l.BlockNumber, &l.TransactionHash, &l.TransactionIndex, &l.LogIndex, &l.Data)
@@ -273,8 +277,13 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 			return out, bad("inconsistent, duplicate or removed log")
 		}
 		seen[at] = true
-		if r.LogIndex != nil && at == *r.LogIndex {
-			selected = l
+		if discoverTransfer && l.Address == strings.ToLower(asset.Contract) && len(l.Topics) > 0 && l.Topics[0] == ERC20TransferTopic {
+			if selected != nil {
+				return out, bad("multiple token Transfer logs for direct payout")
+			}
+			selected, selectedIndex = l, at
+		} else if r.LogIndex != nil && at == *r.LogIndex {
+			selected, selectedIndex = l, at
 		}
 	}
 	event := Event{AssetID: asset.ID, Decimals: asset.Decimals}
@@ -295,6 +304,9 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 		event.Atoms = value.String()
 	} else {
 		if selected == nil {
+			if discoverTransfer {
+				return out, bad("missing token Transfer log for direct payout")
+			}
 			return out, ErrUnsupported
 		}
 		l := selected
@@ -303,7 +315,7 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 		}
 		amount, _ := new(big.Int).SetString(l.Data[2:], 16)
 		event.Kind = EVMLog
-		event.Instruction = *r.LogIndex
+		event.Instruction = selectedIndex
 		event.Mint = l.Address
 		event.ProgramID = l.Address
 		event.SourceAccount = "0x" + l.Topics[1][26:]

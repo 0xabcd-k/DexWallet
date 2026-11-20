@@ -9,10 +9,12 @@ import (
 	"errors"
 	"io"
 	"math/big"
+	"os"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/0xabcd-k/DexWallet/backend/internal/migration"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
@@ -48,10 +50,27 @@ func (s *basePayoutSource) ReadBaseEvidence(ctx context.Context, network, hash s
 }
 
 func TestBasePayoutOriginalAuthorizationAndRestart(t *testing.T) {
+	verifyBasePayoutRecovery(t, "base-payout-eth", "base_native_payout")
+}
+func TestBasePayoutUSDCOriginalAuthorizationAndRestart(t *testing.T) {
+	verifyBasePayoutRecovery(t, "base-payout-usdc", "base_usdc_payout")
+}
+
+type baseUSDCPayoutNode struct {
+	*basePayoutNode
+	send func(*types.Transaction) error
+}
+
+func (n *baseUSDCPayoutNode) SubmitBaseUSDC(_ context.Context, tx *types.Transaction) error {
+	return n.send(tx)
+}
+
+func verifyBasePayoutRecovery(t *testing.T, name, dbLabel string) {
 	ctx := context.Background()
-	db, _ := userDatabase(t, "base_payout")
+	db, _ := userDatabase(t, dbLabel)
 	conn := sqlx.NewSqlConnFromDB(db)
-	req, fixture := baseReceiptFixture(t, "base-payout-eth")
+	req, fixture := baseReceiptFixture(t, name)
+	token := req.AssetID == baseusdc.AssetID
 	source := &basePayoutSource{baseReceiptSource: fixture}
 	evidence := fixture.proof
 	var tx types.Transaction
@@ -69,17 +88,30 @@ func TestBasePayoutOriginalAuthorizationAndRestart(t *testing.T) {
 	}
 	receipts := chainreceipt.NewBase(conn, transaction.New(db), source)
 	node := &basePayoutNode{nonce: tx.Nonce()}
+	var executorNode chainsend.BaseNode = node
+	tokenNode := &baseUSDCPayoutNode{basePayoutNode: node}
+	if token {
+		executorNode = tokenNode
+	}
 	open := func() *chainsend.Base {
-		s, err := chainsend.NewBase(conn, from.Hex(), node, receipts)
+		s, err := chainsend.NewBase(conn, from.Hex(), executorNode, receipts)
 		if err != nil {
 			t.Fatal(err)
 		}
 		return s
 	}
 	s := open()
-	const key = "base-eth-payout-regression"
+	key := name + "-regression"
+	payment := chainsend.BaseTransfer{Recipient: req.Recipient, WeiAmount: req.Atoms, GasLimit: int64(tx.Gas()), FeeCap: tx.GasFeeCap().String(), TipCap: tx.GasTipCap().String()}
+	if token {
+		payment.AssetID = req.AssetID
+		payment.WeiAmount = "0"
+		payment.TokenAtoms = req.Atoms
+	}
 	prepare := func(key string, gas int64) error {
-		_, err := s.Prepare(ctx, key, chainsend.BaseTransfer{Recipient: req.Recipient, WeiAmount: req.Atoms, GasLimit: gas, FeeCap: tx.GasFeeCap().String(), TipCap: tx.GasTipCap().String()})
+		proposed := payment
+		proposed.GasLimit = gas
+		_, err := s.Prepare(ctx, key, proposed)
 		return err
 	}
 	gas := int64(tx.Gas())
@@ -100,6 +132,20 @@ func TestBasePayoutOriginalAuthorizationAndRestart(t *testing.T) {
 	if err := prepare(key, gas+1); !errors.Is(err, chainsend.ErrConflict) {
 		t.Fatal("fee policy changed", err)
 	}
+	if token {
+		changed := payment
+		changed.TokenAtoms = "1001"
+		if _, err = s.Prepare(ctx, key, changed); !errors.Is(err, chainsend.ErrConflict) {
+			t.Fatal("changed token amount", err)
+		}
+		native := chainsend.BaseTransfer{Recipient: req.Recipient, WeiAmount: req.Atoms, GasLimit: gas, FeeCap: payment.FeeCap, TipCap: payment.TipCap}
+		if _, err = s.Prepare(ctx, key, native); !errors.Is(err, chainsend.ErrConflict) {
+			t.Fatal("changed asset", err)
+		}
+		if _, err = s.Prepare(ctx, "native-key", native); !errors.Is(err, chainsend.ErrBaseNonceReserved) {
+			t.Fatal("nonce reused across assets", err)
+		}
+	}
 	if _, err = s.Step(ctx, key); !errors.Is(err, chainsend.ErrInvalidSignature) {
 		t.Fatal(err)
 	}
@@ -111,7 +157,7 @@ func TestBasePayoutOriginalAuthorizationAndRestart(t *testing.T) {
 		t.Fatal(row, err)
 	}
 	calls := 0
-	node.submit = func(sent *types.Transaction) error {
+	submit := func(sent *types.Transaction) error {
 		calls++
 		raw, err := sent.MarshalBinary()
 		if err != nil || !bytes.Equal(raw, wire) {
@@ -125,6 +171,12 @@ func TestBasePayoutOriginalAuthorizationAndRestart(t *testing.T) {
 			return io.ErrUnexpectedEOF
 		}
 		return nil
+	}
+	if token {
+		tokenNode.send = submit
+		node.submit = func(*types.Transaction) error { t.Fatal("token routed as ETH"); return nil }
+	} else {
+		node.submit = submit
 	}
 	absent := chainassets.BaseEvidence{Transaction: json.RawMessage("null"), Receipt: json.RawMessage("null")}
 	source.err = io.EOF
@@ -175,23 +227,78 @@ func TestBasePayoutOriginalAuthorizationAndRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	source.proof = evidence
+	if token {
+		// Pretending another address paid ETH must not pass just because the token log is correct.
+		editBaseJSON(t, &source.proof.Transaction, func(v map[string]any) { v["from"] = req.Recipient })
+		editBaseJSON(t, &source.proof.Receipt, func(v map[string]any) { v["from"] = req.Recipient })
+		if _, err = s.Step(ctx, key); !errors.Is(err, chainreceipt.ErrInvalidEvidence) {
+			t.Fatal("wrong fee payer", err)
+		}
+		for _, tc := range []struct {
+			name   string
+			change func(map[string]any)
+		}{
+			{"missing", func(r map[string]any) { r["logs"] = []any{} }},
+			{"ambiguous", func(r map[string]any) {
+				logs := r["logs"].([]any)
+				original := logs[0].(map[string]any)
+				duplicate := map[string]any{}
+				for k, v := range original {
+					duplicate[k] = v
+				}
+				duplicate["logIndex"] = "0x7fff"
+				r["logs"] = append(logs, duplicate)
+			}},
+			{"wrong token", func(r map[string]any) { r["logs"].([]any)[0].(map[string]any)["address"] = req.Recipient }},
+			{"wrong amount", func(r map[string]any) {
+				r["logs"].([]any)[0].(map[string]any)["data"] = "0x" + strings.Repeat("0", 63) + "1"
+			}},
+			{"wrong beneficiary", func(r map[string]any) {
+				topics := r["logs"].([]any)[0].(map[string]any)["topics"].([]any)
+				topics[2] = topics[1]
+			}},
+			{"wrong sender", func(r map[string]any) {
+				topics := r["logs"].([]any)[0].(map[string]any)["topics"].([]any)
+				topics[1] = "0x" + strings.Repeat("0", 24) + strings.Repeat("a", 40)
+			}},
+			{"removed", func(r map[string]any) { r["logs"].([]any)[0].(map[string]any)["removed"] = true }},
+		} {
+			source.proof = evidence
+			editBaseJSON(t, &source.proof.Receipt, tc.change)
+			if _, err = s.Step(ctx, key); !errors.Is(err, chainreceipt.ErrInvalidEvidence) {
+				t.Fatal(tc.name, err)
+			}
+		}
+		source.proof = evidence
+	}
 	mustExec(t, db, "ALTER TABLE base_payout ADD CONSTRAINT base_test_finish CHECK (state<>'confirmed')")
 	if _, err = s.Step(ctx, key); err == nil {
 		t.Fatal("missing local confirmation fault")
 	}
-	got, err := receipts.Find(ctx, chainassets.BaseSepolia, req.Hash, chainreceipt.EVMValue, 0)
+	kind, index := chainreceipt.EVMValue, 0
+	if token {
+		kind, index = chainreceipt.EVMLog, *req.LogIndex
+	}
+	got, err := receipts.Find(ctx, chainassets.BaseSepolia, req.Hash, kind, index)
 	if err != nil || got.Event.Atoms != req.Atoms || got.Event.SourceOwner != strings.ToLower(from.Hex()) {
 		t.Fatal(got, err)
 	}
-	// The public Sepolia fixture separates execution, L1 data and operator costs in wei.
-	if got.Transaction.ExecutionFeeAtoms != "126330000000" || got.Transaction.L1FeeAtoms != "163" || got.Transaction.OperatorFeeAtoms != "0" || got.Transaction.FeeAtoms != "126330000163" {
-		t.Fatal("unexpected finalized network fees", got.Transaction)
+	raw, err := os.ReadFile("../../logic/chainreceipt/testdata/" + name + ".json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var capture struct{ Receipt chainreceipt.Receipt }
+	if err = json.Unmarshal(raw, &capture); err != nil || got.Transaction != capture.Receipt.Transaction || got.Event != capture.Receipt.Event {
+		t.Fatal("archived receipt mismatch", got, err)
 	}
 	mustExec(t, db, "ALTER TABLE base_payout DROP CHECK base_test_finish")
 	source.err = io.EOF
 	row, err = open().Step(ctx, key)
 	if err != nil || row.State != chainsend.BaseConfirmed || row.TxHash != req.Hash || row.Attempts != 3 {
 		t.Fatal(row, err)
+	}
+	if row.TransferLogIndex.Valid != token || (token && row.TransferLogIndex.Int64 != int64(index)) {
+		t.Fatal("incorrect persisted log index", row.TransferLogIndex)
 	}
 	if _, err = open().Step(ctx, key); err != nil || calls != 3 {
 		t.Fatal(err, calls)
@@ -228,5 +335,68 @@ func TestBasePayoutMigration(t *testing.T) {
 	var key string
 	if err = db.QueryRow("SELECT request_key FROM base_payout").Scan(&key); err != nil || key != "native" {
 		t.Fatal(key, err)
+	}
+}
+
+func TestBasePayoutUSDCMigrationPreservesETH(t *testing.T) {
+	ctx := context.Background()
+	name, dsn, db, err := testRun.NewDatabase(ctx, "base_usdc_upgrade")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	m, err := migration.Open(dsn, name, "../../manifest/sql/diff/business", "business")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	if err = m.Migrate(26); err != nil {
+		t.Fatal(err)
+	}
+	req, fixture := baseReceiptFixture(t, "base-payout-eth")
+	var tx types.Transaction
+	if err = json.Unmarshal(fixture.proof.Transaction, &tx); err != nil {
+		t.Fatal(err)
+	}
+	signer := types.NewLondonSigner(tx.ChainId())
+	from, err := types.Sender(signer, &tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wire, err := tx.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, db, "INSERT INTO base_payout(request_key,chain_id,sender,recipient,wei_amount,nonce,gas_limit,fee_cap,tip_cap,signing_hash,tx_hash,signed_tx,state) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", "old", 84532, strings.ToLower(from.Hex()), strings.ToLower(req.Recipient), req.Atoms, tx.Nonce(), tx.Gas(), tx.GasFeeCap().String(), tx.GasTipCap().String(), signer.Hash(&tx).Hex(), req.Hash, hexutil.Encode(wire), chainsend.Signed)
+	for _, v := range []uint{27, 26, 27} {
+		if err = m.Migrate(v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	conn := sqlx.NewSqlConnFromDB(db)
+	receipts := chainreceipt.NewBase(conn, transaction.New(db), fixture)
+	node := &basePayoutNode{nonce: tx.Nonce() + 1, submit: func(*types.Transaction) error { t.Fatal("legacy finalized transfer was replayed"); return nil }}
+	s, err := chainsend.NewBase(conn, from.Hex(), node, receipts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, err := s.Step(ctx, "old")
+	if err != nil || old.AssetId != chainassets.BaseSepoliaETH || old.State != chainsend.BaseConfirmed || old.TransferLogIndex.Valid || old.TxHash != req.Hash || old.Attempts != 0 {
+		t.Fatal(old, err)
+	}
+	tokenSender, err := chainsend.NewBase(conn, from.Hex(), &baseUSDCPayoutNode{basePayoutNode: node}, receipts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	token, err := tokenSender.Prepare(ctx, "token", chainsend.BaseTransfer{AssetID: baseusdc.AssetID, Recipient: req.Recipient, WeiAmount: "0", TokenAtoms: "1000", GasLimit: 60000, FeeCap: "10000000", TipCap: "1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = m.Migrate(26); err == nil {
+		t.Fatal("downgrade discarded token history")
+	}
+	found, err := tokenSender.Find(ctx, "token")
+	if err != nil || found.SigningHash != token.SigningHash || found.TokenAtoms != "1000" {
+		t.Fatal(found, err)
 	}
 }

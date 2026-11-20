@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -32,8 +33,22 @@ func (s *Service) PendingBaseNonce(ctx context.Context, sender string) (uint64, 
 	return uint64(result), err
 }
 func (s *Service) SubmitBaseETH(ctx context.Context, tx *types.Transaction) error {
-	if tx == nil || tx.Type() != types.DynamicFeeTxType || !tx.ChainId().IsInt64() || tx.ChainId().Int64() != BaseSepoliaChainID || tx.To() == nil || tx.Value().Sign() <= 0 || len(tx.Data()) != 0 || len(tx.AccessList()) != 0 {
+	if tx == nil || tx.To() == nil || tx.Value().Sign() <= 0 || len(tx.Data()) != 0 {
 		return invalid("invalid Base Sepolia ETH transfer")
+	}
+	return s.submitBase(ctx, tx)
+}
+
+func (s *Service) SubmitBaseUSDC(ctx context.Context, tx *types.Transaction) error {
+	if _, _, ok := baseusdc.ParseTransfer(tx); !ok {
+		return invalid("invalid Base Sepolia USDC transfer")
+	}
+	return s.submitBase(ctx, tx)
+}
+
+func (s *Service) submitBase(ctx context.Context, tx *types.Transaction) error {
+	if tx.Type() != types.DynamicFeeTxType || !tx.ChainId().IsInt64() || tx.ChainId().Int64() != BaseSepoliaChainID || len(tx.AccessList()) != 0 {
+		return invalid("invalid Base Sepolia payout envelope")
 	}
 	wire, err := tx.MarshalBinary()
 	if err != nil {

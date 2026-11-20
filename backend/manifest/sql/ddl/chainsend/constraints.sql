@@ -29,3 +29,10 @@ ALTER TABLE `solana_payout`
 ALTER TABLE `base_payout`
  ADD CONSTRAINT `ck_base_payout_chain` CHECK (`chain_id`=84532 AND `gas_limit`>=21000 AND `attempts`>=0),
  ADD CONSTRAINT `ck_base_payout_auth` CHECK ((`state`='prepared' AND `signed_tx`='' AND `tx_hash`='' AND `attempts`=0) OR (`state` IN ('signed','submitted','confirmed') AND CHAR_LENGTH(`tx_hash`)=66 AND `signed_tx`<>''));
+
+ALTER TABLE `base_payout`
+ ADD CONSTRAINT `ck_base_payout_asset` CHECK (
+    (`asset_id`='base-sepolia:eth' AND `token_atoms`='' AND `transfer_log_index` IS NULL)
+    OR (`asset_id`='base-sepolia:usdc' AND `wei_amount`='0' AND CHAR_LENGTH(`token_atoms`)>0
+        AND ((`state`='confirmed' AND `transfer_log_index` IS NOT NULL AND `transfer_log_index` BETWEEN 0 AND 2147483647)
+             OR (`state`<>'confirmed' AND `transfer_log_index` IS NULL))));

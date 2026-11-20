@@ -1,6 +1,7 @@
 package chainsend
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 	"strings"
@@ -24,7 +25,7 @@ func TestBaseSignatureBindsTransferAndFees(t *testing.T) {
 		t.Fatal(err)
 	}
 	to := crypto.PubkeyToAddress(other.PublicKey)
-	row := model.BasePayout{Sender: strings.ToLower(crypto.PubkeyToAddress(owner.PublicKey).Hex()), Recipient: to.Hex(), ChainId: chainassets.BaseSepoliaChainID, Nonce: "6", WeiAmount: "123", GasLimit: 25000, FeeCap: "30000000", TipCap: "1000000"}
+	row := model.BasePayout{AssetId: chainassets.BaseSepoliaETH, Sender: strings.ToLower(crypto.PubkeyToAddress(owner.PublicKey).Hex()), Recipient: to.Hex(), ChainId: chainassets.BaseSepoliaChainID, Nonce: "6", WeiAmount: "123", GasLimit: 25000, FeeCap: "30000000", TipCap: "1000000"}
 	unsigned, err := baseUnsigned(&row)
 	if err != nil {
 		t.Fatal(err)
@@ -86,6 +87,63 @@ func TestBasePayoutAddressChecks(t *testing.T) {
 	for _, address := range []string{"0xa59c992Aa84657df4EbFF6F04E11a1632f6DB1FA", valid[2:], "0x" + strings.Repeat("0", 40)} {
 		if _, err := baseAddress(address); !errors.Is(err, ErrInvalidRequest) {
 			t.Fatal(address, err)
+		}
+	}
+}
+
+func TestBaseUSDCSignatureBindsContractRecipientAndAtoms(t *testing.T) {
+	owner, err := crypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	const recipient = "0xecd14f7586f5053cecae148ae26309c2277d86a8"
+	const circle = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+	row := model.BasePayout{Sender: strings.ToLower(crypto.PubkeyToAddress(owner.PublicKey).Hex()), Recipient: recipient, ChainId: chainassets.BaseSepoliaChainID, AssetId: "base-sepolia:usdc", WeiAmount: "0", TokenAtoms: "1000", Nonce: "7", GasLimit: 60000, FeeCap: "30000000", TipCap: "1000000"}
+	unsigned, err := baseUnsigned(&row)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row.SigningHash = baseSigner.Hash(unsigned).Hex()
+	calldata := common.FromHex("0xa9059cbb" + strings.Repeat("0", 24) + recipient[2:] + strings.Repeat("0", 61) + "3e8")
+	contract := common.HexToAddress(circle)
+	for _, tc := range []struct {
+		name   string
+		change func(*types.DynamicFeeTx)
+	}{
+		{"original", func(*types.DynamicFeeTx) {}},
+		{"different token", func(tx *types.DynamicFeeTx) { addr := common.HexToAddress(recipient); tx.To = &addr }},
+		{"different beneficiary", func(tx *types.DynamicFeeTx) { tx.Data[35] ^= 1 }},
+		{"different amount", func(tx *types.DynamicFeeTx) { tx.Data[67] ^= 1 }},
+		{"native value", func(tx *types.DynamicFeeTx) { tx.Value = big.NewInt(1) }},
+		{"approval", func(tx *types.DynamicFeeTx) { copy(tx.Data, common.FromHex("0x095ea7b3")) }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tx := &types.DynamicFeeTx{ChainID: big.NewInt(84532), Nonce: 7, To: &contract, Gas: 60000, GasFeeCap: big.NewInt(30000000), GasTipCap: big.NewInt(1000000), Data: bytes.Clone(calldata)}
+			tc.change(tx)
+			signed, err := types.SignNewTx(owner, baseSigner, tx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wire, err := signed.MarshalBinary()
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := baseSigned(&row, hexutil.Encode(wire))
+			if tc.name == "original" {
+				if err != nil || got.Hash() != signed.Hash() {
+					t.Fatal(err)
+				}
+				return
+			}
+			if !errors.Is(err, ErrInvalidSignature) {
+				t.Fatal("changed payment accepted", err)
+			}
+		})
+	}
+	for _, atoms := range []string{"0", "01", "-1", "0.001", new(big.Int).Lsh(big.NewInt(1), 256).String()} {
+		row.TokenAtoms = atoms
+		if _, err := baseUnsigned(&row); !errors.Is(err, ErrInvalidRequest) {
+			t.Fatal(atoms, err)
 		}
 	}
 }

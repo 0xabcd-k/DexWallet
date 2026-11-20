@@ -1,4 +1,4 @@
-// base_payout_sepolia drives one plain ETH payout in a retained isolated test database.
+// base_payout_sepolia drives one ETH or USDC payout in a retained isolated test database.
 package main
 
 import (
@@ -50,6 +50,9 @@ func run() error {
 	if p.ChainID != chainassets.BaseSepoliaChainID {
 		return errors.New("Base Sepolia policy required")
 	}
+	if p.AssetID == "" {
+		p.AssetID = chainassets.BaseSepoliaETH
+	}
 	db, err := sendprobe.OpenSendDatabase(*state, "base_payout", *action == "prepare")
 	if err != nil {
 		return err
@@ -80,7 +83,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if !strings.EqualFold(row.Recipient, p.Recipient) || row.WeiAmount != p.WeiAmount || row.GasLimit != p.GasLimit || row.FeeCap != p.FeeCap || row.TipCap != p.TipCap {
+	if !strings.EqualFold(row.Recipient, p.Recipient) || row.AssetId != p.AssetID || row.TokenAtoms != p.TokenAtoms || row.WeiAmount != p.WeiAmount || row.GasLimit != p.GasLimit || row.FeeCap != p.FeeCap || row.TipCap != p.TipCap {
 		return chainsend.ErrConflict
 	}
 	switch *action {
@@ -106,7 +109,11 @@ func run() error {
 	if row.State != chainsend.BaseConfirmed {
 		return errors.New("confirmed payout required")
 	}
-	receipt, err := receipts.Find(ctx, chainassets.BaseSepolia, row.TxHash, chainreceipt.EVMValue, 0)
+	kind, index := chainreceipt.EVMValue, 0
+	if row.TransferLogIndex.Valid {
+		kind, index = chainreceipt.EVMLog, int(row.TransferLogIndex.Int64)
+	}
+	receipt, err := receipts.Find(ctx, chainassets.BaseSepolia, row.TxHash, kind, index)
 	if err != nil {
 		return err
 	}

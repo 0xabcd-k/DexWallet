@@ -2,6 +2,7 @@ package chainsend
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"math"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 	model "github.com/0xabcd-k/DexWallet/backend/model/chainsend"
@@ -22,6 +24,7 @@ import (
 const BaseConfirmed = "confirmed"
 const nativeTransferGas = 21000
 
+var ErrUnsupportedBaseToken = errors.New("Base node does not support USDC payouts")
 var ErrBaseNonceReserved = errors.New("Base sender nonce already reserved by another payout")
 var ErrBaseNonceChanged = errors.New("Base pending nonce differs; reconcile original transaction hash")
 var baseSigner = types.NewLondonSigner(big.NewInt(chainassets.BaseSepoliaChainID))
@@ -73,10 +76,6 @@ func baseUint(raw string) (*big.Int, error) {
 	return n, nil
 }
 func baseUnsigned(row *model.BasePayout) (*types.Transaction, error) {
-	value, err := baseUint(row.WeiAmount)
-	if err != nil || value.Sign() == 0 {
-		return nil, fmt.Errorf("%w: invalid ETH amount in wei", ErrInvalidRequest)
-	}
 	fee, err := baseUint(row.FeeCap)
 	if err != nil || fee.Sign() == 0 {
 		return nil, fmt.Errorf("%w: invalid max fee per gas", ErrInvalidRequest)
@@ -94,27 +93,70 @@ func baseUnsigned(row *model.BasePayout) (*types.Transaction, error) {
 		return nil, ErrInvalidRequest
 	}
 	to := common.HexToAddress(addr)
-	return types.NewTx(&types.DynamicFeeTx{ChainID: big.NewInt(row.ChainId), Nonce: nonce, To: &to, Value: value, Gas: uint64(row.GasLimit), GasFeeCap: fee, GasTipCap: tip}), nil
+	tx := &types.DynamicFeeTx{ChainID: big.NewInt(row.ChainId), Nonce: nonce, To: &to, Gas: uint64(row.GasLimit), GasFeeCap: fee, GasTipCap: tip}
+	switch row.AssetId {
+	case chainassets.BaseSepoliaETH:
+		value, err := baseUint(row.WeiAmount)
+		if err != nil || value.Sign() == 0 || row.TokenAtoms != "" {
+			return nil, fmt.Errorf("%w: invalid ETH amount in wei", ErrInvalidRequest)
+		}
+		tx.Value = value
+	case baseusdc.AssetID:
+		amount, err := baseUint(row.TokenAtoms)
+		if err != nil || amount.Sign() == 0 || row.WeiAmount != "0" {
+			return nil, fmt.Errorf("%w: invalid USDC transfer amounts", ErrInvalidRequest)
+		}
+		contract := common.HexToAddress(baseusdc.SepoliaContract)
+		tx.To = &contract
+		tx.Data = baseusdc.TransferData(to, amount)
+	default:
+		return nil, fmt.Errorf("%w: unsupported Base payout asset", ErrInvalidRequest)
+	}
+	return types.NewTx(tx), nil
+}
+
+type baseTokenNode interface {
+	SubmitBaseUSDC(context.Context, *types.Transaction) error
+}
+
+func (s *Base) broadcaster(assetID string) (func(context.Context, *types.Transaction) error, error) {
+	switch assetID {
+	case chainassets.BaseSepoliaETH:
+		return s.node.SubmitBaseETH, nil
+	case baseusdc.AssetID:
+		token, ok := s.node.(baseTokenNode)
+		if !ok {
+			return nil, ErrUnsupportedBaseToken
+		}
+		return token.SubmitBaseUSDC, nil
+	default:
+		return nil, fmt.Errorf("%w: unsupported Base payout asset", ErrInvalidRequest)
+	}
 }
 
 type BaseTransfer struct {
-	Recipient string
-	WeiAmount string
-	GasLimit  int64
-	FeeCap    string
-	TipCap    string
+	AssetID    string
+	TokenAtoms string
+	Recipient  string
+	WeiAmount  string
+	GasLimit   int64
+	FeeCap     string
+	TipCap     string
 }
 
 // The caller explicitly approves the gas limit and both EIP-1559 caps. A new
 // business key may reserve only the current pending nonce on this test wallet.
 func (s *Base) Prepare(ctx context.Context, key string, payment BaseTransfer) (*model.BasePayout, error) {
+	if payment.AssetID == "" {
+		payment.AssetID = chainassets.BaseSepoliaETH
+	}
 	recipient, err := baseAddress(payment.Recipient)
 	if err != nil {
 		return nil, err
 	}
 	existing := func() (*model.BasePayout, error) {
 		row, err := s.Find(ctx, key)
-		if err == nil && (row.Recipient != recipient || row.WeiAmount != payment.WeiAmount || row.GasLimit != payment.GasLimit || row.FeeCap != payment.FeeCap || row.TipCap != payment.TipCap) {
+		if err == nil && (row.Recipient != recipient || row.AssetId != payment.AssetID || row.TokenAtoms != payment.TokenAtoms || row.WeiAmount != payment.WeiAmount || row.GasLimit != payment.GasLimit || row.FeeCap != payment.FeeCap || row.TipCap != payment.TipCap) {
 			return nil, ErrConflict
 		}
 		return row, err
@@ -122,11 +164,18 @@ func (s *Base) Prepare(ctx context.Context, key string, payment BaseTransfer) (*
 	if row, err := existing(); !errors.Is(err, model.ErrNotFound) {
 		return row, err
 	}
+	if _, err := s.broadcaster(payment.AssetID); err != nil {
+		return nil, err
+	}
 	nonce, err := s.node.PendingBaseNonce(ctx, s.sender)
 	if err != nil {
 		return nil, err
 	}
-	row := &model.BasePayout{RequestKey: key, ChainId: chainassets.BaseSepoliaChainID, Sender: s.sender, Recipient: recipient, WeiAmount: payment.WeiAmount, Nonce: strconv.FormatUint(nonce, 10), GasLimit: payment.GasLimit, FeeCap: payment.FeeCap, TipCap: payment.TipCap, State: Prepared}
+	row := &model.BasePayout{
+		RequestKey: key, ChainId: chainassets.BaseSepoliaChainID, Sender: s.sender, Recipient: recipient,
+		AssetId: payment.AssetID, WeiAmount: payment.WeiAmount, TokenAtoms: payment.TokenAtoms,
+		Nonce: strconv.FormatUint(nonce, 10), GasLimit: payment.GasLimit, FeeCap: payment.FeeCap, TipCap: payment.TipCap, State: Prepared,
+	}
 	tx, err := baseUnsigned(row)
 	if err != nil {
 		return nil, err
@@ -211,9 +260,18 @@ func (s *Base) Step(ctx context.Context, key string) (*model.BasePayout, error) 
 	if row.State == BaseConfirmed {
 		return row, nil
 	}
-	_, err = s.receipts.RecordNativePayout(ctx, row.TxHash, s.sender, row.Recipient, row.WeiAmount)
+	var logIndex sql.NullInt64
+	if row.AssetId == baseusdc.AssetID {
+		var stored chainreceipt.Stored
+		stored, err = s.receipts.RecordUSDCPayout(ctx, row.TxHash, s.sender, row.Recipient, row.TokenAtoms)
+		if err == nil {
+			logIndex = sql.NullInt64{Valid: true, Int64: int64(stored.Receipt.Event.Instruction)}
+		}
+	} else {
+		_, err = s.receipts.RecordNativePayout(ctx, row.TxHash, s.sender, row.Recipient, row.WeiAmount)
+	}
 	if err == nil {
-		_, err = s.conn.ExecCtx(ctx, "UPDATE base_payout SET state=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", BaseConfirmed, row.Id, Signed, Submitted)
+		_, err = s.conn.ExecCtx(ctx, "UPDATE base_payout SET state=?,transfer_log_index=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", BaseConfirmed, logIndex, row.Id, Signed, Submitted)
 		if err != nil {
 			return row, err
 		}
@@ -229,6 +287,10 @@ func (s *Base) Step(ctx context.Context, key string) (*model.BasePayout, error) 
 	if nonce != tx.Nonce() {
 		return row, fmt.Errorf("%w: original=%d pending=%d", ErrBaseNonceChanged, tx.Nonce(), nonce)
 	}
+	submit, err := s.broadcaster(row.AssetId)
+	if err != nil {
+		return row, err
+	}
 	// Reserve one attempt before the network call. After a lost response the
 	// only possible replay has exactly the same signed bytes, nonce and hash.
 	res, err := s.conn.ExecCtx(ctx, "UPDATE base_payout SET attempts=attempts+1,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=? AND attempts=?", row.Id, row.State, row.Attempts)
@@ -243,7 +305,7 @@ func (s *Base) Step(ctx context.Context, key string) (*model.BasePayout, error) 
 		return s.Find(ctx, key)
 	}
 	row.Attempts++
-	if err = s.node.SubmitBaseETH(ctx, tx); err != nil {
+	if err = submit(ctx, tx); err != nil {
 		return row, fmt.Errorf("%w: %w", ErrOutcomeUnknown, err)
 	}
 	_, err = s.conn.ExecCtx(ctx, "UPDATE base_payout SET state=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=?", Submitted, row.Id, Signed)
