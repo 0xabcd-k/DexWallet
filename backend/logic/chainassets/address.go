@@ -3,13 +3,12 @@ package chainassets
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/mr-tron/base58"
 	tonaddress "github.com/xssnick/tonutils-go/address"
-	"golang.org/x/crypto/sha3"
 )
 
 func normalizeAddress(network Network, value string) (string, error) {
@@ -33,25 +32,7 @@ func normalizeAddress(network Network, value string) (string, error) {
 		}
 		return a.StringRaw(), nil
 	case Base:
-		if len(value) != 42 || !strings.HasPrefix(value, "0x") {
-			return "", fmt.Errorf("invalid EVM address")
-		}
-		b, err := hex.DecodeString(value[2:])
-		if err != nil || len(b) != 20 {
-			return "", fmt.Errorf("invalid EVM address")
-		}
-		lower := strings.ToLower(value[2:])
-		if value[2:] != lower && value[2:] != strings.ToUpper(lower) {
-			h := sha3.NewLegacyKeccak256()
-			_, _ = h.Write([]byte(lower))
-			hash := hex.EncodeToString(h.Sum(nil))
-			for i, c := range lower {
-				if c >= 'a' && c <= 'f' && ((value[i+2] >= 'A' && value[i+2] <= 'F') != (hash[i] >= '8')) {
-					return "", fmt.Errorf("invalid EVM checksum")
-				}
-			}
-		}
-		return "0x" + lower, nil
+		return NormalizeBaseAddress(value)
 	case Solana:
 		b, err := base58.Decode(value)
 		if err != nil || len(b) != 32 {
@@ -76,4 +57,16 @@ func sameAddress(network Network, a, b string) bool {
 	x, e := normalizeAddress(network, a)
 	y, f := normalizeAddress(network, b)
 	return e == nil && f == nil && x == y
+}
+
+// NormalizeBaseAddress accepts exact hex addresses and verifies mixed-case EIP-55 checksums.
+func NormalizeBaseAddress(value string) (string, error) {
+	if !strings.HasPrefix(value, "0x") || !common.IsHexAddress(value) {
+		return "", fmt.Errorf("invalid EVM address")
+	}
+	body := value[2:]
+	if body != strings.ToLower(body) && body != strings.ToUpper(body) && value != common.HexToAddress(value).Hex() {
+		return "", fmt.Errorf("invalid EVM checksum")
+	}
+	return strings.ToLower(value), nil
 }

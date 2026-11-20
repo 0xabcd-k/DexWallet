@@ -160,7 +160,7 @@ func (s *Service) checkNetwork(ctx context.Context, n Network, e Endpoint) error
 		}
 		expected := int64(8453)
 		if n.Testnet {
-			expected = 84532
+			expected = BaseSepoliaChainID
 		}
 		if number.Cmp(big.NewInt(expected)) != 0 {
 			return &upstreamError{ErrorNetwork, "EVM chain id differs"}

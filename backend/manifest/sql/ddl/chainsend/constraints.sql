@@ -25,3 +25,7 @@ ALTER TABLE `solana_payout`
  ADD CONSTRAINT `ck_sol_recovery_state` CHECK (`recovery_state` IN ('ready','running','review','confirmed') AND ((`state`='confirmed')=(`recovery_state`='confirmed'))),
  ADD CONSTRAINT `ck_sol_recovery_counts` CHECK (`recovery_attempts` >= 0 AND `recovery_generation` >= `recovery_attempts`),
  ADD CONSTRAINT `ck_sol_recovery_lease` CHECK ((`recovery_state`='running')=(`recovery_lease_until` IS NOT NULL));
+
+ALTER TABLE `base_payout`
+ ADD CONSTRAINT `ck_base_payout_chain` CHECK (`chain_id`=84532 AND `gas_limit`>=21000 AND `attempts`>=0),
+ ADD CONSTRAINT `ck_base_payout_auth` CHECK ((`state`='prepared' AND `signed_tx`='' AND `tx_hash`='' AND `attempts`=0) OR (`state` IN ('signed','submitted','confirmed') AND CHAR_LENGTH(`tx_hash`)=66 AND `signed_tx`<>''));
