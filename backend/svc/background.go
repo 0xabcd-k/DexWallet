@@ -17,6 +17,20 @@ func (d *ServiceContext) StartBackground(ctx context.Context) error {
 	if err := d.startEvents(ctx); err != nil {
 		return err
 	}
+	if err := d.startTONRecovery(ctx); err != nil {
+		return err
+	}
+	if d.Config.SolanaRecovery == nil {
+		return nil
+	}
+	recovery, err := chainsend.NewSolanaRecovery(d.DB, d.ChainAssets, d.ChainReceipts, *d.Config.SolanaRecovery)
+	if err != nil {
+		return err
+	}
+	d.SolanaRecovery = chainsend.NewRecoveryRuntime(recovery)
+	return d.SolanaRecovery.Start(ctx)
+}
+func (d *ServiceContext) startTONRecovery(ctx context.Context) error {
 	if d.Config.TONRecovery == nil {
 		return nil
 	}
@@ -54,7 +68,7 @@ func (d *ServiceContext) startEvents(ctx context.Context) error {
 	return d.Background.Start(ctx, d.Config.RocketMQ.NameServers, primitive.Credentials{AccessKey: d.Config.RocketMQ.AccessKey, SecretKey: d.Config.RocketMQ.SecretKey})
 }
 
-// Admission closes for both pools before either waits. Dependencies outlive all
+// Admission closes for every pool before waiting. Dependencies outlive all
 // in-flight RPC and SQL work, including partial startup or a timed-out drain.
 func (d *ServiceContext) StopBackground() {
 	if d.Background != nil {
@@ -62,6 +76,9 @@ func (d *ServiceContext) StopBackground() {
 	}
 	if d.TONRecovery != nil {
 		d.TONRecovery.Stop()
+	}
+	if d.SolanaRecovery != nil {
+		d.SolanaRecovery.Stop()
 	}
 }
 func (d *ServiceContext) WaitBackground(ctx context.Context) error {
@@ -71,6 +88,9 @@ func (d *ServiceContext) WaitBackground(ctx context.Context) error {
 	}
 	if d.TONRecovery != nil {
 		err = errors.Join(err, d.TONRecovery.Wait(ctx))
+	}
+	if d.SolanaRecovery != nil {
+		err = errors.Join(err, d.SolanaRecovery.Wait(ctx))
 	}
 	return err
 }

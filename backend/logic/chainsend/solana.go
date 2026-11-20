@@ -185,7 +185,8 @@ func (s *Solana) prepare(ctx context.Context, proposal *model.SolanaPayout) (*mo
 	proposal.MessageHash = solanaDigest(msg)
 	proposal.LastValidHeight = block.LastValidBlockHeight
 	proposal.State = Prepared
-	_, err = s.rows.Insert(ctx, proposal)
+	// Reserve only immutable intent fields. MySQL initializes recovery clocks and counters.
+	_, err = s.conn.ExecCtx(ctx, "INSERT INTO solana_payout (request_key,sender,recipient,lamports,asset_id,mint,token_atoms,create_ata,blockhash,last_valid_height,message_hash,state) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", key, s.sender, proposal.Recipient, proposal.Lamports, proposal.AssetId, proposal.Mint, proposal.TokenAtoms, proposal.CreateAta, proposal.Blockhash, proposal.LastValidHeight, proposal.MessageHash, proposal.State)
 	var duplicate *mysql.MySQLError
 	if errors.As(err, &duplicate) && duplicate.Number == 1062 {
 		row, err = existing()
@@ -202,7 +203,7 @@ func (s *Solana) prepare(ctx context.Context, proposal *model.SolanaPayout) (*mo
 func (s *Solana) signedWire(row *model.SolanaPayout, signature string) ([]byte, error) {
 	msg, err := payoutMessage(row)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrSolanaIntent, err)
 	}
 	if solanaDigest(msg) != row.MessageHash {
 		return nil, ErrConflict
@@ -246,6 +247,9 @@ func (s *Solana) Bind(ctx context.Context, key, signature string) (*model.Solana
 // Step always observes first. A receipt commit can be recovered independently
 // of this row's terminal marker. RPC never runs inside a SQL transaction.
 func (s *Solana) Step(ctx context.Context, key string) (*model.SolanaPayout, error) {
+	return s.step(ctx, key, nil)
+}
+func (s *Solana) step(ctx context.Context, key string, claim *recoveryClaim) (*model.SolanaPayout, error) {
 	row, err := s.Find(ctx, key)
 	if err != nil {
 		return nil, err
@@ -270,7 +274,7 @@ func (s *Solana) Step(ctx context.Context, key string) (*model.SolanaPayout, err
 		funding, err = s.receipts.RecordSolanaTokenPayout(ctx, req, s.sender, row.Blockhash, row.Mint)
 	}
 	if err == nil {
-		_, err = s.conn.ExecCtx(ctx, "UPDATE solana_payout SET state=?,ata_funding_lamports=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", SolanaConfirmed, funding, row.Id, Signed, Submitted)
+		_, err = s.conn.ExecCtx(ctx, "UPDATE solana_payout SET state=?,ata_funding_lamports=?,recovery_state=?,recovery_lease_until=NULL,recovery_checked_at=UTC_TIMESTAMP(6),recovery_error='',updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", SolanaConfirmed, funding, RecoveryConfirmed, row.Id, Signed, Submitted)
 		if err != nil {
 			return row, err
 		}
@@ -292,7 +296,13 @@ func (s *Solana) Step(ctx context.Context, key string) (*model.SolanaPayout, err
 	if height > row.LastValidHeight {
 		return row, ErrSolanaExpired
 	}
-	res, err := s.conn.ExecCtx(ctx, "UPDATE solana_payout SET attempts=attempts+1,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=? AND attempts=?", row.Id, Signed, row.Attempts)
+	update := "UPDATE solana_payout SET attempts=attempts+1,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=? AND attempts=?"
+	args := []any{row.Id, Signed, row.Attempts}
+	if claim != nil {
+		update += " AND recovery_state=? AND recovery_generation=? AND recovery_lease_until>UTC_TIMESTAMP(6)"
+		args = append(args, RecoveryRunning, claim.Generation)
+	}
+	res, err := s.conn.ExecCtx(ctx, update, args...)
 	if err != nil {
 		return row, err
 	}

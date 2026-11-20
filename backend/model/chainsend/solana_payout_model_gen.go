@@ -39,24 +39,32 @@ type (
 	}
 
 	SolanaPayout struct {
-		Id                 int64     `db:"id"`
-		RequestKey         string    `db:"request_key"`
-		Sender             string    `db:"sender"`
-		Recipient          string    `db:"recipient"`
-		Lamports           string    `db:"lamports"`
-		AssetId            string    `db:"asset_id"`
-		Mint               string    `db:"mint"`
-		TokenAtoms         string    `db:"token_atoms"`
-		CreateAta          int64     `db:"create_ata"`
-		AtaFundingLamports int64     `db:"ata_funding_lamports"`
-		Blockhash          string    `db:"blockhash"`
-		LastValidHeight    int64     `db:"last_valid_height"`
-		MessageHash        string    `db:"message_hash"`
-		Signature          string    `db:"signature"`
-		State              string    `db:"state"`
-		Attempts           int64     `db:"attempts"`
-		CreatedAt          time.Time `db:"created_at"`
-		UpdatedAt          time.Time `db:"updated_at"`
+		Id                 int64        `db:"id"`
+		RequestKey         string       `db:"request_key"`
+		Sender             string       `db:"sender"`
+		Recipient          string       `db:"recipient"`
+		Lamports           string       `db:"lamports"`
+		AssetId            string       `db:"asset_id"`
+		Mint               string       `db:"mint"`
+		TokenAtoms         string       `db:"token_atoms"`
+		CreateAta          int64        `db:"create_ata"`
+		AtaFundingLamports int64        `db:"ata_funding_lamports"`
+		Blockhash          string       `db:"blockhash"`
+		LastValidHeight    int64        `db:"last_valid_height"`
+		MessageHash        string       `db:"message_hash"`
+		Signature          string       `db:"signature"`
+		State              string       `db:"state"`
+		Attempts           int64        `db:"attempts"`
+		RecoveryState      string       `db:"recovery_state"`
+		RecoveryAttempts   int64        `db:"recovery_attempts"`
+		RecoveryGeneration int64        `db:"recovery_generation"`
+		RecoveryNextAt     time.Time    `db:"recovery_next_at"`
+		RecoveryLeaseUntil sql.NullTime `db:"recovery_lease_until"`
+		RecoveryCheckedAt  sql.NullTime `db:"recovery_checked_at"`
+		RecoveryError      string       `db:"recovery_error"`
+		RecoveryRetryNote  string       `db:"recovery_retry_note"`
+		CreatedAt          time.Time    `db:"created_at"`
+		UpdatedAt          time.Time    `db:"updated_at"`
 	}
 )
 
@@ -116,14 +124,14 @@ func (m *defaultSolanaPayoutModel) FindOneByRequestKey(ctx context.Context, requ
 }
 
 func (m *defaultSolanaPayoutModel) Insert(ctx context.Context, data *SolanaPayout) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, solanaPayoutRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.RequestKey, data.Sender, data.Recipient, data.Lamports, data.AssetId, data.Mint, data.TokenAtoms, data.CreateAta, data.AtaFundingLamports, data.Blockhash, data.LastValidHeight, data.MessageHash, data.Signature, data.State, data.Attempts)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, solanaPayoutRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.RequestKey, data.Sender, data.Recipient, data.Lamports, data.AssetId, data.Mint, data.TokenAtoms, data.CreateAta, data.AtaFundingLamports, data.Blockhash, data.LastValidHeight, data.MessageHash, data.Signature, data.State, data.Attempts, data.RecoveryState, data.RecoveryAttempts, data.RecoveryGeneration, data.RecoveryNextAt, data.RecoveryLeaseUntil, data.RecoveryCheckedAt, data.RecoveryError, data.RecoveryRetryNote)
 	return ret, err
 }
 
 func (m *defaultSolanaPayoutModel) Update(ctx context.Context, newData *SolanaPayout) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, solanaPayoutRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.RequestKey, newData.Sender, newData.Recipient, newData.Lamports, newData.AssetId, newData.Mint, newData.TokenAtoms, newData.CreateAta, newData.AtaFundingLamports, newData.Blockhash, newData.LastValidHeight, newData.MessageHash, newData.Signature, newData.State, newData.Attempts, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.RequestKey, newData.Sender, newData.Recipient, newData.Lamports, newData.AssetId, newData.Mint, newData.TokenAtoms, newData.CreateAta, newData.AtaFundingLamports, newData.Blockhash, newData.LastValidHeight, newData.MessageHash, newData.Signature, newData.State, newData.Attempts, newData.RecoveryState, newData.RecoveryAttempts, newData.RecoveryGeneration, newData.RecoveryNextAt, newData.RecoveryLeaseUntil, newData.RecoveryCheckedAt, newData.RecoveryError, newData.RecoveryRetryNote, newData.Id)
 	return err
 }
 

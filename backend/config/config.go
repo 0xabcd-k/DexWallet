@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -28,22 +29,23 @@ import (
 type Config struct {
 	rest.RestConf
 	Environment       string
-	CORSOrigins       []string                  `json:",optional"`
-	ChainAssets       chainassets.Config        `json:",optional"`
-	RewardRisk        risk.Config               `json:",optional"`
-	Tasks             task.Config               `json:",optional"`
-	Transfer          transfer.Config           `json:",optional"`
-	TONRecovery       *chainsend.RecoveryConfig `json:",optional"`
-	Background        *background.Config        `json:",optional"`
-	Backoffice        *backoffice.Config        `json:",optional"`
-	Auth              *auth.Config              `json:",optional"`
-	Session           *session.Config           `json:",optional"`
-	IDSecret          string                    `json:",optional"`
-	DependencyTimeout time.Duration             `json:",default=3s"`
-	ProbeTimeout      time.Duration             `json:",default=1s"`
-	ProbeInterval     time.Duration             `json:",default=5s"`
-	ProbeFreshness    time.Duration             `json:",default=15s"`
-	ShutdownTimeout   time.Duration             `json:",default=30s"`
+	CORSOrigins       []string                        `json:",optional"`
+	ChainAssets       chainassets.Config              `json:",optional"`
+	RewardRisk        risk.Config                     `json:",optional"`
+	Tasks             task.Config                     `json:",optional"`
+	Transfer          transfer.Config                 `json:",optional"`
+	SolanaRecovery    *chainsend.SolanaRecoveryConfig `json:",optional"`
+	TONRecovery       *chainsend.RecoveryConfig       `json:",optional"`
+	Background        *background.Config              `json:",optional"`
+	Backoffice        *backoffice.Config              `json:",optional"`
+	Auth              *auth.Config                    `json:",optional"`
+	Session           *session.Config                 `json:",optional"`
+	IDSecret          string                          `json:",optional"`
+	DependencyTimeout time.Duration                   `json:",default=3s"`
+	ProbeTimeout      time.Duration                   `json:",default=1s"`
+	ProbeInterval     time.Duration                   `json:",default=5s"`
+	ProbeFreshness    time.Duration                   `json:",default=15s"`
+	ShutdownTimeout   time.Duration                   `json:",default=30s"`
 	MySQL             MySQL
 	Redis             Redis
 	RocketMQ          RocketMQ
@@ -136,6 +138,20 @@ func (c Config) Check() error {
 		}
 	}
 
+	if c.SolanaRecovery != nil {
+		if err := c.SolanaRecovery.Check(); err != nil {
+			return err
+		}
+		if (c.Environment != "local" && c.Environment != "dev") || c.Mode != service.DevMode {
+			return fmt.Errorf("Solana recovery requires local/dev environment and dev mode")
+		}
+		if c.SolanaRecovery.OperationTimeout > c.ShutdownTimeout {
+			return fmt.Errorf("Solana recovery operation timeout exceeds shutdown drain budget")
+		}
+		if !slices.ContainsFunc(c.ChainAssets.Networks, func(e chainassets.Endpoint) bool { return e.Network == chainassets.SolanaDevnet }) {
+			return fmt.Errorf("Solana recovery requires a configured Solana Devnet endpoint")
+		}
+	}
 	if c.TONRecovery != nil {
 		if err := c.TONRecovery.Check(); err != nil {
 			return err

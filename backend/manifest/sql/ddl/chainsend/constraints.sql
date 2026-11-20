@@ -20,3 +20,8 @@ ALTER TABLE `solana_payout`
 ALTER TABLE `solana_payout`
  ADD CONSTRAINT `ck_sol_payout_asset` CHECK ((`asset_id`='solana-devnet:sol' AND `mint`='' AND `token_atoms`='' AND `create_ata`=0) OR (`asset_id`<>'solana-devnet:sol' AND `mint`<>'' AND `token_atoms`<>'' AND `lamports`='0' AND `create_ata` IN (0,1))),
  ADD CONSTRAINT `ck_sol_payout_funding` CHECK (`ata_funding_lamports`=0 OR (`ata_funding_lamports`>0 AND `create_ata`=1 AND `state`='confirmed'));
+
+ALTER TABLE `solana_payout`
+ ADD CONSTRAINT `ck_sol_recovery_state` CHECK (`recovery_state` IN ('ready','running','review','confirmed') AND ((`state`='confirmed')=(`recovery_state`='confirmed'))),
+ ADD CONSTRAINT `ck_sol_recovery_counts` CHECK (`recovery_attempts` >= 0 AND `recovery_generation` >= `recovery_attempts`),
+ ADD CONSTRAINT `ck_sol_recovery_lease` CHECK ((`recovery_state`='running')=(`recovery_lease_until` IS NOT NULL));

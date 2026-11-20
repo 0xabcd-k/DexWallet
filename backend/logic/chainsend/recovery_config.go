@@ -10,9 +10,18 @@ import (
 // Recovery has no signing credentials. It can only inspect or replay an existing
 // testnet authorization; creating and signing a new intent remains explicit.
 type RecoveryConfig struct {
-	PublicKey        string
-	SubwalletID      uint32
-	JettonMaster     string        `json:",optional"`
+	RecoveryPolicy
+	PublicKey    string
+	SubwalletID  uint32
+	JettonMaster string `json:",optional"`
+}
+
+type SolanaRecoveryConfig struct {
+	RecoveryPolicy
+	Sender string
+}
+
+type RecoveryPolicy struct {
 	Workers          int           `json:",default=1"`
 	PollInterval     time.Duration `json:",default=5s"`
 	OperationTimeout time.Duration `json:",default=30s"`
@@ -22,7 +31,11 @@ type RecoveryConfig struct {
 }
 
 func RecoveryDefaults() RecoveryConfig {
-	return RecoveryConfig{Workers: 1, PollInterval: 5 * time.Second, OperationTimeout: 30 * time.Second, LeaseDuration: time.Minute, RetryInterval: 30 * time.Second, MaxAttempts: 60}
+	return RecoveryConfig{RecoveryPolicy: DefaultRecoveryPolicy()}
+}
+
+func DefaultRecoveryPolicy() RecoveryPolicy {
+	return RecoveryPolicy{Workers: 1, PollInterval: 5 * time.Second, OperationTimeout: 30 * time.Second, LeaseDuration: time.Minute, RetryInterval: 30 * time.Second, MaxAttempts: 60}
 }
 func (c RecoveryConfig) Wallet() (Wallet, error) {
 	pub, err := base64.StdEncoding.DecodeString(c.PublicKey)
@@ -42,8 +55,17 @@ func (c RecoveryConfig) Check() error {
 	if _, err := c.Wallet(); err != nil {
 		return err
 	}
+	return c.RecoveryPolicy.Check()
+}
+func (c SolanaRecoveryConfig) Check() error {
+	if _, err := solanaKey(c.Sender); err != nil {
+		return fmt.Errorf("Solana recovery requires a Devnet sender public key: %w", err)
+	}
+	return c.RecoveryPolicy.Check()
+}
+func (c RecoveryPolicy) Check() error {
 	if c.Workers < 1 || c.Workers > 8 || c.PollInterval <= 0 || c.OperationTimeout <= 0 || c.LeaseDuration <= c.OperationTimeout || c.RetryInterval <= 0 || c.RetryInterval > 24*time.Hour || c.MaxAttempts < 1 || c.MaxAttempts > 10000 {
-		return fmt.Errorf("invalid TON recovery concurrency, timeout, lease or retry policy")
+		return fmt.Errorf("invalid recovery concurrency, timeout, lease or retry policy")
 	}
 	return nil
 }

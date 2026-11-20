@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 )
 
@@ -29,10 +30,12 @@ func NewRecovery(db *sql.DB, executor *TON, receipts *chainreceipt.TONService, c
 	if !bytes.Equal(w.PublicKey, executor.wallet.PublicKey) || w.SubwalletID != executor.wallet.SubwalletID || w.JettonMaster != executor.wallet.JettonMaster {
 		return nil, ErrConflict
 	}
-	return &Recovery{newRecoveryStore(db, executor.sender, c), executor, receipts}, nil
+	return &Recovery{newRecoveryStore(db, chainassets.TONTestnet, executor.sender, c.RecoveryPolicy), executor, receipts}, nil
 }
 func (r *Recovery) List(ctx context.Context, state string, limit int) ([]RecoveryView, error) {
-	return r.store.list(ctx, state, limit)
+	rows := []RecoveryView{}
+	err := r.store.queryList(ctx, &rows, recoveryColumns, state, limit)
+	return rows, err
 }
 
 // Retry authorizes another bounded observation/replay cycle of the SAME message.
@@ -48,7 +51,8 @@ func reviewRecovery(err error) bool {
 	}
 	return false
 }
-func (r *Recovery) observe(ctx context.Context, key string) (string, string, error) {
+func (r *Recovery) observe(ctx context.Context, claim recoveryClaim) (string, string, error) {
+	key := claim.Key
 	v, err := r.executor.store.Find(ctx, key)
 	if err != nil {
 		if reviewRecovery(err) {
@@ -88,21 +92,7 @@ func (r *Recovery) observe(ctx context.Context, key string) (string, string, err
 // RunOne is an explicit one-shot operation. Daemon admission/draining is owned by
 // RecoveryRuntime. All network work occurs after the short claim has committed.
 func (r *Recovery) RunOne(ctx context.Context) (bool, error) {
-	c, err := r.store.claim(ctx)
-	if err != nil || c == nil {
-		return false, err
-	}
-	if c.State == RecoveryReview {
-		return true, fmt.Errorf("TON recovery %s: %w", c.Key, ErrRecoveryBudget)
-	}
-	state, receipt, cause := r.observe(ctx, c.Key)
-	if state == RecoveryReady && c.Attempts >= r.store.config.MaxAttempts {
-		state = RecoveryReview
-		cause = errors.Join(cause, ErrRecoveryBudget)
-	}
-	finishErr := r.store.finish(ctx, *c, state, receipt, cause)
-	if err = errors.Join(cause, finishErr); err != nil {
-		return true, fmt.Errorf("TON recovery %s: %w", c.Key, err)
-	}
-	return true, nil
+	return r.store.runOne(ctx, r.observe)
 }
+
+func (r *Recovery) schedule() *recoveryStore { return r.store }

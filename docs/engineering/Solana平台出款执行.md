@@ -1,6 +1,6 @@
 # Solana 平台出款执行
 
-5.3 第十批接通 Devnet 原生 SOL 平台出款，第十一批接通 Devnet USDC 和项目自建的测试 USDT 出款。专用测试账户同时支付本金和网络费。内部调用入口是 `backend/logic/chainsend.NewSolana`，显式运维入口是 `backend/tools/solana_payout_devnet`。Solana 自动扫描、订单结算与生产签名属于后续批次。已有 SOL、USDC、测试 USDT 的收款能力见 [Solana 到账核验](Solana到账核验.md)。
+5.3 第十批接通 Devnet 原生 SOL 平台出款，第十一批接通 Devnet USDC 和项目自建的测试 USDT 出款。专用测试账户同时支付本金和网络费。内部调用入口是 `backend/logic/chainsend.NewSolana`，显式运维入口是 `backend/tools/solana_payout_devnet`。第十二批接通 Devnet 已签名出款的自动恢复。订单结算与生产签名仍待接入。已有 SOL、USDC、测试 USDT 的收款能力见 [Solana 到账核验](Solana到账核验.md)。
 
 ## 原生 SOL 出款
 
@@ -52,7 +52,7 @@ business 23 新增独立的 `solana_payout` 表，额度以规范的 u64 十进�
 
 确认时逐项核对账户表、签名者和可写权限、指令、mint、最终执行状态及两端代币余额差。开户指令还须与原付款人、目标 ATA、收款钱包及程序一致。`receipt.transaction.feeAtoms` 为本次网络费，`intent.AtaFundingLamports` 为目标 ATA 实际增加且由付款人提供的 SOL。付款人 SOL 减少量须等于这两项之和。开户垫资成为目标账户的存储余额。两项分别保存，用户收费规则沿用[逐项审核清单](../design/链上资金费用逐项审核.md)。
 
-business 24 为既有出款表增加资产、mint、代币数量、开户权限和实际垫资字段。原生 SOL 历史记录保留原消息摘要，已有代币意图时禁止回退到 23。本批通过本机工具显式执行，用户端开放和自动扫描仍在后续阶段。
+business 24 为既有出款表增加资产、mint、代币数量、开户权限和实际垫资字段。原生 SOL 历史记录保留原消息摘要，已有代币意图时禁止回退到 23。本机工具支持逐步执行，第十二批新增下文的自动恢复。
 
 测试工具沿用上一节的 `prepare/bind/step/status/evidence/cleanup`。SPL policy 使用 `Key/Sender/Recipient/AssetID/TokenAtoms/CreateATA`。测试 USDT 需显式配置 `DEXWALLET_CHAIN_SOLANA_DEVNET_TEST_USDT_CONTRACT`，与资产 ID 中的 mint 一致。本机独立签名样例为 `scripts/payment_probe/solana-spl-payout-sign.mjs`，它以锁定的 SDK 核对本次四个样例的固定授权。在 `probe -action prepare` 成功后、bind 前运行：
 
@@ -68,3 +68,37 @@ go run ./tools/testenv run go test -race -tags=integration ./tests/integration -
 ```
 
 四笔实际数量、费用、交易签名和原始 RPC 证据见[第十一批验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。两笔新建账户交易完成后，对应 ATA 已存在，重做开户成本实验需要另选尚未开户的测试收款账户。
+
+## 第十二批　已签名出款自动恢复
+
+调度器按配置的 Devnet 平台付款地址领取 signed 和 submitted 出款。签名保存在原出款行，签名提交后即使进程退出，下一次扫描也能发现。自动恢复沿用原签名、消息、区块哈希和最后有效高度。
+
+| 查到的情况 | 处理 |
+| --- | --- |
+| 已有本地实收证据或链上 finalized 交易 | 核对原授权，保存实收。在同一次出款行更新中写入 confirmed、实际开户垫资，清除租约。 |
+| 交易与签名状态均明确为空 | 仅 signed 且区块哈希仍有效时可广播原交易。submitted 或已过有效高度时继续观察。 |
+| 节点暂时不可达、签名可见但尚无最终交易、广播回执不明 | 保留原单，间隔后再次查询。 |
+| 签名或证据与授权冲突、已核实链上执行失败、耗尽尝试次数 | 转入 review，记录原因，等待运维核对。资金结算和退款由后续业务流程决定。 |
+
+领取使用短事务，每次领取增加代次并记录租约。节点查询期间释放数据库锁。租约过期后其他进程可接管，旧进程的排期写回和新广播尝试均受代次、租约校验约束。已核实的实收证据可以结束原付款。调度次数与原交易广播次数分别保存。
+
+### 启用和运维
+
+先停止使用 business 24 的 Solana 出款写入进程，迁移到 business 25 并启动新版服务。迁移将历史 confirmed 行归为已完成，已有 signed、submitted 行在启用扫描后可领取。升级检查会拒绝发送状态与恢复确认状态不一致的写入。默认配置关闭扫描。启用时在 local/dev 环境的 dev 模式配置文件中加入以下内容，并设置 `DEXWALLET_CHAIN_SOLANA_DEVNET_RPC_URL`。
+
+```yaml
+SolanaRecovery:
+  Sender: "替换为本环境 Devnet 平台付款地址"
+```
+
+扫描只需公钥。项目自建测试 USDT 仍通过 `DEXWALLET_CHAIN_SOLANA_DEVNET_TEST_USDT_CONTRACT` 指定 mint。不同测试付款地址分别配置对应的调度实例。默认一个 worker，空闲轮询 5 秒，单次操作上限 30 秒，租约 60 秒，重试间隔 30 秒，最多领取 60 次。操作超时须在服务排空时间内，租约须长于操作超时。
+
+在 backend 目录运行下列命令。运维工具沿用原目录名 `ton_recovery`，通过 `-network solana-devnet` 选择 Solana。列表提供原签名、资产、最小单位金额、有效高度、错误及调度状态。
+
+```bash
+go run ./tools/ton_recovery -network solana-devnet -f /本机配置/solana.yaml -action list -state review
+go run ./tools/ton_recovery -network solana-devnet -f /本机配置/solana.yaml -action retry -key '<原请求键>' -reason '已核对原签名和节点状态'
+go run ./tools/ton_recovery -network solana-devnet -f /本机配置/solana.yaml -action run-once
+```
+
+retry 会记录当前系统用户和原因，并为同一签名恢复有限次数的检查。服务关闭时停止领取新任务，等待进行中的查询写回。已签名记录及尝试历史的降级保护见[契约生成与迁移](契约生成与迁移.md)。
