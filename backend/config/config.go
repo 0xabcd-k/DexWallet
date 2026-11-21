@@ -28,7 +28,8 @@ import (
 )
 
 type Config struct {
-	TONReceiptListener *chainreceipt.TONListenerConfig `json:",optional"`
+	SolanaReceiptListener *chainreceipt.SolanaListenerConfig `json:",optional"`
+	TONReceiptListener    *chainreceipt.TONListenerConfig    `json:",optional"`
 	rest.RestConf
 	Environment       string
 	CORSOrigins       []string                        `json:",optional"`
@@ -142,6 +143,14 @@ func (c Config) Check() error {
 		}
 	}
 
+	if c.SolanaReceiptListener != nil {
+		if err := c.SolanaReceiptListener.Check(); err != nil {
+			return err
+		}
+		if err := c.checkRecoveryNetwork(chainassets.SolanaDevnet, c.SolanaReceiptListener.OperationTimeout); err != nil {
+			return err
+		}
+	}
 	if c.TONReceiptListener != nil {
 		if err := c.TONReceiptListener.Check(); err != nil {
 			return err

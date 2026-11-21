@@ -182,40 +182,39 @@ type statusResponse struct {
 	}
 }
 
-func verify(r Request, asset chainassets.Asset, evidence chainassets.SolanaEvidence) (Receipt, error) {
-	var out Receipt
+func confirmedSolanaTransaction(signature string, evidence chainassets.SolanaEvidence) (transactionResponse, error) {
+	var tx transactionResponse
 	if len(evidence.Transaction) == 0 || len(evidence.Status) == 0 {
-		return out, bad("missing response")
+		return tx, bad("missing response")
 	}
 	if null(evidence.Transaction) {
-		return out, ErrUnconfirmed
+		return tx, ErrUnconfirmed
 	}
-	var tx transactionResponse
 	var statuses statusResponse
 	if json.Unmarshal(evidence.Transaction, &tx) != nil || json.Unmarshal(evidence.Status, &statuses) != nil {
-		return out, bad("invalid response fields")
+		return tx, bad("invalid response fields")
 	}
-	if tx.Meta == nil || tx.Meta.Fee == nil || len(tx.Meta.Err) == 0 || tx.Slot <= 0 || len(tx.Transaction.Signatures) == 0 || tx.Transaction.Signatures[0] != r.Signature {
-		return out, bad("missing metadata or wrong signature")
+	if tx.Meta == nil || tx.Meta.Fee == nil || len(tx.Meta.Err) == 0 || tx.Slot <= 0 || len(tx.Transaction.Signatures) == 0 || tx.Transaction.Signatures[0] != signature {
+		return tx, bad("missing metadata or wrong signature")
 	}
 	if string(tx.Version) != `"legacy"` && string(tx.Version) != "0" {
-		return out, ErrUnsupported
+		return tx, ErrUnsupported
 	}
 	if len(statuses.Value) != 1 {
-		return out, bad("missing signature status")
+		return tx, bad("missing signature status")
 	}
 	st := statuses.Value[0]
 	if st == nil {
-		return out, ErrUnconfirmed
+		return tx, ErrUnconfirmed
 	}
 	if len(st.Err) == 0 || st.Slot != tx.Slot || statuses.Context.Slot < tx.Slot {
-		return out, bad("inconsistent status slot")
+		return tx, bad("inconsistent status slot")
 	}
 	if st.ConfirmationStatus != Finalized {
-		return out, ErrUnconfirmed
+		return tx, ErrUnconfirmed
 	}
 	if null(tx.Meta.Err) != null(st.Err) {
-		return out, bad("inconsistent execution status")
+		return tx, bad("inconsistent execution status")
 	}
 	if !null(tx.Meta.Err) {
 		// Solana transaction errors are enum strings or tagged objects. A
@@ -223,10 +222,19 @@ func verify(r Request, asset chainassets.Asset, evidence chainassets.SolanaEvide
 		for _, raw := range []json.RawMessage{tx.Meta.Err, st.Err} {
 			value := bytes.TrimSpace(raw)
 			if value[0] != '"' && value[0] != '{' {
-				return out, bad("invalid execution error")
+				return tx, bad("invalid execution error")
 			}
 		}
-		return out, ErrExecutionFailed
+		return tx, ErrExecutionFailed
+	}
+	return tx, nil
+}
+
+func verify(r Request, asset chainassets.Asset, evidence chainassets.SolanaEvidence) (Receipt, error) {
+	var out Receipt
+	tx, err := confirmedSolanaTransaction(r.Signature, evidence)
+	if err != nil {
+		return out, err
 	}
 	keys := tx.Transaction.Message.AccountKeys
 	if len(keys) == 0 || !keys[0].Signer || !keys[0].Writable {
@@ -318,7 +326,7 @@ func verify(r Request, asset chainassets.Asset, evidence chainassets.SolanaEvide
 	if err := decoder.Decode(&object); err != nil {
 		return out, bad("cannot fingerprint evidence")
 	}
-	normalized, err := json.Marshal(object)
+	normalized, err = json.Marshal(object)
 	if err != nil {
 		return out, bad("cannot fingerprint evidence")
 	}

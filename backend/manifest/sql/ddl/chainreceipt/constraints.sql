@@ -17,3 +17,10 @@ ALTER TABLE `ton_receive_cursor`
 ALTER TABLE `ton_receive_candidate`
  ADD CONSTRAINT `fk_ton_receive_cursor` FOREIGN KEY (`cursor_id`) REFERENCES `ton_receive_cursor` (`id`),
  ADD CONSTRAINT `ck_ton_receive_status` CHECK (`status` IN ('pending','matched','unmatched','ignored'));
+
+ALTER TABLE `solana_receive_cursor`
+ ADD CONSTRAINT `ck_sol_receive_cursor` CHECK (`id`=1 AND `last_slot`>0);
+
+ALTER TABLE `solana_receive_candidate`
+ ADD CONSTRAINT `fk_sol_receive_request` FOREIGN KEY (`request_id`) REFERENCES `chain_receive_request` (`id`),
+ ADD CONSTRAINT `ck_sol_receive_status` CHECK (`status` IN ('pending','matched','unmatched','ignored'));
