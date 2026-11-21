@@ -86,8 +86,24 @@ func (s *Service) NileTransactionSeen(ctx context.Context, txID string) (bool, e
 }
 
 func (s *Service) SubmitNileTRX(ctx context.Context, signed tronnative.Signed) error {
+	if signed.TokenContract() != "" {
+		return fmt.Errorf("native Nile TRX authorization required")
+	}
+	return s.submitNile(ctx, signed)
+}
+
+func (s *Service) NileUSDTContract() string { return s.endpoints[TRONNile].TestUSDTContract }
+
+func (s *Service) SubmitNileUSDT(ctx context.Context, signed tronnative.Signed) error {
+	if signed.TokenContract() == "" || signed.TokenContract() != s.NileUSDTContract() {
+		return fmt.Errorf("Nile USDT contract differs from configured asset")
+	}
+	return s.submitNile(ctx, signed)
+}
+
+func (s *Service) submitNile(ctx context.Context, signed tronnative.Signed) error {
 	if signed.Hex() == "" {
-		return fmt.Errorf("verified TRX transfer required")
+		return fmt.Errorf("verified TRON transfer required")
 	}
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
@@ -101,7 +117,7 @@ func (s *Service) SubmitNileTRX(ctx context.Context, signed tronnative.Signed) e
 	}
 	// The genesis lookup may have crossed the signed deadline.
 	if signed.Expired(time.Now()) {
-		return fmt.Errorf("TRX authorization expired before broadcast")
+		return fmt.Errorf("TRON authorization expired before broadcast")
 	}
 	err = s.request(ctx, n, e, "/wallet/broadcasthex", nil, map[string]string{"transaction": signed.Hex()}, &ack)
 	if err != nil {

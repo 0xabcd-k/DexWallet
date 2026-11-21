@@ -16,14 +16,32 @@ assert.equal(row.RequestKey, policy.Key);
 assert.equal(row.Sender, policy.Sender);
 assert.equal(row.Recipient, policy.Recipient);
 assert.equal(row.Sun, policy.Sun);
-assert(Number.isSafeInteger(row.Sun) && row.Sun > 0 && row.Sender !== row.Recipient);
+assert.notEqual(row.Sender, row.Recipient);
 assert.equal(reference.block.blockID, row.RefBlockId);
 assert.equal(reference.block.block_header.raw_data.number, row.RefHeight);
 assert.equal(reference.block.block_header.raw_data.timestamp, row.TimestampMs);
 const options = headerOptions(reference.block);
 assert.equal(options.blockHeader.expiration, row.ExpirationMs);
 assert(Date.now() >= row.TimestampMs && Date.now() < row.ExpirationMs);
-const tx = await tron.transactionBuilder.sendTrx(policy.Recipient, policy.Sun, policy.Sender, options);
+assert.equal(row.TokenContract ?? '', policy.TokenContract ?? '');
+assert.equal(row.TokenAtoms ?? '', policy.TokenAtoms ?? '');
+assert.equal(row.FeeLimitSun ?? 0, policy.FeeLimitSun ?? 0);
+let tx;
+if (policy.TokenContract) {
+  assert.equal(row.AssetId, 'tron-nile:usdt:' + policy.TokenContract);
+  assert.equal(row.Sun, 0);
+  assert(typeof policy.TokenAtoms === 'string' && /^[1-9][0-9]{0,77}$/.test(policy.TokenAtoms) && BigInt(policy.TokenAtoms) < 2n ** 256n);
+  assert(Number.isSafeInteger(policy.FeeLimitSun) && policy.FeeLimitSun > 0);
+  ({ transaction: tx } = await tron.transactionBuilder.triggerSmartContract(
+    policy.TokenContract, 'transfer(address,uint256)', { ...options, txLocal: true, feeLimit: policy.FeeLimitSun },
+    [{ type: 'address', value: policy.Recipient }, { type: 'uint256', value: policy.TokenAtoms }], policy.Sender));
+} else {
+  assert.equal(row.AssetId ?? 'tron-nile:trx', 'tron-nile:trx');
+  assert.equal(row.TokenAtoms ?? '', '');
+  assert.equal(row.FeeLimitSun ?? 0, 0);
+  assert(Number.isSafeInteger(row.Sun) && row.Sun > 0);
+  tx = await tron.transactionBuilder.sendTrx(policy.Recipient, policy.Sun, policy.Sender, options);
+}
 assert.equal(tx.raw_data_hex, row.RawHex);
 assert.equal(tx.txID, row.TxId);
 const key = await load(keyPath);

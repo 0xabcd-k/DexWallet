@@ -39,6 +39,35 @@ func TestNileFullNodeAndBroadcastAcknowledgement(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Run("contract whitelist precedes broadcast", func(t *testing.T) {
+		token := transfer
+		token.Sun, token.TokenContract, token.TokenAtoms, token.FeeLimitSun = 0, "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf", "1000", 3000000
+		raw, err := token.Raw()
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := tronnative.TxID(raw)
+		digest, _ := hex.DecodeString(id)
+		sig, err := crypto.Sign(digest, key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		usdt, err := token.Bind(hex.EncodeToString(raw), id, hex.EncodeToString(sig))
+		if err != nil {
+			t.Fatal(err)
+		}
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { t.Error("unexpected network I/O", r.URL.Path) }))
+		defer server.Close()
+		s, err := New(Config{Networks: []Endpoint{{Network: TRONNile, URL: server.URL, TestUSDTContract: "TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn"}}}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer s.Close()
+		ctx := context.Background()
+		if s.SubmitNileUSDT(ctx, signed) == nil || s.SubmitNileTRX(ctx, usdt) == nil || s.SubmitNileUSDT(ctx, usdt) == nil {
+			t.Fatal("accepted authorization on wrong transfer route or for another contract")
+		}
+	})
 	for _, tc := range []struct {
 		name, genesis string
 		result        bool

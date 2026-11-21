@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/tronnative"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/mr-tron/base58"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -199,6 +200,32 @@ func tronEmptyObject(raw json.RawMessage) bool {
 	var object map[string]json.RawMessage
 	return json.Unmarshal(raw, &object) == nil && object != nil && len(object) == 0
 }
+
+// Direct platform payouts bind the signed call as well as its single emitted Transfer.
+func payoutTransferIndex(r TRONRequest, token string, c tronContract, logs []tronEventLog) (int, error) {
+	v := c.Parameter.Value
+	destination, err := tronAddress(v.Contract)
+	data, dataErr := tronnative.TransferData(r.Recipient, r.Atoms)
+	if err != nil || destination != token || dataErr != nil || !strings.EqualFold(v.Data, hex.EncodeToString(data)) || v.CallValue != 0 || v.CallTokenValue != 0 || v.TokenID != 0 {
+		return 0, bad("TRC-20 payout call differs from authorization")
+	}
+	index := -1
+	for i, log := range logs {
+		emitter, err := tronAddress("41" + log.Address)
+		if err != nil || emitter != token || len(log.Topics) == 0 || !strings.EqualFold(log.Topics[0], ERC20TransferTopic[2:]) {
+			continue
+		}
+		if index >= 0 || i > math.MaxInt32 {
+			return 0, bad("ambiguous TRC-20 payout Transfer")
+		}
+		index = i
+	}
+	if index < 0 {
+		return 0, bad("missing authorized TRC-20 payout Transfer")
+	}
+	return index, nil
+}
+
 func verifyTRON(r TRONRequest, asset chainassets.Asset, e chainassets.TRONEvidence) (Receipt, error) {
 	var out Receipt
 	var genesis, head, block tronBlock
@@ -304,10 +331,19 @@ func verifyTRON(r TRONRequest, asset chainassets.Asset, e chainassets.TRONEviden
 		if !tronHex(contract.Parameter.Value.Data, len(contract.Parameter.Value.Data)/2) || len(contract.Parameter.Value.Data) < 8 {
 			return out, bad("invalid TRON contract calldata")
 		}
-		if *r.LogIndex >= len(info.Logs) {
+		index := 0
+		if r.LogIndex == nil {
+			index, err = payoutTransferIndex(r, asset.Contract, contract, info.Logs)
+			if err != nil {
+				return out, err
+			}
+		} else {
+			index = *r.LogIndex
+		}
+		if index >= len(info.Logs) {
 			return out, ErrUnsupported
 		}
-		log := info.Logs[*r.LogIndex]
+		log := info.Logs[index]
 		if !tronHex(log.Address, 20) || len(log.Topics) != 3 || !strings.EqualFold(log.Topics[0], ERC20TransferTopic[2:]) || !tronHex(log.Topics[1], 32) || !tronHex(log.Topics[2], 32) || log.Topics[1][:24] != strings.Repeat("0", 24) || log.Topics[2][:24] != strings.Repeat("0", 24) || !tronHex(log.Data, 32) {
 			return out, bad("not an exact TRC-20 Transfer")
 		}
@@ -316,7 +352,7 @@ func verifyTRON(r TRONRequest, asset chainassets.Asset, e chainassets.TRONEviden
 			return out, bad("TRC-20 Transfer from wrong contract")
 		}
 		event.Kind = TRONLog
-		event.Instruction = *r.LogIndex
+		event.Instruction = index
 		event.ProgramID = emitter
 		event.Mint = emitter
 		event.SourceAccount, _ = tronAddress("41" + log.Topics[1][24:])

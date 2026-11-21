@@ -72,3 +72,6 @@ func catalog() []Network {
 		{ID: TRONNile, Family: TRON, Testnet: true, Assets: []Asset{asset(TRONNile, "TRX", "", 6, Native)}},
 	}
 }
+
+// NileUSDT identifies a configured Nile test token by its contract.
+func NileUSDT(contract string) Asset { return asset(TRONNile, "USDT", contract, 6, TestFixture) }

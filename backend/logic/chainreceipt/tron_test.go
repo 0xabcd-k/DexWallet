@@ -288,3 +288,52 @@ func TestTRONNativeTransferAndTokenOwnerBoundaries(t *testing.T) {
 		t.Fatal("transaction owner substituted for token sender", err)
 	}
 }
+
+func TestTRONDirectUSDTPayoutRequiresOneAuthorizedTransfer(t *testing.T) {
+	for _, name := range []string{"tron-payout-usdt", "tron-payout-usdt-fixture"} {
+		t.Run(name, func(t *testing.T) {
+			f, _ := tronSample(t, name)
+			r := f.Request
+			r.LogIndex = nil // discover the event only for a signed direct payout
+			a := chainassets.NileUSDT(f.Receipt.Event.Mint)
+			got, err := verifyTRON(r, a, f.Evidence)
+			if err != nil || got.Event != f.Receipt.Event || got.Transaction != f.Receipt.Transaction {
+				t.Fatal("direct payout disagrees with archived receipt", got, err)
+			}
+			withOtherLog := f.Evidence
+			mutate(&withOtherLog.Info, func(m map[string]any) {
+				m["log"] = append([]any{map[string]any{"address": strings.Repeat("1", 40)}}, m["log"].([]any)...)
+			})
+			got, err = verifyTRON(r, a, withOtherLog)
+			if err != nil || got.Event.Instruction != 1 {
+				t.Fatal("lost original log position", got, err)
+			}
+			for _, edit := range []func(map[string]any){
+				func(m map[string]any) { delete(m, "log") },
+				func(m map[string]any) { m["log"] = append(m["log"].([]any), tronLog(m)) },
+				func(m map[string]any) { tronLog(m)["address"] = strings.Repeat("1", 40) },
+				func(m map[string]any) { tronLog(m)["data"] = fmt.Sprintf("%064x", 999) },
+			} {
+				e := f.Evidence
+				mutate(&e.Info, edit)
+				if _, err := verifyTRON(r, a, e); !errors.Is(err, ErrInvalidEvidence) {
+					t.Fatal("accepted wrong transfer event", err)
+				}
+			}
+			for _, edit := range []func(map[string]any){
+				func(v map[string]any) { v["contract_address"] = v["owner_address"] },
+				func(v map[string]any) { v["call_value"] = 1 },
+				func(v map[string]any) { v["data"] = strings.Repeat("0", 8) + v["data"].(string)[8:] },
+			} {
+				e := f.Evidence
+				mutate(&e.Transaction, func(m map[string]any) {
+					c := m["raw_data"].(map[string]any)["contract"].([]any)[0].(map[string]any)
+					edit(c["parameter"].(map[string]any)["value"].(map[string]any))
+				})
+				if _, err := verifyTRON(r, a, e); !errors.Is(err, ErrInvalidEvidence) {
+					t.Fatal("accepted changed direct call", err)
+				}
+			}
+		})
+	}
+}

@@ -2,6 +2,7 @@ package chainsend
 
 import (
 	"context"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -18,13 +19,26 @@ import (
 
 const TRONConfirmed = "confirmed"
 
-var ErrTRONExpired = errors.New("original TRX authorization expired; continue reconciling its txID")
+var ErrTRONExpired = errors.New("original TRON authorization expired; continue reconciling its txID")
 
 type TRONNode interface {
 	NileHead(context.Context) (tronnative.Head, error)
 	NileTransactionSeen(context.Context, string) (bool, error)
 	SubmitNileTRX(context.Context, tronnative.Signed) error
 }
+type tronTokenNode interface {
+	NileUSDTContract() string
+	SubmitNileUSDT(context.Context, tronnative.Signed) error
+}
+
+func (s *TRON) tokenNode(contract string) (tronTokenNode, error) {
+	n, ok := s.node.(tronTokenNode)
+	if !ok || contract == "" || n.NileUSDTContract() != contract {
+		return nil, fmt.Errorf("%w: Nile USDT contract differs from configured asset", ErrInvalidRequest)
+	}
+	return n, nil
+}
+
 type TRON struct {
 	conn     sqlx.SqlConn
 	rows     model.TronPayoutModel
@@ -50,15 +64,39 @@ func (s *TRON) Find(ctx context.Context, key string) (*model.TronPayout, error) 
 	return row, err
 }
 func tronTransfer(p *model.TronPayout) tronnative.Transfer {
-	return tronnative.Transfer{Sender: p.Sender, Recipient: p.Recipient, Sun: p.Sun, Reference: tronnative.Head{ID: p.RefBlockId, Height: p.RefHeight, Timestamp: p.TimestampMs}, Expiration: p.ExpirationMs}
+	return tronnative.Transfer{
+		Sender: p.Sender, Recipient: p.Recipient, Sun: p.Sun,
+		TokenContract: p.TokenContract, TokenAtoms: p.TokenAtoms, FeeLimitSun: p.FeeLimitSun,
+		Reference:  tronnative.Head{ID: p.RefBlockId, Height: p.RefHeight, Timestamp: p.TimestampMs},
+		Expiration: p.ExpirationMs,
+	}
 }
 func (s *TRON) Prepare(ctx context.Context, key, recipient string, sun int64) (*model.TronPayout, error) {
-	if _, err := tronnative.AddressBytes(recipient); err != nil || recipient == s.sender || sun <= 0 {
+	if sun <= 0 {
+		return nil, ErrInvalidRequest
+	}
+	return s.prepare(ctx, key, model.TronPayout{Recipient: recipient, AssetId: chainassets.TRONNile + ":trx", Sun: sun})
+}
+
+func (s *TRON) PrepareUSDT(ctx context.Context, key, recipient, contract, atoms string, feeLimitSun int64) (*model.TronPayout, error) {
+	if _, err := tronnative.AddressBytes(contract); err != nil || feeLimitSun <= 0 {
+		return nil, ErrInvalidRequest
+	}
+	if _, err := tronnative.TransferData(recipient, atoms); err != nil {
+		return nil, ErrInvalidRequest
+	}
+	return s.prepare(ctx, key, model.TronPayout{Recipient: recipient, AssetId: chainassets.NileUSDT(contract).ID, TokenContract: contract, TokenAtoms: atoms, FeeLimitSun: feeLimitSun})
+}
+
+func (s *TRON) prepare(ctx context.Context, key string, payment model.TronPayout) (*model.TronPayout, error) {
+	if _, err := tronnative.AddressBytes(payment.Recipient); err != nil || payment.Recipient == s.sender {
 		return nil, ErrInvalidRequest
 	}
 	existing := func() (*model.TronPayout, error) {
 		row, err := s.Find(ctx, key)
-		if err == nil && (row.Recipient != recipient || row.Sun != sun) {
+		if err == nil && (row.Recipient != payment.Recipient || row.Sun != payment.Sun ||
+			row.AssetId != payment.AssetId || row.TokenContract != payment.TokenContract ||
+			row.TokenAtoms != payment.TokenAtoms || row.FeeLimitSun != payment.FeeLimitSun) {
 			return nil, ErrConflict
 		}
 		return row, err
@@ -66,11 +104,19 @@ func (s *TRON) Prepare(ctx context.Context, key, recipient string, sun int64) (*
 	if row, err := existing(); !errors.Is(err, model.ErrNotFound) {
 		return row, err
 	}
+	if payment.TokenContract != "" {
+		if _, err := s.tokenNode(payment.TokenContract); err != nil {
+			return nil, err
+		}
+	}
 	ref, err := s.node.NileHead(ctx)
 	if err != nil {
 		return nil, err
 	}
-	row := &model.TronPayout{RequestKey: key, Network: chainassets.TRONNile, Sender: s.sender, Recipient: recipient, Sun: sun, RefBlockId: ref.ID, RefHeight: ref.Height, TimestampMs: ref.Timestamp, ExpirationMs: ref.Timestamp + tronnative.Lifetime.Milliseconds(), State: Prepared}
+	row := &payment
+	row.RequestKey, row.Network, row.Sender, row.State = key, chainassets.TRONNile, s.sender, Prepared
+	row.RefBlockId, row.RefHeight, row.TimestampMs = ref.ID, ref.Height, ref.Timestamp
+	row.ExpirationMs = ref.Timestamp + tronnative.Lifetime.Milliseconds()
 	raw, err := tronTransfer(row).Raw()
 	if err != nil {
 		return nil, err
@@ -81,7 +127,7 @@ func (s *TRON) Prepare(ctx context.Context, key, recipient string, sun int64) (*
 	if errors.As(err, &duplicate) && duplicate.Number == 1062 {
 		row, err = existing()
 		if errors.Is(err, model.ErrNotFound) {
-			return nil, fmt.Errorf("%w: TRX transaction already reserved by another request", ErrConflict)
+			return nil, fmt.Errorf("%w: TRON transaction already reserved by another request", ErrConflict)
 		}
 		return row, err
 	}
@@ -107,6 +153,11 @@ func (s *TRON) Bind(ctx context.Context, key, signature string) (*model.TronPayo
 	}
 	signature = strings.ToLower(signature)
 	if row.State == Prepared {
+		if row.TokenContract != "" {
+			if _, err = s.tokenNode(row.TokenContract); err != nil {
+				return nil, err
+			}
+		}
 		_, err = s.conn.ExecCtx(ctx, "UPDATE tron_payout SET signature=?,state=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=?", signature, Signed, row.Id, Prepared)
 		if err != nil {
 			return nil, err
@@ -121,6 +172,20 @@ func (s *TRON) Bind(ctx context.Context, key, signature string) (*model.TronPayo
 	}
 	return row, nil
 }
+
+// The event index is only meaningful for token transfers.
+func (s *TRON) recordPayout(ctx context.Context, row *model.TronPayout) (sql.NullInt64, error) {
+	if row.TokenContract == "" {
+		_, err := s.receipts.RecordNativePayout(ctx, row.TxId, row.Sender, row.Recipient, row.Sun, row.Signature)
+		return sql.NullInt64{}, err
+	}
+	stored, err := s.receipts.RecordUSDTPayout(ctx, row.TxId, row.Sender, row.Recipient, row.TokenContract, row.TokenAtoms, row.Signature)
+	if err != nil {
+		return sql.NullInt64{}, err
+	}
+	return sql.NullInt64{Int64: int64(stored.Receipt.Event.Instruction), Valid: true}, nil
+}
+
 func (s *TRON) Step(ctx context.Context, key string) (*model.TronPayout, error) {
 	row, err := s.Find(ctx, key)
 	if err != nil {
@@ -136,9 +201,9 @@ func (s *TRON) Step(ctx context.Context, key string) (*model.TronPayout, error) 
 	if row.State == TRONConfirmed {
 		return row, nil
 	}
-	_, err = s.receipts.RecordNativePayout(ctx, row.TxId, row.Sender, row.Recipient, row.Sun, row.Signature)
+	logIndex, err := s.recordPayout(ctx, row)
 	if err == nil {
-		_, err = s.conn.ExecCtx(ctx, "UPDATE tron_payout SET state=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", TRONConfirmed, row.Id, Signed, Submitted)
+		_, err = s.conn.ExecCtx(ctx, "UPDATE tron_payout SET state=?,transfer_log_index=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", TRONConfirmed, logIndex, row.Id, Signed, Submitted)
 		if err != nil {
 			return row, err
 		}
@@ -173,6 +238,14 @@ func (s *TRON) Step(ctx context.Context, key string) (*model.TronPayout, error) 
 	if row.State == Submitted {
 		return row, chainreceipt.ErrUnconfirmed
 	}
+	submit := s.node.SubmitNileTRX
+	if row.TokenContract != "" {
+		node, err := s.tokenNode(row.TokenContract)
+		if err != nil {
+			return row, err
+		}
+		submit = node.SubmitNileUSDT
+	}
 	// Record admission before network I/O. Only the exact same signed bytes may
 	// be replayed after an ambiguous acknowledgement.
 	res, err := s.conn.ExecCtx(ctx, "UPDATE tron_payout SET attempts=attempts+1,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=? AND attempts=?", row.Id, Signed, row.Attempts)
@@ -187,7 +260,7 @@ func (s *TRON) Step(ctx context.Context, key string) (*model.TronPayout, error) 
 		return s.Find(ctx, key)
 	}
 	row.Attempts++
-	if err = s.node.SubmitNileTRX(ctx, signed); err != nil {
+	if err = submit(ctx, signed); err != nil {
 		return row, fmt.Errorf("%w: %w", ErrOutcomeUnknown, err)
 	}
 	_, err = s.conn.ExecCtx(ctx, "UPDATE tron_payout SET state=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=?", Submitted, row.Id, Signed)

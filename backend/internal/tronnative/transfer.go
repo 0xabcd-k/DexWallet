@@ -1,5 +1,5 @@
-// Package tronnative builds a single owner-permission TRX TransferContract.
-// The field numbers follow protocol.Transaction.raw, Contract, Any and TransferContract.
+// Package tronnative builds single owner-permission Nile TRX and TRC-20 transfers.
+// The field numbers follow protocol.Transaction.raw, Contract, Any, TransferContract and TriggerSmartContract.
 package tronnative
 
 import (
@@ -19,6 +19,9 @@ import (
 const Lifetime = 10 * time.Minute
 const transferTypeURL = "type.googleapis.com/protocol.TransferContract"
 const transferContract = 1
+const triggerSmartContract = 31
+const triggerTypeURL = "type.googleapis.com/protocol.TriggerSmartContract"
+const transferSelector = "\xa9\x05\x9c\xbb"
 
 type Head struct {
 	ID        string
@@ -48,10 +51,12 @@ func AddressBytes(s string) ([]byte, error) {
 }
 
 type Transfer struct {
-	Sender, Recipient string
-	Sun               int64
-	Reference         Head
-	Expiration        int64
+	Sender, Recipient         string
+	Sun                       int64
+	Reference                 Head
+	Expiration                int64
+	TokenContract, TokenAtoms string
+	FeeLimitSun               int64
 }
 
 func appendBytes(b []byte, field protowire.Number, v []byte) []byte {
@@ -60,40 +65,94 @@ func appendBytes(b []byte, field protowire.Number, v []byte) []byte {
 func appendNumber(b []byte, field protowire.Number, v int64) []byte {
 	return protowire.AppendVarint(protowire.AppendTag(b, field, protowire.VarintType), uint64(v))
 }
+
+// TransferData encodes transfer(address,uint256), using the 20-byte TVM address.
+func TransferData(recipient, atoms string) ([]byte, error) {
+	to, err := AddressBytes(recipient)
+	if err != nil {
+		return nil, err
+	}
+	if len(atoms) == 0 || len(atoms) > 78 {
+		return nil, errors.New("invalid TRC-20 amount")
+	}
+	n, ok := new(big.Int).SetString(atoms, 10)
+	if !ok || n.Sign() <= 0 || n.BitLen() > 256 || n.String() != atoms {
+		return nil, errors.New("noncanonical TRC-20 uint256 amount")
+	}
+	data := make([]byte, 4+32+32)
+	copy(data, transferSelector)
+	copy(data[16:36], to[1:])
+	n.FillBytes(data[36:])
+	return data, nil
+}
+
+func (t Transfer) contract(owner []byte) ([]byte, error) {
+	value := appendBytes(nil, 1, owner)
+	typeURL, kind := transferTypeURL, int64(transferContract)
+	if t.TokenContract == "" {
+		if t.Sun <= 0 || t.TokenAtoms != "" || t.FeeLimitSun != 0 {
+			return nil, errors.New("invalid native TRX amounts")
+		}
+		to, err := AddressBytes(t.Recipient)
+		if err != nil {
+			return nil, err
+		}
+		value = appendBytes(value, 2, to)
+		value = appendNumber(value, 3, t.Sun)
+	} else {
+		if t.Sun != 0 || t.FeeLimitSun <= 0 {
+			return nil, errors.New("TRC-20 payout requires zero TRX and an explicit Energy fee limit")
+		}
+		token, err := AddressBytes(t.TokenContract)
+		if err != nil {
+			return nil, err
+		}
+		data, err := TransferData(t.Recipient, t.TokenAtoms)
+		if err != nil {
+			return nil, err
+		}
+		value = appendBytes(value, 2, token)
+		value = appendBytes(value, 4, data)
+		typeURL, kind = triggerTypeURL, triggerSmartContract
+	}
+	parameter := appendBytes(nil, 1, []byte(typeURL))
+	parameter = appendBytes(parameter, 2, value)
+	return appendBytes(appendNumber(nil, 1, kind), 2, parameter), nil
+}
+
 func (t Transfer) Raw() ([]byte, error) {
-	if t.Sun <= 0 || t.Sender == t.Recipient || !t.Reference.Valid() || t.Expiration <= t.Reference.Timestamp || t.Expiration-t.Reference.Timestamp > Lifetime.Milliseconds() {
-		return nil, errors.New("invalid TRX amount, reference or validity window")
+	if t.Sender == t.Recipient || !t.Reference.Valid() || t.Expiration <= t.Reference.Timestamp || t.Expiration-t.Reference.Timestamp > Lifetime.Milliseconds() {
+		return nil, errors.New("invalid TRON recipient, reference or validity window")
 	}
 	owner, err := AddressBytes(t.Sender)
 	if err != nil {
 		return nil, err
 	}
-	to, err := AddressBytes(t.Recipient)
+	contract, err := t.contract(owner)
 	if err != nil {
 		return nil, err
 	}
 	ref, _ := hex.DecodeString(t.Reference.ID)
-	value := appendBytes(nil, 1, owner)
-	value = appendBytes(value, 2, to)
-	value = appendNumber(value, 3, t.Sun)
-	parameter := appendBytes(nil, 1, []byte(transferTypeURL))
-	parameter = appendBytes(parameter, 2, value)
-	contract := appendNumber(nil, 1, transferContract)
-	contract = appendBytes(contract, 2, parameter)
 	raw := appendBytes(nil, 1, ref[6:8])
 	raw = appendBytes(raw, 4, ref[8:16])
 	raw = appendNumber(raw, 8, t.Expiration)
 	raw = appendBytes(raw, 11, contract)
-	return appendNumber(raw, 14, t.Reference.Timestamp), nil
+	raw = appendNumber(raw, 14, t.Reference.Timestamp)
+	if t.TokenContract != "" {
+		raw = appendNumber(raw, 18, t.FeeLimitSun)
+	}
+	return raw, nil
 }
 
 type Signed struct {
-	hash       string
-	wire       string
-	expiration int64
+	tokenContract string
+	hash          string
+	wire          string
+	expiration    int64
 }
 
 func (s Signed) ID() string                 { return s.hash }
+func (s Signed) TokenContract() string      { return s.tokenContract }
 func (s Signed) Hex() string                { return s.wire }
 func (s Signed) Expired(now time.Time) bool { return now.UnixMilli() >= s.expiration }
 func TxID(raw []byte) string {
@@ -106,14 +165,14 @@ func TxID(raw []byte) string {
 func (t Transfer) Bind(rawHex, txID, signature string) (Signed, error) {
 	raw, err := t.Raw()
 	if err != nil || hex.EncodeToString(raw) != rawHex || TxID(raw) != txID {
-		return Signed{}, errors.New("TRX authorization differs from original raw data or txID")
+		return Signed{}, errors.New("TRON authorization differs from original raw data or txID")
 	}
 	if len(signature) != hex.EncodedLen(crypto.SignatureLength) {
-		return Signed{}, errors.New("invalid TRX signature size")
+		return Signed{}, errors.New("invalid TRON signature size")
 	}
 	sig, err := hex.DecodeString(signature)
 	if err != nil {
-		return Signed{}, errors.New("invalid TRX signature size")
+		return Signed{}, errors.New("invalid TRON signature size")
 	}
 	recoverSig := bytes.Clone(sig)
 	// TronWeb may encode the recovery ID as 27/28; preserve the original on the wire.
@@ -121,14 +180,14 @@ func (t Transfer) Bind(rawHex, txID, signature string) (Signed, error) {
 		recoverSig[64] -= 27
 	}
 	if !crypto.ValidateSignatureValues(recoverSig[64], new(big.Int).SetBytes(sig[:32]), new(big.Int).SetBytes(sig[32:64]), true) {
-		return Signed{}, errors.New("invalid TRX signature values")
+		return Signed{}, errors.New("invalid TRON signature values")
 	}
 	digest := sha256.Sum256(raw)
 	pub, err := crypto.SigToPub(digest[:], recoverSig)
 	owner, _ := AddressBytes(t.Sender)
 	if err != nil || !bytes.Equal(crypto.PubkeyToAddress(*pub).Bytes(), owner[1:]) {
-		return Signed{}, errors.New("TRX signature does not authorize platform sender")
+		return Signed{}, errors.New("TRON signature does not authorize platform sender")
 	}
 	wire := appendBytes(nil, 1, raw)
-	return Signed{hash: txID, wire: hex.EncodeToString(appendBytes(wire, 2, sig)), expiration: t.Expiration}, nil
+	return Signed{tokenContract: t.TokenContract, hash: txID, wire: hex.EncodeToString(appendBytes(wire, 2, sig)), expiration: t.Expiration}, nil
 }

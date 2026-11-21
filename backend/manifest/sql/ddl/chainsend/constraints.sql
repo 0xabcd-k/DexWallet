@@ -43,5 +43,10 @@ ALTER TABLE `base_payout`
  ADD CONSTRAINT `ck_base_recovery_lease` CHECK ((`recovery_state`='running')=(`recovery_lease_until` IS NOT NULL));
 
 ALTER TABLE `tron_payout`
- ADD CONSTRAINT `ck_tron_payout_source` CHECK (`network`='tron-nile' AND `sun`>0 AND `ref_height`>0 AND `expiration_ms`>`timestamp_ms` AND `timestamp_ms`>0 AND `attempts`>=0),
+ ADD CONSTRAINT `ck_tron_payout_source` CHECK (`network`='tron-nile' AND `ref_height`>0 AND `expiration_ms`>`timestamp_ms` AND `timestamp_ms`>0 AND `attempts`>=0),
+ ADD CONSTRAINT `ck_tron_payout_asset` CHECK (
+    (`asset_id`='tron-nile:trx' AND `sun`>0 AND `token_contract`='' AND `token_atoms`='' AND `fee_limit_sun`=0 AND `transfer_log_index` IS NULL)
+    OR (`sun`=0 AND CHAR_LENGTH(`token_contract`)=34 AND `asset_id`=CONCAT('tron-nile:usdt:',`token_contract`) AND CHAR_LENGTH(`token_atoms`)>0 AND `fee_limit_sun`>0
+        AND ((`state`='confirmed' AND `transfer_log_index` IS NOT NULL AND `transfer_log_index` BETWEEN 0 AND 2147483647)
+            OR (`state`<>'confirmed' AND `transfer_log_index` IS NULL)))),
  ADD CONSTRAINT `ck_tron_payout_auth` CHECK ((`state`='prepared' AND `signature`='' AND `attempts`=0) OR (`state` IN ('signed','submitted','confirmed') AND CHAR_LENGTH(`signature`)=130));

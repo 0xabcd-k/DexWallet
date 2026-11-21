@@ -17,7 +17,7 @@
     "backend/model/chainsend/base_payout_model_gen.go": "40cb0261d43fc426805ad29514fc13c3a03e0cc55475183a0ea0464f1a2619e9",
     "backend/model/chainsend/chain_send_intent_model_gen.go": "b36663abfa057ac310b11452c2bc00cb9b3fe1c45bff7d11b35ae71fcef2de98",
     "backend/model/chainsend/solana_payout_model_gen.go": "3d3380a43fcb8ec22965849e30734378786ff5197434355d4400ee9191dec8fb",
-    "backend/model/chainsend/tron_payout_model_gen.go": "49efbe99bcaa45c675d3aab2b4a3734ef71ae154a3576cea478b06877f9fdec8",
+    "backend/model/chainsend/tron_payout_model_gen.go": "8528d2d03ee4d24989c86b2bb4cd7a1cf0eb9764aced31df9e6b2cd19aaaa67b",
     "backend/model/draw/draw_control_model_gen.go": "74c5701f90ce50253e2ddb38b63d3de3022c9cf164c191264370c5cc1d3bf801",
     "backend/model/draw/draw_rule_version_model_gen.go": "3109b1b77332d01f6a73dba64dca0c1f2573701e20e3a9567e2d71def0fc5dc8",
     "backend/model/draw/point_draw_model_gen.go": "0e743aad84341cc033c469523261d314ea1faac71773f83bc08c9276d486c2af",

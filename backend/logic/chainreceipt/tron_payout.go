@@ -16,8 +16,24 @@ var ErrTRONSolidAbsent = errors.New("TRON solidity node has neither transaction 
 // RecordNativePayout binds an already verified signed TRX transfer's hash to
 // its solidified sender, beneficiary, principal and fee payer before persisting it.
 func (s *TRONService) RecordNativePayout(ctx context.Context, hash, sender, recipient string, sun int64, signature string) (Stored, error) {
+	if sun <= 0 {
+		return Stored{}, ErrInvalidRequest
+	}
+	asset := chainassets.Asset{ID: chainassets.TRONNile + ":trx", Origin: chainassets.Native, Decimals: 6}
+	return s.recordPayout(ctx, hash, sender, recipient, strconv.FormatInt(sun, 10), signature, asset)
+}
+
+// RecordUSDTPayout reconciles a previously authorized direct transfer of this exact contract.
+func (s *TRONService) RecordUSDTPayout(ctx context.Context, hash, sender, recipient, contract, atoms, signature string) (Stored, error) {
+	if !tronUserAddress(contract) || !decimal256(atoms) {
+		return Stored{}, ErrInvalidRequest
+	}
+	return s.recordPayout(ctx, hash, sender, recipient, atoms, signature, chainassets.NileUSDT(contract))
+}
+
+func (s *TRONService) recordPayout(ctx context.Context, hash, sender, recipient, atoms, signature string, asset chainassets.Asset) (Stored, error) {
 	const network = chainassets.TRONNile
-	if !tronHex(hash, 32) || !tronUserAddress(sender) || !tronUserAddress(recipient) || sun <= 0 {
+	if !tronHex(hash, 32) || !tronUserAddress(sender) || !tronUserAddress(recipient) || !tronHex(signature, 65) {
 		return Stored{}, ErrInvalidRequest
 	}
 	var proof chainassets.TRONEvidence
@@ -40,18 +56,17 @@ func (s *TRONService) RecordNativePayout(ctx context.Context, hash, sender, reci
 	if err != nil {
 		return Stored{}, err
 	}
-	asset := chainassets.Asset{ID: network + ":trx", Origin: chainassets.Native, Decimals: 6}
-	r := TRONRequest{Network: network, Hash: hash, AssetID: asset.ID, Recipient: recipient, Atoms: strconv.FormatInt(sun, 10)}
+	r := TRONRequest{Network: network, Hash: hash, AssetID: asset.ID, Recipient: recipient, Atoms: atoms}
 	receipt, err := verifyTRON(r, asset, proof)
 	if err != nil {
 		return Stored{}, err
 	}
 	var envelope struct{ Signature []string }
-	if json.Unmarshal(proof.Transaction, &envelope) != nil || len(envelope.Signature) != 1 || !tronHex(signature, 65) || !strings.EqualFold(envelope.Signature[0], signature) {
-		return Stored{}, bad("solidified TRX signature differs from authorization")
+	if json.Unmarshal(proof.Transaction, &envelope) != nil || len(envelope.Signature) != 1 || !strings.EqualFold(envelope.Signature[0], signature) {
+		return Stored{}, bad("solidified TRON signature differs from authorization")
 	}
 	if receipt.Event.SourceOwner != sender || receipt.Transaction.FeePayer != sender {
-		return Stored{}, bad("TRX payout sender differs from authorization")
+		return Stored{}, bad("TRON payout sender differs from authorization")
 	}
 	return s.store.record(ctx, receipt)
 }

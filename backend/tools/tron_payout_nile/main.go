@@ -1,4 +1,4 @@
-// tron_payout_nile drives one native TRX payout in a retained isolated test database.
+// tron_payout_nile drives one TRX or configured TRC-20 test payout in a retained isolated test database.
 package main
 
 import (
@@ -26,6 +26,7 @@ func run() error {
 	action := flag.String("action", "status", "prepare, bind, step, status, evidence or cleanup")
 	wireFile := flag.String("signed-file", "", "file with original 65-byte hex signature")
 	rpc := flag.String("rpc", "https://nile.trongrid.io", "trusted TRON Nile RPC")
+	contract := flag.String("usdt-contract", os.Getenv("DEXWALLET_CHAIN_TRON_NILE_TEST_USDT_CONTRACT"), "independently configured Nile test USDT contract")
 	flag.Parse()
 	switch *action {
 	case "prepare", "bind", "step", "status", "evidence", "cleanup":
@@ -37,7 +38,8 @@ func run() error {
 	}
 	var p struct {
 		Key, Sender, Recipient, Network string
-		Sun                             int64
+		TokenContract, TokenAtoms       string
+		Sun, FeeLimitSun                int64
 	}
 	b, err := os.ReadFile(*policy)
 	if err != nil {
@@ -49,12 +51,18 @@ func run() error {
 	if p.Network != chainassets.TRONNile {
 		return errors.New("Nile test policy required")
 	}
+	if p.TokenContract == "" && (p.Sun <= 0 || p.TokenAtoms != "" || p.FeeLimitSun != 0) || p.TokenContract != "" && (p.Sun != 0 || p.TokenAtoms == "" || p.FeeLimitSun <= 0) {
+		return errors.New("inconsistent Nile payout amounts or fee limit")
+	}
+	if *action == "prepare" && p.TokenContract != "" && p.TokenContract != *contract {
+		return errors.New("Nile USDT authorization differs from configured contract")
+	}
 	db, err := sendprobe.OpenSendDatabase(*state, "tron_payout", *action == "prepare")
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	assets, err := chainassets.New(chainassets.Config{Timeout: 30 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TRONNile, URL: *rpc}}}, nil)
+	assets, err := chainassets.New(chainassets.Config{Timeout: 30 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TRONNile, URL: *rpc, TestUSDTContract: *contract}}}, nil)
 	if err != nil {
 		return err
 	}
@@ -69,6 +77,13 @@ func run() error {
 	defer cancel()
 	out := json.NewEncoder(os.Stdout)
 	if *action == "prepare" {
+		if p.TokenContract != "" {
+			row, err := s.PrepareUSDT(ctx, p.Key, p.Recipient, p.TokenContract, p.TokenAtoms, p.FeeLimitSun)
+			if err != nil {
+				return err
+			}
+			return out.Encode(row)
+		}
 		row, err := s.Prepare(ctx, p.Key, p.Recipient, p.Sun)
 		if err != nil {
 			return err
@@ -79,7 +94,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if row.Recipient != p.Recipient || row.Sun != p.Sun {
+	if row.Recipient != p.Recipient || row.Sun != p.Sun || row.TokenContract != p.TokenContract || row.TokenAtoms != p.TokenAtoms || row.FeeLimitSun != p.FeeLimitSun {
 		return chainsend.ErrConflict
 	}
 	switch *action {
@@ -105,7 +120,14 @@ func run() error {
 	if row.State != chainsend.TRONConfirmed {
 		return errors.New("confirmed payout required")
 	}
-	receipt, err := receipts.Find(ctx, chainassets.TRONNile, row.TxId, chainreceipt.TRONTransfer, 0)
+	kind, index := chainreceipt.TRONTransfer, 0
+	if row.TokenContract != "" {
+		if !row.TransferLogIndex.Valid {
+			return errors.New("confirmed USDT payout missing log index")
+		}
+		kind, index = chainreceipt.TRONLog, int(row.TransferLogIndex.Int64)
+	}
+	receipt, err := receipts.Find(ctx, chainassets.TRONNile, row.TxId, kind, index)
 	if err != nil {
 		return err
 	}
