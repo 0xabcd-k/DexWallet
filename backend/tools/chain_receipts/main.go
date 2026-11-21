@@ -29,7 +29,11 @@ func run() error {
 	flag.StringVar(&request.Atoms, "atoms", "", "positive integer quantity in the asset's smallest unit")
 	record := flag.Bool("record", false, "persist verified facts using DEXWALLET_MYSQL_DSN; does not credit any balance")
 	timeout := flag.Duration("timeout", 10*time.Second, "total RPC query timeout, maximum 30s")
+	attribute := flag.Bool("attribute", false, "after recording, match the finalized event to an issued collection request")
 	flag.Parse()
+	if *attribute && !*record {
+		return fmt.Errorf("attribute requires record")
+	}
 	if flag.NArg() != 0 {
 		return fmt.Errorf("unexpected arguments")
 	}
@@ -59,6 +63,7 @@ func run() error {
 		return fmt.Errorf("event position does not match network")
 	}
 	var receipt chainreceipt.Receipt
+	var matched *chainreceipt.ReceiveRequest
 	reused := false
 	if !*record {
 		if isTON {
@@ -85,6 +90,9 @@ func run() error {
 		if e = db.QueryRowContext(ctx, "SELECT version,dirty FROM schema_migrations_business").Scan(&version, &dirty); e != nil {
 			return e
 		}
+		if *attribute && (version < 32 || dirty) {
+			return fmt.Errorf("attribution requires clean business schema >=32")
+		}
 		if version < 19 || dirty {
 			return fmt.Errorf("record requires clean business schema >=19")
 		}
@@ -100,15 +108,24 @@ func run() error {
 			saved, e = chainreceipt.New(conn, tx, source).Record(ctx, request)
 		}
 		receipt, reused, err = saved.Receipt, saved.Reused, e
+		if err == nil && *attribute {
+			k := chainreceipt.EventKey{Network: receipt.Transaction.Network, Signature: receipt.Transaction.Signature, Kind: receipt.Event.Kind, Index: receipt.Event.Instruction}
+			found, e := chainreceipt.NewAttribution(conn, source.Catalog()).Match(ctx, k)
+			if e != nil {
+				return fmt.Errorf("receipt recorded, attribution unresolved (%s/%s/%s/%d): %w", k.Network, k.Signature, k.Kind, k.Index, e)
+			}
+			matched = &found
+		}
 	}
 	if err != nil {
 		return err
 	}
 	out := struct {
-		Receipt  chainreceipt.Receipt `json:"receipt"`
-		Recorded bool                 `json:"recorded"`
-		Reused   bool                 `json:"reused"`
-	}{receipt, *record, reused}
+		Receipt    chainreceipt.Receipt         `json:"receipt"`
+		Recorded   bool                         `json:"recorded"`
+		Reused     bool                         `json:"reused"`
+		Collection *chainreceipt.ReceiveRequest `json:"collection,omitempty"`
+	}{receipt, *record, reused, matched}
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(out)

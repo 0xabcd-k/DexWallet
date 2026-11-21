@@ -53,6 +53,7 @@ type ServiceContext struct {
 	SolanaRecovery        *chainsend.RecoveryRuntime
 	TONRecovery           *chainsend.RecoveryRuntime
 	TONSendIntents        *chainsend.Store
+	ReceiveAttribution    *chainreceipt.Attribution
 	ChainReceipts         *chainreceipt.Service
 	BaseReceipts          *chainreceipt.BaseService
 	TRONReceipts          *chainreceipt.TRONService
@@ -176,6 +177,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	if err != nil {
 		return d, err
 	}
+	d.ReceiveAttribution = chainreceipt.NewAttribution(conn, d.ChainAssets.Catalog())
 	d.ChainReceipts = chainreceipt.New(conn, d.Tx, d.ChainAssets)
 	d.BaseReceipts = chainreceipt.NewBase(conn, d.Tx, d.ChainAssets)
 	d.TRONReceipts = chainreceipt.NewTRON(conn, d.Tx, d.ChainAssets)
