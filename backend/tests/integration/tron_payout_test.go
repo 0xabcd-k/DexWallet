@@ -406,7 +406,7 @@ func TestTRONUSDTPayoutMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []uint{30, 29, 30} {
+	for _, v := range []uint{30, 29, businessSchemaVersion} {
 		if err = m.Migrate(v); err != nil {
 			t.Fatal(err)
 		}
@@ -430,8 +430,9 @@ func TestTRONUSDTPayoutMigration(t *testing.T) {
 	if err = m.Migrate(29); err == nil {
 		t.Fatal("downgrade discarded a token authorization")
 	}
-	got, err := s.Find(ctx, token.RequestKey)
-	if err != nil || got.TxId != token.TxId || got.TokenContract != node.contract {
-		t.Fatal("downgrade lost token history", got, err)
+	var txID, contract string
+	err = db.QueryRow("SELECT tx_id,token_contract FROM tron_payout WHERE request_key=?", token.RequestKey).Scan(&txID, &contract)
+	if err != nil || txID != token.TxId || contract != node.contract {
+		t.Fatal("downgrade lost token history", txID, contract, err)
 	}
 }

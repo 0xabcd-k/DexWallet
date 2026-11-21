@@ -39,28 +39,36 @@ type (
 	}
 
 	TronPayout struct {
-		Id               int64         `db:"id"`
-		RequestKey       string        `db:"request_key"`
-		Network          string        `db:"network"`
-		Sender           string        `db:"sender"`
-		Recipient        string        `db:"recipient"`
-		Sun              int64         `db:"sun"`
-		AssetId          string        `db:"asset_id"`
-		TokenContract    string        `db:"token_contract"`
-		TokenAtoms       string        `db:"token_atoms"`
-		FeeLimitSun      int64         `db:"fee_limit_sun"`
-		TransferLogIndex sql.NullInt64 `db:"transfer_log_index"`
-		RefBlockId       string        `db:"ref_block_id"`
-		RefHeight        int64         `db:"ref_height"`
-		TimestampMs      int64         `db:"timestamp_ms"`
-		ExpirationMs     int64         `db:"expiration_ms"`
-		RawHex           string        `db:"raw_hex"`
-		TxId             string        `db:"tx_id"`
-		Signature        string        `db:"signature"`
-		State            string        `db:"state"`
-		Attempts         int64         `db:"attempts"`
-		CreatedAt        time.Time     `db:"created_at"`
-		UpdatedAt        time.Time     `db:"updated_at"`
+		Id                 int64         `db:"id"`
+		RequestKey         string        `db:"request_key"`
+		Network            string        `db:"network"`
+		Sender             string        `db:"sender"`
+		Recipient          string        `db:"recipient"`
+		Sun                int64         `db:"sun"`
+		AssetId            string        `db:"asset_id"`
+		TokenContract      string        `db:"token_contract"`
+		TokenAtoms         string        `db:"token_atoms"`
+		FeeLimitSun        int64         `db:"fee_limit_sun"`
+		TransferLogIndex   sql.NullInt64 `db:"transfer_log_index"`
+		RefBlockId         string        `db:"ref_block_id"`
+		RefHeight          int64         `db:"ref_height"`
+		TimestampMs        int64         `db:"timestamp_ms"`
+		ExpirationMs       int64         `db:"expiration_ms"`
+		RawHex             string        `db:"raw_hex"`
+		TxId               string        `db:"tx_id"`
+		Signature          string        `db:"signature"`
+		State              string        `db:"state"`
+		Attempts           int64         `db:"attempts"`
+		RecoveryState      string        `db:"recovery_state"`
+		RecoveryAttempts   int64         `db:"recovery_attempts"`
+		RecoveryGeneration int64         `db:"recovery_generation"`
+		RecoveryNextAt     time.Time     `db:"recovery_next_at"`
+		RecoveryLeaseUntil sql.NullTime  `db:"recovery_lease_until"`
+		RecoveryCheckedAt  sql.NullTime  `db:"recovery_checked_at"`
+		RecoveryError      string        `db:"recovery_error"`
+		RecoveryRetryNote  string        `db:"recovery_retry_note"`
+		CreatedAt          time.Time     `db:"created_at"`
+		UpdatedAt          time.Time     `db:"updated_at"`
 	}
 )
 
@@ -120,14 +128,14 @@ func (m *defaultTronPayoutModel) FindOneByTxId(ctx context.Context, txId string)
 }
 
 func (m *defaultTronPayoutModel) Insert(ctx context.Context, data *TronPayout) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, tronPayoutRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.RequestKey, data.Network, data.Sender, data.Recipient, data.Sun, data.AssetId, data.TokenContract, data.TokenAtoms, data.FeeLimitSun, data.TransferLogIndex, data.RefBlockId, data.RefHeight, data.TimestampMs, data.ExpirationMs, data.RawHex, data.TxId, data.Signature, data.State, data.Attempts)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, tronPayoutRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.RequestKey, data.Network, data.Sender, data.Recipient, data.Sun, data.AssetId, data.TokenContract, data.TokenAtoms, data.FeeLimitSun, data.TransferLogIndex, data.RefBlockId, data.RefHeight, data.TimestampMs, data.ExpirationMs, data.RawHex, data.TxId, data.Signature, data.State, data.Attempts, data.RecoveryState, data.RecoveryAttempts, data.RecoveryGeneration, data.RecoveryNextAt, data.RecoveryLeaseUntil, data.RecoveryCheckedAt, data.RecoveryError, data.RecoveryRetryNote)
 	return ret, err
 }
 
 func (m *defaultTronPayoutModel) Update(ctx context.Context, newData *TronPayout) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, tronPayoutRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.RequestKey, newData.Network, newData.Sender, newData.Recipient, newData.Sun, newData.AssetId, newData.TokenContract, newData.TokenAtoms, newData.FeeLimitSun, newData.TransferLogIndex, newData.RefBlockId, newData.RefHeight, newData.TimestampMs, newData.ExpirationMs, newData.RawHex, newData.TxId, newData.Signature, newData.State, newData.Attempts, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.RequestKey, newData.Network, newData.Sender, newData.Recipient, newData.Sun, newData.AssetId, newData.TokenContract, newData.TokenAtoms, newData.FeeLimitSun, newData.TransferLogIndex, newData.RefBlockId, newData.RefHeight, newData.TimestampMs, newData.ExpirationMs, newData.RawHex, newData.TxId, newData.Signature, newData.State, newData.Attempts, newData.RecoveryState, newData.RecoveryAttempts, newData.RecoveryGeneration, newData.RecoveryNextAt, newData.RecoveryLeaseUntil, newData.RecoveryCheckedAt, newData.RecoveryError, newData.RecoveryRetryNote, newData.Id)
 	return err
 }
 

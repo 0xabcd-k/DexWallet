@@ -1,6 +1,6 @@
 # TRON Nile 平台出款
 
-5.3 第十六、十七批接通内部执行器 `chainsend.NewTRON`。平台测试账户使用单个 owner 权限签名，可向指定地址发送原生 TRX 或显式配置的 Nile 测试 USDT。显式执行工具为 `backend/tools/tron_payout_nile`。本批覆盖测试网出款通道，用户提现订单、自动恢复调度、生产签名和费用结算仍待接入。
+5.3 第十六至十八批接通内部执行器 `chainsend.NewTRON`。平台测试账户使用单个 owner 权限签名，可向指定地址发送原生 TRX 或显式配置的 Nile 测试 USDT。显式执行工具为 `backend/tools/tron_payout_nile`。后台可接手已签名原单，在重启后继续确认 TRX 和测试 USDT。用户提现订单、生产签名与费用结算仍待接入。
 
 ## 原单与签名
 
@@ -31,7 +31,7 @@
 
 ## 隔离复验
 
-数据库要求 business 30。测试工具使用独立登记的测试库，从项目根目录加载专用测试配置。将工作目录 `work`、平台测试密钥文件 `testkey` 设为绝对路径，密钥文件只供离线签名进程读取。示例 policy JSON 如下。
+数据库要求 business 31。测试工具使用独立登记的测试库，从项目根目录加载专用测试配置。将工作目录 `work`、平台测试密钥文件 `testkey` 设为绝对路径，密钥文件只供离线签名进程读取。示例 policy JSON 如下。
 
 ```json
 {"Network":"tron-nile","Key":"nile-native-example-01","Sender":"平台测试地址","Recipient":"已激活的测试收款地址","Sun":1000}
@@ -59,3 +59,27 @@ probe -action status
 ```
 
 等待固化期间反复对同一 run 执行 `step`。确认后用 `evidence` 导出原单、实收和 RPC 证据，再用 `cleanup` 清理本次专用库。当前实转、故障注入和复验结果见[TRX 和 USDT 验证记录](../design/工程工作记录/05-钱包与链上通道/5.3-平台链上收付基础/04验证记录.md)。
+
+## 后台自动恢复
+
+先暂停旧版本的 TRON 出款写入和显式执行工具，完成 business 31 迁移，再启动新版。仅在 local/dev 环境且运行模式为 dev 时启用。设置 `DEXWALLET_CHAIN_TRON_NILE_RPC_URL` 并在服务配置中提供平台付款地址。需要重播测试 USDT 时，在同一环境配置相符的 `DEXWALLET_CHAIN_TRON_NILE_TEST_USDT_CONTRACT`。已固化的原交易可按数据库保存的原合约核对。
+
+```yaml
+TRONRecovery:
+  Sender: "替换为本环境的 Nile 平台付款地址"
+```
+
+省略 `TRONRecovery` 即关闭扫描。启用后只领取该地址的 `signed`、`submitted` 原单，直接使用已存签名。默认 1 个 worker，轮询间隔 5 秒，操作超时 30 秒，租约 60 秒，重试间隔 30 秒，每轮最多领取 60 次。对应配置为 `Workers`、`PollInterval`、`OperationTimeout`、`LeaseDuration`、`RetryInterval`、`MaxAttempts`。操作超时须在停机排空预算内，租约须长于操作超时。
+
+- 每次领取后先查原 txID。固化查询、FullNode 和待打包池均明确查无交易，且原签名仍有效、尚无成功广播应答时，允许重播同一份字节。已有成功应答的原单只继续观察。
+- 租约失效后可由其他实例接手。登记广播前再次校验租约和领取代次。显式执行工具遇到正在后台处理或人工复查的原单，也要遵守广播限制。
+- 授权过期即停止广播，继续按重试间隔核对实收，直到确认或耗尽预算。签名无效、固化证据冲突、已固化的执行失败、试图重播已移出配置的代币，以及耗尽预算，都会进入 `review`。人工复查后可恢复同一原单的检查预算。
+- 保存固化实收后，在同一次数据库更新中确认原单与调度，清除租约，并写回代币日志序号。服务在两次写入之间退出时，重启后可复用已存实收完成确认。停机时先停止领取，再等待正在执行的工作。
+
+在 backend 目录运行运维工具。列表提供 txID、资产、最小单位金额、授权到期时间（Unix 毫秒）、广播与观察次数、最近错误及重试说明。`retry` 记录本机操作系统用户名和原因。以下命令依次列出待复查原单、恢复指定原单、处理一个到期任务。
+
+```bash
+go run ./tools/ton_recovery -network tron-nile -f /本机配置/nile.yaml -action list -state review
+go run ./tools/ton_recovery -network tron-nile -f /本机配置/nile.yaml -action retry -key '<原请求键>' -reason '已核对原 txID 与固化进度'
+go run ./tools/ton_recovery -network tron-nile -f /本机配置/nile.yaml -action run-once
+```

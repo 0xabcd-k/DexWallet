@@ -34,6 +34,7 @@ type Config struct {
 	RewardRisk        risk.Config                     `json:",optional"`
 	Tasks             task.Config                     `json:",optional"`
 	Transfer          transfer.Config                 `json:",optional"`
+	TRONRecovery      *chainsend.TRONRecoveryConfig   `json:",optional"`
 	BaseRecovery      *chainsend.BaseRecoveryConfig   `json:",optional"`
 	SolanaRecovery    *chainsend.SolanaRecoveryConfig `json:",optional"`
 	TONRecovery       *chainsend.RecoveryConfig       `json:",optional"`
@@ -139,6 +140,14 @@ func (c Config) Check() error {
 		}
 	}
 
+	if c.TRONRecovery != nil {
+		if err := c.TRONRecovery.Check(); err != nil {
+			return err
+		}
+		if err := c.checkRecoveryNetwork(chainassets.TRONNile, c.TRONRecovery.OperationTimeout); err != nil {
+			return err
+		}
+	}
 	if c.BaseRecovery != nil {
 		if err := c.BaseRecovery.Check(); err != nil {
 			return err

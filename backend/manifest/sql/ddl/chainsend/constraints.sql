@@ -50,3 +50,8 @@ ALTER TABLE `tron_payout`
         AND ((`state`='confirmed' AND `transfer_log_index` IS NOT NULL AND `transfer_log_index` BETWEEN 0 AND 2147483647)
             OR (`state`<>'confirmed' AND `transfer_log_index` IS NULL)))),
  ADD CONSTRAINT `ck_tron_payout_auth` CHECK ((`state`='prepared' AND `signature`='' AND `attempts`=0) OR (`state` IN ('signed','submitted','confirmed') AND CHAR_LENGTH(`signature`)=130));
+
+ALTER TABLE `tron_payout`
+ ADD CONSTRAINT `ck_tron_recovery_state` CHECK (`recovery_state` IN ('ready','running','review','confirmed') AND ((`state`='confirmed')=(`recovery_state`='confirmed'))),
+ ADD CONSTRAINT `ck_tron_recovery_counts` CHECK (`recovery_attempts` >= 0 AND `recovery_generation` >= `recovery_attempts`),
+ ADD CONSTRAINT `ck_tron_recovery_lease` CHECK ((`recovery_state`='running')=(`recovery_lease_until` IS NOT NULL));

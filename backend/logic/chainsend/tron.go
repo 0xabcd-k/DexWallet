@@ -122,7 +122,13 @@ func (s *TRON) prepare(ctx context.Context, key string, payment model.TronPayout
 		return nil, err
 	}
 	row.RawHex, row.TxId = hex.EncodeToString(raw), tronnative.TxID(raw)
-	_, err = s.rows.Insert(ctx, row)
+	// Use the database clock and defaults for the recovery schedule.
+	_, err = s.conn.ExecCtx(ctx, `INSERT INTO tron_payout
+		(request_key,network,sender,recipient,sun,asset_id,token_contract,token_atoms,fee_limit_sun,
+		 ref_block_id,ref_height,timestamp_ms,expiration_ms,raw_hex,tx_id,state)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, key, row.Network, row.Sender, row.Recipient, row.Sun,
+		row.AssetId, row.TokenContract, row.TokenAtoms, row.FeeLimitSun, row.RefBlockId, row.RefHeight,
+		row.TimestampMs, row.ExpirationMs, row.RawHex, row.TxId, row.State)
 	var duplicate *mysql.MySQLError
 	if errors.As(err, &duplicate) && duplicate.Number == 1062 {
 		row, err = existing()
@@ -187,6 +193,10 @@ func (s *TRON) recordPayout(ctx context.Context, row *model.TronPayout) (sql.Nul
 }
 
 func (s *TRON) Step(ctx context.Context, key string) (*model.TronPayout, error) {
+	return s.step(ctx, key, nil)
+}
+
+func (s *TRON) step(ctx context.Context, key string, claim *recoveryClaim) (*model.TronPayout, error) {
 	row, err := s.Find(ctx, key)
 	if err != nil {
 		return nil, err
@@ -203,7 +213,7 @@ func (s *TRON) Step(ctx context.Context, key string) (*model.TronPayout, error) 
 	}
 	logIndex, err := s.recordPayout(ctx, row)
 	if err == nil {
-		_, err = s.conn.ExecCtx(ctx, "UPDATE tron_payout SET state=?,transfer_log_index=?,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", TRONConfirmed, logIndex, row.Id, Signed, Submitted)
+		_, err = s.conn.ExecCtx(ctx, "UPDATE tron_payout SET state=?,transfer_log_index=?,recovery_state=?,recovery_checked_at=UTC_TIMESTAMP(6),recovery_lease_until=NULL,recovery_error='',updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN (?,?)", TRONConfirmed, logIndex, RecoveryConfirmed, row.Id, Signed, Submitted)
 		if err != nil {
 			return row, err
 		}
@@ -248,7 +258,15 @@ func (s *TRON) Step(ctx context.Context, key string) (*model.TronPayout, error) 
 	}
 	// Record admission before network I/O. Only the exact same signed bytes may
 	// be replayed after an ambiguous acknowledgement.
-	res, err := s.conn.ExecCtx(ctx, "UPDATE tron_payout SET attempts=attempts+1,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=? AND attempts=?", row.Id, Signed, row.Attempts)
+	query := "UPDATE tron_payout SET attempts=attempts+1,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state=? AND attempts=? AND recovery_state=?"
+	args := []any{row.Id, Signed, row.Attempts}
+	if claim == nil {
+		args = append(args, RecoveryReady)
+	} else {
+		query += " AND recovery_generation=? AND recovery_lease_until>UTC_TIMESTAMP(6)"
+		args = append(args, RecoveryRunning, claim.Generation)
+	}
+	res, err := s.conn.ExecCtx(ctx, query, args...)
 	if err != nil {
 		return row, err
 	}
@@ -257,7 +275,21 @@ func (s *TRON) Step(ctx context.Context, key string) (*model.TronPayout, error) 
 		return row, err
 	}
 	if n == 0 {
-		return s.Find(ctx, key)
+		current, err := s.Find(ctx, key)
+		if err != nil || current.State == TRONConfirmed {
+			return current, err
+		}
+		if current.State == Submitted {
+			// A previously admitted broadcast may have acknowledged while this worker was observing.
+			return current, nil
+		}
+		if claim != nil {
+			return current, ErrRecoveryLeaseLost
+		}
+		if current.RecoveryState != RecoveryReady {
+			return current, fmt.Errorf("TRON replay unavailable while recovery is %s", current.RecoveryState)
+		}
+		return current, nil
 	}
 	row.Attempts++
 	if err = submit(ctx, signed); err != nil {

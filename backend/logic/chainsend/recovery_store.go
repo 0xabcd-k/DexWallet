@@ -108,7 +108,7 @@ func (s *recoveryStore) finish(ctx context.Context, c recoveryClaim, state, rece
 	if cause != nil {
 		detail = cause.Error()
 	}
-	// The Base and Solana executors commit confirmation and clear the lease in
+	// The payout executors commit confirmation and clear the lease in
 	// one update. A verified receipt takes precedence over any observation lease.
 	if state == RecoveryConfirmed && s.network != chainassets.TONTestnet {
 		return nil
@@ -172,6 +172,8 @@ func newRecoveryStore(db *sql.DB, network, sender string, policy RecoveryPolicy)
 	s := &recoveryStore{conn: sqlx.NewSqlConnFromDB(db), claimTx: transaction.NewWithIsolation(db, sql.LevelReadCommitted), sender: sender, config: policy, network: network}
 	s.scope, s.pending = "sender=?", "state IN ('"+Signed+"','"+Submitted+"')"
 	switch network {
+	case chainassets.TRONNile:
+		s.table = "tron_payout"
 	case chainassets.BaseSepolia:
 		s.table = "base_payout"
 	case chainassets.SolanaDevnet:

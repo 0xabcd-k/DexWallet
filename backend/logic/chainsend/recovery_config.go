@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"time"
+
+	"github.com/0xabcd-k/DexWallet/backend/internal/tronnative"
 )
 
 // Recovery has no signing credentials. It can only inspect or replay an existing
@@ -19,6 +21,18 @@ type RecoveryConfig struct {
 type SolanaRecoveryConfig struct {
 	RecoveryPolicy
 	Sender string
+}
+
+type TRONRecoveryConfig struct {
+	RecoveryPolicy
+	Sender string
+}
+
+func (c TRONRecoveryConfig) Check() error {
+	if _, err := tronnative.AddressBytes(c.Sender); err != nil {
+		return fmt.Errorf("TRON recovery requires a Nile sender address: %w", err)
+	}
+	return c.RecoveryPolicy.Check()
 }
 
 type BaseRecoveryConfig struct {

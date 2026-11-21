@@ -48,6 +48,7 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
+	TRONRecovery          *chainsend.RecoveryRuntime
 	BaseRecovery          *chainsend.RecoveryRuntime
 	SolanaRecovery        *chainsend.RecoveryRuntime
 	TONRecovery           *chainsend.RecoveryRuntime

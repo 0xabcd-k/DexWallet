@@ -19,7 +19,7 @@ import (
 
 func run() (err error) {
 	path := flag.String("f", "api/etc/platform.yaml", "application config with explicit recovery policy")
-	network := flag.String("network", chainassets.TONTestnet, "ton-testnet, solana-devnet or base-sepolia")
+	network := flag.String("network", chainassets.TONTestnet, "ton-testnet, solana-devnet, base-sepolia or tron-nile")
 	action := flag.String("action", "list", "list, retry or run-once")
 	state := flag.String("state", "", "recovery state; empty for all signed intents")
 	limit := flag.Int("limit", 20, "list limit 1..1000")
@@ -33,7 +33,7 @@ func run() (err error) {
 	if err != nil {
 		return err
 	}
-	ton, sol, base := c.TONRecovery, c.SolanaRecovery, c.BaseRecovery
+	ton, sol, base, tron := c.TONRecovery, c.SolanaRecovery, c.BaseRecovery, c.TRONRecovery
 	timeout := c.ShutdownTimeout
 	switch *network {
 	case chainassets.TONTestnet:
@@ -41,6 +41,11 @@ func run() (err error) {
 			return fmt.Errorf("TONRecovery configuration required")
 		}
 		timeout = ton.OperationTimeout
+	case chainassets.TRONNile:
+		if tron == nil {
+			return fmt.Errorf("TRONRecovery configuration required")
+		}
+		timeout = tron.OperationTimeout
 	case chainassets.BaseSepolia:
 		if base == nil {
 			return fmt.Errorf("BaseRecovery configuration required")
@@ -54,7 +59,7 @@ func run() (err error) {
 	default:
 		return fmt.Errorf("unsupported recovery network %q", *network)
 	}
-	c.Background, c.TONRecovery, c.SolanaRecovery, c.BaseRecovery = nil, nil, nil, nil
+	c.Background, c.TONRecovery, c.SolanaRecovery, c.BaseRecovery, c.TRONRecovery = nil, nil, nil, nil, nil
 	c.RocketMQ.Enabled, c.RocketMQ.Required = false, false
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -63,6 +68,13 @@ func run() (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, s.Close()) }()
+	if *network == chainassets.TRONNile {
+		recovery, err := chainsend.NewTRONRecovery(s.DB, s.ChainAssets, s.TRONReceipts, *tron)
+		if err != nil {
+			return err
+		}
+		return runAction(ctx, recovery, *action, *state, *limit, *key, *reason)
+	}
 	if *network == chainassets.BaseSepolia {
 		recovery, err := chainsend.NewBaseRecovery(s.DB, s.ChainAssets, s.BaseReceipts, *base)
 		if err != nil {

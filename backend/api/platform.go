@@ -55,7 +55,7 @@ func run() (err error) {
 		return err
 	}
 	var backgroundErr error
-	if svcCtx.Background != nil || svcCtx.TONRecovery != nil || svcCtx.SolanaRecovery != nil || svcCtx.BaseRecovery != nil {
+	if svcCtx.Background != nil || svcCtx.TONRecovery != nil || svcCtx.SolanaRecovery != nil || svcCtx.BaseRecovery != nil || svcCtx.TRONRecovery != nil {
 		proc.AddWrapUpListener(svcCtx.StopBackground)
 		proc.AddShutdownListener(func() {
 			svcCtx.StopBackground()

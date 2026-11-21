@@ -23,6 +23,20 @@ func (d *ServiceContext) StartBackground(ctx context.Context) error {
 	if err := d.startSolanaRecovery(ctx); err != nil {
 		return err
 	}
+	if err := d.startBaseRecovery(ctx); err != nil {
+		return err
+	}
+	if d.Config.TRONRecovery == nil {
+		return nil
+	}
+	recovery, err := chainsend.NewTRONRecovery(d.DB, d.ChainAssets, d.TRONReceipts, *d.Config.TRONRecovery)
+	if err != nil {
+		return err
+	}
+	d.TRONRecovery = chainsend.NewRecoveryRuntime(recovery)
+	return d.TRONRecovery.Start(ctx)
+}
+func (d *ServiceContext) startBaseRecovery(ctx context.Context) error {
 	if d.Config.BaseRecovery == nil {
 		return nil
 	}
@@ -91,6 +105,9 @@ func (d *ServiceContext) StopBackground() {
 	if d.TONRecovery != nil {
 		d.TONRecovery.Stop()
 	}
+	if d.TRONRecovery != nil {
+		d.TRONRecovery.Stop()
+	}
 	if d.BaseRecovery != nil {
 		d.BaseRecovery.Stop()
 	}
@@ -105,6 +122,9 @@ func (d *ServiceContext) WaitBackground(ctx context.Context) error {
 	}
 	if d.TONRecovery != nil {
 		err = errors.Join(err, d.TONRecovery.Wait(ctx))
+	}
+	if d.TRONRecovery != nil {
+		err = errors.Join(err, d.TRONRecovery.Wait(ctx))
 	}
 	if d.BaseRecovery != nil {
 		err = errors.Join(err, d.BaseRecovery.Wait(ctx))
