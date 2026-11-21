@@ -15,6 +15,14 @@ import (
 // workers just by assembling shared dependencies. No notification channel exists
 // yet; production publishes facts, and registered business handlers come later.
 func (d *ServiceContext) StartBackground(ctx context.Context) error {
+	if c := d.Config.BaseReceiptListener; c != nil {
+		listener := chainreceipt.NewBaseListener(d.DB, d.ChainAssets, d.BaseReceipts, d.ReceiveAttribution)
+		var err error
+		d.BaseListener, err = listener.Start(ctx, *c)
+		if err != nil {
+			return err
+		}
+	}
 	if c := d.Config.SolanaReceiptListener; c != nil {
 		listener := chainreceipt.NewSolanaListener(d.DB, d.ChainAssets, d.ChainReceipts, d.ReceiveAttribution)
 		var err error
@@ -116,6 +124,9 @@ func (d *ServiceContext) startEvents(ctx context.Context) error {
 // Admission closes for every pool before waiting. Dependencies outlive all
 // in-flight RPC and SQL work, including partial startup or a timed-out drain.
 func (d *ServiceContext) StopBackground() {
+	if d.BaseListener != nil {
+		d.BaseListener.Stop()
+	}
 	if d.SolanaListener != nil {
 		d.SolanaListener.Stop()
 	}
@@ -140,6 +151,9 @@ func (d *ServiceContext) StopBackground() {
 }
 func (d *ServiceContext) WaitBackground(ctx context.Context) error {
 	var err error
+	if d.BaseListener != nil {
+		err = errors.Join(err, d.BaseListener.Wait(ctx))
+	}
 	if d.SolanaListener != nil {
 		err = errors.Join(err, d.SolanaListener.Wait(ctx))
 	}

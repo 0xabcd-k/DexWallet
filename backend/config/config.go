@@ -28,6 +28,7 @@ import (
 )
 
 type Config struct {
+	BaseReceiptListener   *chainreceipt.BaseListenerConfig   `json:",optional"`
 	SolanaReceiptListener *chainreceipt.SolanaListenerConfig `json:",optional"`
 	TONReceiptListener    *chainreceipt.TONListenerConfig    `json:",optional"`
 	rest.RestConf
@@ -143,6 +144,14 @@ func (c Config) Check() error {
 		}
 	}
 
+	if c.BaseReceiptListener != nil {
+		if err := c.BaseReceiptListener.Check(); err != nil {
+			return err
+		}
+		if err := c.checkRecoveryNetwork(chainassets.BaseSepolia, c.BaseReceiptListener.OperationTimeout); err != nil {
+			return err
+		}
+	}
 	if c.SolanaReceiptListener != nil {
 		if err := c.SolanaReceiptListener.Check(); err != nil {
 			return err

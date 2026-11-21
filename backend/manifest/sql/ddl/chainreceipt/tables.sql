@@ -119,3 +119,30 @@ CREATE TABLE `solana_receive_candidate` (
     UNIQUE KEY `uk_sol_receive_request_tx` (`request_id`,`signature`),
     KEY `idx_sol_receive_due` (`status`,`next_try`,`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;
+
+CREATE TABLE `base_receive_cursor` (
+    `asset_id` VARCHAR(64) NOT NULL,
+    `height` BIGINT NOT NULL,
+    `block_hash` CHAR(66) NOT NULL,
+    PRIMARY KEY (`asset_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;
+
+CREATE TABLE `base_receive_candidate` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `request_id` BIGINT NOT NULL,
+    `tx_hash` CHAR(66) NOT NULL,
+    `event_kind` VARCHAR(16) NOT NULL,
+    `event_index` INT NOT NULL,
+    `amount_atoms` VARCHAR(78) NOT NULL,
+    `height` BIGINT NOT NULL,
+    `block_hash` CHAR(66) NOT NULL,
+    `block_time` BIGINT NOT NULL,
+    `status` VARCHAR(16) NOT NULL DEFAULT 'pending',
+    `attempts` BIGINT NOT NULL DEFAULT 0,
+    `next_try` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `detail` VARCHAR(512) CHARACTER SET utf8mb4 NOT NULL DEFAULT '',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_base_receive_event` (`tx_hash`,`event_kind`,`event_index`),
+    KEY `idx_base_receive_due` (`status`,`next_try`,`id`),
+    KEY `idx_base_receive_request` (`request_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;

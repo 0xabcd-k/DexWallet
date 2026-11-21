@@ -181,9 +181,7 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 	if tx.ChainID != chainID || tx.Hash != r.Hash || !hexData(tx.BlockHash, 32) || !hexData(tx.From, 20) || tx.From == zeroEVMAddress || !hexData(tx.To, 20) {
 		return out, bad("wrong chain, transaction or accounts")
 	}
-	switch tx.Type {
-	case "0x0", "0x1", "0x2", "0x4":
-	default:
+	if !supportedBaseType(tx.Type) {
 		return out, ErrUnsupported
 	}
 	if receipt.Type != tx.Type || receipt.TransactionHash != r.Hash || receipt.BlockHash != tx.BlockHash || receipt.BlockNumber != tx.BlockNumber || receipt.TransactionIndex != tx.TransactionIndex || receipt.From != tx.From || receipt.To != tx.To {
@@ -310,17 +308,17 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 			return out, ErrUnsupported
 		}
 		l := selected
-		if l.Address != strings.ToLower(asset.Contract) || len(l.Topics) != 3 || l.Topics[0] != ERC20TransferTopic || !hexData(l.Topics[1], 32) || !hexData(l.Topics[2], 32) || !hexData(l.Data, 32) || l.Topics[1][2:26] != strings.Repeat("0", 24) || l.Topics[2][2:26] != strings.Repeat("0", 24) {
-			return out, bad("not an exact supported token Transfer")
+		from, to, amount, err := decodeBaseTransferLog(*l, asset.Contract)
+		if err != nil {
+			return out, err
 		}
-		amount, _ := new(big.Int).SetString(l.Data[2:], 16)
 		event.Kind = EVMLog
 		event.Instruction = selectedIndex
 		event.Mint = l.Address
 		event.ProgramID = l.Address
-		event.SourceAccount = "0x" + l.Topics[1][26:]
-		event.RecipientAccount = "0x" + l.Topics[2][26:]
-		event.Atoms = amount.String()
+		event.SourceAccount = from
+		event.RecipientAccount = to
+		event.Atoms = amount
 	}
 	event.SourceOwner = event.SourceAccount
 	event.RecipientOwner = event.RecipientAccount
@@ -337,4 +335,20 @@ func verifyBase(r BaseRequest, asset chainassets.Asset, e chainassets.BaseEviden
 	digest := sha256.Sum256(normalized)
 	out = Receipt{Transaction: Transaction{Network: r.Network, Signature: r.Hash, Slot: height.Int64(), FeePayer: tx.From, FeeAtoms: total.String(), Fingerprint: fmt.Sprintf("%x", digest), BlockHash: tx.BlockHash, ExecutionFeeAtoms: execution.String(), L1FeeAtoms: l1.String(), OperatorFeeAtoms: operator.String()}, Event: event, evidence: e, traceFingerprint: traceFingerprint, callTrace: e.CallTrace}
 	return out, nil
+}
+
+func supportedBaseType(kind string) bool {
+	switch kind {
+	case "0x0", "0x1", "0x2", "0x4":
+		return true
+	}
+	return false
+}
+
+func decodeBaseTransferLog(l baseLog, contract string) (from, to, atoms string, err error) {
+	if !strings.EqualFold(l.Address, contract) || len(l.Topics) != 3 || !strings.EqualFold(l.Topics[0], ERC20TransferTopic) || !hexData(l.Topics[1], 32) || !hexData(l.Topics[2], 32) || !hexData(l.Data, 32) || l.Topics[1][2:26] != strings.Repeat("0", 24) || l.Topics[2][2:26] != strings.Repeat("0", 24) {
+		return "", "", "", bad("not an exact supported token Transfer")
+	}
+	amount, _ := new(big.Int).SetString(l.Data[2:], 16)
+	return "0x" + strings.ToLower(l.Topics[1][26:]), "0x" + strings.ToLower(l.Topics[2][26:]), amount.String(), nil
 }

@@ -24,3 +24,13 @@ ALTER TABLE `solana_receive_cursor`
 ALTER TABLE `solana_receive_candidate`
  ADD CONSTRAINT `fk_sol_receive_request` FOREIGN KEY (`request_id`) REFERENCES `chain_receive_request` (`id`),
  ADD CONSTRAINT `ck_sol_receive_status` CHECK (`status` IN ('pending','matched','unmatched','ignored'));
+
+ALTER TABLE `base_receive_cursor`
+ ADD CONSTRAINT `ck_base_receive_cursor` CHECK (`height`>0 AND `asset_id` IN ('base-sepolia:eth','base-sepolia:usdc'));
+
+ALTER TABLE `base_receive_candidate`
+ ADD CONSTRAINT `fk_base_receive_request` FOREIGN KEY (`request_id`) REFERENCES `chain_receive_request` (`id`),
+ ADD CONSTRAINT `ck_base_receive_status` CHECK (`status` IN ('pending','matched','unmatched')),
+ ADD CONSTRAINT `ck_base_receive_position` CHECK ((`event_kind`='evm_value' AND `event_index`=0) OR (`event_kind`='evm_log' AND `event_index`>=0) OR (`event_kind`='evm_call' AND `event_index`>0));
+
+ALTER TABLE `chain_receive_request` ADD KEY `idx_receive_asset_open` (`asset_id`,`opens_at`);
