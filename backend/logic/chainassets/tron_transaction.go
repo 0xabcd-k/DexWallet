@@ -44,18 +44,7 @@ func (s *Service) ReadTRONEvidence(ctx context.Context, network, hash string) (T
 	defer cancel()
 	e := s.endpoints[network]
 	read := func(method string, body map[string]any, target *json.RawMessage) error {
-		body["visible"] = false // RPC addresses must be hex, not Base58.
-		if err := s.request(ctx, n, e, "/walletsolidity/"+method, nil, body, target); err != nil {
-			return err
-		}
-		var object map[string]json.RawMessage
-		if json.Unmarshal(*target, &object) != nil || object == nil {
-			return invalid("invalid TRON " + method + " object")
-		}
-		if object["Error"] != nil || object["error"] != nil {
-			return invalid("TRON " + method + " returned an error")
-		}
-		return nil
+		return s.tronObject(ctx, n, e, "/walletsolidity/"+method, body, target)
 	}
 	if err := read("getblockbynum", map[string]any{"num": 0}, &out.Genesis); err != nil {
 		return out, err
@@ -90,4 +79,19 @@ func (s *Service) ReadTRONEvidence(ctx context.Context, network, hash string) (T
 	}
 	err := read("getblockbynum", map[string]any{"num": height}, &out.Block)
 	return out, err
+}
+
+func (s *Service) tronObject(ctx context.Context, n Network, e Endpoint, path string, body map[string]any, target *json.RawMessage) error {
+	body["visible"] = false
+	if err := s.request(ctx, n, e, path, nil, body, target); err != nil {
+		return err
+	}
+	var object map[string]json.RawMessage
+	if json.Unmarshal(*target, &object) != nil || object == nil {
+		return invalid("invalid TRON " + path + " object")
+	}
+	if object["Error"] != nil || object["error"] != nil {
+		return invalid("TRON " + path + " returned an error")
+	}
+	return nil
 }
