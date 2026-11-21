@@ -6,6 +6,7 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/background"
 	"github.com/0xabcd-k/DexWallet/backend/idcodec"
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainsend"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 )
@@ -14,6 +15,14 @@ import (
 // workers just by assembling shared dependencies. No notification channel exists
 // yet; production publishes facts, and registered business handlers come later.
 func (d *ServiceContext) StartBackground(ctx context.Context) error {
+	if c := d.Config.TONReceiptListener; c != nil {
+		listener := chainreceipt.NewTONListener(d.DB, d.ChainAssets, d.TONReceipts, d.ReceiveAttribution)
+		var err error
+		d.TONListener, err = listener.Start(ctx, *c)
+		if err != nil {
+			return err
+		}
+	}
 	if err := d.startEvents(ctx); err != nil {
 		return err
 	}
@@ -99,6 +108,9 @@ func (d *ServiceContext) startEvents(ctx context.Context) error {
 // Admission closes for every pool before waiting. Dependencies outlive all
 // in-flight RPC and SQL work, including partial startup or a timed-out drain.
 func (d *ServiceContext) StopBackground() {
+	if d.TONListener != nil {
+		d.TONListener.Stop()
+	}
 	if d.Background != nil {
 		d.Background.Stop()
 	}
@@ -117,6 +129,9 @@ func (d *ServiceContext) StopBackground() {
 }
 func (d *ServiceContext) WaitBackground(ctx context.Context) error {
 	var err error
+	if d.TONListener != nil {
+		err = errors.Join(err, d.TONListener.Wait(ctx))
+	}
 	if d.Background != nil {
 		err = errors.Join(err, d.Background.Wait(ctx))
 	}

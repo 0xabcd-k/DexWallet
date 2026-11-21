@@ -92,7 +92,7 @@ func TestChainReceiptSchemaAndPersistence(t *testing.T) {
 		}
 		mustExec(t, full, string(b))
 	}
-	for _, name := range []string{"chain_observed_transaction", "chain_transfer_event", "chain_receive_address", "chain_receive_request"} {
+	for _, name := range []string{"chain_observed_transaction", "chain_transfer_event", "chain_receive_address", "chain_receive_request", "ton_receive_cursor", "ton_receive_candidate"} {
 		var table, a, b string
 		if err = db.QueryRow("SHOW CREATE TABLE "+name).Scan(&table, &a); err != nil {
 			t.Fatal(err)

@@ -15,6 +15,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/logic/auth"
 	"github.com/0xabcd-k/DexWallet/backend/logic/backoffice"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
+	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainsend"
 	"github.com/0xabcd-k/DexWallet/backend/logic/risk"
 	"github.com/0xabcd-k/DexWallet/backend/logic/task"
@@ -27,6 +28,7 @@ import (
 )
 
 type Config struct {
+	TONReceiptListener *chainreceipt.TONListenerConfig `json:",optional"`
 	rest.RestConf
 	Environment       string
 	CORSOrigins       []string                        `json:",optional"`
@@ -140,6 +142,14 @@ func (c Config) Check() error {
 		}
 	}
 
+	if c.TONReceiptListener != nil {
+		if err := c.TONReceiptListener.Check(); err != nil {
+			return err
+		}
+		if err := c.checkRecoveryNetwork(chainassets.TONTestnet, c.TONReceiptListener.OperationTimeout); err != nil {
+			return err
+		}
+	}
 	if c.TRONRecovery != nil {
 		if err := c.TRONRecovery.Check(); err != nil {
 			return err

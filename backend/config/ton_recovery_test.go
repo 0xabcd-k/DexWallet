@@ -156,3 +156,37 @@ func TestTRONRecoveryConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestTONReceiptListenerConfiguration(t *testing.T) {
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
+	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
+	t.Setenv("DEXWALLET_CHAIN_TON_TESTNET_RPC_URL", "http://127.0.0.1:1")
+	raw, err := os.ReadFile("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "listener.yaml")
+	raw = append(raw, []byte("\nTONReceiptListener:\n  PollInterval: 2s\n")...)
+	if err = os.WriteFile(path, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.TONReceiptListener == nil || c.TONReceiptListener.RetryInterval != time.Minute || c.TONReceiptListener.OperationTimeout != 20*time.Second {
+		t.Fatal(c.TONReceiptListener)
+	}
+	for _, change := range []func(*Config){
+		func(c *Config) { c.Environment = "prod" }, func(c *Config) { c.ChainAssets.Networks = nil },
+		func(c *Config) { c.TONReceiptListener.RetryInterval = time.Second }, func(c *Config) { c.TONReceiptListener.OperationTimeout = c.ShutdownTimeout + time.Second },
+	} {
+		bad := c
+		policy := *c.TONReceiptListener
+		bad.TONReceiptListener = &policy
+		change(&bad)
+		if err = bad.Check(); err == nil {
+			t.Fatal("invalid listener configuration accepted")
+		}
+	}
+}
