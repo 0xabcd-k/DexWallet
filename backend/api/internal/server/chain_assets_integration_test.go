@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/types"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
@@ -74,7 +75,13 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 		_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1, "result": result})
 	}))
 	defer upstream.Close()
-	service, err := chainassets.New(chainassets.Config{Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: upstream.URL}}}, chainassets.NewRedisLimiter(s.Redis, s.Namespace, 1))
+	const depositPath = "/v1/user/deposit-quotes/preview"
+	deposit := types.DepositQuoteRequest{AssetId: chainassets.BaseSepoliaETH, TargetUsd: "10"}
+	call("POST", depositPath, "", deposit, 401, "UNAUTHENTICATED")
+	call("POST", depositPath, token, deposit, 503, "SERVICE_UNAVAILABLE")
+	now := time.Now().Unix()
+	rates := &chainassets.DepositQuoteConfig{Version: "http-fixture", AsOf: now - 30, ValidUntil: now + 120, Assets: []chainassets.DepositQuoteRate{{AssetID: deposit.AssetId, USDPerCoin: "2000", EstimatedGas: "0.0001"}}}
+	service, err := chainassets.New(chainassets.Config{DepositQuotes: rates, Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: upstream.URL}}}, chainassets.NewRedisLimiter(s.Redis, s.Namespace, 1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,6 +96,27 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	if len(catalog.Networks) != 8 {
 		t.Fatal(catalog)
 	}
+	var listed bool
+	for _, n := range catalog.Networks {
+		for _, a := range n.Assets {
+			if a.DepositPreview {
+				if a.Id != deposit.AssetId {
+					t.Fatal(a.Id)
+				}
+				listed = true
+			}
+		}
+	}
+	if !listed {
+		t.Fatal("missing quoted asset")
+	}
+	_, raw = call("POST", depositPath, token, deposit, 200, "OK")
+	var quote types.DepositQuoteData
+	if err := json.Unmarshal(raw, &quote); err != nil || quote.AssetId != deposit.AssetId || quote.PayQuantity != "0.0051" || quote.NetUsd != "10.00" || quote.GasUsd != "0.2" || quote.CanSubmit || quote.RateVersion != rates.Version {
+		t.Fatal(quote, err)
+	}
+	deposit.TargetUsd = "0.001"
+	call("POST", depositPath, token, deposit, 400, "INVALID_ARGUMENT")
 	invalid := request
 	invalid.Address = "bad-address"
 	call("POST", "/v1/user/chain-assets/balances", token, invalid, 400, "INVALID_ARGUMENT")

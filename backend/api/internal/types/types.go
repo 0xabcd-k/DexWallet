@@ -193,11 +193,12 @@ type BackofficeStatusRequest struct {
 }
 
 type ChainAsset struct {
-	Id       string `json:"id"`
-	Symbol   string `json:"symbol"`
-	Contract string `json:"contract"`
-	Decimals int    `json:"decimals"`
-	Origin   string `json:"origin,options=native|issuer|test_fixture"`
+	Id             string `json:"id"`
+	Symbol         string `json:"symbol"`
+	Contract       string `json:"contract"`
+	Decimals       int    `json:"decimals"`
+	Origin         string `json:"origin,options=native|issuer|test_fixture"`
+	DepositPreview bool   `json:"depositPreview,optional"`
 }
 
 type ChainAssetBalance struct {
@@ -354,6 +355,34 @@ type CurrentUserResponse struct {
 	Message string          `json:"message"`
 	Data    CurrentUserData `json:"data"`
 	TraceId string          `json:"traceId"`
+}
+
+type DepositQuoteData struct {
+	AssetId      string `json:"assetId"`
+	TargetUsd    string `json:"targetUsd"`
+	UsdPerCoin   string `json:"usdPerCoin"`
+	PayQuantity  string `json:"payQuantity"`
+	GasAssetId   string `json:"gasAssetId"`
+	EstimatedGas string `json:"estimatedGas"`
+	GasUsd       string `json:"gasUsd"`
+	NetUsd       string `json:"netUsd"`
+	RateVersion  string `json:"rateVersion"`
+	AsOf         int64  `json:"asOf"`
+	QuotedAt     int64  `json:"quotedAt"`
+	ExpiresAt    int64  `json:"expiresAt"`
+	CanSubmit    bool   `json:"canSubmit"`
+}
+
+type DepositQuoteRequest struct {
+	AssetId   string `json:"assetId"`
+	TargetUsd string `json:"targetUsd"`
+}
+
+type DepositQuoteResponse struct {
+	Code    string           `json:"code,options=OK"`
+	Message string           `json:"message"`
+	TraceId string           `json:"traceId"`
+	Data    DepositQuoteData `json:"data"`
 }
 
 type DrawListData struct {

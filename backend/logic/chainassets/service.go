@@ -30,9 +30,10 @@ type Endpoint struct {
 	TestUSDTContract string `json:",optional"`
 }
 type Config struct {
-	Networks         []Endpoint    `json:",optional"`
-	Timeout          time.Duration `json:",optional"`
-	PerUserPerMinute int           `json:",optional"`
+	DepositQuotes    *DepositQuoteConfig `json:",optional"`
+	Networks         []Endpoint          `json:",optional"`
+	Timeout          time.Duration       `json:",optional"`
+	PerUserPerMinute int                 `json:",optional"`
 }
 
 func (c Config) Check() error {
@@ -106,6 +107,7 @@ func (l *RedisLimiter) Allow(ctx context.Context, user int64) error {
 }
 
 type Service struct {
+	quotes    depositBook
 	networks  []Network
 	endpoints map[string]Endpoint
 	client    *http.Client
@@ -137,6 +139,12 @@ func New(c Config, limiter Limiter) (*Service, error) {
 			n.Assets = append(n.Assets, asset(n.ID, "USDT", e.TestUSDTContract, 6, TestFixture))
 		}
 	}
+	book, err := newDepositBook(c.DepositQuotes, s.networks)
+	if err != nil {
+		s.Close()
+		return nil, err
+	}
+	s.quotes = book
 	return s, nil
 }
 func (s *Service) Close() { s.client.CloseIdleConnections() }

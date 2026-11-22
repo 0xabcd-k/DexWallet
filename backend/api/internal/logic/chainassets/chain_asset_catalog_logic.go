@@ -5,6 +5,7 @@ package chainassets
 
 import (
 	"context"
+	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/httpapi"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
@@ -35,11 +36,12 @@ func (l *ChainAssetCatalogLogic) ChainAssetCatalog() (resp *types.ChainAssetCata
 	if l.svcCtx.ChainAssets == nil {
 		return nil, apperror.New(apperror.ServiceUnavailable, nil)
 	}
+	now := time.Now()
 	networks := make([]types.ChainNetwork, 0)
 	for _, n := range l.svcCtx.ChainAssets.Catalog() {
 		assets := make([]types.ChainAsset, 0, len(n.Assets))
 		for _, a := range n.Assets {
-			assets = append(assets, types.ChainAsset{Id: a.ID, Symbol: a.Symbol, Contract: a.Contract, Decimals: a.Decimals, Origin: a.Origin})
+			assets = append(assets, types.ChainAsset{Id: a.ID, Symbol: a.Symbol, Contract: a.Contract, Decimals: a.Decimals, Origin: a.Origin, DepositPreview: l.svcCtx.ChainAssets.HasDepositPreview(a.ID, now)})
 		}
 		networks = append(networks, types.ChainNetwork{Id: n.ID, Family: string(n.Family), Testnet: n.Testnet, Enabled: n.Enabled, Assets: assets})
 	}

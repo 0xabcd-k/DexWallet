@@ -106,6 +106,9 @@ func Load(path string) (Config, error) {
 	return c, c.Check()
 }
 func (c Config) Check() error {
+	if c.ChainAssets.DepositQuotes != nil && ((c.Environment != "local" && c.Environment != "dev") || c.Mode != service.DevMode) {
+		return fmt.Errorf("test deposit quote data requires local/dev environment and dev mode")
+	}
 	if err := c.ChainAssets.Check(); err != nil {
 		return err
 	}

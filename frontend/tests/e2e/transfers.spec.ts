@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { envelope, mockAccount, seedSession, userIdx } from './auth-fixture';
+import { envelope, mockAccount, seedSession, telegramLaunch, userIdx } from './auth-fixture';
 const base = 'http://127.0.0.1:5173';
 const recipientIdx = '09876543210987654';
 const result = { idx: '01111111111111111', counterparty: { idx: recipientIdx, nickname: 'Recipient', avatarUrl: '' }, amount: '10.00', fee: '0.00', direction: 'out', unit: 'USD', status: 'completed', createdAt: '2026-11-13T00:00:00Z' };
@@ -130,4 +130,17 @@ test('changing the scanned target discards an in-flight payment review', async (
     release(); await expect(page.getByRole('button', { name: 'Review payment', exact: true })).toBeEnabled();
     await expect(page.getByRole('button', { name: 'Confirm payment', exact: true })).toHaveCount(0);
   } finally { release(); }
+});
+
+test('Telegram USD deposit shows the App guidance without requesting a chain quote', async ({ page }) => {
+  await fixture(page);
+  let requests = 0;
+  page.on('request', r => { if (/\/user\/(chain-assets|deposit-quotes)/.test(r.url())) requests++; });
+  await page.goto(`${base}/#${telegramLaunch()}`);
+  await page.waitForURL('**/#/wallet');
+  await page.evaluate(() => { location.hash = '/balance'; });
+  await page.getByRole('button', { name: 'Deposit', exact: true }).click();
+  await expect(page.getByText('On-chain features require the App and will be available when it launches.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Get estimate' })).toHaveCount(0);
+  expect(requests).toBe(0);
 });

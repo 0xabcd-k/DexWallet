@@ -208,6 +208,7 @@ export interface ChainAsset {
 	contract: string
 	decimals: number
 	origin: 'native' | 'issuer' | 'test_fixture'
+	depositPreview?: boolean
 }
 
 export interface ChainAssetBalance {
@@ -367,6 +368,34 @@ export interface CurrentUserResponse {
 	message: string
 	data: CurrentUserData
 	traceId: string
+}
+
+export interface DepositQuoteData {
+	assetId: string
+	targetUsd: string
+	usdPerCoin: string
+	payQuantity: string
+	gasAssetId: string
+	estimatedGas: string
+	gasUsd: string
+	netUsd: string
+	rateVersion: string
+	asOf: number
+	quotedAt: number
+	expiresAt: number
+	canSubmit: boolean
+}
+
+export interface DepositQuoteRequest {
+	assetId: string
+	targetUsd: string
+}
+
+export interface DepositQuoteResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: DepositQuoteData
 }
 
 export interface DrawListData {

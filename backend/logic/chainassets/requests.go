@@ -108,29 +108,37 @@ func (s *Service) PreviewTransfer(input TargetInput, raw string) (Preview, error
 			break
 		}
 	}
+	quantity, err := chainQuantity(network, asset, raw)
+	if err != nil {
+		return Preview{}, err
+	}
+	return Preview{Target: target, Amount: quantity, CanSubmit: false, BlockReason: ChannelNotOpen}, nil
+}
+
+func chainQuantity(network Network, asset Asset, raw string) (string, error) {
 	// Inputs are decimal quantities, never exponents, floats or rounded values.
 	if len(raw) == 0 || len(raw) > 100 || strings.TrimSpace(raw) != raw {
-		return Preview{}, badTarget("invalid amount")
+		return "", badTarget("invalid amount")
 	}
 	parts := strings.Split(raw, ".")
 	if len(parts) > 2 || !integerPattern.MatchString(parts[0]) {
-		return Preview{}, badTarget("invalid amount")
+		return "", badTarget("invalid amount")
 	}
 	fraction := ""
 	if len(parts) == 2 {
 		fraction = parts[1]
 		if len(fraction) == 0 || len(fraction) > asset.Decimals {
-			return Preview{}, badTarget("amount precision")
+			return "", badTarget("amount precision")
 		}
 		for _, c := range fraction {
 			if c < '0' || c > '9' {
-				return Preview{}, badTarget("invalid fraction")
+				return "", badTarget("invalid fraction")
 			}
 		}
 	}
 	integer, ok := new(big.Int).SetString(parts[0]+fraction+strings.Repeat("0", asset.Decimals-len(fraction)), 10)
 	if !ok || integer.Sign() <= 0 {
-		return Preview{}, badTarget("amount must be positive")
+		return "", badTarget("amount must be positive")
 	}
 	bits := 256
 	switch network.Family {
@@ -144,7 +152,7 @@ func (s *Service) PreviewTransfer(input TargetInput, raw string) (Preview, error
 		}
 	}
 	if integer.BitLen() > bits {
-		return Preview{}, badTarget("amount exceeds chain integer range")
+		return "", badTarget("amount exceeds chain integer range")
 	}
-	return Preview{Target: target, Amount: amount(integer, asset.Decimals), CanSubmit: false, BlockReason: ChannelNotOpen}, nil
+	return amount(integer, asset.Decimals), nil
 }

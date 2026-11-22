@@ -346,6 +346,19 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
 			[]rest.Route{
 				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/deposit-quotes/preview",
+					Handler: chainassets.DepositQuotePreviewHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
 					Method:  http.MethodGet,
 					Path:    "/v1/user/draw-state",
 					Handler: draw.DrawStateHandler(serverCtx),
