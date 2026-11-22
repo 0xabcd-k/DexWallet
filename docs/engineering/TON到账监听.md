@@ -45,4 +45,4 @@ ORDER BY p.id DESC LIMIT 50;
 | `unmatched` | 到账已保存，付款条件、时间、标识或唯一性检查未通过。 |
 | `ignored` | 已确认的执行失败、非收款消息或不支持的转账形态。 |
 
-当前持续观察已分配的地址和资产。首轮从头校验账户历史，对交易量大的老地址需要多次轮询。存在游标时迁移会拒绝降至 business 32，保留补扫进度和待核验记录。Solana 已接通[自动到账监听](Solana到账监听.md)。Base Sepolia 已接通[ETH 与 USDC 自动监听](Base到账监听.md)。TRON 的自动发现待接入。
+当前持续观察已分配的地址和资产。首轮从头校验账户历史，对交易量大的老地址需要多次轮询。存在游标时迁移会拒绝降至 business 32，保留补扫进度和待核验记录。Solana 已接通[自动到账监听](Solana到账监听.md)。Base Sepolia 已接通[ETH 与 USDC 自动监听](Base到账监听.md)。TRON Nile 已接通[TRX 与测试 USDT 自动监听](TRON到账监听.md)。

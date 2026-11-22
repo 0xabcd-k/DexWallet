@@ -54,42 +54,9 @@ func (s *Service) record(ctx context.Context, receipt Receipt) (Stored, error) {
 	}
 	var result Stored
 	err = s.tx.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
-		conn := sqlx.NewSqlConnFromSession(session)
-		t := receipt.Transaction
-		row, err := model.LockTransaction(ctx, conn, &model.ChainObservedTransaction{Network: t.Network, Signature: t.Signature, Slot: t.Slot, FeePayer: t.FeePayer, FeeAtoms: t.FeeAtoms, BlockHash: t.BlockHash, ExecutionFeeAtoms: t.ExecutionFeeAtoms, L1FeeAtoms: t.L1FeeAtoms, OperatorFeeAtoms: t.OperatorFeeAtoms, Fingerprint: t.Fingerprint, EvidenceJson: string(raw)})
-		if err != nil {
-			return err
-		}
-		if transactionFacts(row) != t {
-			return ErrConflict
-		}
-		if receipt.traceFingerprint != "" {
-			if row.CallTraceFingerprint == "" {
-				if err := model.SaveCallTrace(ctx, conn, row.Id, receipt.traceFingerprint, string(receipt.callTrace)); err != nil {
-					return err
-				}
-			} else if row.CallTraceFingerprint != receipt.traceFingerprint {
-				return ErrConflict
-			}
-		}
-		events := model.NewChainTransferEventModel(conn)
-		previous, err := events.FindOneByTransactionIdEventKindInstructionIndex(ctx, row.Id, receipt.Event.Kind, int64(receipt.Event.Instruction))
-		if err == nil {
-			if eventFacts(previous) != receipt.Event {
-				return ErrConflict
-			}
-			result = Stored{Receipt: receipt, Reused: true}
-			return nil
-		}
-		if !errors.Is(err, model.ErrNotFound) {
-			return err
-		}
-		e := receipt.Event
-		_, err = events.Insert(ctx, &model.ChainTransferEvent{TransactionId: row.Id, EventKind: e.Kind, InstructionIndex: int64(e.Instruction), AssetId: e.AssetID, ProgramId: e.ProgramID, Mint: e.Mint, Decimals: int64(e.Decimals), SourceAccount: e.SourceAccount, SourceOwner: e.SourceOwner, RecipientAccount: e.RecipientAccount, RecipientOwner: e.RecipientOwner, AmountAtoms: e.Atoms})
-		if err == nil {
-			result = Stored{Receipt: receipt}
-		}
-		return err
+		var writeErr error
+		result, writeErr = storeReceipt(ctx, sqlx.NewSqlConnFromSession(session), receipt, raw)
+		return writeErr
 	})
 	if err == nil {
 		return result, nil
@@ -107,6 +74,45 @@ func (s *Service) record(ctx context.Context, receipt Receipt) (Stored, error) {
 	}
 	return Stored{}, err
 }
+
+// storeReceipt writes verified facts using the caller's open transaction.
+func storeReceipt(ctx context.Context, conn sqlx.SqlConn, receipt Receipt, raw []byte) (Stored, error) {
+	t := receipt.Transaction
+	row, err := model.LockTransaction(ctx, conn, &model.ChainObservedTransaction{Network: t.Network, Signature: t.Signature, Slot: t.Slot, FeePayer: t.FeePayer, FeeAtoms: t.FeeAtoms, BlockHash: t.BlockHash, ExecutionFeeAtoms: t.ExecutionFeeAtoms, L1FeeAtoms: t.L1FeeAtoms, OperatorFeeAtoms: t.OperatorFeeAtoms, Fingerprint: t.Fingerprint, EvidenceJson: string(raw)})
+	if err != nil {
+		return Stored{}, err
+	}
+	if transactionFacts(row) != t {
+		return Stored{}, ErrConflict
+	}
+	if receipt.traceFingerprint != "" {
+		if row.CallTraceFingerprint == "" {
+			if err := model.SaveCallTrace(ctx, conn, row.Id, receipt.traceFingerprint, string(receipt.callTrace)); err != nil {
+				return Stored{}, err
+			}
+		} else if row.CallTraceFingerprint != receipt.traceFingerprint {
+			return Stored{}, ErrConflict
+		}
+	}
+	events := model.NewChainTransferEventModel(conn)
+	previous, err := events.FindOneByTransactionIdEventKindInstructionIndex(ctx, row.Id, receipt.Event.Kind, int64(receipt.Event.Instruction))
+	if err == nil {
+		if eventFacts(previous) != receipt.Event {
+			return Stored{}, ErrConflict
+		}
+		return Stored{Receipt: receipt, Reused: true}, nil
+	}
+	if !errors.Is(err, model.ErrNotFound) {
+		return Stored{}, err
+	}
+	e := receipt.Event
+	_, err = events.Insert(ctx, &model.ChainTransferEvent{TransactionId: row.Id, EventKind: e.Kind, InstructionIndex: int64(e.Instruction), AssetId: e.AssetID, ProgramId: e.ProgramID, Mint: e.Mint, Decimals: int64(e.Decimals), SourceAccount: e.SourceAccount, SourceOwner: e.SourceOwner, RecipientAccount: e.RecipientAccount, RecipientOwner: e.RecipientOwner, AmountAtoms: e.Atoms})
+	if err != nil {
+		return Stored{}, err
+	}
+	return Stored{Receipt: receipt}, nil
+}
+
 func (s *Service) Find(ctx context.Context, network, signature string, instruction int) (Receipt, error) {
 	return s.findEvent(ctx, network, signature, SolanaInstruction, instruction)
 }

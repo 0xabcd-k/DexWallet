@@ -28,6 +28,7 @@ import (
 )
 
 type Config struct {
+	TRONReceiptListener   *chainreceipt.TRONListenerConfig   `json:",optional"`
 	BaseReceiptListener   *chainreceipt.BaseListenerConfig   `json:",optional"`
 	SolanaReceiptListener *chainreceipt.SolanaListenerConfig `json:",optional"`
 	TONReceiptListener    *chainreceipt.TONListenerConfig    `json:",optional"`
@@ -144,6 +145,14 @@ func (c Config) Check() error {
 		}
 	}
 
+	if c.TRONReceiptListener != nil {
+		if err := c.TRONReceiptListener.Check(); err != nil {
+			return err
+		}
+		if err := c.checkRecoveryNetwork(chainassets.TRONNile, c.TRONReceiptListener.OperationTimeout); err != nil {
+			return err
+		}
+	}
 	if c.BaseReceiptListener != nil {
 		if err := c.BaseReceiptListener.Check(); err != nil {
 			return err

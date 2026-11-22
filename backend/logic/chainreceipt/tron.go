@@ -179,8 +179,10 @@ type tronBlock struct {
 	ID     string `json:"blockID"`
 	Header *struct {
 		Raw *struct {
-			Number    tronCounter `json:"number"`
-			Timestamp tronCounter `json:"timestamp"`
+			Number     tronCounter `json:"number"`
+			Timestamp  tronCounter `json:"timestamp"`
+			TrieRoot   string      `json:"txTrieRoot"`
+			ParentHash string      `json:"parentHash"`
 		} `json:"raw_data"`
 	} `json:"block_header"`
 	Transactions []struct {
@@ -343,22 +345,10 @@ func verifyTRON(r TRONRequest, asset chainassets.Asset, e chainassets.TRONEviden
 		if index >= len(info.Logs) {
 			return out, ErrUnsupported
 		}
-		log := info.Logs[index]
-		if !tronHex(log.Address, 20) || len(log.Topics) != 3 || !strings.EqualFold(log.Topics[0], ERC20TransferTopic[2:]) || !tronHex(log.Topics[1], 32) || !tronHex(log.Topics[2], 32) || log.Topics[1][:24] != strings.Repeat("0", 24) || log.Topics[2][:24] != strings.Repeat("0", 24) || !tronHex(log.Data, 32) {
-			return out, bad("not an exact TRC-20 Transfer")
+		event, err = tronTokenEvent(info.Logs[index], index, asset)
+		if err != nil {
+			return out, err
 		}
-		emitter, _ := tronAddress("41" + log.Address)
-		if emitter != asset.Contract {
-			return out, bad("TRC-20 Transfer from wrong contract")
-		}
-		event.Kind = TRONLog
-		event.Instruction = index
-		event.ProgramID = emitter
-		event.Mint = emitter
-		event.SourceAccount, _ = tronAddress("41" + log.Topics[1][24:])
-		event.RecipientAccount, _ = tronAddress("41" + log.Topics[2][24:])
-		amount, _ := new(big.Int).SetString(log.Data, 16)
-		event.Atoms = amount.String()
 	}
 	event.SourceOwner = event.SourceAccount
 	event.RecipientOwner = event.RecipientAccount
@@ -375,4 +365,24 @@ func verifyTRON(r TRONRequest, asset chainassets.Asset, e chainassets.TRONEviden
 	digest := sha256.Sum256(normalized)
 	out = Receipt{Transaction: Transaction{Network: r.Network, Signature: r.Hash, Slot: int64(info.Height), FeePayer: owner, FeeAtoms: strconv.FormatInt(int64(info.Fee), 10), Fingerprint: hex.EncodeToString(digest[:]), BlockHash: block.ID}, Event: event, evidence: e}
 	return out, nil
+}
+
+func tronTokenEvent(log tronEventLog, index int, asset chainassets.Asset) (Event, error) {
+	if !tronHex(log.Address, 20) || len(log.Topics) != 3 || !strings.EqualFold(log.Topics[0], ERC20TransferTopic[2:]) || !tronHex(log.Topics[1], 32) || !tronHex(log.Topics[2], 32) || log.Topics[1][:24] != strings.Repeat("0", 24) || log.Topics[2][:24] != strings.Repeat("0", 24) || !tronHex(log.Data, 32) {
+		return Event{}, bad("not an exact TRC-20 Transfer")
+	}
+	emitter, _ := tronAddress("41" + log.Address)
+	if emitter != asset.Contract {
+		return Event{}, bad("TRC-20 Transfer from wrong contract")
+	}
+	event := Event{AssetID: asset.ID, Decimals: asset.Decimals}
+	event.Kind = TRONLog
+	event.Instruction = index
+	event.ProgramID = emitter
+	event.Mint = emitter
+	event.SourceAccount, _ = tronAddress("41" + log.Topics[1][24:])
+	event.RecipientAccount, _ = tronAddress("41" + log.Topics[2][24:])
+	amount, _ := new(big.Int).SetString(log.Data, 16)
+	event.Atoms = amount.String()
+	return event, nil
 }

@@ -254,3 +254,35 @@ func TestBaseReceiptListenerConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestTRONReceiptListenerConfiguration(t *testing.T) {
+	t.Setenv("DEXWALLET_ID_SECRET", "test-only-key123")
+	t.Setenv("DEXWALLET_MYSQL_DSN", "test@tcp(localhost:3306)/test")
+	t.Setenv("DEXWALLET_CHAIN_TRON_NILE_RPC_URL", "http://127.0.0.1:1")
+	raw, err := os.ReadFile("../api/etc/platform.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "tron_listener.yaml")
+	raw = append(raw, []byte("\nTRONReceiptListener:\n  AnchorHeight: 72386417\n")...)
+	if err = os.WriteFile(path, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := c.TRONReceiptListener
+	if l == nil || l.AnchorHeight != 72386417 || l.OperationTimeout != 20*time.Second || l.PollInterval != 5*time.Second {
+		t.Fatal(l)
+	}
+	for _, change := range []func(*Config){func(c *Config) { c.Environment = "prod" }, func(c *Config) { c.TRONReceiptListener.AnchorHeight = 0 }, func(c *Config) { c.ChainAssets.Networks = nil }, func(c *Config) { c.TRONReceiptListener.OperationTimeout = c.ShutdownTimeout + time.Second }} {
+		bad := c
+		policy := *l
+		bad.TRONReceiptListener = &policy
+		change(&bad)
+		if err = bad.Check(); err == nil {
+			t.Fatal("invalid listener config accepted")
+		}
+	}
+}

@@ -34,3 +34,6 @@ ALTER TABLE `base_receive_candidate`
  ADD CONSTRAINT `ck_base_receive_position` CHECK ((`event_kind`='evm_value' AND `event_index`=0) OR (`event_kind`='evm_log' AND `event_index`>=0) OR (`event_kind`='evm_call' AND `event_index`>0));
 
 ALTER TABLE `chain_receive_request` ADD KEY `idx_receive_asset_open` (`asset_id`,`opens_at`);
+
+ALTER TABLE `tron_receive_cursor`
+ ADD CONSTRAINT `ck_tron_receive_height` CHECK (`height`>0);

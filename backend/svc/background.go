@@ -15,6 +15,14 @@ import (
 // workers just by assembling shared dependencies. No notification channel exists
 // yet; production publishes facts, and registered business handlers come later.
 func (d *ServiceContext) StartBackground(ctx context.Context) error {
+	if c := d.Config.TRONReceiptListener; c != nil {
+		listener := chainreceipt.NewTRONListener(d.DB, d.ChainAssets)
+		var err error
+		d.TRONListener, err = listener.Start(ctx, *c)
+		if err != nil {
+			return err
+		}
+	}
 	if c := d.Config.BaseReceiptListener; c != nil {
 		listener := chainreceipt.NewBaseListener(d.DB, d.ChainAssets, d.BaseReceipts, d.ReceiveAttribution)
 		var err error
@@ -124,6 +132,9 @@ func (d *ServiceContext) startEvents(ctx context.Context) error {
 // Admission closes for every pool before waiting. Dependencies outlive all
 // in-flight RPC and SQL work, including partial startup or a timed-out drain.
 func (d *ServiceContext) StopBackground() {
+	if d.TRONListener != nil {
+		d.TRONListener.Stop()
+	}
 	if d.BaseListener != nil {
 		d.BaseListener.Stop()
 	}
@@ -151,6 +162,9 @@ func (d *ServiceContext) StopBackground() {
 }
 func (d *ServiceContext) WaitBackground(ctx context.Context) error {
 	var err error
+	if d.TRONListener != nil {
+		err = errors.Join(err, d.TRONListener.Wait(ctx))
+	}
 	if d.BaseListener != nil {
 		err = errors.Join(err, d.BaseListener.Wait(ctx))
 	}

@@ -51,7 +51,7 @@ func run() (err error) {
 	if err = svcCtx.StartBackground(ctx); err != nil { return err }
 	if err = ctx.Err(); err != nil { return err }
 	var backgroundErr error
-	if svcCtx.BaseListener != nil || svcCtx.SolanaListener != nil || svcCtx.TONListener != nil || svcCtx.Background != nil || svcCtx.TONRecovery != nil || svcCtx.SolanaRecovery != nil || svcCtx.BaseRecovery != nil || svcCtx.TRONRecovery != nil {
+	if svcCtx.TRONListener != nil || svcCtx.BaseListener != nil || svcCtx.SolanaListener != nil || svcCtx.TONListener != nil || svcCtx.Background != nil || svcCtx.TONRecovery != nil || svcCtx.SolanaRecovery != nil || svcCtx.BaseRecovery != nil || svcCtx.TRONRecovery != nil {
 		proc.AddWrapUpListener(svcCtx.StopBackground)
 		proc.AddShutdownListener(func() {
 			svcCtx.StopBackground()

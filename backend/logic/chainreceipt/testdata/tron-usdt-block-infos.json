@@ -1,0 +1,179 @@
+[
+  {
+    "id": "ca496bde5dd78dfccdee5e4b751bd849a181a02b40dbf5764d50db2e6bf5160d",
+    "fee": 12914600,
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "energy_fee": 11820600,
+      "energy_usage_total": 118206,
+      "net_fee": 1094000,
+      "result": "SUCCESS"
+    }
+  },
+  {
+    "id": "f3e21eceef3f2194cf5b05f2d93a3af22e34e3bf358c680ad66de117c98a55e9",
+    "fee": 345000,
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "origin_energy_usage": 14650,
+      "energy_usage_total": 14650,
+      "net_fee": 345000,
+      "result": "SUCCESS"
+    },
+    "log": [
+      {
+        "address": "eca9bc828a3005b9a3b909f2cc5c2a54794de05f",
+        "topics": [
+          "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "00000000000000000000000038195e20f6e417a270bb9b193b022ce33160166f",
+          "000000000000000000000000cfdf3be47764c8dd9e8769ec3a68c510ff109877"
+        ],
+        "data": "00000000000000000000000000000000000000000000000000000000009bfba4"
+      }
+    ]
+  },
+  {
+    "id": "b7563c0230119803d9ac83c8209ac5990bb032df87a2193b8ccd7463db679c6a",
+    "fee": 345000,
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "origin_energy_usage": 14650,
+      "energy_usage_total": 14650,
+      "net_fee": 345000,
+      "result": "SUCCESS"
+    },
+    "log": [
+      {
+        "address": "eca9bc828a3005b9a3b909f2cc5c2a54794de05f",
+        "topics": [
+          "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "00000000000000000000000042e5e0a5ac3634b4332b9e2b4d8a42176d227ef2",
+          "0000000000000000000000001280a6c4cd2fe1e6bdf938cf7cb381091916c056"
+        ],
+        "data": "00000000000000000000000000000000000000000000000000000000002dd084"
+      }
+    ]
+  },
+  {
+    "id": "b70239905b9660bd7d6d35cc45d45fc0df2ad90615532b3ccdb21e888367b64d",
+    "fee": 269000,
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_fee": 269000
+    }
+  },
+  {
+    "id": "478d0924e231997b1e54651c5cae50bf2b47db5d6b63632791ebef248dfa1c59",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  },
+  {
+    "id": "2ef8c30f3e4fd898e169f0c100a5717dca9a00642a415390bf2d1bf2cc1d4d56",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  },
+  {
+    "id": "7c0c9ca172c2d3543cef5c7e623a1aed2fdaeaf6fc909a75cd59710f082f0fc9",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  },
+  {
+    "id": "16b311e24ef6dbdf17f5128c8e999021d1be498859fa471df91f6a973ba38101",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 279
+    }
+  },
+  {
+    "id": "c5b53bbd1f6911ab9cf2ac952354c3043a49d1c7bcc898e822ecdf11edab0f0c",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 277
+    }
+  },
+  {
+    "id": "0c85b1a6d769b09534e38cf30af18ce1eb8a1746885b6c7e7478aa6698acdd8f",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  },
+  {
+    "id": "ca642aa805379d1f3efa674c7a2d4e61f7fff4fa6a6c398fbd547a692139e7a3",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  },
+  {
+    "id": "caff6737825af0e5dddb53d148336956a0a62c5a6fa67ff7385f2fe00c2b3006",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "origin_energy_usage": 29650,
+      "energy_usage_total": 29650,
+      "net_usage": 345,
+      "result": "SUCCESS"
+    },
+    "log": [
+      {
+        "address": "eca9bc828a3005b9a3b909f2cc5c2a54794de05f",
+        "topics": [
+          "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0000000000000000000000002461517cf642358c8c0650b2cbccee4c31e16d7d",
+          "000000000000000000000000913e6da20b97589625ae499b6eb17941e5938405"
+        ],
+        "data": "0000000000000000000000000000000000000000000000000000000000002710"
+      }
+    ]
+  },
+  {
+    "id": "04f31bd47771c29e42d5ccd80e8bff3b32e812e3ce8eabe7e206f5c9377efdc2",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  },
+  {
+    "id": "10d8f8f32e3e364d6321dadcb5e7e8545acdc9b801acb378470aa45bea190478",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  },
+  {
+    "id": "ce06267c606dec34d21dcb359ea0d94af46bc0be21114af4764f5139709d109c",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  },
+  {
+    "id": "6a7748fc0e094bb6a97a15e74ab74ca54e1f923b74e5721db565894a10ce1228",
+    "blockNumber": 72386419,
+    "blockTimeStamp": 1793696460000,
+    "receipt": {
+      "net_usage": 270
+    }
+  }
+]
