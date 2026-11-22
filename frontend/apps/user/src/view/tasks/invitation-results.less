@@ -1,5 +1,14 @@
 .invitation-results {
   overflow-wrap: anywhere;
+  .invitation-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .invitation-summary {
+    h2 { margin: 0 0 10px; font-size: 16px; }
+    dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden; margin: 0; padding: 1px; border-radius: 14px; background: #2a3338; }
+    dl > div { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 4px; align-items: start; padding: 12px 14px; background: #15191c; }
+    dt { font-size: 13px; color: #b1b9bd; }
+    dd { margin: 0; font-size: 22px; font-weight: 600; line-height: 1.25; font-variant-numeric: tabular-nums; color: #f4f6f5; }
+    dd span { margin-inline-end: 5px; color: #d7ae59; font-size: 0.75em; }
+  }
   [role='tablist'] { display: flex; gap: 8px; margin: 16px 0; }
   [role='tab'] { flex: 1; padding: 10px; border: 1px solid #aebeb8; border-radius: 8px; background: transparent; color: inherit; font: inherit; }
   [aria-selected='true'] { background: #e0f2e9; color: #174e39; border-color: #2e7155; }

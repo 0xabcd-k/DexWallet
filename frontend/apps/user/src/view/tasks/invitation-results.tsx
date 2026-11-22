@@ -4,7 +4,7 @@ import { Button } from 'antd-mobile';
 import { decodeData } from '@dexwallet/api-client';
 import type { InvitationEarningsData, ReferralFriendsData } from '@dexwallet/api-contract/platform';
 import { useTranslation } from '@dexwallet/i18n';
-import { RewardOverview } from './results';
+import { useRewardSummary } from './use-reward-summary';
 import './invitation-results.less';
 import { userRequest } from '../../api/account';
 import { Failure, useAuth } from '../../auth/context';
@@ -17,6 +17,7 @@ function Results() {
     const [tab, setTab] = useState<'friends' | 'earnings'>('earnings');
     const [before, setBefore] = useState('');
     const [revision, setRevision] = useState(0);
+    const summary = useRewardSummary(revision);
     const [friendIdx, setFriendIdx] = useState('');
     const [reason, setReason] = useState('all');
     const [from, setFrom] = useState('');
@@ -38,8 +39,20 @@ function Results() {
         return () => c.abort();
     }, [tab, before, filter, revision]);
     const next = tab === 'friends' ? friends?.nextCursor : earnings?.nextCursor;
-    return <section className="task-page invitation-results"><h1>{t('inviteResults')}</h1><p>{t('inviteBoundary')}</p><Link to="/rewards">{t('claimRewardOverview')}</Link>
-    <RewardOverview invitationLink={false}/><Link to="/tasks">{t('inviteChooseTask')}</Link>
+    return <section className="task-page invitation-results"><h1>{t('inviteResults')}</h1>
+    <section className="invitation-summary" aria-labelledby="invitation-summary-title">
+      <h2 id="invitation-summary-title">{t('inviteLifetime')}</h2>
+      {summary.data && <dl>
+        <div><dt>{t('inviteBoundFriends')}</dt><dd>{summary.data.friendCount}</dd></div>
+        <div><dt>{t('inviteValidHelps')}</dt><dd>{summary.data.assistanceCount}</dd></div>
+        <div><dt>{t('inviteHelpPoints')}</dt><dd><span aria-hidden="true">☆</span>{summary.data.assistancePoints}</dd></div>
+        <div><dt>{t('inviteCommissionPoints')}</dt><dd><span aria-hidden="true">☆</span>{summary.data.commissionPoints}</dd></div>
+      </dl>}
+      {summary.error !== undefined && <Failure error={summary.error}/>}
+      {!summary.data && summary.error === undefined && <p role="status">{t('common:loading')}</p>}
+    </section>
+    <p>{t('inviteBoundary')}</p>
+    <nav className="invitation-links"><Link to="/rewards">{t('claimRewardOverview')}</Link><Link to="/tasks">{t('inviteChooseTask')}</Link><Link to="/task-completions">{t('claimHistory')}</Link></nav>
     <div role="tablist" aria-label={t('inviteResults')}>{(['earnings', 'friends'] as const).map(v => <button type="button" key={v} role="tab" aria-selected={tab === v} onClick={() => { setTab(v); setBefore(''); }}>{t(`invite_${v}`)}</button>)}</div>
     {tab === 'earnings' && <form onSubmit={e => { e.preventDefault(); setBefore(''); setFilter({ friendIdx: friendIdx.trim(), reason, from, to }); }} className="task-card">
       <label>{t('inviteFriendIdx')}<input value={friendIdx} onChange={e => setFriendIdx(e.target.value)}/></label>

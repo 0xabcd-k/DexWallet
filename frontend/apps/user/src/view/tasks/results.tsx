@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 import { Button } from 'antd-mobile';
 import { formatTime, useTranslation } from '@dexwallet/i18n';
-import type { RewardGrantData, RewardSummaryData, TaskCompletionData, TaskCompletionListData, TaskInvitationData } from '@dexwallet/api-contract/platform';
-import { getCompletion, getCompletions, getInvitation, getRewardGrant, getRewardSummary } from '../../api/task-rewards';
+import type { RewardGrantData, TaskCompletionData, TaskCompletionListData, TaskInvitationData } from '@dexwallet/api-contract/platform';
+import { getCompletion, getCompletions, getInvitation, getRewardGrant } from '../../api/task-rewards';
 import { Failure, useAuth } from '../../auth/context';
+import { useRewardSummary } from './use-reward-summary';
 
 export function GrantResult({ data }: { data: RewardGrantData }) {
   const { t } = useTranslation();
@@ -74,17 +75,15 @@ export function InvitationLanding() {
   if (data && /^0\d{16,19}$/.test(data.taskIdx) && /^0\d{16,19}$/.test(data.idx)) return <Navigate to={`/tasks/${data.taskIdx}?invitationIdx=${data.idx}`} replace />;
   return <section className="task-page">{error !== undefined ? <Failure error={error} /> : <p role="status">{t('common:loading')}</p>}<Link to="/tasks">{t('taskAll')}</Link></section>;
 }
-export function RewardOverview({ invitationLink = true }: { invitationLink?: boolean } = {}) {
+export function RewardOverview() {
   const auth = useAuth();
-  return auth.session.credential ? <Summary key={auth.session.generation} invitationLink={invitationLink} /> : null;
+  return auth.session.credential ? <Summary key={auth.session.generation} /> : null;
 }
-function Summary({ invitationLink }: { invitationLink: boolean }) {
-  const { t } = useTranslation(); const [data, setData] = useState<RewardSummaryData>(); const [error, setError] = useState<unknown>(); const [revision, setRevision] = useState(0);
-  useEffect(() => { const controller = new AbortController(); setError(undefined);
-    void getRewardSummary(controller.signal).then(d => { if (!controller.signal.aborted) setData(d); }, e => { if (!controller.signal.aborted) setError(e); });
-    return () => controller.abort();
-  }, [revision]);
-  return <section className="task-card"><h2>{t('claimRewardOverview')}</h2>{invitationLink && <Link to="/invitations">{t('inviteResults')}</Link>}{data && <>
+function Summary() {
+  const { t } = useTranslation();
+  const [revision, setRevision] = useState(0);
+  const { data, error } = useRewardSummary(revision);
+  return <section className="task-card"><h2>{t('claimRewardOverview')}</h2><Link to="/invitations">{t('inviteResults')}</Link>{data && <>
     <p>{t(data.pro ? 'claimProUnlocked' : 'claimProProgress', { progress: data.proProgress })}</p>
     <p>{t('claimProRules')}</p><p>{t('claimInviteTotals', { friends: data.friendCount, helps: data.assistanceCount })}</p>
     <p>{t('claimEarnedTotals', { assistance: data.assistancePoints, commission: data.commissionPoints })}</p>

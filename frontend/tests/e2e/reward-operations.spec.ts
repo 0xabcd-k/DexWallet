@@ -10,13 +10,21 @@ const current = { idx: userIdx, email: 'admin@example.com', status: 'active', mu
 test('invitation results filter, paginate, and link only to own grant', async ({ page }) => {
     await mockAccount(page);
     await seedSession(page);
+    await page.route('**/api/v1/user/reward-summary', route => route.fulfill({ json: envelope({
+        firstCompleted: true, proProgress: '1000', pro: false, proUnlockedAt: '',
+        friendCount: 32, assistanceCount: 41, assistancePoints: '9007199254740993', commissionPoints: '287',
+    }) }));
     const queries: URLSearchParams[] = [];
     await page.route('**/api/v1/user/invitation-earnings?*', route => { const p = new URL(route.request().url()).searchParams; queries.push(p); return route.fulfill({ json: envelope({ items: [{ grantIdx: versionIdx, peerIdx: userIdx, peerNickname: 'Invited friend', reason: 'commission', points: '20', taskTitle: p.get('before') ? 'Older task' : 'New task', createdAt: '2026-11-15T00:00:00Z' }], nextCursor: p.get('before') ? '' : versionIdx }) }); });
     await page.route('**/api/v1/user/referral-friends?*', route => route.fulfill({ json: envelope({ items: [{ userIdx, nickname: 'Invited friend', boundAt: '2026-11-14T00:00:00Z' }], nextCursor: '' }) }));
     await page.goto(`${user}/#/invitations`);
+    const totals = page.getByRole('region', { name: 'Lifetime totals' }).getByRole('definition');
+    const expectedTotals = ['32', '41', '☆9007199254740993', '☆287'];
+    await expect(totals).toHaveText(expectedTotals);
     await expect(page.getByText('New task', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Next page' }).click();
     await expect(page.getByText('Older task', { exact: true })).toBeVisible();
+    await expect(totals).toHaveText(expectedTotals);
     await page.getByRole('tab', { name: 'Friends', exact: true }).click();
     await page.getByRole('button', { name: 'View earnings from friend' }).click();
     await expect(page.getByLabel('Friend idx (optional)')).toHaveValue(userIdx);
@@ -27,6 +35,7 @@ test('invitation results filter, paginate, and link only to own grant', async ({
     await expect.poll(() => queries.at(-1)?.get('from')).toBe('2026-11-01');
     expect(queries.at(-1)?.get('before')).toBe('');
     expect(queries.at(-1)?.get('friendIdx')).toBe(userIdx);
+    await expect(totals).toHaveText(expectedTotals);
     await expect(page.getByRole('link', { name: 'View completion record' })).toHaveAttribute('href', `#/reward-grants/${versionIdx}`);
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
