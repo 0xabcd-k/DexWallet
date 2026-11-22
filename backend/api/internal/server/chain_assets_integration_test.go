@@ -62,12 +62,18 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 			t.Error(err)
 		}
-		result := "0x0"
+		var result any = "0x0"
 		switch input.Method {
 		case "eth_chainId":
 			result = "0x14a34"
 		case "eth_call":
 			result = fmt.Sprintf("0x%064x", 1234567)
+		case "getGenesisHash":
+			result = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG"
+		case "getLatestBlockhash":
+			result = map[string]any{"value": chainassets.SolanaBlock{Blockhash: "F1VvomZpGxaB9taEwSuT1WwAaqP99RYjQXoEkodmvxhA", LastValidBlockHeight: 123}}
+		case "getFeeForMessage":
+			result = map[string]any{"context": map[string]int{"slot": 123}, "value": 10123}
 		case "eth_getBalance":
 		default:
 			t.Error(input.Method)
@@ -81,7 +87,11 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	call("POST", depositPath, token, deposit, 503, "SERVICE_UNAVAILABLE")
 	now := time.Now().Unix()
 	rates := &chainassets.DepositQuoteConfig{Version: "http-fixture", AsOf: now - 30, ValidUntil: now + 120, Assets: []chainassets.DepositQuoteRate{{AssetID: deposit.AssetId, USDPerCoin: "2000", EstimatedGas: "0.0001"}}}
-	service, err := chainassets.New(chainassets.Config{DepositQuotes: rates, Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: upstream.URL}}}, chainassets.NewRedisLimiter(s.Redis, s.Namespace, 1))
+	const wallet = "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf"
+	sol := types.DepositQuoteRequest{AssetId: chainassets.SolanaDevnet + ":sol", TargetUsd: "1", WalletAddress: wallet}
+	rates.Assets = append(rates.Assets, chainassets.DepositQuoteRate{AssetID: sol.AssetId, USDPerCoin: "100", EstimatedGas: "0"})
+	rates.SolanaSOL = &chainassets.SolanaDepositFeeConfig{FeePayer: "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN", Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}
+	service, err := chainassets.New(chainassets.Config{DepositQuotes: rates, Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: upstream.URL}, {Network: chainassets.SolanaDevnet, URL: upstream.URL}}}, chainassets.NewRedisLimiter(s.Redis, s.Namespace, 1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,18 +106,18 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	if len(catalog.Networks) != 8 {
 		t.Fatal(catalog)
 	}
-	var listed bool
+	listed := map[string]bool{}
 	for _, n := range catalog.Networks {
 		for _, a := range n.Assets {
 			if a.DepositPreview {
-				if a.Id != deposit.AssetId {
+				if a.Id != deposit.AssetId && a.Id != sol.AssetId {
 					t.Fatal(a.Id)
 				}
-				listed = true
+				listed[a.Id] = true
 			}
 		}
 	}
-	if !listed {
+	if !listed[deposit.AssetId] || !listed[sol.AssetId] {
 		t.Fatal("missing quoted asset")
 	}
 	_, raw = call("POST", depositPath, token, deposit, 200, "OK")
@@ -120,7 +130,13 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	invalid := request
 	invalid.Address = "bad-address"
 	call("POST", "/v1/user/chain-assets/balances", token, invalid, 400, "INVALID_ARGUMENT")
-	for i := 0; i < 5; i++ {
+	call("POST", depositPath, "", sol, 401, "UNAUTHENTICATED")
+	_, raw = call("POST", depositPath, token, sol, 200, "OK")
+	var walletQuote types.DepositQuoteData
+	if err := json.Unmarshal(raw, &walletQuote); err != nil || !walletQuote.WalletFeePreview || walletQuote.WalletAddress != wallet || len(walletQuote.MessageSha256) != 64 || walletQuote.PayQuantity != "0.010010123" || walletQuote.CanSubmit {
+		t.Fatal(walletQuote, err)
+	}
+	for i := 0; i < 4; i++ {
 		_, raw = call("POST", "/v1/user/chain-assets/balances", token, request, 200, "OK")
 		var result types.ChainBalancesData
 		if err = json.Unmarshal(raw, &result); err != nil {
@@ -131,4 +147,5 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 		}
 	}
 	call("POST", "/v1/user/chain-assets/balances", token, request, 429, "RATE_LIMITED")
+	call("POST", depositPath, token, sol, 429, "RATE_LIMITED")
 }

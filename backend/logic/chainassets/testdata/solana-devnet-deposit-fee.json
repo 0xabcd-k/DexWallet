@@ -1,0 +1,95 @@
+{
+  "network": "solana-devnet",
+  "genesis": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "endpoint": "https://solana-devnet.api.onfinality.io/public",
+  "addresses": {
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+    "recipient": "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"
+  },
+  "block": {
+    "context": {
+      "apiVersion": "4.4.1",
+      "slot": 525127271
+    },
+    "value": {
+      "blockhash": "mt5rD2YSK3Xm6rhZRLShchF3UefaV64qFSC92fZJtwW",
+      "lastValidBlockHeight": 512227087
+    }
+  },
+  "fees": [
+    {
+      "messageBase64": "AgABBLtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRet76rPhnRbUWumOzXkErufS+rzXYQx2sGbk6vvio4ngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC39Q5YV8nI/sSVaAjwpHaBs/Ta/UULh/1G4dZyZOdi0BAwIBAgwCAAAAoIYBAAAAAAA=",
+      "response": {
+        "context": {
+          "apiVersion": "4.4.1",
+          "slot": 525127281
+        },
+        "value": 10000
+      }
+    },
+    {
+      "messageBase64": "AgABBLtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRet76rPhnRbUWumOzXkErufS+rzXYQx2sGbk6vvio4ngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC39Q5YV8nI/sSVaAjwpHaBs/Ta/UULh/1G4dZyZOdi0BAwIBAgwCAAAAsK0BAAAAAAA=",
+      "response": {
+        "context": {
+          "apiVersion": "4.4.1",
+          "slot": 525127292
+        },
+        "value": 10000
+      }
+    }
+  ],
+  "quote": {
+    "AssetID": "solana-devnet:sol",
+    "TargetUSD": "0.01",
+    "USDPerCoin": "100",
+    "PayQuantity": "0.00011",
+    "GasAssetID": "solana-devnet:sol",
+    "EstimatedGas": "0.00001",
+    "GasUSD": "0.001",
+    "NetUSD": "0.01",
+    "WalletFeePreview": true,
+    "WalletAddress": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "MessageSHA256": "20902fa62818bd6b405f153dd229adadd05b936ead708cd195e4f3be181fe7d8",
+    "Version": "devnet-sol-usd-test",
+    "AsOf": 1795363864000,
+    "QuotedAt": 1795363924756,
+    "ExpiresAt": 1795363954756
+  },
+  "signature": "4Zq7UGVa6Emop9bCjgpywmSBHj9ZbY3uAFzFwkYpc43yxYGKSidEYChCXHdBd46TuoSowLN3VBU7ZeZ6ka7b4dbo",
+  "status": {
+    "confirmationStatus": "finalized",
+    "confirmations": null,
+    "err": null,
+    "slot": 525127307,
+    "status": {
+      "Ok": null
+    }
+  },
+  "receipt": {
+    "blockTime": 1795363935,
+    "slot": 525127307,
+    "transaction": [
+      "ArJcpqixwCQBoW5PUVRE4xtQqY4Ehzw2IyNwrth5KxlG5Xl7Y3Tcbj9NpJcmXJ2jpbQ+ptSY7YqbNVLCMR4beApZArDfCx9Vg2OK8Z5jk4OPeuZX5cgQz16zUsuWnq19+G33nCVbw1cs+r+fbxF33TIZEihS0fFQtOeePnWi43MHAgABBLtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRet76rPhnRbUWumOzXkErufS+rzXYQx2sGbk6vvio4ngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC39Q5YV8nI/sSVaAjwpHaBs/Ta/UULh/1G4dZyZOdi0BAwIBAgwCAAAAsK0BAAAAAAA=",
+      "base64"
+    ],
+    "transactionIndex": 0,
+    "version": "legacy"
+  },
+  "meta": {
+    "err": null,
+    "fee": 10000,
+    "preBalances": [
+      4988356880,
+      2001120,
+      1003000,
+      1
+    ],
+    "postBalances": [
+      4988346880,
+      1891120,
+      1113000,
+      1
+    ]
+  }
+}

@@ -16,6 +16,7 @@ type DepositQuoteConfig struct {
 	Version    string
 	AsOf       int64
 	ValidUntil int64
+	SolanaSOL  *SolanaDepositFeeConfig `json:",optional"`
 	Assets     []DepositQuoteRate
 }
 
@@ -37,6 +38,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
+	solana      *solanaDepositRoute
 	version     string
 	asOf, until int64
 	assets      map[string]depositAsset
@@ -85,6 +87,17 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network) (depositBook, err
 			return book, fmt.Errorf("missing native USD rate %s for %s", entry.native.ID, entry.asset.ID)
 		}
 	}
+	if c.SolanaSOL != nil {
+		entry, ok := book.assets[solanaDepositAsset]
+		if !ok || !entry.network.Enabled {
+			return book, fmt.Errorf("Solana wallet fee requires an enabled Devnet endpoint and SOL rate")
+		}
+		route, err := newSolanaDepositRoute(*c.SolanaSOL)
+		if err != nil {
+			return book, err
+		}
+		book.solana = route
+	}
 	return book, nil
 }
 
@@ -96,11 +109,17 @@ func (s *Service) HasDepositPreview(assetID string, now time.Time) bool {
 type DepositPreview struct {
 	AssetID, TargetUSD, USDPerCoin, PayQuantity string
 	GasAssetID, EstimatedGas, GasUSD, NetUSD    string
+	WalletFeePreview                            bool
+	WalletAddress, MessageSHA256                string
 	Version                                     string
 	AsOf, QuotedAt, ExpiresAt                   int64
 }
 
 func (s *Service) PreviewDeposit(assetID, targetUSD string, now time.Time) (DepositPreview, error) {
+	return s.depositQuote(assetID, targetUSD, s.quotes.assets[assetID].gas, now)
+}
+
+func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, now time.Time) (DepositPreview, error) {
 	var empty DepositPreview
 	if !s.HasDepositPreview(assetID, now) {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("no current test quote for %q", assetID))
@@ -114,7 +133,7 @@ func (s *Service) PreviewDeposit(assetID, targetUSD string, now time.Time) (Depo
 		return empty, badTarget("target USD must be a positive amount in cents")
 	}
 	entry := s.quotes.assets[assetID]
-	gasUSD := entry.gas.Mul(s.quotes.assets[entry.native.ID].rate)
+	gasUSD := gas.Mul(s.quotes.assets[entry.native.ID].rate)
 	scale := int32(entry.asset.Decimals)
 	quantity, remainder := target.Add(gasUSD).QuoRem(entry.rate, scale)
 	if !remainder.IsZero() {
@@ -134,7 +153,8 @@ func (s *Service) PreviewDeposit(assetID, targetUSD string, now time.Time) (Depo
 	}
 	return DepositPreview{
 		AssetID: assetID, TargetUSD: target.StringFixed(usd.Scale), USDPerCoin: entry.rate.String(), PayQuantity: pay,
-		GasAssetID: entry.native.ID, EstimatedGas: entry.gas.String(), GasUSD: gasUSD.String(), NetUSD: net.StringFixed(usd.Scale),
-		Version: s.quotes.version, AsOf: time.Unix(s.quotes.asOf, 0).UnixMilli(), QuotedAt: now.UnixMilli(), ExpiresAt: expires.UnixMilli(),
+		GasAssetID: entry.native.ID, EstimatedGas: gas.String(), GasUSD: gasUSD.String(), NetUSD: net.StringFixed(usd.Scale),
+		WalletFeePreview: s.quotes.solana != nil && assetID == solanaDepositAsset,
+		Version:          s.quotes.version, AsOf: time.Unix(s.quotes.asOf, 0).UnixMilli(), QuotedAt: now.UnixMilli(), ExpiresAt: expires.UnixMilli(),
 	}, nil
 }

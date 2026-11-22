@@ -5,6 +5,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	account "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/account"
 	auth "github.com/0xabcd-k/DexWallet/backend/api/internal/handler/auth"
@@ -352,6 +353,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				},
 			}...,
 		),
+		rest.WithTimeout(30000*time.Millisecond),
 	)
 
 	server.AddRoutes(

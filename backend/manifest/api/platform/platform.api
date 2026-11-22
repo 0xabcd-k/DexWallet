@@ -1190,6 +1190,7 @@ service platform {
 type DepositQuoteRequest {
     AssetId string `json:"assetId"`
     TargetUsd string `json:"targetUsd"`
+    WalletAddress string `json:"walletAddress,optional"`
 }
 type DepositQuoteData {
     AssetId string `json:"assetId"`
@@ -1204,6 +1205,9 @@ type DepositQuoteData {
     AsOf int64 `json:"asOf"`
     QuotedAt int64 `json:"quotedAt"`
     ExpiresAt int64 `json:"expiresAt"`
+    WalletFeePreview bool `json:"walletFeePreview,optional"`
+    WalletAddress string `json:"walletAddress,optional"`
+    MessageSha256 string `json:"messageSha256,optional"`
     CanSubmit bool `json:"canSubmit"`
 }
 type DepositQuoteResponse {
@@ -1214,6 +1218,7 @@ type DepositQuoteResponse {
 }
 @server (
     group: chainassets
+    timeout: 30s
     middleware: AuthTransport,UserAuth
 )
 service platform {

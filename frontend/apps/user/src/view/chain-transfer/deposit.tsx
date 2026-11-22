@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Popup } from 'antd-mobile';
 import { useTranslation } from '@dexwallet/i18n';
-import type { ChainAsset, DepositQuoteData } from '@dexwallet/api-contract/platform';
+import type { ChainAsset, ChainNetwork, DepositQuoteData } from '@dexwallet/api-contract/platform';
 import { Failure } from '../../auth/context';
 import { previewDeposit, validDepositTarget } from '../../app/native/chain-transfer/deposit';
+import { addressFor } from '../../app/native/chain-assets/wallets';
+import { useViewingWallets } from '../../app/native/chain-assets/use-wallets';
+import { Link } from 'react-router';
 import { useChainCatalog } from './sources';
 
 export default function DepositButton({ userIdx }: { userIdx: string }) {
@@ -15,14 +18,14 @@ export default function DepositButton({ userIdx }: { userIdx: string }) {
       {open && <section className="payment-review transfer-result deposit-quote" role="dialog" aria-label={t('depositQuoteTitle')}>
         <h2>{t('depositQuoteTitle')}</h2><p>{t('depositBeneficiary', { idx: userIdx })}</p>
         <p>{t('depositTestNote')}</p>
-        <DepositFields assetID={assetID} setAssetID={setAssetID} target={target} setTarget={setTarget}/>
+        <DepositFields key={userIdx} userIdx={userIdx} assetID={assetID} setAssetID={setAssetID} target={target} setTarget={setTarget}/>
       </section>}
     </Popup>
   </>;
 }
 
-function DepositFields({ assetID, setAssetID, target, setTarget }: {
-  assetID: string; setAssetID: (id: string) => void; target: string; setTarget: (v: string) => void;
+function DepositFields({ userIdx, assetID, setAssetID, target, setTarget }: {
+  userIdx: string; assetID: string; setAssetID: (id: string) => void; target: string; setTarget: (v: string) => void;
 }) {
   const { t } = useTranslation(), catalog = useChainCatalog();
   if (catalog.loading) return <p role="status">{t('common:loading')}</p>;
@@ -37,12 +40,42 @@ function DepositFields({ assetID, setAssetID, target, setTarget }: {
       {choices.map(({ network, asset }) => <option key={asset.id} value={asset.id}>{t(`chainNetwork_${network.id}`)} · {asset.symbol}{asset.origin === 'test_fixture' ? ` · ${t('chainFixture')}` : ''}</option>)}
     </select></label>
     <label>{t('depositTarget')}<input value={target} inputMode="decimal" maxLength={21} onChange={e => setTarget(e.target.value)}/></label>
-    {native && <DepositEstimate key={selected.asset.id + ':' + target} asset={selected.asset} native={native} target={target}/>}
+    {native && <DepositSteps key={selected.asset.id + ':' + target} userIdx={userIdx} network={selected.network} asset={selected.asset} native={native} target={target}/>}
   </>;
 }
 
-export function DepositEstimate({ asset, native, target, preview = previewDeposit }: {
-  asset: ChainAsset; native: ChainAsset; target: string; preview?: typeof previewDeposit;
+type EstimateInput = { asset: ChainAsset; native: ChainAsset; target: string };
+
+function DepositSteps({ userIdx, network, ...input }: EstimateInput & { userIdx: string; network: ChainNetwork }) {
+  const { t } = useTranslation();
+  const [chooseWallet, setChooseWallet] = useState(false);
+  if (!chooseWallet) return <DepositEstimate {...input} onChooseWallet={() => setChooseWallet(true)}/>;
+  return <>
+    <WalletEstimate {...input} userIdx={userIdx} network={network}/>
+    <Button block onClick={() => setChooseWallet(false)}>{t('cancel')}</Button>
+  </>;
+}
+
+function WalletEstimate({ userIdx, network, ...input }: EstimateInput & { userIdx: string; network: ChainNetwork }) {
+  const { t } = useTranslation(), source = useViewingWallets(userIdx);
+  const [walletID, setWalletID] = useState(''), [search, setSearch] = useState('');
+  const compatible = source.wallets.filter(w => addressFor(w, network));
+  const wallet = compatible.find(w => w.id === walletID);
+  const address = wallet && addressFor(wallet, network);
+  return <>
+    <label>{t('nativeSearch')}<input type="search" value={search} onChange={e => setSearch(e.target.value)}/></label>
+    {source.error !== undefined && <><Failure error={source.error}/><Button onClick={source.refresh}>{t('common:retry')}</Button></>}
+    {source.loading && <p role="status">{t('common:loading')}</p>}
+    {!source.loading && !compatible.length && <p>{t('chainNoCompatibleWallet')} <Link to="/local-wallets">{t('localWallets')}</Link></p>}
+    {compatible.filter(w => `${w.name} ${addressFor(w, network)}`.toLowerCase().includes(search.toLowerCase())).map(w =>
+      <Button key={w.id} block aria-pressed={w.id === walletID} onClick={() => setWalletID(w.id)}>{w.name} · {t(w.source === 'local' ? 'chainLocal' : 'chainExternal')}</Button>)}
+    {address && <><p className="chain-address">{t('chainFromAddress')}: {address}</p>
+      <DepositEstimate key={address} {...input} walletAddress={address}/></>}
+  </>;
+}
+
+export function DepositEstimate({ asset, native, target, walletAddress, onChooseWallet, preview = previewDeposit }: EstimateInput & {
+  walletAddress?: string; onChooseWallet?: () => void; preview?: typeof previewDeposit;
 }) {
   const { t } = useTranslation();
   const [quote, setQuote] = useState<DepositQuoteData & { deadline: number }>(), [busy, setBusy] = useState(false);
@@ -64,7 +97,7 @@ export function DepositEstimate({ asset, native, target, preview = previewDeposi
     const request = new AbortController(); active.current = request;
     setQuote(undefined); setError(undefined); setBusy(true);
     try {
-      const next = await preview(asset, native, target, request.signal);
+      const next = await preview(asset, native, target, request.signal, walletAddress);
       if (!request.signal.aborted) {
         const deadline = started + (next.expiresAt - next.quotedAt);
         setExpired(Date.now() >= deadline);
@@ -74,14 +107,15 @@ export function DepositEstimate({ asset, native, target, preview = previewDeposi
     finally { if (!request.signal.aborted) setBusy(false); }
   }
   return <>
-    <Button block color="primary" disabled={!validDepositTarget(target) || busy} loading={busy} onClick={() => void estimate()}>{t('depositGetEstimate')}</Button>
+    <Button block color="primary" disabled={!validDepositTarget(target) || busy} loading={busy} onClick={() => void estimate()}>{t(walletAddress ? 'depositGetWalletFee' : 'depositGetEstimate')}</Button>
     {error !== undefined && <Failure error={error}/>}
     {quote && (expired ? <p role="status">{t('depositExpired')}</p> : <dl aria-live="polite">
       <dt>{t('depositRate')}</dt><dd>1 {asset.symbol} = ${quote.usdPerCoin}</dd>
       <dt>{t('depositPay')}</dt><dd>{quote.payQuantity} {asset.symbol}</dd>
-      <dt>{t('depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
+      <dt>{t(walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
       <dt>{t('depositNet')}</dt><dd>${quote.netUsd}</dd>
       <dt>{t('depositValidUntil')}</dt><dd>{new Date(quote.deadline).toLocaleTimeString()}</dd>
     </dl>)}
+    {quote?.walletFeePreview === true && !expired && onChooseWallet && <Button block onClick={onChooseWallet}>{t('chainChooseWallet')}</Button>}
   </>;
 }

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 )
@@ -17,11 +18,20 @@ func TestTestnetDepositQuoteConfiguration(t *testing.T) {
 	}
 	raw = append(raw, []byte(`
 ChainAssets:
+  Networks:
+    - Network: solana-devnet
+      URL: "http://127.0.0.1:1"
   DepositQuotes:
     Version: example-1
     AsOf: 100
     ValidUntil: 200
+    SolanaSOL:
+      FeePayer: DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN
+      Recipient: 7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5
     Assets:
+      - AssetID: solana-devnet:sol
+        USDPerCoin: "100"
+        EstimatedGas: "0.00001"
       - AssetID: base-sepolia:eth
         USDPerCoin: "2000"
         EstimatedGas: "0.0001"
@@ -38,7 +48,11 @@ ChainAssets:
 	if err != nil {
 		t.Fatal(err)
 	}
-	source.Close()
+	defer source.Close()
+	quote, err := source.PreviewDeposit(chainassets.SolanaDevnet+":sol", "0.01", time.Unix(120, 0))
+	if err != nil || !quote.WalletFeePreview {
+		t.Fatal(quote, err)
+	}
 	for _, env := range [][2]string{{"prod", "dev"}, {"local", "pro"}} {
 		cfg.Environment, cfg.Mode = env[0], env[1]
 		if err := cfg.Check(); err == nil {

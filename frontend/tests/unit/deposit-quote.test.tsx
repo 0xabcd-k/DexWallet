@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import type { ChainNetwork, DepositQuoteData } from '../../packages/api-contract/src/platform';
 import * as client from '../../apps/user/src/api/account';
 import * as catalog from '../../apps/user/src/app/native/chain-assets/api';
+import * as walletSource from '../../apps/user/src/app/native/chain-assets/use-wallets';
 import DepositButton from '../../apps/user/src/view/chain-transfer/deposit';
 import { appResources } from '../../apps/user/src/locales';
 
@@ -11,9 +12,9 @@ const network: ChainNetwork = { id: 'base-sepolia', family: 'base', enabled: fal
   { id: 'base-sepolia:eth', symbol: 'ETH', contract: '', decimals: 18, origin: 'native', depositPreview: true },
   { id: 'base-sepolia:usdc', symbol: 'USDC', contract: 'test-usdc', decimals: 6, origin: 'issuer', depositPreview: true },
 ] };
-const quote = (): DepositQuoteData => ({ assetId: 'base-sepolia:usdc', targetUsd: '10.00', usdPerCoin: '0.98',
+const quote = (now = Date.now()): DepositQuoteData => ({ assetId: 'base-sepolia:usdc', targetUsd: '10.00', usdPerCoin: '0.98',
   payQuantity: '10.408164', gasAssetId: 'base-sepolia:eth', estimatedGas: '0.0001', gasUsd: '0.2', netUsd: '10.00',
-  rateVersion: 'test-1', asOf: Date.now()-10000, quotedAt: Date.now(), expiresAt: Date.now()+30000, canSubmit: false });
+  rateVersion: 'test-1', asOf: now - 10000, quotedAt: now, expiresAt: now + 30000, canSubmit: false });
 afterEach(() => vi.restoreAllMocks());
 async function open() {
   const i18n = await createAppI18n('user', appResources, 'en');
@@ -58,4 +59,39 @@ it('shows a retryable empty state when the server has no current test sheet', as
   expect(screen.queryByRole('combobox')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
   await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
+});
+
+it('prices only the selected Solana wallet and discards the result on wallet change', async () => {
+  const sol = { id: 'solana-devnet:sol', symbol: 'SOL', contract: '', decimals: 9, origin: 'native' as const, depositPreview: true };
+  vi.spyOn(catalog, 'getCatalog').mockResolvedValue([{ id: 'solana-devnet', family: 'solana', enabled: true, testnet: true, assets: [sol] }]);
+  const a = '9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf', b = '7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5';
+  vi.spyOn(walletSource, 'useViewingWallets').mockReturnValue({
+    wallets: [a, b].map((address, i) => ({ id: address, name: 'Wallet ' + (i + 1), source: 'local', accounts: [{ network: 'solana', address }] })),
+    loading: false, error: undefined, connectionError: false, refresh: vi.fn(),
+  });
+  const request = vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode, options) => {
+    const walletAddress = (options?.body as { walletAddress?: string }).walletAddress;
+    const now = Date.now();
+    return decode({ data: { ...quote(), assetId: sol.id, gasAssetId: sol.id, usdPerCoin: '100', walletFeePreview: true,
+      quotedAt: now, expiresAt: now + 30000, payQuantity: walletAddress ? '0.100012345' : '0.101',
+      estimatedGas: walletAddress ? '0.000012345' : '0.001', gasUsd: walletAddress ? '0.0012345' : '0.1',
+      ...(walletAddress ? { walletAddress: a, messageSha256: 'a'.repeat(64) } : {}),
+    } });
+  });
+  await open();
+  fireEvent.change(await screen.findByLabelText('Target USD credit ($)'), { target: { value: '10' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get estimate' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Choose payment wallet' }));
+  expect(screen.queryByText('0.101 SOL')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: /Wallet 1/ }));
+  const getFee = () => screen.getByRole('button', { name: 'Get network fee for this wallet' });
+  fireEvent.click(getFee());
+  expect(await screen.findByText('0.100012345 SOL')).toBeInTheDocument();
+  expect(request.mock.calls[1]?.[2]).toMatchObject({ body: { walletAddress: a } });
+  fireEvent.click(screen.getByRole('button', { name: /Wallet 2/ }));
+  expect(screen.queryByText('0.100012345 SOL')).toBeNull();
+  fireEvent.click(getFee());
+  expect(await screen.findByRole('alert')).toBeInTheDocument();
+  expect(request.mock.calls[2]?.[2]).toMatchObject({ body: { walletAddress: b } });
+  expect(screen.queryByText('0.100012345 SOL')).toBeNull();
 });

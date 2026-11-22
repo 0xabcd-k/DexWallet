@@ -383,12 +383,16 @@ export interface DepositQuoteData {
 	asOf: number
 	quotedAt: number
 	expiresAt: number
+	walletFeePreview?: boolean
+	walletAddress?: string
+	messageSha256?: string
 	canSubmit: boolean
 }
 
 export interface DepositQuoteRequest {
 	assetId: string
 	targetUsd: string
+	walletAddress?: string
 }
 
 export interface DepositQuoteResponse {
