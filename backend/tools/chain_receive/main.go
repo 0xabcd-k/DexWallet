@@ -2,16 +2,21 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
+	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/go-sql-driver/mysql"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -20,7 +25,8 @@ import (
 func run() error {
 	var t chainreceipt.ReceiveTerms
 	var event chainreceipt.EventKey
-	action := flag.String("action", "get", "register, open, get or match")
+	action := flag.String("action", "get", "register, import, inventory, open, get or match")
+	file := flag.String("file", "", "public single-use owners, one per line (import only)")
 	flag.StringVar(&t.Network, "network", "", "test network")
 	flag.StringVar(&t.Key, "key", "", "stable server-side payment attempt key")
 	flag.StringVar(&t.AssetID, "asset", "", "exact asset ID")
@@ -40,6 +46,22 @@ func run() error {
 	}
 	switch *action {
 	case "register", "open", "get", "match":
+		if *file != "" {
+			return fmt.Errorf("-file requires -action import")
+		}
+	case "import", "inventory":
+		var unexpected string
+		flag.Visit(func(f *flag.Flag) {
+			if f.Name != "action" && f.Name != "network" && !(f.Name == "file" && *action == "import") {
+				unexpected = f.Name
+			}
+		})
+		if unexpected != "" {
+			return fmt.Errorf("-%s is not used by %s", unexpected, *action)
+		}
+		if t.Network == "" || (*action == "import" && *file == "") {
+			return fmt.Errorf("specify -network and, for import, -file")
+		}
 	default:
 		return fmt.Errorf("invalid action")
 	}
@@ -74,10 +96,21 @@ func run() error {
 	}
 	defer assets.Close()
 	service := chainreceipt.NewAttribution(sqlx.NewSqlConnFromDB(db), assets.Catalog())
-	var out chainreceipt.ReceiveRequest
+	var out any
 	switch *action {
 	case "register":
 		return service.Register(ctx, t.Network, t.Recipient, *route)
+	case "import":
+		owners, readErr := readOwners(*file)
+		if readErr != nil {
+			return readErr
+		}
+		// A file can take longer than the single-request timeout to register.
+		importCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		out, err = service.ImportSingleUse(importCtx, transaction.New(db), t.Network, owners)
+	case "inventory":
+		out, err = service.Inventory(ctx, t.Network)
 	case "open":
 		out, err = service.Open(ctx, t)
 	case "get":
@@ -90,6 +123,22 @@ func run() error {
 		return err
 	}
 	return json.NewEncoder(os.Stdout).Encode(out)
+}
+
+func readOwners(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	var owners []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if owner := strings.TrimSpace(scanner.Text()); owner != "" {
+			owners = append(owners, owner)
+		}
+	}
+	return owners, scanner.Err()
 }
 
 func main() {

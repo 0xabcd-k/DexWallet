@@ -64,8 +64,9 @@ func TestReceiveAttributionDedicated(t *testing.T) {
 			if _, err := service.Match(ctx, key); !errors.Is(err, chainreceipt.ErrNoReceiveRequest) {
 				t.Fatal(err)
 			}
-			if err := service.Register(ctx, terms.Network, terms.Recipient, chainreceipt.SingleUseAddress); err != nil {
-				t.Fatal(err)
+			imported, err := service.ImportSingleUse(ctx, transaction.New(db), terms.Network, []string{terms.Recipient})
+			if err != nil || imported.Added != 1 {
+				t.Fatal(imported, err)
 			}
 			auto := terms
 			auto.Recipient = ""
@@ -94,6 +95,10 @@ func TestReceiveAttributionDedicated(t *testing.T) {
 				if e != nil || got.Key != terms.Key || got.Event == nil || *got.Event != key || got.BeneficiaryID != terms.BeneficiaryID {
 					t.Fatal(got, e)
 				}
+			}
+			stock, err := service.Inventory(ctx, terms.Network)
+			if err != nil || stock.Total != 1 || stock.Allocated != 1 || stock.Available != 0 {
+				t.Fatal("matched address inventory", stock, err)
 			}
 			changed.Key = "different-order"
 			changed.Purpose = chainreceipt.ReceiveMerchantPayment

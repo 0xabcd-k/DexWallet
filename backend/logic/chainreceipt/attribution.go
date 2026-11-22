@@ -142,15 +142,20 @@ func (a *Attribution) Register(ctx context.Context, network, owner, route string
 	if err != nil || !a.enabled(network, "") || (route != SingleUseAddress && !(route == TONMemo && network == chainassets.TONTestnet)) {
 		return ErrInvalidRequest
 	}
-	_, err = a.addresses.Insert(ctx, &model.ChainReceiveAddress{Network: network, Owner: owner, Route: route})
-	if !receiveDuplicate(err) {
-		return err
-	}
-	row, err := a.addresses.FindOneByNetworkOwner(ctx, network, owner)
-	if err == nil && row.Route != route {
-		return ErrReceiveConflict
-	}
+	_, err = registerOwner(ctx, a.addresses, network, owner, route)
 	return err
+}
+
+func registerOwner(ctx context.Context, addresses model.ChainReceiveAddressModel, network, owner, route string) (bool, error) {
+	_, err := addresses.Insert(ctx, &model.ChainReceiveAddress{Network: network, Owner: owner, Route: route})
+	if !receiveDuplicate(err) {
+		return err == nil, err
+	}
+	existing, err := addresses.RegisteredRoute(ctx, network, owner)
+	if err == nil && existing != route {
+		return false, fmt.Errorf("%w: %s owner %s registered for %s", ErrReceiveConflict, network, owner, existing)
+	}
+	return false, err
 }
 
 func (a *Attribution) Find(ctx context.Context, requestKey string) (ReceiveRequest, error) {
