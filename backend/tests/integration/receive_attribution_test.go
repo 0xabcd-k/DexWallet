@@ -67,7 +67,9 @@ func TestReceiveAttributionDedicated(t *testing.T) {
 			if err := service.Register(ctx, terms.Network, terms.Recipient, chainreceipt.SingleUseAddress); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := service.Open(ctx, terms); err != nil {
+			auto := terms
+			auto.Recipient = ""
+			if _, err := service.Open(ctx, auto); err != nil {
 				t.Fatal(err)
 			}
 			again, err := service.Open(ctx, terms)

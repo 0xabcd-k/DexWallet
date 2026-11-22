@@ -38,7 +38,9 @@ func nileListenerOrder(t *testing.T, db *sql.DB, name string) (*chainreceipt.Att
 	if err = a.Register(ctx, terms.Network, terms.Recipient, chainreceipt.SingleUseAddress); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = a.Open(ctx, terms); err != nil {
+	automatic := terms
+	automatic.Recipient = ""
+	if _, err = a.Open(ctx, automatic); err != nil {
 		t.Fatal(err)
 	}
 	// Restore the order window only. No chain receipt or event position is seeded.

@@ -3,6 +3,7 @@ package chainreceipt
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -26,11 +27,12 @@ const (
 )
 
 var (
-	ErrNoReceiveRequest = errors.New("no issued request matches this receipt")
-	ErrReceiveMismatch  = errors.New("receipt differs from issued payment terms")
-	ErrReceiveWindow    = errors.New("receipt outside issued collection window")
-	ErrReceiveConflict  = errors.New("collection address, request or event already assigned differently")
-	receiveKey          = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$`)
+	ErrReceiveAddressExhausted = errors.New("no unused single-use collection address on this network")
+	ErrNoReceiveRequest        = errors.New("no issued request matches this receipt")
+	ErrReceiveMismatch         = errors.New("receipt differs from issued payment terms")
+	ErrReceiveWindow           = errors.New("receipt outside issued collection window")
+	ErrReceiveConflict         = errors.New("collection address, request or event already assigned differently")
+	receiveKey                 = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$`)
 )
 
 type ReceiveTerms struct {
@@ -185,77 +187,145 @@ func (a *Attribution) Find(ctx context.Context, requestKey string) (ReceiveReque
 	return out, nil
 }
 
-// Open freezes server-authorized terms before the wallet is given a destination or memo.
-// At second precision, start with the first complete second after issuance.
+// Open freezes the terms before the destination is returned to the wallet.
+// An omitted recipient allocates a registered single-use address on this network.
 func (a *Attribution) Open(ctx context.Context, terms ReceiveTerms) (ReceiveRequest, error) {
 	var empty ReceiveRequest
 	if !receiveKey.MatchString(terms.Key) || terms.BeneficiaryID <= 0 || (terms.Purpose != ReceiveDeposit && terms.Purpose != ReceiveMerchantPayment) || !validReceiveAtoms(terms.Network, terms.AssetID, terms.Atoms) || terms.ExpiresAt <= 0 {
 		return empty, ErrInvalidRequest
 	}
 	var err error
-	terms.Recipient, err = receiveOwner(terms.Network, terms.Recipient)
-	if err != nil {
-		return empty, err
+	if terms.Recipient != "" {
+		terms.Recipient, err = receiveOwner(terms.Network, terms.Recipient)
+		if err != nil {
+			return empty, ErrInvalidRequest
+		}
 	}
 	terms.Payer, err = receiveOwner(terms.Network, terms.Payer)
 	if err != nil || terms.Payer == terms.Recipient {
 		return empty, ErrInvalidRequest
 	}
-	existing := func() (ReceiveRequest, error) {
-		found, err := a.Find(ctx, terms.Key)
-		if err == nil && found.ReceiveTerms != terms {
-			return empty, ErrReceiveConflict
-		}
-		return found, err
-	}
-	if old, err := existing(); !errors.Is(err, model.ErrNotFound) {
+	if old, err := a.existingRequest(ctx, terms); !errors.Is(err, model.ErrNotFound) {
 		return old, err
 	}
 	if terms.AssetID == "" || !a.enabled(terms.Network, terms.AssetID) {
 		return empty, ErrInvalidRequest
 	}
-	addr, err := a.addresses.FindOneByNetworkOwner(ctx, terms.Network, terms.Recipient)
-	if err != nil {
-		return empty, fmt.Errorf("registered platform address required: %w", err)
+	if err = a.checkReceivePayer(ctx, terms); err != nil {
+		return empty, err
 	}
-	if _, err = a.addresses.FindOneByNetworkOwner(ctx, terms.Network, terms.Payer); !errors.Is(err, model.ErrNotFound) {
-		if err != nil {
+
+	for {
+		id, ref, err := a.receiveTarget(ctx, terms)
+		if err == nil {
+			err = a.issueRequest(ctx, terms, id, ref)
+		}
+		if err == nil {
+			return a.existingRequest(ctx, terms)
+		}
+		// A concurrent writer can win either unique key between selection and
+		// insertion, or take the last address before our availability query.
+		duplicate := receiveDuplicate(err)
+		if !duplicate && !errors.Is(err, ErrReceiveAddressExhausted) && !errors.Is(err, ErrReceiveWindow) && !errors.Is(err, ErrInvalidRequest) {
 			return empty, err
 		}
-		return empty, fmt.Errorf("%w: platform source", ErrInvalidRequest)
-	}
-	ref := ""
-	if addr.Route == TONMemo {
-		var token [16]byte
-		if _, err = rand.Read(token[:]); err != nil {
+		if found, lookupErr := a.existingRequest(ctx, terms); !errors.Is(lookupErr, model.ErrNotFound) {
+			return found, lookupErr
+		}
+		if !duplicate {
 			return empty, err
 		}
-		ref = receiveMemoPrefix + hex.EncodeToString(token[:])
-	}
-	res, err := a.conn.ExecCtx(ctx, `INSERT INTO chain_receive_request
-		(request_key,address_id,payment_reference,purpose,beneficiary_id,payer_owner,asset_id,amount_atoms,opens_at,expires_at)
-		SELECT ?,?,?,?,?,?,?,?,UNIX_TIMESTAMP()+1,? WHERE UNIX_TIMESTAMP()+1<?`, terms.Key, addr.Id, ref, terms.Purpose, terms.BeneficiaryID, terms.Payer, terms.AssetID, terms.Atoms, terms.ExpiresAt, terms.ExpiresAt)
-	if receiveDuplicate(err) {
-		old, lookupErr := existing()
-		if errors.Is(lookupErr, model.ErrNotFound) {
+		if terms.Recipient != "" {
 			return empty, ErrReceiveConflict
 		}
-		return old, lookupErr
+		// Another request claimed this address. Read the current inventory again.
 	}
+}
+
+func (a *Attribution) checkReceivePayer(ctx context.Context, terms ReceiveTerms) error {
+	_, err := a.addresses.FindOneByNetworkOwner(ctx, terms.Network, terms.Payer)
+	switch {
+	case errors.Is(err, model.ErrNotFound):
+		return nil
+	case err != nil:
+		return err
+	default:
+		return fmt.Errorf("%w: platform source", ErrInvalidRequest)
+	}
+}
+
+func (a *Attribution) existingRequest(ctx context.Context, terms ReceiveTerms) (ReceiveRequest, error) {
+	found, err := a.Find(ctx, terms.Key)
 	if err != nil {
-		return empty, err
+		return ReceiveRequest{}, err
+	}
+	if terms.Recipient == "" {
+		if found.Route != SingleUseAddress {
+			return ReceiveRequest{}, ErrReceiveConflict
+		}
+		terms.Recipient = found.Recipient
+	}
+	if found.ReceiveTerms != terms {
+		return ReceiveRequest{}, ErrReceiveConflict
+	}
+	return found, nil
+}
+
+func (a *Attribution) receiveTarget(ctx context.Context, t ReceiveTerms) (int64, string, error) {
+	if t.Recipient == "" {
+		var choice struct {
+			AddressID    sql.NullInt64 `db:"address_id"`
+			WithinWindow bool          `db:"within_window"`
+		}
+		err := a.conn.QueryRowCtx(ctx, &choice, `SELECT UNIX_TIMESTAMP()+1<? AS within_window, (
+			SELECT a.id FROM chain_receive_address a
+			WHERE a.network=? AND a.route=? AND a.owner<>? AND NOT EXISTS (
+				SELECT 1 FROM chain_receive_request r WHERE r.address_id=a.id
+			) ORDER BY a.id LIMIT 1
+		) AS address_id`, t.ExpiresAt, t.Network, SingleUseAddress, t.Payer)
+		if err != nil {
+			return 0, "", err
+		}
+		if !choice.WithinWindow {
+			return 0, "", ErrReceiveWindow
+		}
+		if !choice.AddressID.Valid {
+			return 0, "", fmt.Errorf("%w: %s", ErrReceiveAddressExhausted, t.Network)
+		}
+		return choice.AddressID.Int64, "", nil
+	}
+	addr, err := a.addresses.FindOneByNetworkOwner(ctx, t.Network, t.Recipient)
+	if err != nil {
+		return 0, "", fmt.Errorf("registered platform address required: %w", err)
+	}
+	if addr.Route != TONMemo {
+		return addr.Id, "", nil
+	}
+	var token [16]byte
+	if _, err = rand.Read(token[:]); err != nil {
+		return 0, "", err
+	}
+	return addr.Id, receiveMemoPrefix + hex.EncodeToString(token[:]), nil
+}
+
+func (a *Attribution) issueRequest(ctx context.Context, terms ReceiveTerms, id int64, ref string) error {
+	// Address selection is advisory. This insert claims both the attempt key
+	// and (address_id, payment_reference) atomically, with database-clock expiry.
+	res, err := a.conn.ExecCtx(ctx, `INSERT INTO chain_receive_request
+		(request_key,address_id,payment_reference,purpose,beneficiary_id,payer_owner,asset_id,amount_atoms,opens_at,expires_at)
+		SELECT ?,?,?,?,?,?,?,?,UNIX_TIMESTAMP()+1,? WHERE UNIX_TIMESTAMP()+1<? AND NOT EXISTS
+		(SELECT 1 FROM chain_receive_address WHERE network=? AND owner=?)`, terms.Key, id, ref, terms.Purpose, terms.BeneficiaryID, terms.Payer, terms.AssetID, terms.Atoms, terms.ExpiresAt, terms.ExpiresAt, terms.Network, terms.Payer)
+	if err != nil {
+		return err
 	}
 	n, err := res.RowsAffected()
-	if err != nil {
-		return empty, err
-	}
-	if n == 0 {
-		if old, e := existing(); !errors.Is(e, model.ErrNotFound) {
-			return old, e
+	if err == nil && n == 0 {
+		if err = a.checkReceivePayer(ctx, terms); err != nil {
+			return err
 		}
-		return empty, ErrReceiveWindow
+		return ErrReceiveWindow
 	}
-	return existing()
+	return err
 }
 
 func (k EventKey) normalized() (EventKey, error) {

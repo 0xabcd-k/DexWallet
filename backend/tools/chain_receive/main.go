@@ -24,7 +24,7 @@ func run() error {
 	flag.StringVar(&t.Network, "network", "", "test network")
 	flag.StringVar(&t.Key, "key", "", "stable server-side payment attempt key")
 	flag.StringVar(&t.AssetID, "asset", "", "exact asset ID")
-	flag.StringVar(&t.Recipient, "recipient", "", "platform receiving owner")
+	flag.StringVar(&t.Recipient, "recipient", "", "platform receiving owner (register requires it; omit on open to allocate a single-use address)")
 	flag.StringVar(&t.Payer, "payer", "", "expected payer wallet owner")
 	flag.StringVar(&t.Atoms, "atoms", "", "exact integer quantity")
 	flag.StringVar(&t.Purpose, "purpose", "", "deposit or merchant_payment")
