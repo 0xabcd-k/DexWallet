@@ -145,7 +145,7 @@ func (t Transfer) Raw() ([]byte, error) {
 }
 
 // SingleSignatureBandwidth counts the protobuf transaction including the owner
-// signature and the result reservation used by java-tron for a native transfer.
+// signature and the result reservation used by java-tron for these single-contract transfers.
 func SingleSignatureBandwidth(raw []byte) int {
 	const resultBytes = 64
 	return int(protowire.SizeTag(1)) + protowire.SizeBytes(len(raw)) +

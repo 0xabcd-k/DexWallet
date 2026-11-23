@@ -375,6 +375,7 @@ type DepositQuoteData struct {
 	WalletAddress      string `json:"walletAddress,optional"`
 	MessageSha256      string `json:"messageSha256,optional"`
 	FeeBlockHash       string `json:"feeBlockHash,optional"`
+	DelegatedEnergy    int64  `json:"delegatedEnergy,optional,omitempty"`
 	DelegatedBandwidth int    `json:"delegatedBandwidth,optional,omitempty"`
 	AccountFunding     string `json:"accountFunding,optional"`
 	AccountFundingUsd  string `json:"accountFundingUsd,optional"`

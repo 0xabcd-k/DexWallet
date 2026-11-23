@@ -160,34 +160,41 @@ it.each([
   await expect(previewDeposit(asset, network.assets[0]!, '10', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
 });
 
-it('shows delegated Nile bandwidth separately from TRX burn and rejects unbacked zero-fee quotes', async () => {
+it.each(['TRX', 'USDT'])('validates delegated Nile resources in the %s wallet estimate', async symbol => {
   const trx = { id: 'tron-nile:trx', symbol: 'TRX', origin: 'native' as const, contract: '', decimals: 6, depositPreview: true };
+  const contract = 'TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn';
+  const token = { ...trx, id: 'tron-nile:usdt:' + contract, symbol: 'USDT', origin: 'test_fixture' as const, contract };
+  const isToken = symbol === 'USDT';
+  const asset = isToken ? token : trx;
   const wallet = 'TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio';
-  vi.spyOn(catalog, 'getCatalog').mockResolvedValue([{ id: 'tron-nile', family: 'tron', enabled: true, testnet: true, assets: [trx] }]);
+  vi.spyOn(catalog, 'getCatalog').mockResolvedValue([{ id: 'tron-nile', family: 'tron', enabled: true, testnet: true, assets: [trx, token] }]);
   vi.spyOn(walletSource, 'useViewingWallets').mockReturnValue({
     wallets: [{ id: 'nile', name: 'Nile wallet', source: 'local', accounts: [{ network: 'tron', address: wallet }] }],
     loading: false, error: undefined, connectionError: false, refresh: vi.fn(),
   });
-  const estimate = () => ({ ...quote(), assetId: trx.id, gasAssetId: trx.id, rateSource: 'test_sheet', targetUsd: '0.01', usdPerCoin: '10', payQuantity: '0.001',
+  const estimate = () => ({ ...quote(), assetId: asset.id, gasAssetId: trx.id, rateSource: 'test_sheet', targetUsd: '0.01', usdPerCoin: isToken ? '1' : '10', payQuantity: isToken ? '0.01' : '0.001',
     netUsd: '0.01', estimatedGas: '0', gasUsd: '0', walletFeePreview: true });
-  const evidence = { walletAddress: wallet, messageSha256: 'a'.repeat(64), delegatedBandwidth: 266 };
+  const evidence = { walletAddress: wallet, messageSha256: 'a'.repeat(64), delegatedBandwidth: isToken ? 345 : 266, ...(isToken ? { delegatedEnergy: 14650 } : {}) };
   const request = vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode, options) => {
     const { walletAddress } = options?.body as { walletAddress?: string };
     return decode({ data: { ...estimate(), ...(walletAddress ? evidence : {}) } });
   });
   await open();
+  fireEvent.change(await screen.findByLabelText('Asset'), { target: { value: asset.id } });
   fireEvent.change(await screen.findByLabelText('Target USD credit ($)'), { target: { value: '0.01' } });
   fireEvent.click(screen.getByRole('button', { name: 'Get estimate' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Choose payment wallet' }));
   fireEvent.click(screen.getByRole('button', { name: /Nile wallet/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
   expect(await screen.findByText('Estimated platform-delegated bandwidth (points)')).toBeInTheDocument();
-  expect(screen.getByText('266')).toBeInTheDocument();
+  expect(screen.getByText(String(evidence.delegatedBandwidth))).toBeInTheDocument();
   expect(screen.getByText('0 TRX · $0')).toBeInTheDocument();
-  expect(screen.getByText('0.001 TRX')).toBeInTheDocument();
+  expect(screen.getByText(isToken ? '0.01 USDT' : '0.001 TRX')).toBeInTheDocument();
+  expect(!!screen.queryByText('Estimated platform-delegated Energy (units)')).toBe(isToken);
+  if (isToken) expect(screen.getByText('14650')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Confirm payment' })).toBeNull();
-  for (const change of [{ delegatedBandwidth: undefined }, { delegatedBandwidth: 0 }, { estimatedGas: '1' }, { messageSha256: '' }]) {
+  for (const change of [{ delegatedBandwidth: undefined }, { delegatedBandwidth: 0 }, { estimatedGas: '1' }, { messageSha256: '' }, { delegatedEnergy: isToken ? undefined : 100 }, { delegatedEnergy: 0 }]) {
     request.mockImplementationOnce(async (_path, decode) => decode({ data: { ...estimate(), ...evidence, ...change } }));
-    await expect(previewDeposit(trx, trx, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
+    await expect(previewDeposit(asset, trx, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
   }
 });

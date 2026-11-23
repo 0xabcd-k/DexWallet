@@ -14,13 +14,17 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const targetCents = units(target, 2), net = units(q.netUsd, 2);
     const baseFeeBlock = native.id === 'base-sepolia:eth' && (asset.id === native.id || asset.id === 'base-sepolia:usdc');
     const tronTRX = native.id === 'tron-nile:trx' && asset.id === native.id;
-    const needsBandwidth = tronTRX && !!walletAddress;
+    const tronToken = native.id === 'tron-nile:trx' && asset.origin === 'test_fixture' && !!asset.contract && asset.id === 'tron-nile:usdt:' + asset.contract;
+    const needsBandwidth = (tronTRX || tronToken) && !!walletAddress;
+    const validEnergy = tronToken && walletAddress
+      ? typeof q.delegatedEnergy === 'number' && Number.isSafeInteger(q.delegatedEnergy) && q.delegatedEnergy > 0
+      : q.delegatedEnergy === undefined;
     const validBandwidth = needsBandwidth
       ? typeof q.delegatedBandwidth === 'number' && Number.isSafeInteger(q.delegatedBandwidth) && q.delegatedBandwidth > 0 && units(q.estimatedGas, native.decimals) === 0n && units(q.gasUsd, native.decimals + 18) === 0n
       : q.delegatedBandwidth === undefined;
     const walletEvidence = baseFeeBlock
       ? typeof q.feeBlockHash === 'string' && /^0x[a-f0-9]{64}$/.test(q.feeBlockHash) && !q.messageSha256
-      : (tronTRX || native.id === 'solana-devnet:sol') && typeof q.messageSha256 === 'string' && /^[a-f0-9]{64}$/.test(q.messageSha256) && !q.feeBlockHash;
+      : (tronTRX || tronToken || native.id === 'solana-devnet:sol') && typeof q.messageSha256 === 'string' && /^[a-f0-9]{64}$/.test(q.messageSha256) && !q.feeBlockHash;
     const validSource = walletAddress
       ? q.walletAddress === walletAddress && q.walletFeePreview === true && walletEvidence
       : !q.walletAddress && !q.messageSha256 && !q.feeBlockHash;
@@ -29,7 +33,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validFunding = tokenWallet
       ? funding !== undefined && fundingUsd !== undefined && (funding === 0n) === (fundingUsd === 0n)
       : !q.accountFunding && !q.accountFundingUsd;
-    if (!validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
+    if (!validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||
       (q.rateSource !== undefined && q.rateSource !== 'test_sheet' && q.rateSource !== 'kraken') ||
