@@ -126,7 +126,11 @@ it.each([
   await expect(retry()).rejects.toThrow('Invalid test deposit estimate'); // Another asset's quote
 });
 
-it('shows the selected Base USDC wallet estimate as a pre-signing fee and requires a fee block', async () => {
+it.each([
+  { asset: network.assets[0]!, pay: '0.0051', rate: '2000' },
+  { asset: network.assets[1]!, pay: '10.408164', rate: '0.98' },
+])('shows the selected Base $asset.symbol pre-signing fee and requires a fee block', async ({ asset, pay, rate }) => {
+  const response = () => ({ ...quote(), assetId: asset.id, usdPerCoin: rate, payQuantity: pay, walletFeePreview: true });
   const wallet = '0xecd14F7586f5053CECae148Ae26309C2277D86A8';
   vi.spyOn(catalog, 'getCatalog').mockResolvedValue([{ ...network, enabled: true }]);
   vi.spyOn(walletSource, 'useViewingWallets').mockReturnValue({
@@ -136,21 +140,22 @@ it('shows the selected Base USDC wallet estimate as a pre-signing fee and requir
   const block = '0x' + 'b'.repeat(64);
   const request = vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode, options) => {
     const { walletAddress } = options?.body as { walletAddress?: string };
-    return decode({ data: { ...quote(), walletFeePreview: true, ...(walletAddress ? { walletAddress, feeBlockHash: block } : {}) } });
+    return decode({ data: { ...response(), ...(walletAddress ? { walletAddress, feeBlockHash: block } : {}) } });
   });
   await open();
-  fireEvent.change(await screen.findByLabelText('Asset'), { target: { value: network.assets[1]!.id } });
+  fireEvent.change(await screen.findByLabelText('Asset'), { target: { value: asset.id } });
   fireEvent.change(screen.getByLabelText('Target USD credit ($)'), { target: { value: '10' } });
   fireEvent.click(screen.getByRole('button', { name: 'Get estimate' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Choose payment wallet' }));
+  expect(!!screen.queryByText(/account already upgraded/)).toBe(asset.symbol === 'ETH');
   fireEvent.click(screen.getByRole('button', { name: /Base wallet/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
   expect(await screen.findByText('Estimated network fee before signing (included in total)')).toBeInTheDocument();
-  expect(screen.getByText('10.408164 USDC')).toBeInTheDocument();
-  expect(request.mock.calls[1]?.[2]).toMatchObject({ body: { assetId: 'base-sepolia:usdc', walletAddress: wallet } });
+  expect(screen.getByText(`${pay} ${asset.symbol}`)).toBeInTheDocument();
+  expect(request.mock.calls[1]?.[2]).toMatchObject({ body: { assetId: asset.id, walletAddress: wallet } });
   expect(screen.queryByRole('button', { name: 'Confirm payment' })).toBeNull();
   request.mockImplementationOnce(async (_path, decode) => decode({ data: {
-    ...quote(), walletFeePreview: true, walletAddress: wallet, messageSha256: 'a'.repeat(64),
+    ...response(), walletAddress: wallet, messageSha256: 'a'.repeat(64),
   } }));
-  await expect(previewDeposit(network.assets[1]!, network.assets[0]!, '10', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
+  await expect(previewDeposit(asset, network.assets[0]!, '10', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
 });

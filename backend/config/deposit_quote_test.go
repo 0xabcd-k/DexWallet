@@ -28,6 +28,9 @@ ChainAssets:
     Version: example-1
     AsOf: 100
     ValidUntil: 200
+    BaseETH:
+      FeePayer: "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
+      Recipient: "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
     BaseUSDC:
       FeePayer: "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
       Recipient: "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
@@ -70,7 +73,7 @@ ChainAssets:
 		t.Fatal(err)
 	}
 	defer source.Close()
-	for _, asset := range []string{"base-sepolia:usdc", "solana-devnet:sol", "solana-devnet:usdc", "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"} {
+	for _, asset := range []string{chainassets.BaseSepoliaETH, "base-sepolia:usdc", "solana-devnet:sol", "solana-devnet:usdc", "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"} {
 		quote, err := source.PreviewDeposit(asset, "0.01", time.Unix(120, 0))
 		if err != nil || !quote.WalletFeePreview {
 			t.Fatal(quote, err)

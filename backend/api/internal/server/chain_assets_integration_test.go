@@ -9,12 +9,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/types"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	shared "github.com/0xabcd-k/DexWallet/backend/svc"
+)
+
+const (
+	baseFeePayer  = "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
+	baseFeeWallet = "0xecd14F7586f5053CECae148Ae26309C2277D86A8"
+	baseFeeHash   = "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f"
 )
 
 // The router, login/session and Redis limiter are real; only the public RPC is a fake.
@@ -77,7 +84,6 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	}
 	usdcFixture := loadSnapshot("usdc", "new")
 	usdtFixture := loadSnapshot("usdt", "existing")
-	const feeBlockHash = "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f"
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var input struct {
 			Method string
@@ -91,9 +97,12 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 		case "eth_chainId":
 			result = "0x14a34"
 		case "eth_getBlockByNumber":
-			result = map[string]string{"hash": feeBlockHash, "number": "0x123", "timestamp": fmt.Sprintf("0x%x", time.Now().Unix()), "baseFeePerGas": "0x4c4b40"}
+			result = map[string]string{"hash": baseFeeHash, "number": "0x123", "timestamp": fmt.Sprintf("0x%x", time.Now().Unix()), "baseFeePerGas": "0x4c4b40"}
 		case "eth_getCode":
 			result = "0x"
+			if len(input.Params) == 2 && strings.EqualFold(string(input.Params[0]), fmt.Sprintf("%q", baseFeeWallet)) {
+				result = "0xef010063c0c19a282a1b52b07dd5a65b58948a07dae32b"
+			}
 		case "eth_feeHistory":
 			result = map[string]any{"oldestBlock": "0x123", "baseFeePerGas": []string{"0x4c4b40", "0x4c4b40"}, "reward": [][]string{{"0xf4240"}}}
 		case "eth_call":
@@ -137,9 +146,8 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	call("POST", depositPath, token, deposit, 503, "SERVICE_UNAVAILABLE")
 	now := time.Now().Unix()
 	rates := &chainassets.DepositQuoteConfig{Version: "http-fixture", AsOf: now - 30, ValidUntil: now + 120, Assets: []chainassets.DepositQuoteRate{{AssetID: deposit.AssetId, USDPerCoin: "2000", EstimatedGas: "0.0001"}}}
-	const feePayer = "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
-	baseUSDC := types.DepositQuoteRequest{AssetId: "base-sepolia:usdc", TargetUsd: "0.01", WalletAddress: "0xecd14F7586f5053CECae148Ae26309C2277D86A8"}
-	rates.BaseUSDC = &chainassets.BaseDepositFeeConfig{FeePayer: feePayer, Recipient: feePayer}
+	baseUSDC := types.DepositQuoteRequest{AssetId: "base-sepolia:usdc", TargetUsd: "0.01", WalletAddress: baseFeeWallet}
+	rates.BaseUSDC = &chainassets.BaseDepositFeeConfig{FeePayer: baseFeePayer, Recipient: baseFeePayer}
 	rates.Assets = append(rates.Assets, chainassets.DepositQuoteRate{AssetID: baseUSDC.AssetId, USDPerCoin: "0.98", EstimatedGas: "0.00001"})
 	const wallet = "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf"
 	sol := types.DepositQuoteRequest{AssetId: chainassets.SolanaDevnet + ":sol", TargetUsd: "1", WalletAddress: wallet}
@@ -208,7 +216,7 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	}
 	_, raw = call("POST", depositPath, token, baseUSDC, 200, "OK")
 	var baseQuote types.DepositQuoteData
-	if err := json.Unmarshal(raw, &baseQuote); err != nil || baseQuote.FeeBlockHash != feeBlockHash || baseQuote.MessageSha256 != "" || baseQuote.WalletAddress != baseUSDC.WalletAddress || baseQuote.CanSubmit || baseQuote.NetUsd != "0.01" || baseQuote.PayQuantity != "0.011745" {
+	if err := json.Unmarshal(raw, &baseQuote); err != nil || baseQuote.FeeBlockHash != baseFeeHash || baseQuote.MessageSha256 != "" || baseQuote.WalletAddress != baseUSDC.WalletAddress || baseQuote.CanSubmit || baseQuote.NetUsd != "0.01" || baseQuote.PayQuantity != "0.011745" {
 		t.Fatal(baseQuote, err)
 	}
 	_, raw = call("POST", "/v1/user/chain-assets/balances", token, request, 200, "OK")
@@ -221,5 +229,5 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	}
 	call("POST", "/v1/user/chain-assets/balances", token, request, 429, "RATE_LIMITED")
 	call("POST", depositPath, token, sol, 429, "RATE_LIMITED")
-	checkMarketRatesHTTP(t, s, token, call)
+	checkMarketRatesHTTP(t, s, token, upstream.URL, call)
 }

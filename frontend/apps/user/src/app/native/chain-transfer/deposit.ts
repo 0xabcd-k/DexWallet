@@ -12,8 +12,8 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const q = decodeData<DepositQuoteData>(value);
     const units = (v: unknown, scale: number) => typeof v === 'string' ? atomicAmount(v, scale) : undefined;
     const targetCents = units(target, 2), net = units(q.netUsd, 2);
-    const baseUSDC = asset.id === 'base-sepolia:usdc' && native.id === 'base-sepolia:eth';
-    const walletEvidence = baseUSDC
+    const baseFeeBlock = native.id === 'base-sepolia:eth' && (asset.id === native.id || asset.id === 'base-sepolia:usdc');
+    const walletEvidence = baseFeeBlock
       ? typeof q.feeBlockHash === 'string' && /^0x[a-f0-9]{64}$/.test(q.feeBlockHash) && !q.messageSha256
       : native.id === 'solana-devnet:sol' && typeof q.messageSha256 === 'string' && /^[a-f0-9]{64}$/.test(q.messageSha256) && !q.feeBlockHash;
     const validSource = walletAddress

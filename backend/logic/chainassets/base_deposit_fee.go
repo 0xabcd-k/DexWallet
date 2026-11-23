@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
-	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -21,22 +20,38 @@ const (
 	// Type-2 unsigned envelope, empty access list, zero value and 292-byte
 	// transferWithAuthorization calldata. See the RLP boundary test.
 	baseUSDCUnsignedSize = 410
+	// Single native-token allowance with six caveats, no dependencies and one
+	// ETH payment to the platform EOA. Calibrated on the finalized redemption.
+	baseETHReferenceGas = 391673
+	baseETHUnsignedSize = 2362 // 2,244 bytes calldata plus the maximum unsigned envelope.
 	// Delegation designation observed in the finalized Rabby and OKX tests.
 	baseTestedDelegation = "0xef010063c0c19a282a1b52b07dd5a65b58948a07dae32b"
 )
 
 type BaseDepositFeeConfig struct{ FeePayer, Recipient string }
 
-func newBaseDepositRoute(config BaseDepositFeeConfig) (*BaseDepositFeeConfig, error) {
+type baseDepositRoute struct {
+	BaseDepositFeeConfig
+	referenceGas, unsignedSize int64
+}
+
+func newBaseDepositRoute(assetID string, config BaseDepositFeeConfig) (*baseDepositRoute, error) {
 	payer, err := NormalizeBaseAddress(config.FeePayer)
 	if err != nil || common.HexToAddress(payer) == (common.Address{}) {
-		return nil, fmt.Errorf("invalid Base USDC fee payer")
+		return nil, fmt.Errorf("invalid Base fee payer for %s", assetID)
 	}
 	recipient, err := NormalizeBaseAddress(config.Recipient)
 	if err != nil || common.HexToAddress(recipient) == (common.Address{}) {
-		return nil, fmt.Errorf("invalid Base USDC recipient")
+		return nil, fmt.Errorf("invalid Base recipient for %s", assetID)
 	}
-	return &BaseDepositFeeConfig{FeePayer: payer, Recipient: recipient}, nil
+	route := &baseDepositRoute{BaseDepositFeeConfig: BaseDepositFeeConfig{FeePayer: payer, Recipient: recipient}, referenceGas: baseUSDCReferenceGas, unsignedSize: baseUSDCUnsignedSize}
+	if assetID == BaseSepoliaETH {
+		if payer != recipient {
+			return nil, fmt.Errorf("Base ETH allowance estimate requires the platform EOA as both redeemer and payee")
+		}
+		route.referenceGas, route.unsignedSize = baseETHReferenceGas, baseETHUnsignedSize
+	}
+	return route, nil
 }
 
 type baseFeeBlock struct {
@@ -56,7 +71,7 @@ type baseFeeHistory struct {
 	Reward        [][]*hexutil.Big
 }
 
-func (h baseFeeHistory) executionEstimate(block baseFeeBlock) (*big.Int, error) {
+func (h baseFeeHistory) executionEstimate(block baseFeeBlock, referenceGas int64) (*big.Int, error) {
 	if h.OldestBlock != block.Number || len(h.BaseFeePerGas) != 2 || h.BaseFeePerGas[0] == nil || h.BaseFeePerGas[1] == nil || len(h.Reward) != 1 || len(h.Reward[0]) != 1 || h.Reward[0][0] == nil {
 		return nil, invalid("incomplete Base fee history")
 	}
@@ -64,31 +79,31 @@ func (h baseFeeHistory) executionEstimate(block baseFeeBlock) (*big.Int, error) 
 		return nil, invalid("Base fee history differs from fee block or lacks next base fee")
 	}
 	price := new(big.Int).Add(h.BaseFeePerGas[1].ToInt(), h.Reward[0][0].ToInt())
-	return price.Mul(price, big.NewInt(baseUSDCReferenceGas)), nil
+	return price.Mul(price, big.NewInt(referenceGas)), nil
 }
 
-type baseUSDCBudget struct {
+type baseDepositBudget struct {
 	block                                 baseFeeBlock
 	balance, execution, dataFee, operator *big.Int
 	sponsorBalance                        hexutil.Big
 }
 
-func (s *Service) previewBaseUSDC(ctx context.Context, user int64, target, address string) (DepositPreview, error) {
+func (s *Service) previewBaseDeposit(ctx context.Context, user int64, assetID, target, address string) (DepositPreview, error) {
 	var empty DepositPreview
-	route := s.quotes.baseUSDC
+	route := s.quotes.base[assetID]
 	if route == nil {
-		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Base USDC wallet fee preview disabled"))
+		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Base wallet fee preview disabled for %s", assetID))
 	}
 	wallet, err := NormalizeBaseAddress(address)
 	if err != nil || common.HexToAddress(wallet) == (common.Address{}) || wallet == route.Recipient || wallet == route.FeePayer {
 		return empty, badTarget("invalid Base deposit source wallet")
 	}
 	start := time.Now()
-	prices, err := s.depositPrices(ctx, baseusdc.AssetID, start)
+	prices, err := s.depositPrices(ctx, assetID, start)
 	if err != nil {
 		return empty, err
 	}
-	if _, err = s.depositQuote(baseusdc.AssetID, target, decimal.Zero, start, prices); err != nil {
+	if _, err = s.depositQuote(assetID, target, decimal.Zero, start, prices); err != nil {
 		return empty, err
 	}
 	if s.limiter == nil {
@@ -99,7 +114,8 @@ func (s *Service) previewBaseUSDC(ctx context.Context, user int64, target, addre
 	}
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
-	budget, err := s.baseUSDCEstimate(ctx, wallet)
+	entry := s.quotes.assets[assetID]
+	budget, err := s.baseDepositEstimate(ctx, entry, route, wallet)
 	if err != nil {
 		return empty, err
 	}
@@ -111,8 +127,7 @@ func (s *Service) previewBaseUSDC(ctx context.Context, user int64, target, addre
 	if budget.sponsorBalance.ToInt().Cmp(total) < 0 {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Base fee payer cannot cover estimated network cost"))
 	}
-	entry := s.quotes.assets[baseusdc.AssetID]
-	q, err := s.depositQuote(baseusdc.AssetID, target, decimal.NewFromBigInt(total, -int32(entry.native.Decimals)), start, prices)
+	q, err := s.depositQuote(assetID, target, decimal.NewFromBigInt(total, -int32(entry.native.Decimals)), start, prices)
 	if err != nil {
 		return empty, err
 	}
@@ -128,11 +143,10 @@ func (s *Service) previewBaseUSDC(ctx context.Context, user int64, target, addre
 	return q, nil
 }
 
-// The user has not yet authorized a token amount. Read prices and balances
+// The user has not yet authorized the transfer. Read prices and balances
 // only; exact execution simulation requires the user's later signed calldata.
-func (s *Service) baseUSDCEstimate(ctx context.Context, wallet string) (baseUSDCBudget, error) {
-	var b baseUSDCBudget
-	entry := s.quotes.assets[baseusdc.AssetID]
+func (s *Service) baseDepositEstimate(ctx context.Context, entry depositAsset, route *baseDepositRoute, wallet string) (baseDepositBudget, error) {
+	var b baseDepositBudget
 	endpoint := s.endpoints[BaseSepolia]
 	if err := s.checkNetwork(ctx, entry.network, endpoint); err != nil {
 		return b, apperror.New(apperror.ServiceUnavailable, err)
@@ -155,10 +169,20 @@ func (s *Service) baseUSDCEstimate(ctx context.Context, wallet string) (baseUSDC
 	if err := rpc("eth_getCode", []any{wallet, tag}, &code); err != nil {
 		return b, err
 	}
-	if len(code) != 0 && code.String() != baseTestedDelegation {
-		return b, badTarget("unverified Base USDC signing account type")
+	native := entry.asset.ID == BaseSepoliaETH
+	if code.String() != baseTestedDelegation && (native || len(code) != 0) {
+		return b, badTarget("unsupported Base deposit source account type")
 	}
-	if err := rpc("eth_getBalance", []any{s.quotes.baseUSDC.FeePayer, tag}, &b.sponsorBalance); err != nil {
+	if native {
+		var payeeCode hexutil.Bytes
+		if err := rpc("eth_getCode", []any{route.Recipient, tag}, &payeeCode); err != nil {
+			return b, err
+		}
+		if len(payeeCode) != 0 {
+			return b, apperror.New(apperror.ServiceUnavailable, invalid("Base ETH redemption requires an EOA payee"))
+		}
+	}
+	if err := rpc("eth_getBalance", []any{route.FeePayer, tag}, &b.sponsorBalance); err != nil {
 		return b, err
 	}
 	var history baseFeeHistory
@@ -166,7 +190,7 @@ func (s *Service) baseUSDCEstimate(ctx context.Context, wallet string) (baseUSDC
 		return b, err
 	}
 	var err error
-	b.execution, err = history.executionEstimate(b.block)
+	b.execution, err = history.executionEstimate(b.block, route.referenceGas)
 	if err != nil {
 		return b, apperror.New(apperror.ServiceUnavailable, err)
 	}
@@ -177,15 +201,21 @@ func (s *Service) baseUSDCEstimate(ctx context.Context, wallet string) (baseUSDC
 		}
 		return word.Big(), nil
 	}
-	b.balance, err = readWord(entry.asset.Contract, "0x"+balanceOfSelector+strings.Repeat("0", 24)+wallet[2:])
+	if native {
+		var balance hexutil.Big
+		err = rpc("eth_getBalance", []any{wallet, tag}, &balance)
+		b.balance = balance.ToInt()
+	} else {
+		b.balance, err = readWord(entry.asset.Contract, "0x"+balanceOfSelector+strings.Repeat("0", 24)+wallet[2:])
+	}
 	if err != nil {
 		return b, err
 	}
-	b.dataFee, err = readWord(BaseGasPriceOracle, baseOracleCall("getL1FeeUpperBound(uint256)", big.NewInt(baseUSDCUnsignedSize)))
+	b.dataFee, err = readWord(BaseGasPriceOracle, baseOracleCall("getL1FeeUpperBound(uint256)", big.NewInt(route.unsignedSize)))
 	if err != nil {
 		return b, err
 	}
-	b.operator, err = readWord(BaseGasPriceOracle, baseOracleCall("getOperatorFee(uint256)", big.NewInt(baseUSDCReferenceGas)))
+	b.operator, err = readWord(BaseGasPriceOracle, baseOracleCall("getOperatorFee(uint256)", big.NewInt(route.referenceGas)))
 	return b, err
 }
 

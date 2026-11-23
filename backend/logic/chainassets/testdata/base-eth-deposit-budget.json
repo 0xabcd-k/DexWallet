@@ -1,0 +1,156 @@
+{
+  "endpoint": "https://sepolia.base.org",
+  "walletAddress": "0x6c6df54636f596d4385bf11071de6d1b796ea782",
+  "calls": [
+    {
+      "method": "eth_chainId",
+      "params": [],
+      "result": "0x14a34"
+    },
+    {
+      "method": "eth_getBlockByNumber",
+      "params": [
+        "latest",
+        false
+      ],
+      "result": {
+        "number": "0x3b86bf9",
+        "hash": "0x58f599a547c3e16b6503c5bb8eff586d4037660e3a21c619ddec4fa43191b9a4",
+        "baseFeePerGas": "0x4c4b40",
+        "timestamp": "0x6b03b68b"
+      }
+    },
+    {
+      "method": "eth_getCode",
+      "params": [
+        "0x6c6df54636f596d4385bf11071de6d1b796ea782",
+        {
+          "blockHash": "0x58f599a547c3e16b6503c5bb8eff586d4037660e3a21c619ddec4fa43191b9a4",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0xef010063c0c19a282a1b52b07dd5a65b58948a07dae32b"
+    },
+    {
+      "method": "eth_getCode",
+      "params": [
+        "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+        {
+          "blockHash": "0x58f599a547c3e16b6503c5bb8eff586d4037660e3a21c619ddec4fa43191b9a4",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x"
+    },
+    {
+      "method": "eth_getBalance",
+      "params": [
+        "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+        {
+          "blockHash": "0x58f599a547c3e16b6503c5bb8eff586d4037660e3a21c619ddec4fa43191b9a4",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x389b36da7a5e0"
+    },
+    {
+      "method": "eth_feeHistory",
+      "params": [
+        "0x1",
+        "0x3b86bf9",
+        [
+          50
+        ]
+      ],
+      "result": {
+        "baseFeePerGas": [
+          "0x4c4b40",
+          "0x4c4b40"
+        ],
+        "gasUsedRatio": [
+          0.0021746833333333333
+        ],
+        "baseFeePerBlobGas": [
+          "0x1",
+          "0x1"
+        ],
+        "blobGasUsedRatio": [
+          0.0
+        ],
+        "oldestBlock": "0x3b86bf9",
+        "reward": [
+          [
+            "0xf4240"
+          ]
+        ]
+      }
+    },
+    {
+      "method": "eth_getBalance",
+      "params": [
+        "0x6c6df54636f596d4385bf11071de6d1b796ea782",
+        {
+          "blockHash": "0x58f599a547c3e16b6503c5bb8eff586d4037660e3a21c619ddec4fa43191b9a4",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x16f5d9f29afc521"
+    },
+    {
+      "method": "eth_call",
+      "params": [
+        {
+          "data": "0xf1c7a58b000000000000000000000000000000000000000000000000000000000000093a",
+          "to": "0x420000000000000000000000000000000000000f"
+        },
+        {
+          "blockHash": "0x58f599a547c3e16b6503c5bb8eff586d4037660e3a21c619ddec4fa43191b9a4",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x0000000000000000000000000000000000000000000000000000000000000765"
+    },
+    {
+      "method": "eth_call",
+      "params": [
+        {
+          "data": "0x275aedd2000000000000000000000000000000000000000000000000000000000005f9f9",
+          "to": "0x420000000000000000000000000000000000000f"
+        },
+        {
+          "blockHash": "0x58f599a547c3e16b6503c5bb8eff586d4037660e3a21c619ddec4fa43191b9a4",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "preview": {
+    "AssetID": "base-sepolia:eth",
+    "TargetUSD": "0.01",
+    "USDPerCoin": "2000",
+    "PayQuantity": "0.000007350038001893",
+    "GasAssetID": "base-sepolia:eth",
+    "EstimatedGas": "0.000002350038001893",
+    "GasUSD": "0.004700076003786",
+    "NetUSD": "0.01",
+    "AccountFunding": "",
+    "AccountFundingUSD": "",
+    "WalletFeePreview": true,
+    "WalletAddress": "0x6c6df54636f596d4385bf11071de6d1b796ea782",
+    "MessageSHA256": "",
+    "FeeBlockHash": "0x58f599a547c3e16b6503c5bb8eff586d4037660e3a21c619ddec4fa43191b9a4",
+    "Version": "sepolia-eth-budget",
+    "RateSource": "test_sheet",
+    "AsOf": 1795405390000,
+    "QuotedAt": 1795405450734,
+    "ExpiresAt": 1795405480734
+  },
+  "feeWei": {
+    "l2": "2350038000000",
+    "l1": "1893",
+    "operator": "0",
+    "total": "2350038001893"
+  },
+  "requiredWei": "7350038001893"
+}

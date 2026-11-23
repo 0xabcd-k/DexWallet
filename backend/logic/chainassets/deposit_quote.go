@@ -15,6 +15,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	BaseETH        *BaseDepositFeeConfig `json:",optional"`
 	BaseUSDC       *BaseDepositFeeConfig `json:",optional"`
 	Version        string
 	AsOf           int64                   `json:",optional"`
@@ -45,7 +46,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
-	baseUSDC    *BaseDepositFeeConfig
+	base        map[string]*baseDepositRoute
 	market      *DepositMarketConfig
 	solana      map[string]*solanaDepositRoute
 	version     string
@@ -107,16 +108,20 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 			return book, fmt.Errorf("missing native USD rate %s for %s", entry.native.ID, entry.asset.ID)
 		}
 	}
-	if c.BaseUSDC != nil {
-		entry, ok := book.assets[baseusdc.AssetID]
-		if !ok || !entry.network.Enabled {
-			return book, fmt.Errorf("Base USDC wallet fee preview requires a Sepolia endpoint and configured USDC and ETH prices")
+	book.base = make(map[string]*baseDepositRoute)
+	for id, config := range map[string]*BaseDepositFeeConfig{BaseSepoliaETH: c.BaseETH, baseusdc.AssetID: c.BaseUSDC} {
+		if config == nil {
+			continue
 		}
-		route, err := newBaseDepositRoute(*c.BaseUSDC)
+		entry, ok := book.assets[id]
+		if !ok || !entry.network.Enabled {
+			return book, fmt.Errorf("wallet fee preview for %s requires a Base Sepolia endpoint and configured prices", id)
+		}
+		route, err := newBaseDepositRoute(id, *config)
 		if err != nil {
 			return book, err
 		}
-		book.baseUSDC = route
+		book.base[id] = route
 	}
 	book.solana = make(map[string]*solanaDepositRoute)
 	routes := map[string]*SolanaDepositFeeConfig{solanaDepositAsset: c.SolanaSOL, solanaDepositUSDC: c.SolanaUSDC}
@@ -154,8 +159,8 @@ type DepositPreview struct {
 }
 
 func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID, targetUSD, address string) (DepositPreview, error) {
-	if assetID == baseusdc.AssetID {
-		return s.previewBaseUSDC(ctx, user, targetUSD, address)
+	if assetID == BaseSepoliaETH || assetID == baseusdc.AssetID {
+		return s.previewBaseDeposit(ctx, user, assetID, targetUSD, address)
 	}
 	return s.previewSolanaDeposit(ctx, user, assetID, targetUSD, address)
 }
@@ -204,7 +209,7 @@ func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, n
 	return DepositPreview{
 		AssetID: assetID, TargetUSD: target.StringFixed(usd.Scale), USDPerCoin: prices.pay.String(), PayQuantity: pay,
 		GasAssetID: entry.native.ID, EstimatedGas: gas.String(), GasUSD: gasUSD.String(), NetUSD: net.StringFixed(usd.Scale),
-		WalletFeePreview: s.quotes.solana[assetID] != nil || (assetID == baseusdc.AssetID && s.quotes.baseUSDC != nil),
+		WalletFeePreview: s.quotes.solana[assetID] != nil || s.quotes.base[assetID] != nil,
 		Version:          prices.version, RateSource: prices.source, AsOf: prices.asOf.UnixMilli(), QuotedAt: now.UnixMilli(), ExpiresAt: expires.UnixMilli(),
 	}, nil
 }

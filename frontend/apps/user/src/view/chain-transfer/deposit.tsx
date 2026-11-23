@@ -63,6 +63,7 @@ function WalletEstimate({ userIdx, network, ...input }: EstimateInput & { userId
   const wallet = compatible.find(w => w.id === walletID);
   const address = wallet && addressFor(wallet, network);
   return <>
+    {input.asset.id === 'base-sepolia:eth' && <p>{t('depositETHDelegation')}</p>}
     <label>{t('nativeSearch')}<input type="search" value={search} onChange={e => setSearch(e.target.value)}/></label>
     {source.error !== undefined && <><Failure error={source.error}/><Button onClick={source.refresh}>{t('common:retry')}</Button></>}
     {source.loading && <p role="status">{t('common:loading')}</p>}

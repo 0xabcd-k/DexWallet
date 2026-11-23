@@ -23,7 +23,7 @@ type exchangeTransport func(*http.Request) (*http.Response, error)
 
 func (f exchangeTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
-func checkMarketRatesHTTP(t *testing.T, s *shared.ServiceContext, token string, call func(string, string, string, any, int, string) (http.Header, json.RawMessage)) {
+func checkMarketRatesHTTP(t *testing.T, s *shared.ServiceContext, token, rpcURL string, call func(string, string, string, any, int, string) (http.Header, json.RawMessage)) {
 	t.Helper()
 	ctx := context.Background()
 	store := marketdata.NewStore(s.Redis, s.Namespace)
@@ -34,7 +34,9 @@ func checkMarketRatesHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	q := chainassets.DepositQuoteConfig{Version: "market-http", Market: &chainassets.DepositMarketConfig{Source: marketdata.Kraken, MaxAge: time.Minute}, Assets: []chainassets.DepositQuoteRate{
 		{AssetID: chainassets.BaseSepoliaETH, EstimatedGas: "0"}, {AssetID: id, EstimatedGas: "0.0001"},
 	}}
-	service, err := chainassets.NewWithMarketRates(chainassets.Config{DepositQuotes: &q}, nil, store)
+	q.BaseETH = &chainassets.BaseDepositFeeConfig{FeePayer: baseFeePayer, Recipient: baseFeePayer}
+	networks := []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: rpcURL}}
+	service, err := chainassets.NewWithMarketRates(chainassets.Config{DepositQuotes: &q, Networks: networks}, chainassets.NewRedisLimiter(s.Redis, s.Namespace+":market", 1), store)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,6 +84,12 @@ func checkMarketRatesHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 		return got
 	}
 	first := read()
+	eth := types.DepositQuoteRequest{AssetId: chainassets.BaseSepoliaETH, TargetUsd: "0.01", WalletAddress: baseFeeWallet}
+	_, walletRaw := call("POST", path, token, eth, 200, "OK")
+	var wallet types.DepositQuoteData
+	if err := json.Unmarshal(walletRaw, &wallet); err != nil || wallet.FeeBlockHash != baseFeeHash || wallet.WalletAddress != eth.WalletAddress || wallet.MessageSha256 != "" || !wallet.WalletFeePreview || wallet.CanSubmit || wallet.NetUsd != "0.01" || wallet.PayQuantity != "0.000007350040469134" || wallet.RateSource != marketdata.Kraken {
+		t.Fatal(wallet, err)
+	}
 	_, raw := call("GET", "/v1/user/chain-assets", token, nil, 200, "OK")
 	var catalog types.ChainAssetCatalogData
 	if err := json.Unmarshal(raw, &catalog); err != nil {
