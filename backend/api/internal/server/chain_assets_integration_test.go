@@ -77,6 +77,7 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	}
 	usdcFixture := loadSnapshot("usdc", "new")
 	usdtFixture := loadSnapshot("usdt", "existing")
+	const feeBlockHash = "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f"
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var input struct {
 			Method string
@@ -89,6 +90,12 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 		switch input.Method {
 		case "eth_chainId":
 			result = "0x14a34"
+		case "eth_getBlockByNumber":
+			result = map[string]string{"hash": feeBlockHash, "number": "0x123", "timestamp": fmt.Sprintf("0x%x", time.Now().Unix()), "baseFeePerGas": "0x4c4b40"}
+		case "eth_getCode":
+			result = "0x"
+		case "eth_feeHistory":
+			result = map[string]any{"oldestBlock": "0x123", "baseFeePerGas": []string{"0x4c4b40", "0x4c4b40"}, "reward": [][]string{{"0xf4240"}}}
 		case "eth_call":
 			result = fmt.Sprintf("0x%064x", 1234567)
 		case "getGenesisHash":
@@ -115,6 +122,9 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 		case "getFeeForMessage":
 			result = map[string]any{"context": map[string]int{"slot": 123}, "value": 10123}
 		case "eth_getBalance":
+			if len(input.Params) == 2 && string(input.Params[1]) != `"latest"` {
+				result = "0x1000000000000"
+			}
 		default:
 			t.Error(input.Method)
 		}
@@ -127,6 +137,10 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	call("POST", depositPath, token, deposit, 503, "SERVICE_UNAVAILABLE")
 	now := time.Now().Unix()
 	rates := &chainassets.DepositQuoteConfig{Version: "http-fixture", AsOf: now - 30, ValidUntil: now + 120, Assets: []chainassets.DepositQuoteRate{{AssetID: deposit.AssetId, USDPerCoin: "2000", EstimatedGas: "0.0001"}}}
+	const feePayer = "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
+	baseUSDC := types.DepositQuoteRequest{AssetId: "base-sepolia:usdc", TargetUsd: "0.01", WalletAddress: "0xecd14F7586f5053CECae148Ae26309C2277D86A8"}
+	rates.BaseUSDC = &chainassets.BaseDepositFeeConfig{FeePayer: feePayer, Recipient: feePayer}
+	rates.Assets = append(rates.Assets, chainassets.DepositQuoteRate{AssetID: baseUSDC.AssetId, USDPerCoin: "0.98", EstimatedGas: "0.00001"})
 	const wallet = "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf"
 	sol := types.DepositQuoteRequest{AssetId: chainassets.SolanaDevnet + ":sol", TargetUsd: "1", WalletAddress: wallet}
 	rates.Assets = append(rates.Assets, chainassets.DepositQuoteRate{AssetID: sol.AssetId, USDPerCoin: "100", EstimatedGas: "0"})
@@ -156,14 +170,14 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	for _, n := range catalog.Networks {
 		for _, a := range n.Assets {
 			if a.DepositPreview {
-				if a.Id != deposit.AssetId && a.Id != sol.AssetId && a.Id != usdc.AssetId && a.Id != usdt.AssetId {
+				if a.Id != deposit.AssetId && a.Id != sol.AssetId && a.Id != usdc.AssetId && a.Id != usdt.AssetId && a.Id != baseUSDC.AssetId {
 					t.Fatal(a.Id)
 				}
 				listed[a.Id] = true
 			}
 		}
 	}
-	if !listed[deposit.AssetId] || !listed[sol.AssetId] || !listed[usdc.AssetId] || !listed[usdt.AssetId] {
+	if !listed[deposit.AssetId] || !listed[sol.AssetId] || !listed[usdc.AssetId] || !listed[usdt.AssetId] || !listed[baseUSDC.AssetId] {
 		t.Fatal("missing quoted asset")
 	}
 	_, raw = call("POST", depositPath, token, deposit, 200, "OK")
@@ -192,15 +206,18 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	if err := json.Unmarshal(raw, &usdtQuote); err != nil || usdtQuote.AssetId != usdt.AssetId || usdtQuote.CanSubmit || usdtQuote.PayQuantity != "0.011238" || usdtQuote.AccountFunding != "0" || usdtQuote.AccountFundingUsd != "0" || usdtQuote.NetUsd != "0.01" {
 		t.Fatal(usdtQuote, err)
 	}
-	for i := 0; i < 2; i++ {
-		_, raw = call("POST", "/v1/user/chain-assets/balances", token, request, 200, "OK")
-		var result types.ChainBalancesData
-		if err = json.Unmarshal(raw, &result); err != nil {
-			t.Fatal(err)
-		}
-		if result.Items[0].Quantity != "0" || result.Items[1].Quantity != "1.234567" {
-			t.Fatal(result)
-		}
+	_, raw = call("POST", depositPath, token, baseUSDC, 200, "OK")
+	var baseQuote types.DepositQuoteData
+	if err := json.Unmarshal(raw, &baseQuote); err != nil || baseQuote.FeeBlockHash != feeBlockHash || baseQuote.MessageSha256 != "" || baseQuote.WalletAddress != baseUSDC.WalletAddress || baseQuote.CanSubmit || baseQuote.NetUsd != "0.01" || baseQuote.PayQuantity != "0.011745" {
+		t.Fatal(baseQuote, err)
+	}
+	_, raw = call("POST", "/v1/user/chain-assets/balances", token, request, 200, "OK")
+	var result types.ChainBalancesData
+	if err = json.Unmarshal(raw, &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Items[0].Quantity != "0" || result.Items[1].Quantity != "1.234567" {
+		t.Fatal(result)
 	}
 	call("POST", "/v1/user/chain-assets/balances", token, request, 429, "RATE_LIMITED")
 	call("POST", depositPath, token, sol, 429, "RATE_LIMITED")

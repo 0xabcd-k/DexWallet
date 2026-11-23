@@ -12,9 +12,13 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const q = decodeData<DepositQuoteData>(value);
     const units = (v: unknown, scale: number) => typeof v === 'string' ? atomicAmount(v, scale) : undefined;
     const targetCents = units(target, 2), net = units(q.netUsd, 2);
+    const baseUSDC = asset.id === 'base-sepolia:usdc' && native.id === 'base-sepolia:eth';
+    const walletEvidence = baseUSDC
+      ? typeof q.feeBlockHash === 'string' && /^0x[a-f0-9]{64}$/.test(q.feeBlockHash) && !q.messageSha256
+      : native.id === 'solana-devnet:sol' && typeof q.messageSha256 === 'string' && /^[a-f0-9]{64}$/.test(q.messageSha256) && !q.feeBlockHash;
     const validSource = walletAddress
-      ? q.walletAddress === walletAddress && q.walletFeePreview === true && typeof q.messageSha256 === 'string' && /^[a-f0-9]{64}$/.test(q.messageSha256)
-      : !q.walletAddress && !q.messageSha256;
+      ? q.walletAddress === walletAddress && q.walletFeePreview === true && walletEvidence
+      : !q.walletAddress && !q.messageSha256 && !q.feeBlockHash;
     const tokenWallet = walletAddress && native.id === 'solana-devnet:sol' && asset.contract !== '';
     const funding = units(q.accountFunding, native.decimals), fundingUsd = units(q.accountFundingUsd, native.decimals + 18);
     const validFunding = tokenWallet

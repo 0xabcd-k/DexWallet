@@ -1,0 +1,146 @@
+{
+  "endpoint": "https://sepolia.base.org",
+  "calls": [
+    {
+      "method": "eth_chainId",
+      "params": [],
+      "result": "0x14a34"
+    },
+    {
+      "method": "eth_getBlockByNumber",
+      "params": [
+        "latest",
+        false
+      ],
+      "result": {
+        "number": "0x3b85d3e",
+        "hash": "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f",
+        "baseFeePerGas": "0x4c4b40",
+        "timestamp": "0x6b03b399"
+      }
+    },
+    {
+      "method": "eth_getCode",
+      "params": [
+        "0xecd14f7586f5053cecae148ae26309c2277d86a8",
+        {
+          "blockHash": "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0xef010063c0c19a282a1b52b07dd5a65b58948a07dae32b"
+    },
+    {
+      "method": "eth_getBalance",
+      "params": [
+        "0xa59c992aa84657df4ebff6f04e11a1632f6db1fa",
+        {
+          "blockHash": "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x389b36da7a5e0"
+    },
+    {
+      "method": "eth_feeHistory",
+      "params": [
+        "0x1",
+        "0x3b85d3e",
+        [
+          50
+        ]
+      ],
+      "result": {
+        "baseFeePerGas": [
+          "0x4c4b40",
+          "0x4c4b40"
+        ],
+        "gasUsedRatio": [
+          0.0060860083333333335
+        ],
+        "baseFeePerBlobGas": [
+          "0x1",
+          "0x1"
+        ],
+        "blobGasUsedRatio": [
+          0.0
+        ],
+        "oldestBlock": "0x3b85d3e",
+        "reward": [
+          [
+            "0xf4240"
+          ]
+        ]
+      }
+    },
+    {
+      "method": "eth_call",
+      "params": [
+        {
+          "data": "0x70a08231000000000000000000000000ecd14f7586f5053cecae148ae26309c2277d86a8",
+          "to": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+        },
+        {
+          "blockHash": "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x000000000000000000000000000000000000000000000000000000000130bbb8"
+    },
+    {
+      "method": "eth_call",
+      "params": [
+        {
+          "data": "0xf1c7a58b000000000000000000000000000000000000000000000000000000000000019a",
+          "to": "0x420000000000000000000000000000000000000f"
+        },
+        {
+          "blockHash": "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x0000000000000000000000000000000000000000000000000000000000000164"
+    },
+    {
+      "method": "eth_call",
+      "params": [
+        {
+          "data": "0x275aedd2000000000000000000000000000000000000000000000000000000000001eb7f",
+          "to": "0x420000000000000000000000000000000000000f"
+        },
+        {
+          "blockHash": "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f",
+          "requireCanonical": true
+        }
+      ],
+      "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "preview": {
+    "AssetID": "base-sepolia:usdc",
+    "TargetUSD": "0.01",
+    "USDPerCoin": "0.98",
+    "PayQuantity": "0.011745",
+    "GasAssetID": "base-sepolia:eth",
+    "EstimatedGas": "0.000000754938000356",
+    "GasUSD": "0.001509876000712",
+    "NetUSD": "0.01",
+    "AccountFunding": "",
+    "AccountFundingUSD": "",
+    "WalletFeePreview": true,
+    "WalletAddress": "0xecd14F7586f5053CECae148Ae26309C2277D86A8",
+    "MessageSHA256": "",
+    "FeeBlockHash": "0xb492cc123ce8af6c3900fdd07ae463dac2f209c2f96220c1ce62551ef59dcc8f",
+    "Version": "devnet-base-budget",
+    "RateSource": "test_sheet",
+    "AsOf": 1795404636000,
+    "QuotedAt": 1795404696583,
+    "ExpiresAt": 1795404726583
+  },
+  "feeWei": {
+    "l2": "754938000000",
+    "l1": "356",
+    "operator": "0",
+    "total": "754938000356"
+  }
+}

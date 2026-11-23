@@ -95,7 +95,7 @@ func (s *Service) messageFee(ctx context.Context, n Network, msg []byte) (uint64
 	return *response.Value, nil
 }
 
-func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID, targetUSD, address string) (DepositPreview, error) {
+func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID, targetUSD, address string) (DepositPreview, error) {
 	var empty DepositPreview
 	route := s.quotes.solana[assetID]
 	if route == nil {

@@ -374,6 +374,7 @@ type DepositQuoteData struct {
 	WalletFeePreview  bool   `json:"walletFeePreview,optional"`
 	WalletAddress     string `json:"walletAddress,optional"`
 	MessageSha256     string `json:"messageSha256,optional"`
+	FeeBlockHash      string `json:"feeBlockHash,optional"`
 	AccountFunding    string `json:"accountFunding,optional"`
 	AccountFundingUsd string `json:"accountFundingUsd,optional"`
 	CanSubmit         bool   `json:"canSubmit"`

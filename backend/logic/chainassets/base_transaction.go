@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"golang.org/x/crypto/sha3"
 )
 
 const BaseGasPriceOracle = "0x420000000000000000000000000000000000000f"
@@ -91,9 +89,7 @@ func (s *Service) readBaseEvidence(ctx context.Context, network, hash string, tr
 	if err != nil {
 		return out, err
 	}
-	h := sha3.NewLegacyKeccak256()
-	_, _ = h.Write([]byte("getOperatorFee(uint256)"))
-	data := "0x" + hex.EncodeToString(h.Sum(nil)[:4]) + fmt.Sprintf("%064x", gas)
+	data := baseOracleCall("getOperatorFee(uint256)", gas)
 	// Historical rules at the exact canonical block, never today's price.
 	out.OperatorFee, err = s.rpcRaw(ctx, n, e, "eth_call", []any{map[string]string{"to": BaseGasPriceOracle, "data": data}, map[string]any{"blockHash": receipt.BlockHash, "requireCanonical": true}})
 	if err != nil || !trace {

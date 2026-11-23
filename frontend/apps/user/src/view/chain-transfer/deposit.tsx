@@ -113,7 +113,7 @@ export function DepositEstimate({ asset, native, target, walletAddress, onChoose
       <dt>{t('depositRate')}</dt><dd>1 {asset.symbol} = ${quote.usdPerCoin}</dd>
       <dt>{t('depositRateSource')}</dt><dd>{t(quote.rateSource === 'kraken' ? 'depositSourceKraken' : 'depositSourceTest')} · {new Date(quote.asOf).toLocaleString()}</dd>
       <dt>{t('depositPay')}</dt><dd>{quote.payQuantity} {asset.symbol}</dd>
-      <dt>{t(walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
+      <dt>{t(quote.feeBlockHash ? 'depositPreSignGas' : walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
       {quote.accountFunding && <><dt>{t('depositAccountFunding')}</dt><dd>{quote.accountFunding} {native.symbol} · ${quote.accountFundingUsd}</dd></>}
       <dt>{t('depositNet')}</dt><dd>${quote.netUsd}</dd>
       <dt>{t('depositValidUntil')}</dt><dd>{new Date(quote.deadline).toLocaleTimeString()}</dd>
