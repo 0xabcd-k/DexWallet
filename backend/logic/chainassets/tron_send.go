@@ -37,8 +37,12 @@ func (s *Service) NileHead(ctx context.Context) (tronnative.Head, error) {
 	if err != nil {
 		return tronnative.Head{}, err
 	}
+	return s.nileHeadAt(ctx, n, e)
+}
+
+func (s *Service) nileHeadAt(ctx context.Context, n Network, e Endpoint) (tronnative.Head, error) {
 	var raw json.RawMessage
-	if err = s.tronObject(ctx, n, e, "/wallet/getnowblock", map[string]any{}, &raw); err != nil {
+	if err := s.tronObject(ctx, n, e, "/wallet/getnowblock", map[string]any{}, &raw); err != nil {
 		return tronnative.Head{}, err
 	}
 	var block struct {

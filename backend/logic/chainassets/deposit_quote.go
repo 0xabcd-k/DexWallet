@@ -15,6 +15,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	TRONTRX        *TRONDepositFeeConfig `json:",optional"`
 	BaseETH        *BaseDepositFeeConfig `json:",optional"`
 	BaseUSDC       *BaseDepositFeeConfig `json:",optional"`
 	Version        string
@@ -46,6 +47,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
+	tronTRX     *nileDepositRoute
 	base        map[string]*baseDepositRoute
 	market      *DepositMarketConfig
 	solana      map[string]*solanaDepositRoute
@@ -108,6 +110,17 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 			return book, fmt.Errorf("missing native USD rate %s for %s", entry.native.ID, entry.asset.ID)
 		}
 	}
+	if c.TRONTRX != nil {
+		entry, ok := book.assets[TRONNileTRX]
+		if !ok || !entry.network.Enabled {
+			return book, fmt.Errorf("TRX wallet fee preview requires a Nile endpoint and TRX price")
+		}
+		route, err := newNileDepositRoute(*c.TRONTRX)
+		if err != nil {
+			return book, err
+		}
+		book.tronTRX = route
+	}
 	book.base = make(map[string]*baseDepositRoute)
 	for id, config := range map[string]*BaseDepositFeeConfig{BaseSepoliaETH: c.BaseETH, baseusdc.AssetID: c.BaseUSDC} {
 		if config == nil {
@@ -149,6 +162,7 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 }
 
 type DepositPreview struct {
+	DelegatedBandwidth                          int
 	AssetID, TargetUSD, USDPerCoin, PayQuantity string
 	GasAssetID, EstimatedGas, GasUSD, NetUSD    string
 	AccountFunding, AccountFundingUSD           string
@@ -159,6 +173,9 @@ type DepositPreview struct {
 }
 
 func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID, targetUSD, address string) (DepositPreview, error) {
+	if assetID == TRONNileTRX {
+		return s.previewNileTRX(ctx, user, targetUSD, address)
+	}
 	if assetID == BaseSepoliaETH || assetID == baseusdc.AssetID {
 		return s.previewBaseDeposit(ctx, user, assetID, targetUSD, address)
 	}
@@ -209,7 +226,7 @@ func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, n
 	return DepositPreview{
 		AssetID: assetID, TargetUSD: target.StringFixed(usd.Scale), USDPerCoin: prices.pay.String(), PayQuantity: pay,
 		GasAssetID: entry.native.ID, EstimatedGas: gas.String(), GasUSD: gasUSD.String(), NetUSD: net.StringFixed(usd.Scale),
-		WalletFeePreview: s.quotes.solana[assetID] != nil || s.quotes.base[assetID] != nil,
+		WalletFeePreview: s.quotes.solana[assetID] != nil || s.quotes.base[assetID] != nil || (assetID == TRONNileTRX && s.quotes.tronTRX != nil),
 		Version:          prices.version, RateSource: prices.source, AsOf: prices.asOf.UnixMilli(), QuotedAt: now.UnixMilli(), ExpiresAt: expires.UnixMilli(),
 	}, nil
 }

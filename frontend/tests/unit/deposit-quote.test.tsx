@@ -159,3 +159,35 @@ it.each([
   } }));
   await expect(previewDeposit(asset, network.assets[0]!, '10', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
 });
+
+it('shows delegated Nile bandwidth separately from TRX burn and rejects unbacked zero-fee quotes', async () => {
+  const trx = { id: 'tron-nile:trx', symbol: 'TRX', origin: 'native' as const, contract: '', decimals: 6, depositPreview: true };
+  const wallet = 'TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio';
+  vi.spyOn(catalog, 'getCatalog').mockResolvedValue([{ id: 'tron-nile', family: 'tron', enabled: true, testnet: true, assets: [trx] }]);
+  vi.spyOn(walletSource, 'useViewingWallets').mockReturnValue({
+    wallets: [{ id: 'nile', name: 'Nile wallet', source: 'local', accounts: [{ network: 'tron', address: wallet }] }],
+    loading: false, error: undefined, connectionError: false, refresh: vi.fn(),
+  });
+  const estimate = () => ({ ...quote(), assetId: trx.id, gasAssetId: trx.id, rateSource: 'test_sheet', targetUsd: '0.01', usdPerCoin: '10', payQuantity: '0.001',
+    netUsd: '0.01', estimatedGas: '0', gasUsd: '0', walletFeePreview: true });
+  const evidence = { walletAddress: wallet, messageSha256: 'a'.repeat(64), delegatedBandwidth: 266 };
+  const request = vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode, options) => {
+    const { walletAddress } = options?.body as { walletAddress?: string };
+    return decode({ data: { ...estimate(), ...(walletAddress ? evidence : {}) } });
+  });
+  await open();
+  fireEvent.change(await screen.findByLabelText('Target USD credit ($)'), { target: { value: '0.01' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get estimate' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Choose payment wallet' }));
+  fireEvent.click(screen.getByRole('button', { name: /Nile wallet/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(await screen.findByText('Estimated platform-delegated bandwidth (points)')).toBeInTheDocument();
+  expect(screen.getByText('266')).toBeInTheDocument();
+  expect(screen.getByText('0 TRX · $0')).toBeInTheDocument();
+  expect(screen.getByText('0.001 TRX')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Confirm payment' })).toBeNull();
+  for (const change of [{ delegatedBandwidth: undefined }, { delegatedBandwidth: 0 }, { estimatedGas: '1' }, { messageSha256: '' }]) {
+    request.mockImplementationOnce(async (_path, decode) => decode({ data: { ...estimate(), ...evidence, ...change } }));
+    await expect(previewDeposit(trx, trx, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
+  }
+});

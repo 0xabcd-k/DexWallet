@@ -22,6 +22,7 @@ const (
 	SolanaDevnet                = "solana-devnet"
 	TRONMainnet                 = "tron-mainnet"
 	TRONNile                    = "tron-nile"
+	TRONNileTRX                 = TRONNile + ":trx"
 	Native                      = "native"
 	Issuer                      = "issuer"
 	TestFixture                 = "test_fixture"

@@ -19,6 +19,8 @@ func TestTestnetDepositQuoteConfiguration(t *testing.T) {
 	raw = append(raw, []byte(`
 ChainAssets:
   Networks:
+    - Network: tron-nile
+      URL: "http://127.0.0.1:1"
     - Network: base-sepolia
       URL: "http://127.0.0.1:1"
     - Network: solana-devnet
@@ -28,6 +30,9 @@ ChainAssets:
     Version: example-1
     AsOf: 100
     ValidUntil: 200
+    TRONTRX:
+      ResourceOwner: TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH
+      Recipient: TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH
     BaseETH:
       FeePayer: "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
       Recipient: "0xa59C992Aa84657df4EbFF6F04E11a1632f6DB1FA"
@@ -56,6 +61,9 @@ ChainAssets:
       - AssetID: base-sepolia:usdc
         USDPerCoin: "0.98"
         EstimatedGas: "0.00001"
+      - AssetID: tron-nile:trx
+        USDPerCoin: "0.30"
+        EstimatedGas: "0.1"
       - AssetID: base-sepolia:eth
         USDPerCoin: "2000"
         EstimatedGas: "0.0001"
@@ -73,7 +81,7 @@ ChainAssets:
 		t.Fatal(err)
 	}
 	defer source.Close()
-	for _, asset := range []string{chainassets.BaseSepoliaETH, "base-sepolia:usdc", "solana-devnet:sol", "solana-devnet:usdc", "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"} {
+	for _, asset := range []string{chainassets.TRONNileTRX, chainassets.BaseSepoliaETH, "base-sepolia:usdc", "solana-devnet:sol", "solana-devnet:usdc", "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"} {
 		quote, err := source.PreviewDeposit(asset, "0.01", time.Unix(120, 0))
 		if err != nil || !quote.WalletFeePreview {
 			t.Fatal(quote, err)

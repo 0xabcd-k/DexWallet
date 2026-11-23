@@ -1,0 +1,147 @@
+{
+  "endpoint": "https://nile.trongrid.io",
+  "calls": [
+    {
+      "path": "/wallet/getblockbynum",
+      "params": {
+        "num": 0,
+        "visible": false
+      },
+      "result": {
+        "blockID": "0000000000000000d698d4192c56cb6be724a558448e2684802de4d6cd8690dc",
+        "block_header": {
+          "raw_data": {}
+        }
+      }
+    },
+    {
+      "path": "/wallet/getnowblock",
+      "params": {
+        "visible": false
+      },
+      "result": {
+        "blockID": "00000000045932f9cc8d4672ed6510451331f5e710e4caf2cac35bc9b38cb525",
+        "block_header": {
+          "raw_data": {
+            "number": 72954617,
+            "timestamp": 1795406754000
+          }
+        }
+      }
+    },
+    {
+      "path": "/wallet/getaccount",
+      "params": {
+        "address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+        "visible": false
+      },
+      "result": {
+        "address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+        "balance": 1000,
+        "owner_permission": {
+          "permission_name": "owner",
+          "threshold": 1,
+          "keys": [
+            {
+              "address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+              "weight": 1
+            }
+          ]
+        },
+        "frozenV2": [
+          {},
+          {
+            "type": "ENERGY"
+          },
+          {
+            "type": "TRON_POWER"
+          }
+        ],
+        "acquired_delegated_frozenV2_balance_for_bandwidth": 856000000
+      }
+    },
+    {
+      "path": "/wallet/getaccount",
+      "params": {
+        "address": "41913e6da20b97589625ae499b6eb17941e5938405",
+        "visible": false
+      },
+      "result": {
+        "address": "41913e6da20b97589625ae499b6eb17941e5938405",
+        "balance": 94867500,
+        "owner_permission": {
+          "permission_name": "owner",
+          "threshold": 1,
+          "keys": [
+            {
+              "address": "41913e6da20b97589625ae499b6eb17941e5938405",
+              "weight": 1
+            }
+          ]
+        },
+        "frozenV2": [
+          {
+            "amount": 480000000
+          },
+          {
+            "type": "ENERGY"
+          },
+          {
+            "type": "TRON_POWER"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/wallet/getdelegatedresourcev2",
+      "params": {
+        "fromAddress": "41913e6da20b97589625ae499b6eb17941e5938405",
+        "toAddress": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+        "visible": false
+      },
+      "result": {
+        "delegatedResource": [
+          {
+            "from": "41913e6da20b97589625ae499b6eb17941e5938405",
+            "to": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+            "frozen_balance_for_bandwidth": 856000000,
+            "frozen_balance_for_energy": 228000000
+          }
+        ]
+      }
+    },
+    {
+      "path": "/wallet/getaccountresource",
+      "params": {
+        "address": "412461517cf642358c8c0650b2cbccee4c31e16d7d",
+        "visible": false
+      },
+      "result": {
+        "freeNetLimit": 600,
+        "NetLimit": 540
+      }
+    }
+  ],
+  "preview": {
+    "DelegatedBandwidth": 266,
+    "AssetID": "tron-nile:trx",
+    "TargetUSD": "0.01",
+    "USDPerCoin": "10",
+    "PayQuantity": "0.001",
+    "GasAssetID": "tron-nile:trx",
+    "EstimatedGas": "0",
+    "GasUSD": "0",
+    "NetUSD": "0.01",
+    "AccountFunding": "",
+    "AccountFundingUSD": "",
+    "WalletFeePreview": true,
+    "WalletAddress": "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio",
+    "MessageSHA256": "714030c2dda06e7709ad4c3522ed9c7c9dcce3d4a3225e7c3a4657ab0ba0f70f",
+    "FeeBlockHash": "",
+    "Version": "nile-bandwidth-test",
+    "RateSource": "test_sheet",
+    "AsOf": 1795406695000,
+    "QuotedAt": 1795406755352,
+    "ExpiresAt": 1795406784000
+  }
+}
