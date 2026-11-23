@@ -63,6 +63,7 @@ function WalletEstimate({ userIdx, network, ...input }: EstimateInput & { userId
   const wallet = compatible.find(w => w.id === walletID);
   const address = wallet && addressFor(wallet, network);
   return <>
+    {input.asset.id === 'ton-testnet:ton' && <p>{t('depositTONRelay')}</p>}
     {input.asset.id === 'base-sepolia:eth' && <p>{t('depositETHDelegation')}</p>}
     <label>{t('nativeSearch')}<input type="search" value={search} onChange={e => setSearch(e.target.value)}/></label>
     {source.error !== undefined && <><Failure error={source.error}/><Button onClick={source.refresh}>{t('common:retry')}</Button></>}
@@ -116,7 +117,9 @@ export function DepositEstimate({ asset, native, target, walletAddress, onChoose
       <dt>{t('depositPay')}</dt><dd>{quote.payQuantity} {asset.symbol}</dd>
       {quote.delegatedEnergy !== undefined && <><dt>{t('depositPlatformEnergy')}</dt><dd>{quote.delegatedEnergy}</dd></>}
       {quote.delegatedBandwidth !== undefined && <><dt>{t('depositPlatformBandwidth')}</dt><dd>{quote.delegatedBandwidth}</dd></>}
-      <dt>{t(quote.delegatedBandwidth !== undefined ? 'depositTrxBurn' : quote.feeBlockHash ? 'depositPreSignGas' : walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
+      <dt>{t(quote.delegatedBandwidth !== undefined ? 'depositTrxBurn' : quote.feeBlockHash || quote.emulatedMessageHash ? 'depositPreSignGas' : walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
+      {quote.relayAttached && <><dt>{t('depositRelayAttached')}</dt><dd>{quote.relayAttached} {native.symbol}</dd>
+        <dt>{t('depositRelaySurplus')}</dt><dd>{quote.relaySurplus} {native.symbol}</dd></>}
       {quote.accountFunding && <><dt>{t('depositAccountFunding')}</dt><dd>{quote.accountFunding} {native.symbol} · ${quote.accountFundingUsd}</dd></>}
       <dt>{t('depositNet')}</dt><dd>${quote.netUsd}</dd>
       <dt>{t('depositValidUntil')}</dt><dd>{new Date(quote.deadline).toLocaleTimeString()}</dd>

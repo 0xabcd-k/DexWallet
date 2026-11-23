@@ -13,6 +13,12 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const units = (v: unknown, scale: number) => typeof v === 'string' ? atomicAmount(v, scale) : undefined;
     const targetCents = units(target, 2), net = units(q.netUsd, 2);
     const baseFeeBlock = native.id === 'base-sepolia:eth' && (asset.id === native.id || asset.id === 'base-sepolia:usdc');
+    const tonRelay = !!walletAddress && native.id === 'ton-testnet:ton' && asset.id === native.id;
+    const attachment = units(q.relayAttached, native.decimals), surplus = units(q.relaySurplus, native.decimals);
+    const validRelay = tonRelay
+      ? typeof q.emulatedMessageHash === 'string' && /^[a-f0-9]{64}$/.test(q.emulatedMessageHash) &&
+        attachment !== undefined && attachment > 0n && surplus !== undefined && surplus <= attachment && (units(q.estimatedGas, native.decimals) ?? 0n) > 0n
+      : q.emulatedMessageHash === undefined && q.relayAttached === undefined && q.relaySurplus === undefined;
     const tronTRX = native.id === 'tron-nile:trx' && asset.id === native.id;
     const tronToken = native.id === 'tron-nile:trx' && asset.origin === 'test_fixture' && !!asset.contract && asset.id === 'tron-nile:usdt:' + asset.contract;
     const needsBandwidth = (tronTRX || tronToken) && !!walletAddress;
@@ -22,7 +28,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validBandwidth = needsBandwidth
       ? typeof q.delegatedBandwidth === 'number' && Number.isSafeInteger(q.delegatedBandwidth) && q.delegatedBandwidth > 0 && units(q.estimatedGas, native.decimals) === 0n && units(q.gasUsd, native.decimals + 18) === 0n
       : q.delegatedBandwidth === undefined;
-    const walletEvidence = baseFeeBlock
+    const walletEvidence = tonRelay ? !q.feeBlockHash && !q.messageSha256 : baseFeeBlock
       ? typeof q.feeBlockHash === 'string' && /^0x[a-f0-9]{64}$/.test(q.feeBlockHash) && !q.messageSha256
       : (tronTRX || tronToken || native.id === 'solana-devnet:sol') && typeof q.messageSha256 === 'string' && /^[a-f0-9]{64}$/.test(q.messageSha256) && !q.feeBlockHash;
     const validSource = walletAddress
@@ -33,7 +39,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validFunding = tokenWallet
       ? funding !== undefined && fundingUsd !== undefined && (funding === 0n) === (fundingUsd === 0n)
       : !q.accountFunding && !q.accountFundingUsd;
-    if (!validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
+    if (!validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||
       (q.rateSource !== undefined && q.rateSource !== 'test_sheet' && q.rateSource !== 'kraken') ||

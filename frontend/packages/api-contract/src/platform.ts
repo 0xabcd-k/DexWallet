@@ -388,6 +388,9 @@ export interface DepositQuoteData {
 	walletAddress?: string
 	messageSha256?: string
 	feeBlockHash?: string
+	emulatedMessageHash?: string
+	relayAttached?: string
+	relaySurplus?: string
 	delegatedEnergy?: number
 	delegatedBandwidth?: number
 	accountFunding?: string

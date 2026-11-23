@@ -198,3 +198,33 @@ it.each(['TRX', 'USDT'])('validates delegated Nile resources in the %s wallet es
     await expect(previewDeposit(asset, trx, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
   }
 });
+
+it('shows the W5 relay advance and remainder separately from the fee included in the TON payment', async () => {
+  const ton = { id: 'ton-testnet:ton', symbol: 'TON', origin: 'native' as const, contract: '', decimals: 9, depositPreview: true };
+  const wallet = '0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a';
+  vi.spyOn(catalog, 'getCatalog').mockResolvedValue([{ id: 'ton-testnet', family: 'ton', enabled: true, testnet: true, assets: [ton] }]);
+  vi.spyOn(walletSource, 'useViewingWallets').mockReturnValue({
+    wallets: [{ id: 'w5', name: 'Tonkeeper testnet', source: 'external', accounts: [{ network: 'ton-testnet', address: wallet }] }],
+    loading: false, error: undefined, connectionError: false, refresh: vi.fn(),
+  });
+  const base = { ...quote(), assetId: ton.id, gasAssetId: ton.id, targetUsd: '0.01', netUsd: '0.01', usdPerCoin: '1',
+    payQuantity: '0.011246787', estimatedGas: '0.001246787', gasUsd: '0.001246787', walletFeePreview: true };
+  const evidence = { walletAddress: wallet, emulatedMessageHash: 'a'.repeat(64), relayAttached: '0.003', relaySurplus: '0.002500974' };
+  const request = vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode, options) =>
+    decode({ data: { ...base, ...((options?.body as { walletAddress?: string }).walletAddress ? evidence : {}) } }));
+  await open();
+  fireEvent.change(await screen.findByLabelText('Target USD credit ($)'), { target: { value: '0.01' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Get estimate' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Choose payment wallet' }));
+  fireEvent.click(screen.getByRole('button', { name: /Tonkeeper testnet/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(await screen.findByText('0.011246787 TON')).toBeInTheDocument();
+  expect(screen.getByText('0.001246787 TON · $0.001246787')).toBeInTheDocument();
+  expect(screen.getByText('0.003 TON')).toBeInTheDocument();
+  expect(screen.getByText('0.002500974 TON')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Confirm payment' })).toBeNull();
+  for (const change of [{ emulatedMessageHash: '' }, { relayAttached: undefined }, { relaySurplus: '0.004' }, { estimatedGas: '0' }, { messageSha256: 'b'.repeat(64) }]) {
+    request.mockImplementationOnce(async (_path, decode) => decode({ data: { ...base, ...evidence, ...change } }));
+    await expect(previewDeposit(ton, ton, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
+  }
+});
