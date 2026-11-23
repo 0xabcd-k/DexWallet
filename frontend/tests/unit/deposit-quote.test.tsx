@@ -228,3 +228,26 @@ it('shows the W5 relay advance and remainder separately from the fee included in
     await expect(previewDeposit(ton, ton, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
   }
 });
+
+it('quotes TON test USDT in token units and keeps refund and wallet reserve outside the network fee', async () => {
+  const ton = { id: 'ton-testnet:ton', symbol: 'TON', origin: 'native' as const, contract: '', decimals: 9, depositPreview: true };
+  const master = '0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e';
+  const asset = { id: 'ton-testnet:usdt:' + master, symbol: 'USDT', origin: 'test_fixture' as const, contract: master, decimals: 6, depositPreview: true };
+  const wallet = '0:a393a594688a53f6138d88f3447a8991093cc387f0463d0acd955289fadbef7a';
+  const result = { ...quote(), assetId: asset.id, gasAssetId: ton.id, targetUsd: '0.01', netUsd: '0.01', usdPerCoin: '0.98',
+    payQuantity: '0.017745', estimatedGas: '0.003694994', gasUsd: '0.007389988', walletFeePreview: true, walletAddress: wallet,
+    emulatedMessageHash: 'a'.repeat(64), relayAttached: '0.053', relaySurplus: '0.002449983', jettonExcess: '0.047774744',
+    accountFunding: '0.000006283', accountFundingUsd: '0.000012566' };
+  const request = vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode) => decode({ data: result }));
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<I18nextProvider i18n={i18n}><DepositEstimate asset={asset} native={ton} target="0.01" walletAddress={wallet}/></I18nextProvider>);
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(await screen.findByText('0.017745 USDT')).toBeInTheDocument();
+  for (const label of ['0.003694994 TON · $0.007389988', '0.047774744 TON', '0.000006283 TON · $0.000012566', '0.002449983 TON']) {
+    expect(screen.getByText(label)).toBeInTheDocument();
+  }
+  for (const change of [{ jettonExcess: undefined }, { jettonExcess: '0' }, { accountFunding: undefined }, { gasAssetId: asset.id }]) {
+    request.mockImplementationOnce(async (_path, decode) => decode({ data: { ...result, ...change } }));
+    await expect(previewDeposit(asset, ton, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
+  }
+});

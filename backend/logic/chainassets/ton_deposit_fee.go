@@ -40,23 +40,24 @@ func newTONDepositRoute(c TONDepositFeeConfig, n Network) (*tonDepositRoute, err
 	return &tonDepositRoute{platform, endpoint}, nil
 }
 
-func (s *Service) previewTONDeposit(ctx context.Context, user int64, target, walletAddress string, now func() time.Time) (DepositPreview, error) {
+func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, target, walletAddress string, now func() time.Time) (DepositPreview, error) {
 	var empty DepositPreview
-	route := s.quotes.ton
+	route := s.quotes.ton[assetID]
 	if route == nil {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("TON wallet fee preview disabled"))
 	}
-	n := s.quotes.assets[tonDepositAsset].network
+	entry := s.quotes.assets[assetID]
+	n := entry.network
 	wallet, err := normalizeAddress(n, walletAddress)
 	if err != nil || !strings.HasPrefix(wallet, "0:") || wallet == route.platform || wallet == "0:"+strings.Repeat("0", 64) {
 		return empty, badTarget("invalid TON deposit source")
 	}
 	start := now()
-	prices, err := s.depositPrices(ctx, tonDepositAsset, start)
+	prices, err := s.depositPrices(ctx, assetID, start)
 	if err != nil {
 		return empty, err
 	}
-	q, err := s.depositQuote(tonDepositAsset, target, decimal.Zero, start, prices)
+	q, err := s.depositQuote(assetID, target, decimal.Zero, start, prices)
 	if err != nil {
 		return empty, err
 	}
@@ -90,7 +91,18 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, target, wal
 	if err != nil {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("TON deposit platform wallet: %w", err))
 	}
-	attached := decimal.New(tonRelayNano, -9)
+	var token *tonDepositJetton
+	balance := source.balance
+	attachmentNano := int64(tonRelayNano)
+	if assetID != tonDepositAsset {
+		token, err = s.tonDepositJetton(ctx, n, route.emulator, source, platform)
+		if err != nil {
+			return empty, err
+		}
+		balance = token.balance
+		attachmentNano += tonJettonActionNano
+	}
+	attached := decimal.New(attachmentNano, -9)
 	if platform.balance.LessThan(attached) {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("platform cannot fund TON relay"))
 	}
@@ -98,10 +110,10 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, target, wal
 	// changing its encoded byte length can change forwarding fees.
 	for attempt := 0; attempt < maxTONFeeSimulations; attempt++ {
 		pay, _ := decimal.NewFromString(q.PayQuantity)
-		if source.balance.LessThan(pay) {
+		if balance.LessThan(pay) {
 			return empty, apperror.New(apperror.InsufficientBalance, nil)
 		}
-		message, err := buildTONDepositMessage(source, platform, pay.Shift(9).BigInt(), uint32(at.Add(tonRelayValidity).Unix()))
+		message, err := buildTONDepositMessage(source, platform, token, pay.Shift(int32(entry.asset.Decimals)).BigInt(), uint32(at.Add(tonRelayValidity).Unix()))
 		if err != nil {
 			return empty, err
 		}
@@ -110,14 +122,14 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, target, wal
 		if err != nil {
 			return empty, apperror.New(apperror.ServiceUnavailable, err)
 		}
-		budget, err := trace.budget(message, source, platform, pay, at)
+		budget, err := trace.budget(message, source, platform, token, pay, at)
 		if err != nil {
 			return empty, apperror.New(apperror.ServiceUnavailable, err)
 		}
 		if platform.balance.LessThan(attached.Add(budget.dispatch)) {
 			return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("platform TON balance cannot cover dispatch and relay attachment"))
 		}
-		next, err := s.depositQuote(tonDepositAsset, target, budget.network, start, prices)
+		next, err := s.depositQuote(assetID, target, budget.network, start, prices)
 		if err != nil {
 			return empty, err
 		}
@@ -128,7 +140,12 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, target, wal
 			}
 			next.WalletAddress = walletAddress
 			next.EmulatedMessageHash = hex.EncodeToString(message.external.Hash())
-			next.RelayAttached, next.RelaySurplus = attached.String(), attached.Sub(budget.execution).String()
+			next.RelayAttached, next.RelaySurplus = attached.String(), decimal.New(tonRelayNano, -9).Sub(budget.execution).String()
+			if token != nil {
+				next.JettonExcess = budget.excess.String()
+				next.AccountFunding = budget.reserve.String()
+				next.AccountFundingUSD = budget.reserve.Mul(prices.native).String()
+			}
 			return next, nil
 		}
 		q = next

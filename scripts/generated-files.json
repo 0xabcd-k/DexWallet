@@ -1,7 +1,7 @@
 {
   "generated": {
     "backend/api/internal/handler/routes.go": "b24e8741ace962328e62df28b6c8697de48fbcb7742cda1cf7e244b23baecb91",
-    "backend/api/internal/types/types.go": "1fe0a882ca5341a86983c3bf54c0717a310c66d18dc2155b7990275deaa5e1f2",
+    "backend/api/internal/types/types.go": "2eab843f25a11ef028625b3a7be11e39d5c368d3d394ede57bfe587d7f7c5c5a",
     "backend/apperror/codes_gen.go": "4b434f65456f36b4553c690a4b0d84c9ab33875cf049055d91703314dd10c76a",
     "backend/model/account/account_hold_model_gen.go": "655b47b540fb7dad9b6e587dcf64d61741bb6d66353f4ccf23ec531e4ebb4b04",
     "backend/model/account/ledger_entry_model_gen.go": "9d04c873851e71ec5a318a252a217e855ad2060bec1990715d1ac9cd71f20425",
@@ -46,7 +46,7 @@
     "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
     "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
     "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c",
-    "frontend/packages/api-contract/src/platform.ts": "45a7a2dc3216f69800bf3580768046e57d28becc7849f9d26d3e0af38152f25f"
+    "frontend/packages/api-contract/src/platform.ts": "4b4d8323d78d4cac4a6bd985e946b41d3d85e167cd6bc4c57d1a0285511d7225"
   },
   "scaffold": [
     "backend/api/etc/platform.yaml",

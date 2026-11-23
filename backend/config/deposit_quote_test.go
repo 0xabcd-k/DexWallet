@@ -20,6 +20,7 @@ func TestTestnetDepositQuoteConfiguration(t *testing.T) {
 ChainAssets:
   Networks:
     - Network: ton-testnet
+      TestUSDTContract: "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e"
       URL: "http://127.0.0.1:1"
     - Network: tron-nile
       TestUSDTContract: TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn
@@ -33,6 +34,9 @@ ChainAssets:
     Version: example-1
     AsOf: 100
     ValidUntil: 200
+    TONTestUSDT:
+      PlatformWallet: "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0"
+      TonAPIURL: "https://testnet.tonapi.io"
     TONNative:
       PlatformWallet: "0:100769e6dae579cfbc5ca1637c88d6c83a6c2195b3e571f1e35f20b45b2fa4d0"
       TonAPIURL: "https://testnet.tonapi.io"
@@ -58,6 +62,9 @@ ChainAssets:
       FeePayer: DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN
       Recipient: 7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5
     Assets:
+      - AssetID: ton-testnet:usdt:0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e
+        USDPerCoin: "0.98"
+        EstimatedGas: "0.001"
       - AssetID: ton-testnet:ton
         USDPerCoin: "1"
         EstimatedGas: "0.001"
@@ -96,7 +103,7 @@ ChainAssets:
 		t.Fatal(err)
 	}
 	defer source.Close()
-	for _, asset := range []string{"ton-testnet:ton", chainassets.NileUSDT("TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn").ID, chainassets.TRONNileTRX, chainassets.BaseSepoliaETH, "base-sepolia:usdc", "solana-devnet:sol", "solana-devnet:usdc", "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"} {
+	for _, asset := range []string{"ton-testnet:ton", "ton-testnet:usdt:0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e", chainassets.NileUSDT("TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn").ID, chainassets.TRONNileTRX, chainassets.BaseSepoliaETH, "base-sepolia:usdc", "solana-devnet:sol", "solana-devnet:usdc", "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"} {
 		quote, err := source.PreviewDeposit(asset, "0.01", time.Unix(120, 0))
 		if err != nil || !quote.WalletFeePreview {
 			t.Fatal(quote, err)

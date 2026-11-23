@@ -15,6 +15,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	TONTestUSDT    *TONDepositFeeConfig  `json:",optional"`
 	TONNative      *TONDepositFeeConfig  `json:",optional"`
 	TRONTestUSDT   *TRONDepositFeeConfig `json:",optional"`
 	TRONTRX        *TRONDepositFeeConfig `json:",optional"`
@@ -49,7 +50,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
-	ton         *tonDepositRoute
+	ton         map[string]*tonDepositRoute
 	tron        map[string]*nileDepositRoute
 	base        map[string]*baseDepositRoute
 	market      *DepositMarketConfig
@@ -59,7 +60,7 @@ type depositBook struct {
 	assets      map[string]depositAsset
 }
 
-func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) (depositBook, error) {
+func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMaster string) (depositBook, error) {
 	var book depositBook
 	if c == nil {
 		return book, nil
@@ -113,16 +114,24 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 			return book, fmt.Errorf("missing native USD rate %s for %s", entry.native.ID, entry.asset.ID)
 		}
 	}
-	if c.TONNative != nil {
-		entry, ok := book.assets[tonDepositAsset]
-		if !ok || !entry.network.Enabled {
-			return book, fmt.Errorf("TON wallet fee preview requires the testnet endpoint and TON rate")
+	tonTokenID := asset(TONTestnet, "USDT", tonMaster, tonJettonDecimals, TestFixture).ID
+	book.ton = make(map[string]*tonDepositRoute)
+	for id, config := range map[string]*TONDepositFeeConfig{tonDepositAsset: c.TONNative, tonTokenID: c.TONTestUSDT} {
+		if config == nil {
+			continue
 		}
-		route, err := newTONDepositRoute(*c.TONNative, entry.network)
+		entry, ok := book.assets[id]
+		if !ok || !entry.network.Enabled {
+			return book, fmt.Errorf("TON preview requires the matching testnet asset, endpoint and rates for %s", id)
+		}
+		if id == tonTokenID && !sameAddress(entry.network, tonMaster, tonDepositMaster) {
+			return book, fmt.Errorf("TON USDT preview requires the verified testnet master")
+		}
+		route, err := newTONDepositRoute(*config, entry.network)
 		if err != nil {
 			return book, err
 		}
-		book.ton = route
+		book.ton[id] = route
 	}
 	book.tron = make(map[string]*nileDepositRoute)
 	for id, config := range map[string]*TRONDepositFeeConfig{TRONNileTRX: c.TRONTRX, nileDepositUSDTID: c.TRONTestUSDT} {
@@ -181,6 +190,7 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 
 type DepositPreview struct {
 	EmulatedMessageHash, RelayAttached, RelaySurplus string
+	JettonExcess                                     string
 	DelegatedEnergy                                  int64
 	DelegatedBandwidth                               int
 	AssetID, TargetUSD, USDPerCoin, PayQuantity      string
@@ -193,8 +203,8 @@ type DepositPreview struct {
 }
 
 func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID, targetUSD, address string) (DepositPreview, error) {
-	if assetID == tonDepositAsset {
-		return s.previewTONDeposit(ctx, user, targetUSD, address, time.Now)
+	if assetID == tonDepositAsset || s.quotes.ton[assetID] != nil {
+		return s.previewTONDeposit(ctx, user, assetID, targetUSD, address, time.Now)
 	}
 	if assetID == TRONNileTRX || assetID == nileDepositUSDTID {
 		return s.previewNileDeposit(ctx, user, assetID, targetUSD, address)
@@ -249,7 +259,7 @@ func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, n
 	return DepositPreview{
 		AssetID: assetID, TargetUSD: target.StringFixed(usd.Scale), USDPerCoin: prices.pay.String(), PayQuantity: pay,
 		GasAssetID: entry.native.ID, EstimatedGas: gas.String(), GasUSD: gasUSD.String(), NetUSD: net.StringFixed(usd.Scale),
-		WalletFeePreview: (assetID == tonDepositAsset && s.quotes.ton != nil) || s.quotes.solana[assetID] != nil || s.quotes.base[assetID] != nil || s.quotes.tron[assetID] != nil,
+		WalletFeePreview: s.quotes.ton[assetID] != nil || s.quotes.solana[assetID] != nil || s.quotes.base[assetID] != nil || s.quotes.tron[assetID] != nil,
 		Version:          prices.version, RateSource: prices.source, AsOf: prices.asOf.UnixMilli(), QuotedAt: now.UnixMilli(), ExpiresAt: expires.UnixMilli(),
 	}, nil
 }

@@ -377,6 +377,7 @@ type DepositQuoteData struct {
 	FeeBlockHash        string `json:"feeBlockHash,optional"`
 	EmulatedMessageHash string `json:"emulatedMessageHash,optional,omitempty"`
 	RelayAttached       string `json:"relayAttached,optional,omitempty"`
+	JettonExcess        string `json:"jettonExcess,optional,omitempty"`
 	RelaySurplus        string `json:"relaySurplus,optional,omitempty"`
 	DelegatedEnergy     int64  `json:"delegatedEnergy,optional,omitempty"`
 	DelegatedBandwidth  int    `json:"delegatedBandwidth,optional,omitempty"`

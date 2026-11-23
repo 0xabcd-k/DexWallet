@@ -390,6 +390,7 @@ export interface DepositQuoteData {
 	feeBlockHash?: string
 	emulatedMessageHash?: string
 	relayAttached?: string
+	jettonExcess?: string
 	relaySurplus?: string
 	delegatedEnergy?: number
 	delegatedBandwidth?: number

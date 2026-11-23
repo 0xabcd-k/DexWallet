@@ -22,6 +22,11 @@ type upstreamError struct{ code, detail string }
 
 func (e *upstreamError) Error() string { return e.code + ": " + e.detail }
 func invalid(detail string) error      { return &upstreamError{ErrorInvalidResponse, detail} }
+
+type upstreamHTTPStatus int
+
+func (s upstreamHTTPStatus) Error() string { return fmt.Sprintf("upstream HTTP status %d", int(s)) }
+
 func (s *Service) request(ctx context.Context, n Network, e Endpoint, path string, query url.Values, body any, out any) error {
 	var reader io.Reader
 	method := http.MethodGet
@@ -58,7 +63,7 @@ func (s *Service) request(ctx context.Context, n Network, e Endpoint, path strin
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("upstream HTTP status %d", response.StatusCode)
+		return upstreamHTTPStatus(response.StatusCode)
 	}
 	data, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
 	if err != nil {

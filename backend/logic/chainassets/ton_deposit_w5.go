@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"math/big"
+	"net/http"
 
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	"github.com/shopspring/decimal"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton/jetton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -34,17 +37,35 @@ func tonDepositCell(raw string) (*cell.Cell, error) {
 	return roots[0], nil
 }
 
-func (s *Service) tonDepositWallet(ctx context.Context, n Network, e Endpoint, owner string) (tonW5Account, error) {
-	var empty tonW5Account
-	var state struct {
-		Address, Code, Data, Status string
-		Balance                     *int64
+type tonQuoteAccount struct {
+	Address, Code, Data, Status string
+	Balance                     *int64
+}
+
+func (s *Service) tonQuoteAccount(ctx context.Context, n Network, e Endpoint, owner string) (tonQuoteAccount, error) {
+	var state tonQuoteAccount
+	err := s.request(ctx, n, e, "/v2/blockchain/accounts/"+owner, nil, nil, &state)
+	if errors.Is(err, upstreamHTTPStatus(http.StatusNotFound)) {
+		// TonAPI omits raw state for absent accounts. Its account summary can still
+		// attest the address and status; an HTTP 404 alone is not a zero balance.
+		err = s.request(ctx, n, e, "/v2/accounts/"+owner, nil, nil, &state)
+		if err == nil && state.Status != "nonexist" && state.Status != "uninit" {
+			err = invalid("TON raw account missing despite account summary")
+		}
 	}
-	if err := s.request(ctx, n, e, "/v2/blockchain/accounts/"+owner, nil, nil, &state); err != nil {
-		return empty, apperror.New(apperror.ServiceUnavailable, err)
+	if err != nil {
+		return state, apperror.New(apperror.ServiceUnavailable, err)
 	}
 	if state.Address != owner || state.Balance == nil || *state.Balance < 0 {
-		return empty, apperror.New(apperror.ServiceUnavailable, invalid("incorrect TON account response"))
+		return state, apperror.New(apperror.ServiceUnavailable, invalid("incorrect TON account response"))
+	}
+	return state, nil
+}
+func (s *Service) tonDepositWallet(ctx context.Context, n Network, e Endpoint, owner string) (tonW5Account, error) {
+	var empty tonW5Account
+	state, err := s.tonQuoteAccount(ctx, n, e, owner)
+	if err != nil {
+		return empty, err
 	}
 	if state.Status != "active" {
 		return empty, badTarget("TON deposit requires an initialized W5")
@@ -80,7 +101,10 @@ func (s *Service) tonDepositWallet(ctx context.Context, n Network, e Endpoint, o
 const tonW5SignedInternal = 0x73696e74
 const tonW5SignedExternal = 0x7369676e
 
-type tonDepositMessage struct{ external, authorization *cell.Cell }
+type tonDepositMessage struct {
+	external, authorization, paymentBody *cell.Cell
+	queryID                              uint64
+}
 
 func tonEmulatedW5Body(seqno, op uint64, deadline uint32, transfer *tlb.InternalMessage) (*cell.Cell, error) {
 	actions, err := wallet.PackV5OutActions([]*wallet.Message{{Mode: wallet.PayGasSeparately | wallet.IgnoreErrors, InternalMessage: transfer}})
@@ -91,18 +115,27 @@ func tonEmulatedW5Body(seqno, op uint64, deadline uint32, transfer *tlb.Internal
 	return cell.BeginCell().MustStoreUInt(op, 32).MustStoreUInt(tonW5ID, 32).MustStoreUInt(uint64(deadline), 32).MustStoreUInt(seqno, 32).MustStoreBuilder(actions).MustStoreSlice(make([]byte, 64), 512).EndCell(), nil
 }
 
-func buildTONDepositMessage(user, platform tonW5Account, atoms *big.Int, deadline uint32) (tonDepositMessage, error) {
+func buildTONDepositMessage(user, platform tonW5Account, token *tonDepositJetton, atoms *big.Int, deadline uint32) (tonDepositMessage, error) {
 	var m tonDepositMessage
 	pay := &tlb.InternalMessage{IHRDisabled: true, DstAddr: platform.addr, Amount: tlb.FromNanoTON(atoms), Body: cell.BeginCell().EndCell()}
+	relayNano := uint64(tonRelayNano)
+	if token != nil {
+		body, err := tlb.ToCell(jetton.TransferPayload{QueryID: uint64(deadline), Amount: tlb.FromNanoTON(atoms), Destination: platform.addr, ResponseDestination: platform.addr, ForwardTONAmount: tlb.FromNanoTONU(tonJettonForwardNano), ForwardPayload: cell.BeginCell().EndCell()})
+		if err != nil {
+			return m, err
+		}
+		pay = &tlb.InternalMessage{IHRDisabled: true, Bounce: true, DstAddr: token.sender, Amount: tlb.FromNanoTONU(tonJettonActionNano), Body: body}
+		relayNano += tonJettonActionNano
+	}
 	auth, err := tonEmulatedW5Body(user.seqno, tonW5SignedInternal, deadline, pay)
 	if err != nil {
 		return m, err
 	}
-	relay := &tlb.InternalMessage{IHRDisabled: true, Bounce: true, DstAddr: user.addr, Amount: tlb.FromNanoTONU(tonRelayNano), Body: auth}
+	relay := &tlb.InternalMessage{IHRDisabled: true, Bounce: true, DstAddr: user.addr, Amount: tlb.FromNanoTONU(relayNano), Body: auth}
 	dispatch, err := tonEmulatedW5Body(platform.seqno, tonW5SignedExternal, deadline, relay)
 	if err != nil {
 		return m, err
 	}
 	ext, err := tlb.ToCell(&tlb.ExternalMessage{DstAddr: platform.addr, Body: dispatch})
-	return tonDepositMessage{ext, auth}, err
+	return tonDepositMessage{ext, auth, pay.Body, uint64(deadline)}, err
 }

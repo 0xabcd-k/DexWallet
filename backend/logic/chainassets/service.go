@@ -145,7 +145,7 @@ func NewWithMarketRates(c Config, limiter Limiter, rates MarketRateReader) (*Ser
 			n.Assets = append(n.Assets, asset(n.ID, "USDT", e.TestUSDTContract, 6, TestFixture))
 		}
 	}
-	book, err := newDepositBook(c.DepositQuotes, s.networks, s.endpoints[SolanaDevnet].TestUSDTContract)
+	book, err := newDepositBook(c.DepositQuotes, s.networks, s.endpoints[SolanaDevnet].TestUSDTContract, s.endpoints[TONTestnet].TestUSDTContract)
 	if err != nil {
 		s.Close()
 		return nil, err

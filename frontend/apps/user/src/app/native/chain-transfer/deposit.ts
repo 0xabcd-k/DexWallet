@@ -13,7 +13,10 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const units = (v: unknown, scale: number) => typeof v === 'string' ? atomicAmount(v, scale) : undefined;
     const targetCents = units(target, 2), net = units(q.netUsd, 2);
     const baseFeeBlock = native.id === 'base-sepolia:eth' && (asset.id === native.id || asset.id === 'base-sepolia:usdc');
-    const tonRelay = !!walletAddress && native.id === 'ton-testnet:ton' && asset.id === native.id;
+    const tonNetwork = native.id === 'ton-testnet:ton';
+    const tonJetton = tonNetwork && asset.origin === 'test_fixture' && !!asset.contract && asset.id === 'ton-testnet:usdt:' + asset.contract;
+    const tonRelay = !!walletAddress && tonNetwork && (asset.id === native.id || tonJetton);
+    const validExcess = tonJetton && walletAddress ? (units(q.jettonExcess, native.decimals) ?? 0n) > 0n : q.jettonExcess === undefined;
     const attachment = units(q.relayAttached, native.decimals), surplus = units(q.relaySurplus, native.decimals);
     const validRelay = tonRelay
       ? typeof q.emulatedMessageHash === 'string' && /^[a-f0-9]{64}$/.test(q.emulatedMessageHash) &&
@@ -34,12 +37,12 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validSource = walletAddress
       ? q.walletAddress === walletAddress && q.walletFeePreview === true && walletEvidence
       : !q.walletAddress && !q.messageSha256 && !q.feeBlockHash;
-    const tokenWallet = walletAddress && native.id === 'solana-devnet:sol' && asset.contract !== '';
+    const tokenWallet = walletAddress && (tonJetton || (native.id === 'solana-devnet:sol' && asset.contract !== ''));
     const funding = units(q.accountFunding, native.decimals), fundingUsd = units(q.accountFundingUsd, native.decimals + 18);
     const validFunding = tokenWallet
       ? funding !== undefined && fundingUsd !== undefined && (funding === 0n) === (fundingUsd === 0n)
       : !q.accountFunding && !q.accountFundingUsd;
-    if (!validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
+    if (!validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||
       (q.rateSource !== undefined && q.rateSource !== 'test_sheet' && q.rateSource !== 'kraken') ||
