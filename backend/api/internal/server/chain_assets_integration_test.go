@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -57,6 +58,18 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	}
 	previewInput.Amount = "0.0000000000000000001"
 	call("POST", "/v1/user/chain-transfers/preview", token, previewInput, 400, "INVALID_ARGUMENT")
+	data, err := os.ReadFile("../../../logic/chainassets/testdata/solana-usdc-deposit-new.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var usdcFixture struct {
+		Addresses       struct{ Recipient string }
+		AccountSnapshot json.RawMessage
+		RentLamports    uint64
+	}
+	if err := json.Unmarshal(data, &usdcFixture); err != nil {
+		t.Fatal(err)
+	}
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var input struct{ Method string }
 		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -72,6 +85,10 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 			result = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG"
 		case "getLatestBlockhash":
 			result = map[string]any{"value": chainassets.SolanaBlock{Blockhash: "F1VvomZpGxaB9taEwSuT1WwAaqP99RYjQXoEkodmvxhA", LastValidBlockHeight: 123}}
+		case "getMultipleAccounts":
+			result = usdcFixture.AccountSnapshot
+		case "getMinimumBalanceForRentExemption":
+			result = usdcFixture.RentLamports
 		case "getFeeForMessage":
 			result = map[string]any{"context": map[string]int{"slot": 123}, "value": 10123}
 		case "eth_getBalance":
@@ -91,6 +108,9 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	sol := types.DepositQuoteRequest{AssetId: chainassets.SolanaDevnet + ":sol", TargetUsd: "1", WalletAddress: wallet}
 	rates.Assets = append(rates.Assets, chainassets.DepositQuoteRate{AssetID: sol.AssetId, USDPerCoin: "100", EstimatedGas: "0"})
 	rates.SolanaSOL = &chainassets.SolanaDepositFeeConfig{FeePayer: "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN", Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}
+	usdc := types.DepositQuoteRequest{AssetId: chainassets.SolanaDevnet + ":usdc", TargetUsd: "0.01", WalletAddress: wallet}
+	rates.Assets = append(rates.Assets, chainassets.DepositQuoteRate{AssetID: usdc.AssetId, USDPerCoin: "1", EstimatedGas: "0"})
+	rates.SolanaUSDC = &chainassets.SolanaDepositFeeConfig{FeePayer: rates.SolanaSOL.FeePayer, Recipient: usdcFixture.Addresses.Recipient}
 	service, err := chainassets.New(chainassets.Config{DepositQuotes: rates, Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: upstream.URL}, {Network: chainassets.SolanaDevnet, URL: upstream.URL}}}, chainassets.NewRedisLimiter(s.Redis, s.Namespace, 1))
 	if err != nil {
 		t.Fatal(err)
@@ -110,14 +130,14 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	for _, n := range catalog.Networks {
 		for _, a := range n.Assets {
 			if a.DepositPreview {
-				if a.Id != deposit.AssetId && a.Id != sol.AssetId {
+				if a.Id != deposit.AssetId && a.Id != sol.AssetId && a.Id != usdc.AssetId {
 					t.Fatal(a.Id)
 				}
 				listed[a.Id] = true
 			}
 		}
 	}
-	if !listed[deposit.AssetId] || !listed[sol.AssetId] {
+	if !listed[deposit.AssetId] || !listed[sol.AssetId] || !listed[usdc.AssetId] {
 		t.Fatal("missing quoted asset")
 	}
 	_, raw = call("POST", depositPath, token, deposit, 200, "OK")
@@ -136,7 +156,12 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	if err := json.Unmarshal(raw, &walletQuote); err != nil || !walletQuote.WalletFeePreview || walletQuote.WalletAddress != wallet || len(walletQuote.MessageSha256) != 64 || walletQuote.PayQuantity != "0.010010123" || walletQuote.CanSubmit {
 		t.Fatal(walletQuote, err)
 	}
-	for i := 0; i < 4; i++ {
+	_, raw = call("POST", depositPath, token, usdc, 200, "OK")
+	var usdcQuote types.DepositQuoteData
+	if err := json.Unmarshal(raw, &usdcQuote); err != nil || usdcQuote.CanSubmit || usdcQuote.PayQuantity != "0.011013" || usdcQuote.AccountFunding != "0.00148844" || usdcQuote.AccountFundingUsd != "0.148844" || usdcQuote.NetUsd != "0.01" {
+		t.Fatal(usdcQuote, err)
+	}
+	for i := 0; i < 3; i++ {
 		_, raw = call("POST", "/v1/user/chain-assets/balances", token, request, 200, "OK")
 		var result types.ChainBalancesData
 		if err = json.Unmarshal(raw, &result); err != nil {

@@ -15,7 +15,12 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validSource = walletAddress
       ? q.walletAddress === walletAddress && q.walletFeePreview === true && typeof q.messageSha256 === 'string' && /^[a-f0-9]{64}$/.test(q.messageSha256)
       : !q.walletAddress && !q.messageSha256;
-    if (!validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
+    const tokenWallet = walletAddress && asset.id === 'solana-devnet:usdc';
+    const funding = units(q.accountFunding, native.decimals), fundingUsd = units(q.accountFundingUsd, native.decimals + 18);
+    const validFunding = tokenWallet
+      ? funding !== undefined && fundingUsd !== undefined && (funding === 0n) === (fundingUsd === 0n)
+      : !q.accountFunding && !q.accountFundingUsd;
+    if (!validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||
       typeof q.rateVersion !== 'string' || !q.rateVersion || !Number.isSafeInteger(q.asOf) || !Number.isSafeInteger(q.quotedAt) || !Number.isSafeInteger(q.expiresAt) ||

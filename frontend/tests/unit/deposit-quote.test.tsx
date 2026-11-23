@@ -5,7 +5,8 @@ import type { ChainNetwork, DepositQuoteData } from '../../packages/api-contract
 import * as client from '../../apps/user/src/api/account';
 import * as catalog from '../../apps/user/src/app/native/chain-assets/api';
 import * as walletSource from '../../apps/user/src/app/native/chain-assets/use-wallets';
-import DepositButton from '../../apps/user/src/view/chain-transfer/deposit';
+import { previewDeposit } from '../../apps/user/src/app/native/chain-transfer/deposit';
+import DepositButton, { DepositEstimate } from '../../apps/user/src/view/chain-transfer/deposit';
 import { appResources } from '../../apps/user/src/locales';
 
 const network: ChainNetwork = { id: 'base-sepolia', family: 'base', enabled: false, testnet: true, assets: [
@@ -94,4 +95,22 @@ it('prices only the selected Solana wallet and discards the result on wallet cha
   expect(await screen.findByRole('alert')).toBeInTheDocument();
   expect(request.mock.calls[2]?.[2]).toMatchObject({ body: { walletAddress: b } });
   expect(screen.queryByText('0.100012345 SOL')).toBeNull();
+});
+
+it.each([['0', '0'], ['0.00148844', '0.148844']])('shows %s SOL of platform account funding separately from the USDC total', async (funding, usd) => {
+  const native = { ...network.assets[0]!, id: 'solana-devnet:sol', symbol: 'SOL', decimals: 9 };
+  const asset = { ...network.assets[1]!, id: 'solana-devnet:usdc' };
+  const wallet = '9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf';
+  const result = { ...quote(), assetId: asset.id, gasAssetId: native.id, usdPerCoin: '1', targetUsd: '0.01', netUsd: '0.01',
+    estimatedGas: '0.00001', gasUsd: '0.001', payQuantity: '0.011', walletAddress: wallet, walletFeePreview: true, messageSha256: 'a'.repeat(64) };
+  vi.spyOn(client, 'userRequest').mockImplementationOnce(async (_path, decode) =>
+    decode({ data: { ...result, accountFunding: funding, accountFundingUsd: usd } })).mockImplementationOnce(async (_path, decode) =>
+    decode({ data: result }));
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<I18nextProvider i18n={i18n}><DepositEstimate asset={asset} native={native} target="0.01" walletAddress={wallet}/></I18nextProvider>);
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(await screen.findByText(`${funding} SOL · $${usd}`)).toBeInTheDocument();
+  expect(screen.getByText('0.00001 SOL · $0.001')).toBeInTheDocument();
+  expect(screen.getByText('0.011 USDC')).toBeInTheDocument();
+  await expect(previewDeposit(asset, native, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
 });

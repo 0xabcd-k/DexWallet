@@ -51,6 +51,7 @@ func (l *DepositQuotePreviewLogic) DepositQuotePreview(req *types.DepositQuoteRe
 		Data: types.DepositQuoteData{AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
 			PayQuantity: q.PayQuantity, GasAssetId: q.GasAssetID, EstimatedGas: q.EstimatedGas, GasUsd: q.GasUSD,
 			NetUsd: q.NetUSD, RateVersion: q.Version, AsOf: q.AsOf, QuotedAt: q.QuotedAt, ExpiresAt: q.ExpiresAt,
+			AccountFunding: q.AccountFunding, AccountFundingUsd: q.AccountFundingUSD,
 			WalletFeePreview: q.WalletFeePreview, WalletAddress: q.WalletAddress, MessageSha256: q.MessageSHA256, CanSubmit: false,
 		}}, nil
 }

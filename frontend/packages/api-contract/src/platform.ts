@@ -386,6 +386,8 @@ export interface DepositQuoteData {
 	walletFeePreview?: boolean
 	walletAddress?: string
 	messageSha256?: string
+	accountFunding?: string
+	accountFundingUsd?: string
 	canSubmit: boolean
 }
 

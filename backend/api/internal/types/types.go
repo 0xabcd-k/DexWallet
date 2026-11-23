@@ -358,22 +358,24 @@ type CurrentUserResponse struct {
 }
 
 type DepositQuoteData struct {
-	AssetId          string `json:"assetId"`
-	TargetUsd        string `json:"targetUsd"`
-	UsdPerCoin       string `json:"usdPerCoin"`
-	PayQuantity      string `json:"payQuantity"`
-	GasAssetId       string `json:"gasAssetId"`
-	EstimatedGas     string `json:"estimatedGas"`
-	GasUsd           string `json:"gasUsd"`
-	NetUsd           string `json:"netUsd"`
-	RateVersion      string `json:"rateVersion"`
-	AsOf             int64  `json:"asOf"`
-	QuotedAt         int64  `json:"quotedAt"`
-	ExpiresAt        int64  `json:"expiresAt"`
-	WalletFeePreview bool   `json:"walletFeePreview,optional"`
-	WalletAddress    string `json:"walletAddress,optional"`
-	MessageSha256    string `json:"messageSha256,optional"`
-	CanSubmit        bool   `json:"canSubmit"`
+	AssetId           string `json:"assetId"`
+	TargetUsd         string `json:"targetUsd"`
+	UsdPerCoin        string `json:"usdPerCoin"`
+	PayQuantity       string `json:"payQuantity"`
+	GasAssetId        string `json:"gasAssetId"`
+	EstimatedGas      string `json:"estimatedGas"`
+	GasUsd            string `json:"gasUsd"`
+	NetUsd            string `json:"netUsd"`
+	RateVersion       string `json:"rateVersion"`
+	AsOf              int64  `json:"asOf"`
+	QuotedAt          int64  `json:"quotedAt"`
+	ExpiresAt         int64  `json:"expiresAt"`
+	WalletFeePreview  bool   `json:"walletFeePreview,optional"`
+	WalletAddress     string `json:"walletAddress,optional"`
+	MessageSha256     string `json:"messageSha256,optional"`
+	AccountFunding    string `json:"accountFunding,optional"`
+	AccountFundingUsd string `json:"accountFundingUsd,optional"`
+	CanSubmit         bool   `json:"canSubmit"`
 }
 
 type DepositQuoteRequest struct {

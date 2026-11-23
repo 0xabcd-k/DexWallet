@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"filippo.io/edwards25519"
@@ -16,7 +18,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const solanaDepositAsset = SolanaDevnet + ":sol"
+const (
+	solanaDepositAsset     = SolanaDevnet + ":sol"
+	solanaDepositUSDC      = SolanaDevnet + ":usdc"
+	legacyTokenAccountSize = 165
+)
 
 type SolanaDepositFeeConfig struct {
 	FeePayer, Recipient string
@@ -90,10 +96,10 @@ func (s *Service) messageFee(ctx context.Context, n Network, msg []byte) (uint64
 
 func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID, targetUSD, address string) (DepositPreview, error) {
 	var empty DepositPreview
-	if assetID != solanaDepositAsset {
+	if assetID != solanaDepositAsset && assetID != solanaDepositUSDC {
 		return empty, badTarget("wallet fee preview unsupported for asset")
 	}
-	route := s.quotes.solana
+	route := s.quotes.solana[assetID]
 	if route == nil {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Solana wallet fee preview disabled"))
 	}
@@ -118,25 +124,33 @@ func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID,
 	if err != nil {
 		return empty, apperror.New(apperror.ServiceUnavailable, err)
 	}
-	hash, _ := base58.Decode(block.Blockhash)
 	entry := s.quotes.assets[assetID]
-	message := func(q DepositPreview) []byte {
-		// depositQuote already checked positive u64 capacity and chain precision.
-		quantity, _ := decimal.NewFromString(q.PayQuantity)
-		return route.message(source, hash, quantity.Shift(int32(entry.asset.Decimals)).BigInt().Uint64())
+	draft := solanaDepositDraft{route: route, source: source, blockhash: block.Blockhash, decimals: entry.asset.Decimals}
+	if assetID == solanaDepositUSDC {
+		draft.token, err = s.depositTokenAccounts(ctx, entry, address, base58.Encode(route.recipient[:]), draft.atoms(q))
+		if err != nil {
+			return empty, err
+		}
 	}
-	msg := message(q)
+	msg, err := draft.message(q)
+	if err != nil {
+		return empty, err
+	}
 	fee, err := s.messageFee(ctx, entry.network, msg)
 	if err != nil {
 		return empty, apperror.New(apperror.ServiceUnavailable, err)
 	}
-	gas := decimal.NewFromBigInt(new(big.Int).SetUint64(fee), -int32(entry.asset.Decimals))
+	solScale := -int32(entry.native.Decimals)
+	gas := decimal.NewFromBigInt(new(big.Int).SetUint64(fee), solScale)
 	q, err = s.depositQuote(assetID, targetUSD, gas, start)
 	if err != nil {
 		return empty, err
 	}
 	if fee != 0 {
-		msg = message(q)
+		msg, err = draft.message(q)
+		if err != nil {
+			return empty, err
+		}
 		finalFee, err := s.messageFee(ctx, entry.network, msg)
 		if err != nil {
 			return empty, apperror.New(apperror.ServiceUnavailable, err)
@@ -148,6 +162,87 @@ func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID,
 	if time.Now().UnixMilli() >= q.ExpiresAt {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Solana deposit quote expired during estimation"))
 	}
+	if draft.token != nil {
+		funding := decimal.NewFromBigInt(new(big.Int).SetUint64(draft.token.rent), solScale)
+		q.AccountFunding, q.AccountFundingUSD = funding.String(), funding.Mul(s.quotes.assets[entry.native.ID].rate).String()
+	}
 	q.WalletAddress, q.MessageSHA256 = address, fmt.Sprintf("%x", sha256.Sum256(msg))
 	return q, nil
+}
+
+type solanaDepositDraft struct {
+	route     *solanaDepositRoute
+	source    [32]byte
+	blockhash string
+	decimals  int
+	token     *depositTokenAccounts
+}
+
+func (d solanaDepositDraft) atoms(q DepositPreview) uint64 {
+	// depositQuote checked the gross amount against the asset's u64 precision.
+	quantity, _ := decimal.NewFromString(q.PayQuantity)
+	return quantity.Shift(int32(d.decimals)).BigInt().Uint64()
+}
+
+func (d solanaDepositDraft) message(q DepositPreview) ([]byte, error) {
+	amount := d.atoms(q)
+	if d.token == nil {
+		hash, _ := base58.Decode(d.blockhash) // LatestSolanaBlock validated the blockhash.
+		return d.route.message(d.source, hash, amount), nil
+	}
+	if amount > d.token.balance {
+		return nil, apperror.New(apperror.InsufficientBalance, nil)
+	}
+	transfer := d.token.transfer
+	transfer.Amount = amount
+	msg, err := transfer.SponsoredMessage(d.blockhash, base58.Encode(d.route.payer[:]))
+	if err != nil {
+		return nil, apperror.New(apperror.ServiceUnavailable, err)
+	}
+	return msg, nil
+}
+
+type depositTokenAccounts struct {
+	transfer      solanaspl.Transfer
+	balance, rent uint64
+}
+
+func (s *Service) depositTokenAccounts(ctx context.Context, entry depositAsset, source, recipient string, amount uint64) (*depositTokenAccounts, error) {
+	t, err := solanaspl.New(source, recipient, entry.asset.Contract, strconv.FormatUint(amount, 10), false)
+	if err != nil {
+		return nil, badTarget(err.Error())
+	}
+	var snapshot struct {
+		Context struct{ Slot uint64 }
+		Value   []json.RawMessage
+	}
+	endpoint := s.endpoints[entry.network.ID]
+	err = s.rpc(ctx, entry.network, endpoint, "getMultipleAccounts", []any{[]string{t.SourceATA, t.DestinationATA}, map[string]string{"encoding": "jsonParsed", "commitment": "confirmed"}}, &snapshot)
+	if err != nil {
+		return nil, apperror.New(apperror.ServiceUnavailable, err)
+	}
+	if snapshot.Context.Slot == 0 || len(snapshot.Value) != 2 {
+		return nil, apperror.New(apperror.ServiceUnavailable, invalid("incomplete SPL account observation"))
+	}
+	if string(snapshot.Value[0]) == "null" {
+		return nil, apperror.New(apperror.InsufficientBalance, nil)
+	}
+	balance, err := solanaTokenBalance(snapshot.Value[0], source, t.Mint)
+	if err != nil {
+		return nil, apperror.New(apperror.ServiceUnavailable, err)
+	}
+	t.CreateATA = string(snapshot.Value[1]) == "null"
+	result := &depositTokenAccounts{transfer: t, balance: balance}
+	if !t.CreateATA {
+		_, err = solanaTokenBalance(snapshot.Value[1], recipient, t.Mint)
+	} else {
+		err = s.rpc(ctx, entry.network, endpoint, "getMinimumBalanceForRentExemption", []any{legacyTokenAccountSize, map[string]string{"commitment": "confirmed"}}, &result.rent)
+		if err == nil && result.rent == 0 {
+			err = invalid("missing SPL account storage funding")
+		}
+	}
+	if err != nil {
+		return nil, apperror.New(apperror.ServiceUnavailable, err)
+	}
+	return result, nil
 }

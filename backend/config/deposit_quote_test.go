@@ -28,7 +28,13 @@ ChainAssets:
     SolanaSOL:
       FeePayer: DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN
       Recipient: 7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5
+    SolanaUSDC:
+      FeePayer: DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN
+      Recipient: 7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5
     Assets:
+      - AssetID: solana-devnet:usdc
+        USDPerCoin: "1"
+        EstimatedGas: "0"
       - AssetID: solana-devnet:sol
         USDPerCoin: "100"
         EstimatedGas: "0.00001"
@@ -49,9 +55,11 @@ ChainAssets:
 		t.Fatal(err)
 	}
 	defer source.Close()
-	quote, err := source.PreviewDeposit(chainassets.SolanaDevnet+":sol", "0.01", time.Unix(120, 0))
-	if err != nil || !quote.WalletFeePreview {
-		t.Fatal(quote, err)
+	for _, asset := range []string{":sol", ":usdc"} {
+		quote, err := source.PreviewDeposit(chainassets.SolanaDevnet+asset, "0.01", time.Unix(120, 0))
+		if err != nil || !quote.WalletFeePreview {
+			t.Fatal(quote, err)
+		}
 	}
 	for _, env := range [][2]string{{"prod", "dev"}, {"local", "pro"}} {
 		cfg.Environment, cfg.Mode = env[0], env[1]

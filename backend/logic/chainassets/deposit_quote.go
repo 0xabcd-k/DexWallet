@@ -17,6 +17,7 @@ type DepositQuoteConfig struct {
 	AsOf       int64
 	ValidUntil int64
 	SolanaSOL  *SolanaDepositFeeConfig `json:",optional"`
+	SolanaUSDC *SolanaDepositFeeConfig `json:",optional"`
 	Assets     []DepositQuoteRate
 }
 
@@ -38,7 +39,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
-	solana      *solanaDepositRoute
+	solana      map[string]*solanaDepositRoute
 	version     string
 	asOf, until int64
 	assets      map[string]depositAsset
@@ -87,16 +88,20 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network) (depositBook, err
 			return book, fmt.Errorf("missing native USD rate %s for %s", entry.native.ID, entry.asset.ID)
 		}
 	}
-	if c.SolanaSOL != nil {
-		entry, ok := book.assets[solanaDepositAsset]
-		if !ok || !entry.network.Enabled {
-			return book, fmt.Errorf("Solana wallet fee requires an enabled Devnet endpoint and SOL rate")
+	book.solana = make(map[string]*solanaDepositRoute)
+	for id, config := range map[string]*SolanaDepositFeeConfig{solanaDepositAsset: c.SolanaSOL, solanaDepositUSDC: c.SolanaUSDC} {
+		if config == nil {
+			continue
 		}
-		route, err := newSolanaDepositRoute(*c.SolanaSOL)
+		entry, ok := book.assets[id]
+		if !ok || !entry.network.Enabled {
+			return book, fmt.Errorf("wallet fee preview for %s requires a Devnet endpoint and a test rate", id)
+		}
+		route, err := newSolanaDepositRoute(*config)
 		if err != nil {
 			return book, err
 		}
-		book.solana = route
+		book.solana[id] = route
 	}
 	return book, nil
 }
@@ -109,6 +114,7 @@ func (s *Service) HasDepositPreview(assetID string, now time.Time) bool {
 type DepositPreview struct {
 	AssetID, TargetUSD, USDPerCoin, PayQuantity string
 	GasAssetID, EstimatedGas, GasUSD, NetUSD    string
+	AccountFunding, AccountFundingUSD           string
 	WalletFeePreview                            bool
 	WalletAddress, MessageSHA256                string
 	Version                                     string
@@ -154,7 +160,7 @@ func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, n
 	return DepositPreview{
 		AssetID: assetID, TargetUSD: target.StringFixed(usd.Scale), USDPerCoin: entry.rate.String(), PayQuantity: pay,
 		GasAssetID: entry.native.ID, EstimatedGas: gas.String(), GasUSD: gasUSD.String(), NetUSD: net.StringFixed(usd.Scale),
-		WalletFeePreview: s.quotes.solana != nil && assetID == solanaDepositAsset,
+		WalletFeePreview: s.quotes.solana[assetID] != nil,
 		Version:          s.quotes.version, AsOf: time.Unix(s.quotes.asOf, 0).UnixMilli(), QuotedAt: now.UnixMilli(), ExpiresAt: expires.UnixMilli(),
 	}, nil
 }

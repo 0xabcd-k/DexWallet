@@ -1,4 +1,4 @@
-// Package solanaspl describes the two legacy SPL payout messages supported on Devnet.
+// Package solanaspl builds legacy SPL transfers supported on Devnet.
 package solanaspl
 
 import (
@@ -98,12 +98,26 @@ func (t Transfer) TransferIndex() int {
 	return 0
 }
 func (t Transfer) Message(blockhash string) ([]byte, error) {
+	return t.compile(blockhash, t.Sender, t.Keys(), 1, 0)
+}
+
+// SponsoredMessage keeps the token authority read-only. The separate fee payer
+// signs first and supplies the storage deposit when the destination is created.
+func (t Transfer) SponsoredMessage(blockhash, payer string) ([]byte, error) {
+	for _, account := range []string{t.Sender, t.Recipient, t.Mint, t.SourceATA, t.DestinationATA, Program, SystemProgram, AssociatedProgram} {
+		if payer == account {
+			return nil, fmt.Errorf("overlapping SPL fee payer %s", payer)
+		}
+	}
+	return t.compile(blockhash, payer, append([]string{payer}, t.Keys()...), 2, 1)
+}
+
+func (t Transfer) compile(blockhash, payer string, keys []string, signers, readonlySigners byte) ([]byte, error) {
 	hash, err := publicKey(blockhash)
 	if err != nil {
 		return nil, err
 	}
-	keys := t.Keys()
-	msg := []byte{1, 0, byte(len(keys) - 3), byte(len(keys))}
+	msg := []byte{signers, readonlySigners, byte(len(keys) - int(signers) - 2), byte(len(keys))}
 	for _, k := range keys {
 		b, err := publicKey(k)
 		if err != nil {
@@ -128,7 +142,7 @@ func (t Transfer) Message(blockhash string) ([]byte, error) {
 	}
 	msg = append(msg, byte(1+t.TransferIndex()))
 	if t.CreateATA {
-		appendInstruction(AssociatedProgram, []string{t.Sender, t.DestinationATA, t.Recipient, t.Mint, SystemProgram, Program}, []byte{createIdempotent})
+		appendInstruction(AssociatedProgram, []string{payer, t.DestinationATA, t.Recipient, t.Mint, SystemProgram, Program}, []byte{createIdempotent})
 	}
 	data := binary.LittleEndian.AppendUint64([]byte{transferChecked}, t.Amount)
 	appendInstruction(Program, []string{t.SourceATA, t.Mint, t.DestinationATA, t.Sender}, append(data, Decimals))

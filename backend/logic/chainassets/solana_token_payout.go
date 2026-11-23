@@ -31,35 +31,45 @@ func (s *Service) CheckSolanaTokenAccounts(ctx context.Context, t solanaspl.Tran
 			}
 			return fmt.Errorf("required SPL account missing for %s", owner)
 		}
-		var account struct {
-			Owner string
-			Data  struct {
-				Parsed struct {
-					Type string
-					Info struct {
-						Owner, Mint, State string
-						TokenAmount        struct {
-							Amount   string
-							Decimals *int
-						}
-					}
-				}
-			}
-		}
-		if err = json.Unmarshal(raw, &account); err != nil {
-			return invalid("invalid SPL account")
-		}
-		parsed := account.Data.Parsed
-		if account.Owner != solanaspl.Program || parsed.Type != "account" || parsed.Info.Owner != owner || parsed.Info.Mint != t.Mint || parsed.Info.State != "initialized" || parsed.Info.TokenAmount.Decimals == nil || *parsed.Info.TokenAmount.Decimals != solanaspl.Decimals {
-			return invalid("unexpected SPL owner, mint, state or decimals")
-		}
-		amount, err := strconv.ParseUint(parsed.Info.TokenAmount.Amount, 10, 64)
+		amount, err := solanaTokenBalance(raw, owner, t.Mint)
 		if err != nil {
-			return invalid("invalid SPL balance")
+			return err
 		}
 		if index == 0 && amount < t.Amount {
 			return fmt.Errorf("insufficient platform token balance")
 		}
 	}
 	return nil
+}
+
+// The requesting RPC call pins the ATA address. Check the observed program,
+// token authority, mint, state and decimals before using the account.
+func solanaTokenBalance(raw json.RawMessage, owner, mint string) (uint64, error) {
+	var account struct {
+		Owner string
+		Data  struct {
+			Parsed struct {
+				Type string
+				Info struct {
+					Owner, Mint, State string
+					TokenAmount        struct {
+						Amount   string
+						Decimals *int
+					}
+				}
+			}
+		}
+	}
+	if err := json.Unmarshal(raw, &account); err != nil {
+		return 0, invalid("invalid SPL account")
+	}
+	parsed := account.Data.Parsed
+	if account.Owner != solanaspl.Program || parsed.Type != "account" || parsed.Info.Owner != owner || parsed.Info.Mint != mint || parsed.Info.State != "initialized" || parsed.Info.TokenAmount.Decimals == nil || *parsed.Info.TokenAmount.Decimals != solanaspl.Decimals {
+		return 0, invalid("unexpected SPL owner, mint, state or decimals")
+	}
+	amount, err := strconv.ParseUint(parsed.Info.TokenAmount.Amount, 10, 64)
+	if err != nil {
+		return 0, invalid("invalid SPL balance")
+	}
+	return amount, nil
 }
