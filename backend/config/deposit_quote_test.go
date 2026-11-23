@@ -21,6 +21,7 @@ ChainAssets:
   Networks:
     - Network: solana-devnet
       URL: "http://127.0.0.1:1"
+      TestUSDTContract: 2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5
   DepositQuotes:
     Version: example-1
     AsOf: 100
@@ -31,7 +32,13 @@ ChainAssets:
     SolanaUSDC:
       FeePayer: DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN
       Recipient: 7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5
+    SolanaTestUSDT:
+      FeePayer: DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN
+      Recipient: 7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5
     Assets:
+      - AssetID: solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5
+        USDPerCoin: "0.98"
+        EstimatedGas: "0"
       - AssetID: solana-devnet:usdc
         USDPerCoin: "1"
         EstimatedGas: "0"
@@ -55,7 +62,7 @@ ChainAssets:
 		t.Fatal(err)
 	}
 	defer source.Close()
-	for _, asset := range []string{":sol", ":usdc"} {
+	for _, asset := range []string{":sol", ":usdc", ":usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"} {
 		quote, err := source.PreviewDeposit(chainassets.SolanaDevnet+asset, "0.01", time.Unix(120, 0))
 		if err != nil || !quote.WalletFeePreview {
 			t.Fatal(quote, err)

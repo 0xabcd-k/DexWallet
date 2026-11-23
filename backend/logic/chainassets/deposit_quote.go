@@ -13,12 +13,13 @@ import (
 // A versioned operator-supplied test sheet. Times are Unix seconds and
 // EstimatedGas is expressed in the network's native coin, per payment asset.
 type DepositQuoteConfig struct {
-	Version    string
-	AsOf       int64
-	ValidUntil int64
-	SolanaSOL  *SolanaDepositFeeConfig `json:",optional"`
-	SolanaUSDC *SolanaDepositFeeConfig `json:",optional"`
-	Assets     []DepositQuoteRate
+	Version        string
+	AsOf           int64
+	ValidUntil     int64
+	SolanaSOL      *SolanaDepositFeeConfig `json:",optional"`
+	SolanaUSDC     *SolanaDepositFeeConfig `json:",optional"`
+	SolanaTestUSDT *SolanaDepositFeeConfig `json:",optional"`
+	Assets         []DepositQuoteRate
 }
 
 type DepositQuoteRate struct {
@@ -45,7 +46,7 @@ type depositBook struct {
 	assets      map[string]depositAsset
 }
 
-func newDepositBook(c *DepositQuoteConfig, networks []Network) (depositBook, error) {
+func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) (depositBook, error) {
 	var book depositBook
 	if c == nil {
 		return book, nil
@@ -89,7 +90,14 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network) (depositBook, err
 		}
 	}
 	book.solana = make(map[string]*solanaDepositRoute)
-	for id, config := range map[string]*SolanaDepositFeeConfig{solanaDepositAsset: c.SolanaSOL, solanaDepositUSDC: c.SolanaUSDC} {
+	routes := map[string]*SolanaDepositFeeConfig{solanaDepositAsset: c.SolanaSOL, solanaDepositUSDC: c.SolanaUSDC}
+	if c.SolanaTestUSDT != nil {
+		if testMint == "" || testMint == catalog[solanaDepositUSDC].asset.Contract {
+			return book, fmt.Errorf("Solana test USDT wallet fee preview requires a dedicated Devnet TestUSDTContract")
+		}
+		routes[solanaDepositUSDTPrefix+testMint] = c.SolanaTestUSDT
+	}
+	for id, config := range routes {
 		if config == nil {
 			continue
 		}

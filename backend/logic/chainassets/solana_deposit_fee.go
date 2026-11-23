@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	solanaDepositAsset     = SolanaDevnet + ":sol"
-	solanaDepositUSDC      = SolanaDevnet + ":usdc"
-	legacyTokenAccountSize = 165
+	solanaDepositAsset      = SolanaDevnet + ":sol"
+	solanaDepositUSDC       = SolanaDevnet + ":usdc"
+	solanaDepositUSDTPrefix = SolanaDevnet + ":usdt:"
+	legacyTokenAccountSize  = 165
 )
 
 type SolanaDepositFeeConfig struct {
@@ -96,11 +97,12 @@ func (s *Service) messageFee(ctx context.Context, n Network, msg []byte) (uint64
 
 func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID, targetUSD, address string) (DepositPreview, error) {
 	var empty DepositPreview
-	if assetID != solanaDepositAsset && assetID != solanaDepositUSDC {
-		return empty, badTarget("wallet fee preview unsupported for asset")
-	}
 	route := s.quotes.solana[assetID]
 	if route == nil {
+		mint := s.endpoints[SolanaDevnet].TestUSDTContract
+		if assetID != solanaDepositAsset && assetID != solanaDepositUSDC && (mint == "" || assetID != solanaDepositUSDTPrefix+mint) {
+			return empty, badTarget("wallet fee preview unsupported for asset")
+		}
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Solana wallet fee preview disabled"))
 	}
 	source, err := depositKey(address, true)
@@ -126,7 +128,7 @@ func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID,
 	}
 	entry := s.quotes.assets[assetID]
 	draft := solanaDepositDraft{route: route, source: source, blockhash: block.Blockhash, decimals: entry.asset.Decimals}
-	if assetID == solanaDepositUSDC {
+	if entry.asset.Contract != "" {
 		draft.token, err = s.depositTokenAccounts(ctx, entry, address, base58.Encode(route.recipient[:]), draft.atoms(q))
 		if err != nil {
 			return empty, err

@@ -15,7 +15,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validSource = walletAddress
       ? q.walletAddress === walletAddress && q.walletFeePreview === true && typeof q.messageSha256 === 'string' && /^[a-f0-9]{64}$/.test(q.messageSha256)
       : !q.walletAddress && !q.messageSha256;
-    const tokenWallet = walletAddress && asset.id === 'solana-devnet:usdc';
+    const tokenWallet = walletAddress && native.id === 'solana-devnet:sol' && asset.contract !== '';
     const funding = units(q.accountFunding, native.decimals), fundingUsd = units(q.accountFundingUsd, native.decimals + 18);
     const validFunding = tokenWallet
       ? funding !== undefined && fundingUsd !== undefined && (funding === 0n) === (fundingUsd === 0n)

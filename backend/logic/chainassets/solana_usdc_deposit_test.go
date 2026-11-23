@@ -10,19 +10,30 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	"github.com/mr-tron/base58"
 )
 
-// Feed the RPC observations from the two Devnet transfers back into the service.
-// Only messages present in the original getFeeForMessage calls are accepted.
+const depositTestUSDTMint = "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"
+
 func TestUSDCDepositFinalizedQuotes(t *testing.T) {
+	checkTokenDepositReceipts(t, "usdc", solanaDepositUSDC, "1", "0.011")
+}
+
+func TestSolanaTestUSDTDepositFinalizedQuotes(t *testing.T) {
+	checkTokenDepositReceipts(t, "usdt", solanaDepositUSDTPrefix+depositTestUSDTMint, "0.98", "0.011225")
+}
+
+// Replay both getFeeForMessage calls for each finalized transfer.
+func checkTokenDepositReceipts(t *testing.T, token, assetID, rate, payQuantity string) {
+	t.Helper()
 	for _, tc := range []struct{ account, funding, fundingUSD string }{
 		{"new", "0.00148844", "0.148844"}, {"existing", "0", "0"},
 	} {
 		t.Run(tc.account, func(t *testing.T) {
-			data, err := os.ReadFile("testdata/solana-usdc-deposit-" + tc.account + ".json")
+			data, err := os.ReadFile("testdata/solana-" + token + "-deposit-" + tc.account + ".json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -87,12 +98,18 @@ func TestUSDCDepositFinalizedQuotes(t *testing.T) {
 				}
 			}, func(c *Config) {
 				c.DepositQuotes = solanaQuoteSheet()
-				c.DepositQuotes.SolanaUSDC = &SolanaDepositFeeConfig{f.Addresses.Sponsor, f.Addresses.Recipient}
-				c.DepositQuotes.Assets = append(c.DepositQuotes.Assets, DepositQuoteRate{solanaDepositUSDC, "1", "0"})
+				route := &SolanaDepositFeeConfig{f.Addresses.Sponsor, f.Addresses.Recipient}
+				if assetID == solanaDepositUSDC {
+					c.DepositQuotes.SolanaUSDC = route
+				} else {
+					c.Networks[0].TestUSDTContract = depositTestUSDTMint
+					c.DepositQuotes.SolanaTestUSDT = route
+				}
+				c.DepositQuotes.Assets = append(c.DepositQuotes.Assets, DepositQuoteRate{assetID, rate, "0"})
 			})
-			q, err := s.PreviewWalletDeposit(context.Background(), 7, solanaDepositUSDC, "0.01", f.Addresses.User)
+			q, err := s.PreviewWalletDeposit(context.Background(), 7, assetID, "0.01", f.Addresses.User)
 			if err != nil || fees != 2 || (rents == 1) != (tc.account == "new") || q.EstimatedGas != "0.00001" || q.GasUSD != "0.001" ||
-				q.AccountFunding != tc.funding || q.AccountFundingUSD != tc.fundingUSD || q.PayQuantity != "0.011" || q.NetUSD != "0.01" ||
+				q.AccountFunding != tc.funding || q.AccountFundingUSD != tc.fundingUSD || q.AssetID != assetID || q.USDPerCoin != rate || q.PayQuantity != payQuantity || q.NetUSD != "0.01" ||
 				q.MessageSHA256 != f.Quote.MessageSHA256 || q.WalletAddress != f.Addresses.User {
 				t.Fatal(q, err, fees, rents)
 			}
@@ -160,5 +177,41 @@ func TestUSDCDepositRejectsUnusableAccounts(t *testing.T) {
 				t.Fatal(q, err)
 			}
 		})
+	}
+}
+
+func TestSolanaTestUSDTDepositUsesConfiguredMint(t *testing.T) {
+	const id = solanaDepositUSDTPrefix + depositTestUSDTMint
+	const usdcMint = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+	for _, tc := range []struct{ mint, rateID string }{
+		{"", ""}, {depositTestUSDTMint, ""}, {usdcMint, solanaDepositUSDTPrefix + usdcMint}, {solOwner, id},
+	} {
+		cfg := Config{Networks: []Endpoint{{Network: SolanaDevnet, URL: "http://127.0.0.1:1", TestUSDTContract: tc.mint}}, DepositQuotes: solanaQuoteSheet()}
+		cfg.DepositQuotes.SolanaTestUSDT = cfg.DepositQuotes.SolanaSOL
+		if tc.rateID != "" {
+			cfg.DepositQuotes.Assets = append(cfg.DepositQuotes.Assets, DepositQuoteRate{tc.rateID, "0.98", "0"})
+		}
+		if s, err := New(cfg, nil); err == nil {
+			s.Close()
+			t.Fatalf("accepted inconsistent USDT route: mint=%q rate=%q", tc.mint, tc.rateID)
+		}
+	}
+	s := service(t, SolanaDevnet, func(http.ResponseWriter, *http.Request) { t.Error("unexpected RPC") }, func(c *Config) {
+		c.Networks[0].TestUSDTContract = depositTestUSDTMint
+		c.DepositQuotes = solanaQuoteSheet()
+		c.DepositQuotes.Assets = append(c.DepositQuotes.Assets, DepositQuoteRate{id, "0.98", "0"})
+	})
+	q, err := s.PreviewDeposit(id, "0.01", time.Now())
+	if err != nil || q.WalletFeePreview || q.USDPerCoin != "0.98" {
+		t.Fatal(q, err)
+	}
+	for assetID, want := range map[string]apperror.Code{
+		id: apperror.ServiceUnavailable, SolanaDevnet + ":usdt": apperror.InvalidArgument, solanaDepositUSDTPrefix + solOwner: apperror.InvalidArgument,
+	} {
+		_, err := s.PreviewWalletDeposit(context.Background(), 7, assetID, "0.01", solOwner)
+		var got *apperror.Error
+		if !errors.As(err, &got) || got.Code != want {
+			t.Fatalf("%s: %v", assetID, err)
+		}
 	}
 }

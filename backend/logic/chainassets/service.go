@@ -139,7 +139,7 @@ func New(c Config, limiter Limiter) (*Service, error) {
 			n.Assets = append(n.Assets, asset(n.ID, "USDT", e.TestUSDTContract, 6, TestFixture))
 		}
 	}
-	book, err := newDepositBook(c.DepositQuotes, s.networks)
+	book, err := newDepositBook(c.DepositQuotes, s.networks, s.endpoints[SolanaDevnet].TestUSDTContract)
 	if err != nil {
 		s.Close()
 		return nil, err

@@ -1,0 +1,187 @@
+{
+  "network": "solana-devnet",
+  "case": "new",
+  "genesis": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "endpoint": "https://solana-devnet.api.onfinality.io/public",
+  "addresses": {
+    "user": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "sponsor": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+    "recipient": "98HhQVVJeDnWZnXd88iHaX5XuN2SitsjFnxVMSbbRDcB"
+  },
+  "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+  "sourceATA": "G3fPnGibrCdEUDURrYFxk8Y1KfUmNWGPFsobTCRRbAdt",
+  "destinationATA": "8QKf847VGndHp1voq5K4UfsQTJBU8mhUcvwz8qJcwRc7",
+  "block": {
+    "context": {
+      "apiVersion": "4.4.1",
+      "slot": 525284849
+    },
+    "value": {
+      "blockhash": "5Q7BUtWrCmj8WwiSQzW8fZHbtN8ewRfwgJ5PvdyxdBe5",
+      "lastValidBlockHeight": 512383336
+    }
+  },
+  "accountSnapshot": {
+    "context": {
+      "apiVersion": "4.4.1",
+      "slot": 525284860
+    },
+    "value": [
+      {
+        "data": {
+          "parsed": {
+            "info": {
+              "isNative": false,
+              "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+              "owner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+              "state": "initialized",
+              "tokenAmount": {
+                "amount": "19968000",
+                "decimals": 6,
+                "uiAmount": 19.968,
+                "uiAmountString": "19.968"
+              }
+            },
+            "type": "account"
+          },
+          "program": "spl-token",
+          "space": 165
+        },
+        "executable": false,
+        "lamports": 1488440,
+        "owner": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "rentEpoch": 18446744073709551615,
+        "space": 165
+      },
+      null
+    ]
+  },
+  "rentLamports": 1488440,
+  "fees": [
+    {
+      "messageBase64": "AgEFCbtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRt+0NPsSWZKbSOjsrC/GsqPCuzFX/f2VAxWh36bxJHFN+N4FjDY3GsPLGAz3XLGnqRxAvQN9fqSRthh5HpZPQvjJclj04kifG7PRApFI4NgwtaE5na/xCEBI572Nvp+Fl4u3ClYDLT3pCYk8VwnIOZBDh0HNB/VOrTVQMO6ZE5CB1dU9OtjQTd4KEM6s9lr6EwrLW68eL/P5W14OwgHgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqUFaGEij7VFnN7TLw0bYrniOB/klcN8XhCeGhrA4iSpeAgQGAAIFBgcIAQEIBAMGAgEKDN0nAAAAAAAABg==",
+      "response": {
+        "context": {
+          "apiVersion": "4.4.1",
+          "slot": 525284882
+        },
+        "value": 10000
+      }
+    },
+    {
+      "messageBase64": "AgEFCbtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRt+0NPsSWZKbSOjsrC/GsqPCuzFX/f2VAxWh36bxJHFN+N4FjDY3GsPLGAz3XLGnqRxAvQN9fqSRthh5HpZPQvjJclj04kifG7PRApFI4NgwtaE5na/xCEBI572Nvp+Fl4u3ClYDLT3pCYk8VwnIOZBDh0HNB/VOrTVQMO6ZE5CB1dU9OtjQTd4KEM6s9lr6EwrLW68eL/P5W14OwgHgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqUFaGEij7VFnN7TLw0bYrniOB/klcN8XhCeGhrA4iSpeAgQGAAIFBgcIAQEIBAMGAgEKDNkrAAAAAAAABg==",
+      "response": {
+        "context": {
+          "apiVersion": "4.4.1",
+          "slot": 525284892
+        },
+        "value": 10000
+      }
+    }
+  ],
+  "quote": {
+    "AssetID": "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+    "TargetUSD": "0.01",
+    "USDPerCoin": "0.98",
+    "PayQuantity": "0.011225",
+    "GasAssetID": "solana-devnet:sol",
+    "EstimatedGas": "0.00001",
+    "GasUSD": "0.001",
+    "NetUSD": "0.01",
+    "AccountFunding": "0.00148844",
+    "AccountFundingUSD": "0.148844",
+    "WalletFeePreview": true,
+    "WalletAddress": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "MessageSHA256": "e1c3223789ba3e0cccdd865d06acfe9b36e1f6eda6063e4922db011d71afb4b9",
+    "Version": "devnet-usdt-fixture-usd-test",
+    "AsOf": 1795401772000,
+    "QuotedAt": 1795401832147,
+    "ExpiresAt": 1795401862147
+  },
+  "signature": "2dcdQkigHwSRKdvT3J3ZgJt9nn9F5kyLPBVYp66GHgpgjHmrsS2q35G6Fjp2ZJEGmsHZQvKka9ZtJv3R7K4EKweC",
+  "status": {
+    "confirmationStatus": "finalized",
+    "confirmations": null,
+    "err": null,
+    "slot": 525284908,
+    "status": {
+      "Ok": null
+    }
+  },
+  "receipt": {
+    "blockTime": 1795401848,
+    "slot": 525284908,
+    "transaction": [
+      "AlGXfVgDOiCNSn4QrKtWJ8I0lp01N0Y7SduNxiylREzMcDb1c+v3BRSj7ZoJR9nXjCYJduM4CfIqv/MzeKkP1wWG4j04aV+LItp2PNlT7r+skp6MRgJEj7j0NpzeOdmsjSZGHkwWHBz0SL2Pc5Az9M661Xd+QackT9SibXkTbk0IAgEFCbtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrRt+0NPsSWZKbSOjsrC/GsqPCuzFX/f2VAxWh36bxJHFN+N4FjDY3GsPLGAz3XLGnqRxAvQN9fqSRthh5HpZPQvjJclj04kifG7PRApFI4NgwtaE5na/xCEBI572Nvp+Fl4u3ClYDLT3pCYk8VwnIOZBDh0HNB/VOrTVQMO6ZE5CB1dU9OtjQTd4KEM6s9lr6EwrLW68eL/P5W14OwgHgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqUFaGEij7VFnN7TLw0bYrniOB/klcN8XhCeGhrA4iSpeAgQGAAIFBgcIAQEIBAMGAgEKDNkrAAAAAAAABg==",
+      "base64"
+    ],
+    "transactionIndex": 44,
+    "version": "legacy"
+  },
+  "meta": {
+    "err": null,
+    "fee": 10000,
+    "preBalances": [
+      4986838440,
+      1891120,
+      0,
+      1488440,
+      5938070540,
+      0,
+      1066800,
+      1,
+      20518277856
+    ],
+    "postBalances": [
+      4985340000,
+      1891120,
+      1488440,
+      1488440,
+      5938070540,
+      0,
+      1066800,
+      1,
+      20518277856
+    ],
+    "preTokenBalances": [
+      {
+        "accountIndex": 3,
+        "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+        "owner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+        "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "uiTokenAmount": {
+          "amount": "19968000",
+          "decimals": 6,
+          "uiAmount": 19.968,
+          "uiAmountString": "19.968"
+        }
+      }
+    ],
+    "postTokenBalances": [
+      {
+        "accountIndex": 2,
+        "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+        "owner": "98HhQVVJeDnWZnXd88iHaX5XuN2SitsjFnxVMSbbRDcB",
+        "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "uiTokenAmount": {
+          "amount": "11225",
+          "decimals": 6,
+          "uiAmount": 0.011225,
+          "uiAmountString": "0.011225"
+        }
+      },
+      {
+        "accountIndex": 3,
+        "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+        "owner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+        "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "uiTokenAmount": {
+          "amount": "19956775",
+          "decimals": 6,
+          "uiAmount": 19.956775,
+          "uiAmountString": "19.956775"
+        }
+      }
+    ]
+  }
+}

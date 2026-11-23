@@ -97,20 +97,30 @@ it('prices only the selected Solana wallet and discards the result on wallet cha
   expect(screen.queryByText('0.100012345 SOL')).toBeNull();
 });
 
-it.each([['0', '0'], ['0.00148844', '0.148844']])('shows %s SOL of platform account funding separately from the USDC total', async (funding, usd) => {
+const testMint = '2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5';
+const usdc = { id: 'solana-devnet:usdc', symbol: 'USDC', contract: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU', rate: '1', pay: '0.011' };
+const usdt = { id: 'solana-devnet:usdt:' + testMint, symbol: 'USDT', contract: testMint, rate: '0.98', pay: '0.011225' };
+it.each([
+  { ...usdc, funding: '0', usd: '0' }, { ...usdc, funding: '0.00148844', usd: '0.148844' },
+  { ...usdt, funding: '0', usd: '0' }, { ...usdt, funding: '0.00148844', usd: '0.148844' },
+])('shows $funding SOL of platform account funding separately from the $symbol total', async ({ symbol, id, contract, rate, pay, funding, usd }) => {
   const native = { ...network.assets[0]!, id: 'solana-devnet:sol', symbol: 'SOL', decimals: 9 };
-  const asset = { ...network.assets[1]!, id: 'solana-devnet:usdc' };
+  const asset = { ...network.assets[1]!, id, symbol, contract };
   const wallet = '9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf';
-  const result = { ...quote(), assetId: asset.id, gasAssetId: native.id, usdPerCoin: '1', targetUsd: '0.01', netUsd: '0.01',
-    estimatedGas: '0.00001', gasUsd: '0.001', payQuantity: '0.011', walletAddress: wallet, walletFeePreview: true, messageSha256: 'a'.repeat(64) };
+  const result = { ...quote(), assetId: asset.id, gasAssetId: native.id, usdPerCoin: rate, targetUsd: '0.01', netUsd: '0.01',
+    estimatedGas: '0.00001', gasUsd: '0.001', payQuantity: pay, walletAddress: wallet, walletFeePreview: true, messageSha256: 'a'.repeat(64) };
   vi.spyOn(client, 'userRequest').mockImplementationOnce(async (_path, decode) =>
     decode({ data: { ...result, accountFunding: funding, accountFundingUsd: usd } })).mockImplementationOnce(async (_path, decode) =>
-    decode({ data: result }));
+    decode({ data: result })).mockImplementationOnce(async (_path, decode) =>
+    decode({ data: { ...result, accountFunding: funding, accountFundingUsd: usd, assetId: id + '-other' } }));
   const i18n = await createAppI18n('user', appResources, 'en');
   render(<I18nextProvider i18n={i18n}><DepositEstimate asset={asset} native={native} target="0.01" walletAddress={wallet}/></I18nextProvider>);
   fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
   expect(await screen.findByText(`${funding} SOL · $${usd}`)).toBeInTheDocument();
   expect(screen.getByText('0.00001 SOL · $0.001')).toBeInTheDocument();
-  expect(screen.getByText('0.011 USDC')).toBeInTheDocument();
-  await expect(previewDeposit(asset, native, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
+  expect(screen.getByText(`1 ${symbol} = $${rate}`)).toBeInTheDocument();
+  expect(screen.getByText(`${pay} ${symbol}`)).toBeInTheDocument();
+  const retry = () => previewDeposit(asset, native, '0.01', new AbortController().signal, wallet);
+  await expect(retry()).rejects.toThrow('Invalid test deposit estimate'); // Missing account funding
+  await expect(retry()).rejects.toThrow('Invalid test deposit estimate'); // Another asset's quote
 });
