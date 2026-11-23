@@ -111,6 +111,7 @@ export function DepositEstimate({ asset, native, target, walletAddress, onChoose
     {error !== undefined && <Failure error={error}/>}
     {quote && (expired ? <p role="status">{t('depositExpired')}</p> : <dl aria-live="polite">
       <dt>{t('depositRate')}</dt><dd>1 {asset.symbol} = ${quote.usdPerCoin}</dd>
+      <dt>{t('depositRateSource')}</dt><dd>{t(quote.rateSource === 'kraken' ? 'depositSourceKraken' : 'depositSourceTest')} · {new Date(quote.asOf).toLocaleString()}</dd>
       <dt>{t('depositPay')}</dt><dd>{quote.payQuantity} {asset.symbol}</dd>
       <dt>{t(walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
       {quote.accountFunding && <><dt>{t('depositAccountFunding')}</dt><dd>{quote.accountFunding} {native.symbol} · ${quote.accountFundingUsd}</dd></>}

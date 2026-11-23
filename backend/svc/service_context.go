@@ -21,6 +21,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainsend"
 	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
+	"github.com/0xabcd-k/DexWallet/backend/logic/marketdata"
 	rewardtransfer "github.com/0xabcd-k/DexWallet/backend/logic/rewardtransfer"
 	tasklogic "github.com/0xabcd-k/DexWallet/backend/logic/task"
 	transferlogic "github.com/0xabcd-k/DexWallet/backend/logic/transfer"
@@ -63,6 +64,7 @@ type ServiceContext struct {
 	TRONReceipts          *chainreceipt.TRONService
 	TONReceipts           *chainreceipt.TONService
 	ChainAssets           *chainassets.Service
+	MarketRates           *marketdata.Store
 	ReceiveCodes          *transferlogic.Codes
 	Config                config.Config
 	Background            *background.Runtime
@@ -177,7 +179,12 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	if d.Redis != nil {
 		chainLimiter = chainassets.NewRedisLimiter(d.Redis, d.Namespace, c.ChainAssets.PerUserPerMinute)
 	}
-	d.ChainAssets, err = chainassets.New(c.ChainAssets, chainLimiter)
+	var rates chainassets.MarketRateReader
+	if q := c.ChainAssets.DepositQuotes; q != nil && q.Market != nil {
+		d.MarketRates = marketdata.NewStore(d.Redis, d.Namespace)
+		rates = d.MarketRates
+	}
+	d.ChainAssets, err = chainassets.NewWithMarketRates(c.ChainAssets, chainLimiter, rates)
 	if err != nil {
 		return d, err
 	}

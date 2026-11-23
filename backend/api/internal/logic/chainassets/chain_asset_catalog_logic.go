@@ -36,12 +36,15 @@ func (l *ChainAssetCatalogLogic) ChainAssetCatalog() (resp *types.ChainAssetCata
 	if l.svcCtx.ChainAssets == nil {
 		return nil, apperror.New(apperror.ServiceUnavailable, nil)
 	}
-	now := time.Now()
+	active, err := l.svcCtx.ChainAssets.DepositAvailability(l.ctx, time.Now())
+	if err != nil {
+		l.Errorf("deposit rates unavailable for asset catalog: %v", err)
+	}
 	networks := make([]types.ChainNetwork, 0)
 	for _, n := range l.svcCtx.ChainAssets.Catalog() {
 		assets := make([]types.ChainAsset, 0, len(n.Assets))
 		for _, a := range n.Assets {
-			assets = append(assets, types.ChainAsset{Id: a.ID, Symbol: a.Symbol, Contract: a.Contract, Decimals: a.Decimals, Origin: a.Origin, DepositPreview: l.svcCtx.ChainAssets.HasDepositPreview(a.ID, now)})
+			assets = append(assets, types.ChainAsset{Id: a.ID, Symbol: a.Symbol, Contract: a.Contract, Decimals: a.Decimals, Origin: a.Origin, DepositPreview: active[a.ID]})
 		}
 		networks = append(networks, types.ChainNetwork{Id: n.ID, Family: string(n.Family), Testnet: n.Testnet, Enabled: n.Enabled, Assets: assets})
 	}

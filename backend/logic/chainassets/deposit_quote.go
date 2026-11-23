@@ -1,21 +1,23 @@
 package chainassets
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"time"
 
-	"github.com/0xabcd-k/DexWallet/backend/apperror"
+	"github.com/0xabcd-k/DexWallet/backend/logic/marketdata"
 	"github.com/0xabcd-k/DexWallet/backend/model/account"
 	"github.com/shopspring/decimal"
 )
 
-// A versioned operator-supplied test sheet. Times are Unix seconds and
-// EstimatedGas is expressed in the network's native coin, per payment asset.
+// Gas estimates are in the network's native coin. Rate inputs come either
+// from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
 	Version        string
-	AsOf           int64
-	ValidUntil     int64
+	AsOf           int64                   `json:",optional"`
+	ValidUntil     int64                   `json:",optional"`
+	Market         *DepositMarketConfig    `json:",optional"`
 	SolanaSOL      *SolanaDepositFeeConfig `json:",optional"`
 	SolanaUSDC     *SolanaDepositFeeConfig `json:",optional"`
 	SolanaTestUSDT *SolanaDepositFeeConfig `json:",optional"`
@@ -24,11 +26,12 @@ type DepositQuoteConfig struct {
 
 type DepositQuoteRate struct {
 	AssetID      string
-	USDPerCoin   string
+	USDPerCoin   string `json:",optional"`
 	EstimatedGas string
 }
 
 const depositPreviewTTL = 30 * time.Second
+const testSheetSource = "test_sheet"
 
 var rateSyntax = regexp.MustCompile(`^(0|[1-9][0-9]{0,17})(\.[0-9]{1,18})?$`)
 var versionSyntax = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
@@ -40,6 +43,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
+	market      *DepositMarketConfig
 	solana      map[string]*solanaDepositRoute
 	version     string
 	asOf, until int64
@@ -51,10 +55,17 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 	if c == nil {
 		return book, nil
 	}
-	if !versionSyntax.MatchString(c.Version) || c.AsOf <= 0 || c.ValidUntil <= c.AsOf || len(c.Assets) == 0 {
-		return book, fmt.Errorf("invalid deposit quote sheet version, time window or empty asset list")
+	if !versionSyntax.MatchString(c.Version) || len(c.Assets) == 0 {
+		return book, fmt.Errorf("invalid deposit quote version or empty asset list")
 	}
-	book = depositBook{version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	if c.Market == nil {
+		if c.AsOf <= 0 || c.ValidUntil <= c.AsOf {
+			return book, fmt.Errorf("invalid static deposit quote time window")
+		}
+	} else if c.Market.Source != marketdata.Kraken || c.Market.MaxAge < time.Second || c.AsOf != 0 || c.ValidUntil != 0 {
+		return book, fmt.Errorf("exchange rates require a supported source, MaxAge of at least one second and no static time window")
+	}
+	book = depositBook{market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {
@@ -68,12 +79,16 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 		if _, repeat := book.assets[row.AssetID]; !ok || repeat {
 			return book, fmt.Errorf("unknown, non-testnet or repeated quote asset %q", row.AssetID)
 		}
-		if !rateSyntax.MatchString(row.USDPerCoin) {
-			return book, fmt.Errorf("invalid USD rate for %s", row.AssetID)
-		}
-		entry.rate, _ = decimal.NewFromString(row.USDPerCoin)
-		if !entry.rate.IsPositive() {
-			return book, fmt.Errorf("zero USD rate for %s", row.AssetID)
+		if c.Market == nil {
+			if !rateSyntax.MatchString(row.USDPerCoin) {
+				return book, fmt.Errorf("invalid USD rate for %s", row.AssetID)
+			}
+			entry.rate, _ = decimal.NewFromString(row.USDPerCoin)
+			if !entry.rate.IsPositive() {
+				return book, fmt.Errorf("zero USD rate for %s", row.AssetID)
+			}
+		} else if row.USDPerCoin != "" {
+			return book, fmt.Errorf("static USD rate for %s conflicts with market source", row.AssetID)
 		}
 		// Only an explicitly configured zero represents zero estimated cost.
 		if row.EstimatedGas != "0" {
@@ -103,7 +118,7 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 		}
 		entry, ok := book.assets[id]
 		if !ok || !entry.network.Enabled {
-			return book, fmt.Errorf("wallet fee preview for %s requires a Devnet endpoint and a test rate", id)
+			return book, fmt.Errorf("wallet fee preview for %s requires a Devnet endpoint and a configured asset", id)
 		}
 		route, err := newSolanaDepositRoute(*config)
 		if err != nil {
@@ -114,30 +129,30 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint string) 
 	return book, nil
 }
 
-func (s *Service) HasDepositPreview(assetID string, now time.Time) bool {
-	_, ok := s.quotes.assets[assetID]
-	return ok && s.quotes.asOf <= now.Unix() && now.Unix() < s.quotes.until
-}
-
 type DepositPreview struct {
 	AssetID, TargetUSD, USDPerCoin, PayQuantity string
 	GasAssetID, EstimatedGas, GasUSD, NetUSD    string
 	AccountFunding, AccountFundingUSD           string
 	WalletFeePreview                            bool
 	WalletAddress, MessageSHA256                string
-	Version                                     string
+	Version, RateSource                         string
 	AsOf, QuotedAt, ExpiresAt                   int64
 }
 
 func (s *Service) PreviewDeposit(assetID, targetUSD string, now time.Time) (DepositPreview, error) {
-	return s.depositQuote(assetID, targetUSD, s.quotes.assets[assetID].gas, now)
+	return s.PreviewDepositContext(context.Background(), assetID, targetUSD, now)
 }
 
-func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, now time.Time) (DepositPreview, error) {
-	var empty DepositPreview
-	if !s.HasDepositPreview(assetID, now) {
-		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("no current test quote for %q", assetID))
+func (s *Service) PreviewDepositContext(ctx context.Context, assetID, targetUSD string, now time.Time) (DepositPreview, error) {
+	prices, err := s.depositPrices(ctx, assetID, now)
+	if err != nil {
+		return DepositPreview{}, err
 	}
+	return s.depositQuote(assetID, targetUSD, s.quotes.assets[assetID].gas, now, prices)
+}
+
+func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, now time.Time, prices depositPrices) (DepositPreview, error) {
+	var empty DepositPreview
 	usd, _ := account.Lookup(account.KindUSD)
 	if !rateSyntax.MatchString(targetUSD) {
 		return empty, badTarget("invalid target USD amount")
@@ -147,9 +162,9 @@ func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, n
 		return empty, badTarget("target USD must be a positive amount in cents")
 	}
 	entry := s.quotes.assets[assetID]
-	gasUSD := gas.Mul(s.quotes.assets[entry.native.ID].rate)
+	gasUSD := gas.Mul(prices.native)
 	scale := int32(entry.asset.Decimals)
-	quantity, remainder := target.Add(gasUSD).QuoRem(entry.rate, scale)
+	quantity, remainder := target.Add(gasUSD).QuoRem(prices.pay, scale)
 	if !remainder.IsZero() {
 		quantity = quantity.Add(decimal.New(1, -scale))
 	}
@@ -157,18 +172,18 @@ func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, n
 	if err != nil {
 		return empty, err
 	}
-	net := quantity.Mul(entry.rate).Sub(gasUSD).Truncate(usd.Scale)
+	net := quantity.Mul(prices.pay).Sub(gasUSD).Truncate(usd.Scale)
 	if err := usd.ValidateBalances(net, decimal.Zero); err != nil {
 		return empty, badTarget("net USD exceeds account capacity")
 	}
 	expires := now.Add(depositPreviewTTL)
-	if expires.Unix() >= s.quotes.until {
-		expires = time.Unix(s.quotes.until, 0)
+	if expires.After(prices.until) {
+		expires = prices.until
 	}
 	return DepositPreview{
-		AssetID: assetID, TargetUSD: target.StringFixed(usd.Scale), USDPerCoin: entry.rate.String(), PayQuantity: pay,
+		AssetID: assetID, TargetUSD: target.StringFixed(usd.Scale), USDPerCoin: prices.pay.String(), PayQuantity: pay,
 		GasAssetID: entry.native.ID, EstimatedGas: gas.String(), GasUSD: gasUSD.String(), NetUSD: net.StringFixed(usd.Scale),
 		WalletFeePreview: s.quotes.solana[assetID] != nil,
-		Version:          s.quotes.version, AsOf: time.Unix(s.quotes.asOf, 0).UnixMilli(), QuotedAt: now.UnixMilli(), ExpiresAt: expires.UnixMilli(),
+		Version:          prices.version, RateSource: prices.source, AsOf: prices.asOf.UnixMilli(), QuotedAt: now.UnixMilli(), ExpiresAt: expires.UnixMilli(),
 	}, nil
 }

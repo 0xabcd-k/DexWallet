@@ -367,6 +367,7 @@ type DepositQuoteData struct {
 	GasUsd            string `json:"gasUsd"`
 	NetUsd            string `json:"netUsd"`
 	RateVersion       string `json:"rateVersion"`
+	RateSource        string `json:"rateSource,optional,options=test_sheet|kraken"`
 	AsOf              int64  `json:"asOf"`
 	QuotedAt          int64  `json:"quotedAt"`
 	ExpiresAt         int64  `json:"expiresAt"`

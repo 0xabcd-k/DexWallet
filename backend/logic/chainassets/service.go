@@ -107,15 +107,21 @@ func (l *RedisLimiter) Allow(ctx context.Context, user int64) error {
 }
 
 type Service struct {
-	quotes    depositBook
-	networks  []Network
-	endpoints map[string]Endpoint
-	client    *http.Client
-	timeout   time.Duration
-	limiter   Limiter
+	marketRates MarketRateReader
+	quotes      depositBook
+	networks    []Network
+	endpoints   map[string]Endpoint
+	client      *http.Client
+	timeout     time.Duration
+	limiter     Limiter
 }
 
-func New(c Config, limiter Limiter) (*Service, error) {
+func New(c Config, limiter Limiter) (*Service, error) { return NewWithMarketRates(c, limiter, nil) }
+
+func NewWithMarketRates(c Config, limiter Limiter, rates MarketRateReader) (*Service, error) {
+	if c.DepositQuotes != nil && c.DepositQuotes.Market != nil && rates == nil {
+		return nil, fmt.Errorf("deposit market rates require a rate reader")
+	}
 	if err := c.Check(); err != nil {
 		return nil, err
 	}
@@ -126,7 +132,7 @@ func New(c Config, limiter Limiter) (*Service, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = 4
 	transport.MaxConnsPerHost = 16
-	s := &Service{networks: catalog(), endpoints: map[string]Endpoint{}, timeout: timeout, limiter: limiter,
+	s := &Service{marketRates: rates, networks: catalog(), endpoints: map[string]Endpoint{}, timeout: timeout, limiter: limiter,
 		client: &http.Client{Transport: transport, Timeout: timeout, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}}
 	for _, e := range c.Networks {
 		s.endpoints[e.Network] = e

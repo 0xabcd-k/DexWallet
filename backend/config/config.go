@@ -112,6 +112,9 @@ func (c Config) Check() error {
 	if err := c.ChainAssets.Check(); err != nil {
 		return err
 	}
+	if q := c.ChainAssets.DepositQuotes; q != nil && q.Market != nil && !c.Redis.Enabled {
+		return fmt.Errorf("USD market rates require Redis")
+	}
 	if len(c.ChainAssets.Networks) > 0 && !c.Redis.Enabled {
 		return fmt.Errorf("chain asset queries require Redis rate limits")
 	}

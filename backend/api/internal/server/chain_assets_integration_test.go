@@ -204,4 +204,5 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	}
 	call("POST", "/v1/user/chain-assets/balances", token, request, 429, "RATE_LIMITED")
 	call("POST", depositPath, token, sol, 429, "RATE_LIMITED")
+	checkMarketRatesHTTP(t, s, token, call)
 }

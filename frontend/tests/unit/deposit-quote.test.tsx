@@ -15,7 +15,7 @@ const network: ChainNetwork = { id: 'base-sepolia', family: 'base', enabled: fal
 ] };
 const quote = (now = Date.now()): DepositQuoteData => ({ assetId: 'base-sepolia:usdc', targetUsd: '10.00', usdPerCoin: '0.98',
   payQuantity: '10.408164', gasAssetId: 'base-sepolia:eth', estimatedGas: '0.0001', gasUsd: '0.2', netUsd: '10.00',
-  rateVersion: 'test-1', asOf: now - 10000, quotedAt: now, expiresAt: now + 30000, canSubmit: false });
+  rateVersion: 'test-1', rateSource: 'kraken', asOf: now - 10000, quotedAt: now, expiresAt: now + 30000, canSubmit: false });
 afterEach(() => vi.restoreAllMocks());
 async function open() {
   const i18n = await createAppI18n('user', appResources, 'en');
@@ -46,6 +46,7 @@ it('shows only quoted test assets, ties results to the current input and expires
   expect(await screen.findByText('10.408164 USDC')).toBeInTheDocument();
   expect(screen.getByText('0.0001 ETH · $0.2')).toBeInTheDocument();
   expect(screen.getByText('$10.00')).toBeInTheDocument();
+  expect(screen.getByText(/Kraken spot market/)).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Confirm payment' })).toBeNull();
   const later = Date.now() + 31000;
   vi.spyOn(Date, 'now').mockReturnValue(later);
@@ -56,7 +57,7 @@ it('shows only quoted test assets, ties results to the current input and expires
 it('shows a retryable empty state when the server has no current test sheet', async () => {
   const list = vi.spyOn(catalog, 'getCatalog').mockResolvedValue([]);
   await open();
-  expect(await screen.findByText('No current test rates are available.')).toBeInTheDocument();
+  expect(await screen.findByText('No current rates are available for a testnet deposit.')).toBeInTheDocument();
   expect(screen.queryByRole('combobox')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
   await waitFor(() => expect(list).toHaveBeenCalledTimes(2));

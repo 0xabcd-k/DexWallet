@@ -5,6 +5,7 @@ package chainassets
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/httpapi"
@@ -40,17 +41,20 @@ func (l *DepositQuotePreviewLogic) DepositQuotePreview(req *types.DepositQuoteRe
 	}
 	var q assets.DepositPreview
 	if req.WalletAddress == "" {
-		q, err = l.svcCtx.ChainAssets.PreviewDeposit(req.AssetId, req.TargetUsd, time.Now())
+		q, err = l.svcCtx.ChainAssets.PreviewDepositContext(l.ctx, req.AssetId, req.TargetUsd, time.Now())
 	} else {
 		q, err = l.svcCtx.ChainAssets.PreviewWalletDeposit(l.ctx, authorization.Actor.UserID, req.AssetId, req.TargetUsd, req.WalletAddress)
 	}
 	if err != nil {
 		return nil, err
 	}
+	if time.Now().UnixMilli() >= q.ExpiresAt {
+		return nil, apperror.New(apperror.ServiceUnavailable, errors.New("deposit quote expired during preview"))
+	}
 	return &types.DepositQuoteResponse{Code: httpapi.SuccessCode, Message: "OK", TraceId: httpapi.TraceID(l.ctx),
 		Data: types.DepositQuoteData{AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
 			PayQuantity: q.PayQuantity, GasAssetId: q.GasAssetID, EstimatedGas: q.EstimatedGas, GasUsd: q.GasUSD,
-			NetUsd: q.NetUSD, RateVersion: q.Version, AsOf: q.AsOf, QuotedAt: q.QuotedAt, ExpiresAt: q.ExpiresAt,
+			NetUsd: q.NetUSD, RateVersion: q.Version, RateSource: q.RateSource, AsOf: q.AsOf, QuotedAt: q.QuotedAt, ExpiresAt: q.ExpiresAt,
 			AccountFunding: q.AccountFunding, AccountFundingUsd: q.AccountFundingUSD,
 			WalletFeePreview: q.WalletFeePreview, WalletAddress: q.WalletAddress, MessageSha256: q.MessageSHA256, CanSubmit: false,
 		}}, nil

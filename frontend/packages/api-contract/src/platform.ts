@@ -380,6 +380,7 @@ export interface DepositQuoteData {
 	gasUsd: string
 	netUsd: string
 	rateVersion: string
+	rateSource?: 'test_sheet' | 'kraken'
 	asOf: number
 	quotedAt: number
 	expiresAt: number

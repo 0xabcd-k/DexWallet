@@ -23,6 +23,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     if (!validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||
+      (q.rateSource !== undefined && q.rateSource !== 'test_sheet' && q.rateSource !== 'kraken') ||
       typeof q.rateVersion !== 'string' || !q.rateVersion || !Number.isSafeInteger(q.asOf) || !Number.isSafeInteger(q.quotedAt) || !Number.isSafeInteger(q.expiresAt) ||
       q.asOf <= 0 || q.quotedAt < q.asOf || q.expiresAt <= q.quotedAt || q.expiresAt - q.quotedAt > depositQuoteTTLms || q.canSubmit !== false) throw new TypeError('Invalid test deposit estimate');
     return q;

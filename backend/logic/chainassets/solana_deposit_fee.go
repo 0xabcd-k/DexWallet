@@ -110,7 +110,11 @@ func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID,
 		return empty, badTarget("invalid deposit source wallet")
 	}
 	start := time.Now()
-	q, err := s.depositQuote(assetID, targetUSD, decimal.Zero, start)
+	prices, err := s.depositPrices(ctx, assetID, start)
+	if err != nil {
+		return empty, err
+	}
+	q, err := s.depositQuote(assetID, targetUSD, decimal.Zero, start, prices)
 	if err != nil {
 		return empty, err
 	}
@@ -144,7 +148,7 @@ func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID,
 	}
 	solScale := -int32(entry.native.Decimals)
 	gas := decimal.NewFromBigInt(new(big.Int).SetUint64(fee), solScale)
-	q, err = s.depositQuote(assetID, targetUSD, gas, start)
+	q, err = s.depositQuote(assetID, targetUSD, gas, start, prices)
 	if err != nil {
 		return empty, err
 	}
@@ -166,7 +170,7 @@ func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID,
 	}
 	if draft.token != nil {
 		funding := decimal.NewFromBigInt(new(big.Int).SetUint64(draft.token.rent), solScale)
-		q.AccountFunding, q.AccountFundingUSD = funding.String(), funding.Mul(s.quotes.assets[entry.native.ID].rate).String()
+		q.AccountFunding, q.AccountFundingUSD = funding.String(), funding.Mul(prices.native).String()
 	}
 	q.WalletAddress, q.MessageSHA256 = address, fmt.Sprintf("%x", sha256.Sum256(msg))
 	return q, nil
