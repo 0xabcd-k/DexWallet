@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto';
+import created from '../../../backend/logic/chainassets/testdata/usdc-self-deposit-create.json';
+import existing from '../../../backend/logic/chainassets/testdata/usdc-self-deposit-existing.json';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { DepositQuoteData, SolDepositOrderData } from '../../packages/api-contract/src/platform';
 import { authorizeSolDeposit, checkedSolMessage } from '../../apps/user/src/app/native/chain-transfer/sol-deposit';
@@ -15,7 +18,7 @@ const quote: DepositQuoteData = { quoteIdx: '1'.repeat(32), solOrderIdx: '2'.rep
   assetId: 'solana-devnet:sol', gasAssetId: 'solana-devnet:sol', targetUsd: '0.01', netUsd: '0.01', usdPerCoin: '100', payQuantity: '0.00011',
   estimatedGas: '0.00001', maxGas: '0.00001', gasUsd: '0.001', rateVersion: 'test', asOf: now, quotedAt: now, expiresAt: now + 30000,
   messageSha256: 'dcd09fa7d4f66ba3de5f0e1cf615fb13c3a04e13361a919b7d5869f23ce1c922', canSubmit: false };
-const order: SolDepositOrderData = { quoteIdx: quote.quoteIdx!, orderIdx: quote.solOrderIdx!, state: 'awaiting_signature', executionState: 'waiting',
+const order: SolDepositOrderData = { assetId: quote.assetId, quoteIdx: quote.quoteIdx!, orderIdx: quote.solOrderIdx!, state: 'awaiting_signature', executionState: 'waiting',
   messageBase64: 'AgACBbtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk18DYnYkanW53jNJ7UKxXiMvZRj8IPX81PHWToH5vSWPdet76rPhnRbUWumOzXkErufS+rzXYQx2sGbk6vvio4ngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABUpTWpkpIQZNJOhxYNo4fHw1td28kruB5B+oQEEFRI3QJFNbwCH4iosm+L1MVUyRP1PvIerM6xlFR9kfaRhbXQIDAgECDAIAAACwrQEAAAAAAAQAMmRleHdhbGxldDpkZXBvc2l0OjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy', messageSha256: quote.messageSha256!, lastValidBlockHeight: 120, quoteExpiresAt: quote.expiresAt, reviewAfter: quote.expiresAt + 60000 };
 const signature = 'mfAWpqfGcCpZYmLdaC5hERoYNF4VpSuv3xqdViFw5FPcB6FouimYwbovc3ES4GDCwuD2RHVkV4aw7ebgYqceXRd';
 
@@ -48,4 +51,21 @@ it('rejects changes to the transfer amount, accounts, and order memo before devi
   const changed = '3'.repeat(32);
   expect(() => checkedSolMessage({ ...quote, solOrderIdx: changed }, { ...order, orderIdx: changed })).toThrow();
   expect(vault.get).not.toHaveBeenCalled();
+});
+
+it.each([created.quote, existing.quote])('verifies the finalized USDC signing message with storage funding $AccountFunding', f => {
+  const q = { ...quote, assetId: f.AssetID, quoteIdx: f.QuoteIdx, solOrderIdx: f.SolOrderIdx, walletAddress: f.WalletAddress,
+    solFeePayer: f.FeePayer, solRecipient: f.Recipient, payQuantity: f.PayQuantity, accountFunding: f.AccountFunding, messageSha256: f.MessageSHA256 };
+  const o = { ...order, assetId: q.assetId, quoteIdx: f.QuoteIdx, orderIdx: f.SolOrderIdx, messageBase64: f.SolMessage, messageSha256: f.MessageSHA256 };
+  expect(checkedSolMessage(q, o).length).toBeGreaterThan(300);
+  for (const changes of [{ payQuantity: '0.012' }, { solRecipient: quote.walletAddress! }, { accountFunding: f.AccountFunding === '0' ? '0.001' : '0' }]) {
+    expect(() => checkedSolMessage({ ...q, ...changes }, o)).toThrow();
+  }
+  const alteredMint = Buffer.from(f.SolMessage, 'base64');
+  const mintOffset = 4 + 32 * (f.AccountFunding === '0' ? 5 : 6);
+  alteredMint[mintOffset] = alteredMint[mintOffset]! ^ 1;
+  const hash = createHash('sha256').update(alteredMint).digest('hex');
+  expect(() => checkedSolMessage({ ...q, messageSha256: hash }, { ...o, messageSha256: hash, messageBase64: alteredMint.toString('base64') })).toThrow();
+  const changed = 'a'.repeat(32);
+  expect(() => checkedSolMessage({ ...q, solOrderIdx: changed }, { ...o, orderIdx: changed })).toThrow();
 });

@@ -926,20 +926,22 @@ type SolDepositAuthorizeRequest struct {
 }
 
 type SolDepositOrderData struct {
-	QuoteIdx             string `json:"quoteIdx"`
-	OrderIdx             string `json:"orderIdx"`
-	State                string `json:"state,options=awaiting_signature|accepted"`
-	ExecutionState       string `json:"executionState,options=waiting|signed|submitted|review|finalized|failed"`
-	TxSignature          string `json:"txSignature,optional,omitempty"`
-	ActualFeeLamports    int64  `json:"actualFeeLamports,optional,omitempty"`
-	CreditedUsd          string `json:"creditedUsd,optional,omitempty"`
-	CreditedAt           int64  `json:"creditedAt,optional,omitempty"`
-	MessageBase64        string `json:"messageBase64"`
-	MessageSha256        string `json:"messageSha256"`
-	LastValidBlockHeight int64  `json:"lastValidBlockHeight"`
-	QuoteExpiresAt       int64  `json:"quoteExpiresAt"`
-	ReviewAfter          int64  `json:"reviewAfter"`
-	AcceptedAt           int64  `json:"acceptedAt,optional,omitempty"`
+	QuoteIdx              string `json:"quoteIdx"`
+	OrderIdx              string `json:"orderIdx"`
+	State                 string `json:"state,options=awaiting_signature|accepted"`
+	ExecutionState        string `json:"executionState,options=waiting|signed|submitted|review|finalized|failed"`
+	TxSignature           string `json:"txSignature,optional,omitempty"`
+	AssetId               string `json:"assetId"`
+	ActualFundingLamports string `json:"actualFundingLamports,optional,omitempty"`
+	ActualFeeLamports     int64  `json:"actualFeeLamports,optional,omitempty"`
+	CreditedUsd           string `json:"creditedUsd,optional,omitempty"`
+	CreditedAt            int64  `json:"creditedAt,optional,omitempty"`
+	MessageBase64         string `json:"messageBase64"`
+	MessageSha256         string `json:"messageSha256"`
+	LastValidBlockHeight  int64  `json:"lastValidBlockHeight"`
+	QuoteExpiresAt        int64  `json:"quoteExpiresAt"`
+	ReviewAfter           int64  `json:"reviewAfter"`
+	AcceptedAt            int64  `json:"acceptedAt,optional,omitempty"`
 }
 
 type SolDepositOrderResponse struct {

@@ -130,17 +130,8 @@ type account struct {
 	Signer   bool
 	Writable bool
 }
-type tokenAmount struct {
-	Amount   string
-	Decimals int
-}
-type tokenBalance struct {
-	AccountIndex  *int
-	Mint          string
-	Owner         string
-	ProgramID     string
-	UITokenAmount tokenAmount
-}
+type tokenAmount = solanaspl.TokenAmount
+type tokenBalance = solanaspl.TokenBalance
 type instruction struct {
 	ProgramID string
 	Parsed    json.RawMessage

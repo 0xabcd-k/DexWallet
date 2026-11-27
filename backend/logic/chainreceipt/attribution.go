@@ -402,7 +402,7 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 	if when < row.OpensAt || when >= row.ExpiresAt {
 		return empty, ErrReceiveWindow
 	}
-	if k.Network == chainassets.SolanaDevnet && k.Kind == SolanaInstruction && k.Index == 0 && tx.FeePayer != ev.SourceOwner {
+	if k.Network == chainassets.SolanaDevnet && k.Kind == SolanaInstruction && tx.FeePayer != ev.SourceOwner {
 		if err := a.checkSolDepositReservation(ctx, k.Signature); err != nil {
 			return empty, err
 		}

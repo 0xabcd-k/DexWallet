@@ -18,6 +18,7 @@ import (
 // The ledger source uses the numeric order ID. The public bill displays the
 // same order idx as the signed memo. Historical deposit/post entries are separate.
 const ActionCreditSol account.Action = "credit_sol"
+const ActionCreditUSDC account.Action = "credit_usdc"
 
 var ErrSolNotFinalized = errors.New("successful finalized SOL deposit required")
 
@@ -50,10 +51,10 @@ func CreditSol(ctx context.Context, tx *transaction.Runner, ledger *account.Serv
 		if err = json.Unmarshal([]byte(quote.SnapshotJson), &q); err != nil {
 			return err
 		}
-		if q.QuoteIdx != order.QuoteIdx || q.SolOrderIdx != order.OrderIdx || q.MessageSHA256 != order.MessageSha256 || q.SolMessage != order.MessageBase64 {
+		if q.AssetID != order.AssetId || q.QuoteIdx != order.QuoteIdx || q.SolOrderIdx != order.OrderIdx || q.MessageSHA256 != order.MessageSha256 || q.SolMessage != order.MessageBase64 {
 			return errors.New("finalized order differs from confirmed SOL quote")
 		}
-		net, err := q.FinalizedSolUSD(order.ActualLamportsFee, order.UserSignature)
+		net, err := q.FinalizedSolUSD(order.ActualLamportsFee, order.ActualFundingLamports, order.UserSignature)
 		if err != nil {
 			return err
 		}
@@ -62,7 +63,7 @@ func CreditSol(ctx context.Context, tx *transaction.Runner, ledger *account.Serv
 		var assigned bool
 		err = session.QueryRowCtx(ctx, &assigned, `SELECT EXISTS(SELECT 1 FROM chain_observed_transaction t
 			JOIN chain_transfer_event e ON e.transaction_id=t.id JOIN chain_receive_request r ON r.matched_event_id=e.id
-			WHERE t.network=? AND t.signature=? AND e.event_kind=? AND e.instruction_index=0)`,
+			WHERE t.network=? AND t.signature=? AND e.event_kind=?)`,
 			chainassets.SolanaDevnet, order.TxSignature.String, chainreceipt.SolanaInstruction)
 		if err != nil {
 			return err
@@ -70,8 +71,12 @@ func CreditSol(ctx context.Context, tx *transaction.Runner, ledger *account.Serv
 		if assigned {
 			return fmt.Errorf("SOL deposit %s: %w", order.OrderIdx, chainreceipt.ErrReceiveConflict)
 		}
+		action := ActionCreditSol
+		if q.AssetID == chainassets.SolanaDevnet+":usdc" {
+			action = ActionCreditUSDC
+		}
 		voucher, err := ledger.Post(ctx, session, account.Posting{
-			Source:  account.Source{Type: account.BusinessDeposit, ID: order.Id, Action: ActionCreditSol},
+			Source:  account.Source{Type: account.BusinessDeposit, ID: order.Id, Action: action},
 			Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(quote.UserId, accounts.KindUSD, net)},
 		})
 		if err != nil {

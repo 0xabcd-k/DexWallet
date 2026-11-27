@@ -962,6 +962,8 @@ export interface SolDepositOrderData {
 	state: 'awaiting_signature' | 'accepted'
 	executionState: 'waiting' | 'signed' | 'submitted' | 'review' | 'finalized' | 'failed'
 	txSignature?: string
+	assetId: string
+	actualFundingLamports?: string
 	actualFeeLamports?: number
 	creditedUsd?: string
 	creditedAt?: number

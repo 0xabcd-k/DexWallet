@@ -24,13 +24,15 @@ import (
 )
 
 func run() error {
-	idx := flag.String("quote", "", "single accepted SOL quote idx")
+	idx := flag.String("quote", "", "single accepted Solana quote idx")
 	recipient := flag.String("recipient", "", "expected Devnet collection address")
 	gross := flag.Int64("gross-lamports", 0, "exact gross transfer authorized for this order")
+	usdc := flag.Uint64("usdc-atoms", 0, "exact gross Devnet USDC in millionths, mutually exclusive with gross-lamports")
+	funding := flag.Int64("max-funding-lamports", 0, "separate sponsor authorization for quoted USDC ATA funding")
 	fee := flag.Int64("fee-lamports", 0, "authorized test sponsor fee, including on execution failure")
 	keyFile := flag.String("sponsor-key-file", "", "dedicated Devnet sponsor CLI key file")
 	rpc := flag.String("rpc", "https://api.devnet.solana.com", "trusted Devnet RPC")
-	settleOnly := flag.Bool("settle-only", false, "credit an already finalized local SOL deposit without keys or RPC")
+	settleOnly := flag.Bool("settle-only", false, "credit an already finalized local Solana deposit without keys or RPC")
 	flag.Parse()
 	dsn, err := testenv.ValidateDSN(os.Getenv("DEXWALLET_MYSQL_DSN"), "deposit-credit")
 	if err != nil {
@@ -51,8 +53,8 @@ func run() error {
 	if err = db.QueryRowContext(ctx, "SELECT version,dirty FROM schema_migrations_business").Scan(&version, &dirty); err != nil {
 		return err
 	}
-	if dirty || version < 40 {
-		return errors.New("clean business schema >=40 required")
+	if dirty || version < 41 {
+		return errors.New("clean business schema >=41 required")
 	}
 	conn := sqlx.NewSqlConnFromDB(db)
 	credit := func() error {
@@ -82,14 +84,14 @@ func run() error {
 		return err
 	}
 	defer assets.Close()
-	work, err := deposit.NewSolExecution(conn, assets, *idx, chainassets.SolDepositTerms{Recipient: *recipient, GrossLamports: *gross, FeeLamports: *fee}, key)
+	work, err := deposit.NewSolExecution(conn, assets, *idx, chainassets.SolDepositTerms{Recipient: *recipient, GrossLamports: *gross, FeeLamports: *fee, USDCAtoms: *usdc, MaxFundingLamports: *funding}, key)
 	if err != nil {
 		return err
 	}
 	for {
 		row, err := work.Step(ctx)
 		if row != nil {
-			fmt.Printf("order=%s state=%s tx=%s fee_lamports=%d slot=%d\n", row.OrderIdx, row.ExecutionState, row.TxSignature.String, row.ActualLamportsFee, row.FinalizedSlot)
+			fmt.Printf("order=%s state=%s tx=%s fee_lamports=%d funding_lamports=%d slot=%d\n", row.OrderIdx, row.ExecutionState, row.TxSignature.String, row.ActualLamportsFee, row.ActualFundingLamports, row.FinalizedSlot)
 		}
 		if err != nil {
 			// An RPC failure after signing is ambiguous. Keep observing the original

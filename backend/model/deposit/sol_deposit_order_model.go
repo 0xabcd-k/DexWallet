@@ -18,7 +18,7 @@ type (
 		solDepositOrderModel
 		LockByQuoteIdx(context.Context, string) (*SolDepositOrder, error)
 		MarkCredited(context.Context, int64, int64, decimal.Decimal) error
-		AdvanceExecution(context.Context, *SolDepositOrder, string, sql.NullString, string, int64, int64) error
+		AdvanceExecution(context.Context, *SolDepositOrder, string, sql.NullString, string, int64, int64, int64) error
 		withSession(session sqlx.Session) SolDepositOrderModel
 	}
 
@@ -40,9 +40,9 @@ func (m *customSolDepositOrderModel) withSession(session sqlx.Session) SolDeposi
 
 // Compare the previous state so a delayed RPC observation cannot reopen a
 // terminal order or overwrite another worker's review decision.
-func (m *customSolDepositOrderModel) AdvanceExecution(ctx context.Context, old *SolDepositOrder, state string, sig sql.NullString, policy string, fee, slot int64) error {
-	_, err := m.conn.ExecCtx(ctx, `UPDATE sol_deposit_order SET execution_state=?,tx_signature=?,sponsor_policy=?,actual_lamports_fee=?,finalized_slot=?
- WHERE quote_idx=? AND accepted_at IS NOT NULL AND execution_state=? AND tx_signature <=> ?`, state, sig, policy, fee, slot, old.QuoteIdx, old.ExecutionState, old.TxSignature)
+func (m *customSolDepositOrderModel) AdvanceExecution(ctx context.Context, old *SolDepositOrder, state string, sig sql.NullString, policy string, fee, slot, funding int64) error {
+	_, err := m.conn.ExecCtx(ctx, `UPDATE sol_deposit_order SET execution_state=?,tx_signature=?,sponsor_policy=?,actual_lamports_fee=?,finalized_slot=?,actual_funding_lamports=?
+ WHERE quote_idx=? AND accepted_at IS NOT NULL AND execution_state=? AND tx_signature <=> ?`, state, sig, policy, fee, slot, funding, old.QuoteIdx, old.ExecutionState, old.TxSignature)
 	return err
 }
 

@@ -24,3 +24,8 @@ ALTER TABLE `sol_deposit_order`
    OR (`execution_state`='finalized' AND `credit_voucher_id` IS NOT NULL AND `credited_usd` IS NOT NULL
        AND `credited_usd` > 0 AND `credited_usd` = TRUNCATE(`credited_usd`,2) AND `credited_at` IS NOT NULL)
  );
+
+ALTER TABLE `sol_deposit_order`
+ ADD CONSTRAINT `ck_sol_deposit_asset` CHECK (`asset_id` IN ('solana-devnet:sol','solana-devnet:usdc')),
+ ADD CONSTRAINT `ck_sol_deposit_funding` CHECK (`actual_funding_lamports`=0 OR
+   (`asset_id`='solana-devnet:usdc' AND `execution_state`='finalized' AND `actual_funding_lamports`>0));

@@ -44,23 +44,25 @@ type (
 	}
 
 	SolDepositOrder struct {
-		Id                int64               `db:"id"`
-		QuoteIdx          string              `db:"quote_idx"`
-		OrderIdx          string              `db:"order_idx"`
-		MessageBase64     string              `db:"message_base64"`
-		MessageSha256     string              `db:"message_sha256"`
-		LastValidHeight   int64               `db:"last_valid_height"`
-		ReviewAfter       time.Time           `db:"review_after"`
-		UserSignature     string              `db:"user_signature"`
-		AcceptedAt        sql.NullTime        `db:"accepted_at"`
-		ExecutionState    string              `db:"execution_state"`
-		SponsorPolicy     string              `db:"sponsor_policy"`
-		TxSignature       sql.NullString      `db:"tx_signature"`
-		ActualLamportsFee int64               `db:"actual_lamports_fee"`
-		FinalizedSlot     int64               `db:"finalized_slot"`
-		CreditVoucherId   sql.NullInt64       `db:"credit_voucher_id"`
-		CreditedUsd       decimal.NullDecimal `db:"credited_usd"`
-		CreditedAt        sql.NullTime        `db:"credited_at"`
+		Id                    int64               `db:"id"`
+		QuoteIdx              string              `db:"quote_idx"`
+		OrderIdx              string              `db:"order_idx"`
+		AssetId               string              `db:"asset_id"`
+		ActualFundingLamports int64               `db:"actual_funding_lamports"`
+		MessageBase64         string              `db:"message_base64"`
+		MessageSha256         string              `db:"message_sha256"`
+		LastValidHeight       int64               `db:"last_valid_height"`
+		ReviewAfter           time.Time           `db:"review_after"`
+		UserSignature         string              `db:"user_signature"`
+		AcceptedAt            sql.NullTime        `db:"accepted_at"`
+		ExecutionState        string              `db:"execution_state"`
+		SponsorPolicy         string              `db:"sponsor_policy"`
+		TxSignature           sql.NullString      `db:"tx_signature"`
+		ActualLamportsFee     int64               `db:"actual_lamports_fee"`
+		FinalizedSlot         int64               `db:"finalized_slot"`
+		CreditVoucherId       sql.NullInt64       `db:"credit_voucher_id"`
+		CreditedUsd           decimal.NullDecimal `db:"credited_usd"`
+		CreditedAt            sql.NullTime        `db:"credited_at"`
 	}
 )
 
@@ -162,14 +164,14 @@ func (m *defaultSolDepositOrderModel) FindOneByTxSignature(ctx context.Context, 
 }
 
 func (m *defaultSolDepositOrderModel) Insert(ctx context.Context, data *SolDepositOrder) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, solDepositOrderRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.OrderIdx, data.MessageBase64, data.MessageSha256, data.LastValidHeight, data.ReviewAfter, data.UserSignature, data.AcceptedAt, data.ExecutionState, data.SponsorPolicy, data.TxSignature, data.ActualLamportsFee, data.FinalizedSlot, data.CreditVoucherId, data.CreditedUsd, data.CreditedAt)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, solDepositOrderRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.OrderIdx, data.AssetId, data.ActualFundingLamports, data.MessageBase64, data.MessageSha256, data.LastValidHeight, data.ReviewAfter, data.UserSignature, data.AcceptedAt, data.ExecutionState, data.SponsorPolicy, data.TxSignature, data.ActualLamportsFee, data.FinalizedSlot, data.CreditVoucherId, data.CreditedUsd, data.CreditedAt)
 	return ret, err
 }
 
 func (m *defaultSolDepositOrderModel) Update(ctx context.Context, newData *SolDepositOrder) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, solDepositOrderRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.OrderIdx, newData.MessageBase64, newData.MessageSha256, newData.LastValidHeight, newData.ReviewAfter, newData.UserSignature, newData.AcceptedAt, newData.ExecutionState, newData.SponsorPolicy, newData.TxSignature, newData.ActualLamportsFee, newData.FinalizedSlot, newData.CreditVoucherId, newData.CreditedUsd, newData.CreditedAt, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.OrderIdx, newData.AssetId, newData.ActualFundingLamports, newData.MessageBase64, newData.MessageSha256, newData.LastValidHeight, newData.ReviewAfter, newData.UserSignature, newData.AcceptedAt, newData.ExecutionState, newData.SponsorPolicy, newData.TxSignature, newData.ActualLamportsFee, newData.FinalizedSlot, newData.CreditVoucherId, newData.CreditedUsd, newData.CreditedAt, newData.Id)
 	return err
 }
 

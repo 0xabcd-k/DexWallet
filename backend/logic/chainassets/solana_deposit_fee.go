@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	devnetUSDCMint          = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
 	solanaDepositAsset      = SolanaDevnet + ":sol"
 	solanaDepositUSDC       = SolanaDevnet + ":usdc"
 	solanaDepositUSDTPrefix = SolanaDevnet + ":usdt:"
@@ -77,7 +78,7 @@ func (r solanaDepositRoute) message(source [32]byte, blockhash []byte, lamports 
 	instructions := byte(1)
 	if orderIdx != "" {
 		msg[2], msg[3], instructions = 2, 5, 2 // additional readonly Memo program
-		memoProgram, _ := base58.Decode("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
+		memoProgram, _ := base58.Decode(solanaspl.MemoProgram)
 		msg = append(msg, memoProgram...)
 	}
 	msg = append(msg, blockhash...)
@@ -146,7 +147,7 @@ func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID,
 	}
 	entry := s.quotes.assets[assetID]
 	draft := solanaDepositDraft{route: route, source: source, blockhash: block.Blockhash, decimals: entry.asset.Decimals}
-	if assetID == solanaDepositAsset && s.quotes.solReviewAfter > 0 {
+	if s.quotes.solReviewAfter[assetID] > 0 {
 		var nonce [16]byte
 		if _, err := rand.Read(nonce[:]); err != nil {
 			return empty, err
@@ -195,7 +196,7 @@ func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID,
 	}
 	if draft.orderIdx != "" {
 		q.SolOrderIdx, q.SolMessage = draft.orderIdx, base64.StdEncoding.EncodeToString(msg)
-		q.SolLastValidHeight, q.SolReviewAt = block.LastValidBlockHeight, time.UnixMilli(q.ExpiresAt).Add(s.quotes.solReviewAfter).UnixMilli()
+		q.SolLastValidHeight, q.SolReviewAt = block.LastValidBlockHeight, time.UnixMilli(q.ExpiresAt).Add(s.quotes.solReviewAfter[assetID]).UnixMilli()
 	}
 	q.Recipient, q.FeePayer = base58.Encode(route.recipient[:]), base58.Encode(route.payer[:])
 	q.WalletAddress, q.MessageSHA256 = address, fmt.Sprintf("%x", sha256.Sum256(msg))
@@ -228,7 +229,11 @@ func (d solanaDepositDraft) message(q DepositPreview) ([]byte, error) {
 	}
 	transfer := d.token.transfer
 	transfer.Amount = amount
-	msg, err := transfer.SponsoredMessage(d.blockhash, base58.Encode(d.route.payer[:]))
+	memo := ""
+	if d.orderIdx != "" {
+		memo = "dexwallet:deposit:" + d.orderIdx
+	}
+	msg, err := transfer.SponsoredMemoMessage(d.blockhash, base58.Encode(d.route.payer[:]), memo)
 	if err != nil {
 		return nil, apperror.New(apperror.ServiceUnavailable, err)
 	}

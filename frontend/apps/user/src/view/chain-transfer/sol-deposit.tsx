@@ -16,7 +16,8 @@ function OrderStatus({ order }: { order: SolDepositOrderData }) {
   return <><p role="status">{t(label, { idx: order.orderIdx, amount: order.creditedUsd })}</p>
     {order.creditedUsd !== undefined && <Link to="/records?kind=usd_balance">{t('viewAccountEntries')}</Link>}
     {order.txSignature && <dl><dt>{t('solDepositTransaction')}</dt><dd className="chain-address">{order.txSignature}</dd>
-      {order.actualFeeLamports !== undefined && <><dt>{t('solDepositActualFee')}</dt><dd>{order.actualFeeLamports} lamports</dd></>}</dl>}</>;
+      {order.actualFeeLamports !== undefined && <><dt>{t('solDepositActualFee')}</dt><dd>{order.actualFeeLamports} lamports</dd></>}
+      {order.actualFundingLamports !== undefined && <><dt>{t('solDepositFunding')}</dt><dd>{order.actualFundingLamports} lamports</dd></>}</dl>}</>;
 }
 
 function Lookup({ idx, initial }: { idx: string; initial?: SolDepositOrderData }) {

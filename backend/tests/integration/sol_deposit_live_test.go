@@ -14,9 +14,11 @@ import (
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
+	"github.com/0xabcd-k/DexWallet/backend/logic/account"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/deposit"
 	"github.com/0xabcd-k/DexWallet/backend/logic/user"
+	accounts "github.com/0xabcd-k/DexWallet/backend/model/account"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/mr-tron/base58"
 	"github.com/redis/go-redis/v9"
@@ -25,17 +27,28 @@ import (
 
 // Explicit live test using only the user key of the funded disposable Devnet fixture.
 func TestSolanaDevnetDepositAuthorization(t *testing.T) {
-	liveSolOrder(t, false)
+	liveSolOrder(t, false, false, 0)
 }
 
 func TestSolanaDevnetDepositExecution(t *testing.T) {
 	if os.Getenv("DEXWALLET_TEST_SOL_EXECUTE") != "1" {
 		t.Skip("explicit one-order Devnet SOL transfer only")
 	}
-	liveSolOrder(t, true)
+	liveSolOrder(t, true, false, 0)
 }
 
-func liveSolOrder(t *testing.T, execute bool) {
+// Two independent orders use the same dedicated recipient. Only the first may fund its ATA.
+func TestSolanaDevnetUSDCDepositExecution(t *testing.T) {
+	if os.Getenv("DEXWALLET_TEST_USDC_EXECUTE") != "1" {
+		t.Skip("explicit two-order Devnet USDC transfer only")
+	}
+	if !t.Run("create", func(t *testing.T) { liveSolOrder(t, true, true, 1488440) }) {
+		return
+	}
+	t.Run("existing", func(t *testing.T) { liveSolOrder(t, true, true, 0) })
+}
+
+func liveSolOrder(t *testing.T, execute, usdc bool, funding int64) {
 	t.Helper()
 	keyFile := os.Getenv("DEXWALLET_TEST_SOL_USER_KEY_FILE")
 	if keyFile == "" {
@@ -62,13 +75,38 @@ func liveSolOrder(t *testing.T, execute bool) {
 	if endpoint == "" {
 		endpoint = "https://api.devnet.solana.com"
 	}
-	db, users := userDatabase(t, "sol_deposit_live")
+	resource := "sol_deposit_auth"
+	if execute {
+		resource = "sol_deposit_exec"
+	}
+	if usdc && funding > 0 {
+		resource = "usdc_new"
+	}
+	if usdc && funding == 0 {
+		resource = "usdc_existing"
+	}
+	db, users := userDatabase(t, resource)
 	mustExec(t, db, "INSERT INTO user(id,nickname) VALUES(1,'devnet')")
 	client := redis.NewClient(&redis.Options{Addr: testenv.RedisAddress, Password: os.Getenv("DEXWALLET_REDIS_PASSWORD")})
 	defer client.Close()
-	ns := testRun.Name("redis", "sol_deposit_live")
+	ns := testRun.Name("redis", resource)
 	now := time.Now().Unix()
-	chain, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: endpoint}}, DepositQuotes: &chainassets.DepositQuoteConfig{SolanaSOLReviewAfter: 10 * time.Minute, Version: "devnet-auth-test", AsOf: now - 60, ValidUntil: now + 300, SolanaSOL: &chainassets.SolanaDepositFeeConfig{FeePayer: "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN", Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}, Assets: []chainassets.DepositQuoteRate{{AssetID: "solana-devnet:sol", USDPerCoin: "100", EstimatedGas: "0"}}}}, chainassets.NewRedisLimiter(client, ns, 30))
+	assetID := "solana-devnet:sol"
+	route := &chainassets.SolanaDepositFeeConfig{FeePayer: "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN", Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}
+	config := &chainassets.DepositQuoteConfig{SolanaSOLReviewAfter: 10 * time.Minute, Version: "devnet-auth-test", AsOf: now - 60, ValidUntil: now + 300, SolanaSOL: route, Assets: []chainassets.DepositQuoteRate{{AssetID: assetID, USDPerCoin: "100", EstimatedGas: "0"}}}
+	terms := chainassets.SolDepositTerms{Recipient: route.Recipient, GrossLamports: 110000, FeeLamports: 10000}
+	if usdc {
+		recipient := os.Getenv("DEXWALLET_TEST_USDC_RECIPIENT")
+		if recipient == "" {
+			t.Fatal("dedicated fresh Devnet USDC collection wallet required")
+		}
+		assetID = "solana-devnet:usdc"
+		config.SolanaUSDC = &chainassets.SolanaDepositFeeConfig{FeePayer: route.FeePayer, Recipient: recipient}
+		config.SolanaUSDCReviewAfter = 10 * time.Minute
+		config.Assets = append(config.Assets, chainassets.DepositQuoteRate{AssetID: assetID, USDPerCoin: "1", EstimatedGas: "0"})
+		terms = chainassets.SolDepositTerms{Recipient: recipient, USDCAtoms: 11000, FeeLamports: 10000, MaxFundingLamports: funding}
+	}
+	chain, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: endpoint}}, DepositQuotes: config}, chainassets.NewRedisLimiter(client, ns, 30))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +116,7 @@ func liveSolOrder(t *testing.T, execute bool) {
 	orders := deposit.NewSolOrders(conn, quotes, users, transaction.New(db), chain)
 	actor := user.Actor{UserID: 1, AuthVersion: 1}
 	ctx := context.Background()
-	q, err := chain.PreviewWalletDeposit(ctx, actor.UserID, "solana-devnet:sol", "0.01", wallet)
+	q, err := chain.PreviewWalletDeposit(ctx, actor.UserID, assetID, "0.01", wallet)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +147,7 @@ func liveSolOrder(t *testing.T, execute bool) {
 	if err != nil || !accepted.AcceptedAt.Valid || accepted.AcceptedAt != replay.AcceptedAt {
 		t.Fatal("acceptance recovery failed", err)
 	}
-	t.Logf("Devnet order %s message %s: gross %s SOL, fee cap %s SOL, accepted %s, quote expiry %s, last valid height %d", o.OrderIdx, o.MessageSha256, q.PayQuantity, q.MaxGas, accepted.AcceptedAt.Time.UTC().Format(time.RFC3339Nano), time.UnixMilli(q.ExpiresAt).UTC().Format(time.RFC3339Nano), o.LastValidHeight)
+	t.Logf("Devnet order %s message %s: gross %s %s, fee cap %s SOL, accepted %s, quote expiry %s, last valid height %d", o.OrderIdx, o.MessageSha256, q.PayQuantity, assetID, q.MaxGas, accepted.AcceptedAt.Time.UTC().Format(time.RFC3339Nano), time.UnixMilli(q.ExpiresAt).UTC().Format(time.RFC3339Nano), o.LastValidHeight)
 
 	if !execute {
 		return
@@ -124,7 +162,6 @@ func liveSolOrder(t *testing.T, execute bool) {
 		t.Fatal("wrong dedicated Devnet sponsor")
 	}
 	defer clear(sponsor)
-	terms := chainassets.SolDepositTerms{Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5", GrossLamports: 110000, FeeLamports: 10000}
 	lost := &lostDevnetAck{Service: chain}
 	worker := func() *deposit.SolExecution {
 		w, err := deposit.NewSolExecution(conn, lost, q.QuoteIdx, terms, sponsor)
@@ -167,7 +204,21 @@ func liveSolOrder(t *testing.T, execute bool) {
 		if err != nil || seen.ExecutionState != deposit.SolFinalized || seen.TxSignature.String != id {
 			t.Fatal("owner cannot recover chain result", err)
 		}
-		t.Logf("finalized slot=%d fee_lamports=%d gross_lamports=%d submissions_of_same_wire=%d", again.FinalizedSlot, again.ActualLamportsFee, terms.GrossLamports, lost.sent)
+		if again.ActualFundingLamports != funding {
+			t.Fatal("unexpected storage funding", again.ActualFundingLamports)
+		}
+		ledger := account.New(accounts.NewUserAccountModel(conn))
+		for range 2 {
+			credited, err := deposit.CreditSol(ctx, transaction.New(db), ledger, q.QuoteIdx)
+			if err != nil || !credited.CreditVoucherId.Valid || credited.CreditedUsd.Decimal.StringFixed(2) != "0.01" {
+				t.Fatal("USD settlement", err)
+			}
+		}
+		entries, err := ledger.Entries(ctx, actor.UserID, accounts.KindUSD, 0, 2)
+		if err != nil || len(entries.Entries) != 1 || entries.Entries[0].DepositOrderIdx != o.OrderIdx || entries.Entries[0].BalanceAfter.StringFixed(2) != "0.01" {
+			t.Fatal("owner statement", err)
+		}
+		t.Logf("order=%s tx=%s finalized_slot=%d asset=%s gross=%s fee_lamports=%d funding_lamports=%d credited_usd=0.01 entries=1 submissions_of_same_wire=%d", o.OrderIdx, id, again.FinalizedSlot, assetID, q.PayQuantity, again.ActualLamportsFee, again.ActualFundingLamports, lost.sent)
 		return
 	}
 	t.Fatalf("Devnet observation deadline for original tx %s", id)

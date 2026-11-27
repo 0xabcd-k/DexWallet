@@ -45,7 +45,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validOffer = q.quoteIdx === undefined && q.maxGas === undefined ||
       !!walletAddress && typeof q.quoteIdx === 'string' && /^[0-9a-f]{32}$/.test(q.quoteIdx) && q.maxGas === q.estimatedGas;
     const solTerms = q.solOrderIdx === undefined && q.solRecipient === undefined && q.solFeePayer === undefined ||
-      asset.id === 'solana-devnet:sol' && !!walletAddress && !!q.quoteIdx && typeof q.solOrderIdx === 'string' && /^[a-f0-9]{32}$/.test(q.solOrderIdx) &&
+      (asset.id === 'solana-devnet:sol' || asset.id === 'solana-devnet:usdc') && !!walletAddress && !!q.quoteIdx && typeof q.solOrderIdx === 'string' && /^[a-f0-9]{32}$/.test(q.solOrderIdx) &&
       [q.solFeePayer, q.solRecipient].every(v => typeof v === 'string' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v));
     if (!solTerms || !validOffer || !validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||

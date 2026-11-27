@@ -90,7 +90,7 @@ func (s *SolOrders) process(ctx context.Context, actor user.Actor, idx, signatur
 	}
 	var sig []byte
 	if signature != "" {
-		if row.MessageBase64 != q.SolMessage || row.OrderIdx != q.SolOrderIdx || row.MessageSha256 != q.MessageSHA256 || row.LastValidHeight != q.SolLastValidHeight {
+		if row.AssetId != q.AssetID || row.MessageBase64 != q.SolMessage || row.OrderIdx != q.SolOrderIdx || row.MessageSha256 != q.MessageSHA256 || row.LastValidHeight != q.SolLastValidHeight {
 			return SolOrder{}, errors.New("SOL order differs from its confirmed quote")
 		}
 		pub, e := base58.Decode(q.WalletAddress)
@@ -149,7 +149,7 @@ func (s *SolOrders) persist(ctx context.Context, actor user.Actor, record Confir
 				return err
 			}
 		} else {
-			existing = &model.SolDepositOrder{ExecutionState: SolWaiting, QuoteIdx: q.QuoteIdx, OrderIdx: q.SolOrderIdx, MessageBase64: q.SolMessage, MessageSha256: q.MessageSHA256, LastValidHeight: q.SolLastValidHeight, ReviewAfter: time.UnixMilli(q.SolReviewAt).UTC()}
+			existing = &model.SolDepositOrder{AssetId: q.AssetID, ExecutionState: SolWaiting, QuoteIdx: q.QuoteIdx, OrderIdx: q.SolOrderIdx, MessageBase64: q.SolMessage, MessageSha256: q.MessageSHA256, LastValidHeight: q.SolLastValidHeight, ReviewAfter: time.UnixMilli(q.SolReviewAt).UTC()}
 			if _, err := rows.Insert(ctx, existing); err != nil {
 				return err
 			}

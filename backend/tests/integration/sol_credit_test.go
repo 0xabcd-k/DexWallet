@@ -89,7 +89,7 @@ func TestSolDepositCreditRecovery(t *testing.T) {
 	mustExec(t, db, "INSERT INTO deposit_quote_confirmation(quote_idx,user_id,snapshot_json,quote_expires_at,confirmed_at) VALUES(?,1,?,?,?)", q.QuoteIdx, snapshot, time.UnixMilli(q.ExpiresAt).UTC(), fixture.AcceptedAt)
 	mustExec(t, db, `INSERT INTO sol_deposit_order(quote_idx,order_idx,message_base64,message_sha256,last_valid_height,review_after,user_signature,accepted_at,execution_state,sponsor_policy,tx_signature,actual_lamports_fee,finalized_slot)
 	VALUES(?,?,?,?,?,?,?,?,'finalized','devnet-sol-single-order-v1',?,?,?)`, q.QuoteIdx, q.SolOrderIdx, q.SolMessage, q.MessageSHA256, q.SolLastValidHeight, time.UnixMilli(q.SolReviewAt).UTC(), fixture.UserSignature, fixture.AcceptedAt, fixture.TxSignature, terms.FeeLamports, fixture.Slot)
-	for _, v := range []uint{40, 39, 40} {
+	for _, v := range []uint{41, 39, 41} {
 		if err = m.Migrate(v); err != nil {
 			t.Fatal(v, err)
 		}
@@ -143,6 +143,12 @@ func checkSolCreditAttribution(t *testing.T, db *sql.DB, conn sqlx.SqlConn, q ch
 	key := chainreceipt.EventKey{Network: chainassets.SolanaDevnet, Signature: sig, Kind: chainreceipt.SolanaInstruction}
 	if _, err := chainreceipt.NewAttribution(conn, nil).Match(context.Background(), key); !errors.Is(err, chainreceipt.ErrReceiveConflict) {
 		t.Fatal("merchant attribution", err)
+	}
+	// A sponsored USDC order may create the receive ATA at index 0 and transfer at index 1.
+	mustExec(t, db, "UPDATE chain_transfer_event SET instruction_index=1 WHERE id=1")
+	key.Index = 1
+	if _, err := chainreceipt.NewAttribution(conn, nil).Match(context.Background(), key); !errors.Is(err, chainreceipt.ErrReceiveConflict) {
+		t.Fatal("second instruction escaped reservation", err)
 	}
 	mustExec(t, db, "UPDATE chain_receive_request SET matched_event_id=1 WHERE id=1")
 	if err := credit(); !errors.Is(err, chainreceipt.ErrReceiveConflict) {

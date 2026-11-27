@@ -2,7 +2,7 @@ package chainreceipt
 
 import (
 	"encoding/json"
-	"fmt"
+
 	"math"
 	"strconv"
 
@@ -64,8 +64,8 @@ func verifySPLPayout(t solanaspl.Transfer, receipt Receipt, blockhash string, ra
 			return 0, bad("unexpected SOL movement")
 		}
 	}
-	if err := checkTokenDeltas(t, source, dest, meta.PreTokenBalances, meta.PostTokenBalances); err != nil {
-		return 0, err
+	if err := t.CheckTokenDeltas(source, dest, meta.PreTokenBalances, meta.PostTokenBalances); err != nil {
+		return 0, bad(err.Error())
 	}
 	before, after := *meta.PreBalances[dest], *meta.PostBalances[dest]
 	if after < before || after-before > math.MaxInt64 || (!t.CreateATA && after != before) {
@@ -78,46 +78,4 @@ func verifySPLPayout(t solanaspl.Transfer, receipt Receipt, blockhash string, ra
 		return 0, bad("fee and ATA funding do not reconcile with payer balance")
 	}
 	return int64(funding), nil
-}
-func checkTokenDeltas(t solanaspl.Transfer, source, dest int, pre, post []tokenBalance) error {
-	balances := func(rows []tokenBalance, allowMissingDest bool) (uint64, uint64, error) {
-		amounts := map[int]uint64{}
-		for _, b := range rows {
-			if b.AccountIndex == nil {
-				return 0, 0, bad("missing token balance index")
-			}
-			i := *b.AccountIndex
-			owner := t.Sender
-			if i == dest {
-				owner = t.Recipient
-			}
-			_, duplicate := amounts[i]
-			if duplicate || (i != dest && i != source) || b.Owner != owner || b.Mint != t.Mint || b.ProgramID != TokenProgram || b.UITokenAmount.Decimals != solanaspl.Decimals {
-				return 0, 0, bad("token balance identity differs")
-			}
-			n, err := strconv.ParseUint(b.UITokenAmount.Amount, 10, 64)
-			if err != nil {
-				return 0, 0, bad("invalid token balance")
-			}
-			amounts[i] = n
-		}
-		_, haveSource := amounts[source]
-		_, haveDest := amounts[dest]
-		if !haveSource || (!allowMissingDest && !haveDest) {
-			return 0, 0, bad("missing SPL token balance")
-		}
-		return amounts[source], amounts[dest], nil
-	}
-	s0, d0, err := balances(pre, t.CreateATA)
-	if err != nil {
-		return err
-	}
-	s1, d1, err := balances(post, false)
-	if err != nil {
-		return err
-	}
-	if s0 < s1 || d1 < d0 || s0-s1 != t.Amount || d1-d0 != t.Amount {
-		return fmt.Errorf("%w: SPL token deltas differ from transfer", ErrInvalidEvidence)
-	}
-	return nil
 }

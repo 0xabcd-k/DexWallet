@@ -27,7 +27,7 @@ const (
 
 type SolDepositNetwork interface {
 	SolanaBlockHeight(context.Context) (int64, error)
-	CheckDevnetDepositFee(context.Context, []byte, int64) error
+	CheckDevnetDepositFee(context.Context, []byte, chainassets.SolDepositTerms) error
 	SubmitSolDeposit(context.Context, []byte) error
 	ObserveSolDeposit(context.Context, []byte, chainassets.SolDepositTerms) (chainassets.SolDepositObservation, error)
 }
@@ -44,7 +44,7 @@ type SolExecution struct {
 }
 
 func NewSolExecution(conn sqlx.SqlConn, chain SolDepositNetwork, idx string, terms chainassets.SolDepositTerms, key ed25519.PrivateKey) (*SolExecution, error) {
-	if !idxSyntax.MatchString(idx) || terms.Recipient == "" || terms.FeeLamports <= 0 || terms.GrossLamports <= terms.FeeLamports || len(key) != ed25519.PrivateKeySize ||
+	if !idxSyntax.MatchString(idx) || terms.Recipient == "" || !terms.Valid() || len(key) != ed25519.PrivateKeySize ||
 		!key.Equal(ed25519.NewKeyFromSeed(key.Seed())) {
 		return nil, errors.New("valid dedicated Devnet sponsor, quote, recipient, gross and fee authorization required")
 	}
@@ -69,7 +69,7 @@ func (s *SolExecution) Step(ctx context.Context) (*model.SolDepositOrder, error)
 	if err = json.Unmarshal([]byte(record.SnapshotJson), &q); err != nil {
 		return o, err
 	}
-	if q.QuoteIdx != o.QuoteIdx || q.SolOrderIdx != o.OrderIdx || q.SolMessage != o.MessageBase64 || q.MessageSHA256 != o.MessageSha256 ||
+	if q.AssetID != o.AssetId || q.QuoteIdx != o.QuoteIdx || q.SolOrderIdx != o.OrderIdx || q.SolMessage != o.MessageBase64 || q.MessageSHA256 != o.MessageSha256 ||
 		q.SolLastValidHeight != o.LastValidHeight || q.SolReviewAt != o.ReviewAfter.UnixMilli() || q.ExpiresAt != record.QuoteExpiresAt.UnixMilli() ||
 		o.AcceptedAt.Time.Before(record.ConfirmedAt) || o.AcceptedAt.Time.UnixMilli() >= q.ExpiresAt {
 		return o, errors.New("SOL order or acceptance window differs from confirmed quote")
@@ -82,12 +82,12 @@ func (s *SolExecution) Step(ctx context.Context) (*model.SolDepositOrder, error)
 	if o.ExecutionState == SolReview && !o.TxSignature.Valid {
 		return o, nil
 	}
-	advance := func(state string, signature sql.NullString, fee, slot int64) (*model.SolDepositOrder, error) {
+	advance := func(state string, signature sql.NullString, fee, slot, funding int64) (*model.SolDepositOrder, error) {
 		policy := o.SponsorPolicy
 		if state == SolSigned {
 			policy = devnetSponsorPolicy
 		}
-		if err := s.rows.AdvanceExecution(ctx, o, state, signature, policy, fee, slot); err != nil {
+		if err := s.rows.AdvanceExecution(ctx, o, state, signature, policy, fee, slot, funding); err != nil {
 			return o, err
 		}
 		return s.rows.FindOneByQuoteIdx(ctx, s.idx)
@@ -114,41 +114,41 @@ func (s *SolExecution) Step(ctx context.Context) (*model.SolDepositOrder, error)
 			if obs.Failed {
 				state = SolFailed
 			}
-			return advance(state, o.TxSignature, obs.Fee, obs.Slot)
+			return advance(state, o.TxSignature, obs.Fee, obs.Slot, obs.Funding)
 		}
 		if o.ExecutionState == SolReview {
 			return o, err
 		}
 		if !time.Now().Before(o.ReviewAfter) {
-			row, updateErr := advance(SolReview, o.TxSignature, 0, 0)
+			row, updateErr := advance(SolReview, o.TxSignature, 0, 0, 0)
 			return row, errors.Join(err, updateErr)
 		}
 		if err != nil || obs.Seen {
 			if err == nil && o.ExecutionState == SolSigned {
-				return advance(SolSubmitted, o.TxSignature, 0, 0)
+				return advance(SolSubmitted, o.TxSignature, 0, 0, 0)
 			}
 			return o, err
 		}
 	}
 	if !time.Now().Before(o.ReviewAfter) {
-		return advance(SolReview, o.TxSignature, 0, 0)
+		return advance(SolReview, o.TxSignature, 0, 0, 0)
 	}
 	height, err := s.chain.SolanaBlockHeight(ctx)
 	if err != nil {
 		return o, err
 	}
 	if height > o.LastValidHeight {
-		return advance(SolReview, o.TxSignature, 0, 0)
+		return advance(SolReview, o.TxSignature, 0, 0, 0)
 	}
-	if err = s.chain.CheckDevnetDepositFee(ctx, msg, s.terms.FeeLamports); err != nil {
+	if err = s.chain.CheckDevnetDepositFee(ctx, msg, s.terms); err != nil {
 		return o, err
 	}
 	if !time.Now().Before(o.ReviewAfter) {
-		return advance(SolReview, o.TxSignature, 0, 0)
+		return advance(SolReview, o.TxSignature, 0, 0, 0)
 	}
 	if !o.TxSignature.Valid {
 		id := base58.Encode(ed25519.Sign(s.key, msg))
-		return advance(SolSigned, sql.NullString{String: id, Valid: true}, 0, 0)
+		return advance(SolSigned, sql.NullString{String: id, Valid: true}, 0, 0, 0)
 	}
 	// A timeout is ambiguous. No replacement blockhash, message or signature
 	// is generated. The next step always observes this ID before resubmission.
@@ -158,5 +158,5 @@ func (s *SolExecution) Step(ctx context.Context) (*model.SolDepositOrder, error)
 	if o.ExecutionState == SolSubmitted {
 		return o, nil
 	}
-	return advance(SolSubmitted, o.TxSignature, 0, 0)
+	return advance(SolSubmitted, o.TxSignature, 0, 0, 0)
 }

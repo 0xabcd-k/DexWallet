@@ -69,7 +69,7 @@ func catalog() []Network {
 		{ID: TRONMainnet, Family: TRON, Assets: []Asset{asset(TRONMainnet, "TRX", "", 6, Native), asset(TRONMainnet, "USDT", "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", 6, Issuer)}},
 		{ID: TONTestnet, Family: TON, Testnet: true, Assets: []Asset{asset(TONTestnet, "TON", "", 9, Native)}},
 		{ID: BaseSepolia, Family: Base, Testnet: true, Assets: []Asset{asset(BaseSepolia, "ETH", "", 18, Native), asset(BaseSepolia, "USDC", baseusdc.SepoliaContract, 6, Issuer)}},
-		{ID: SolanaDevnet, Family: Solana, Testnet: true, Assets: []Asset{asset(SolanaDevnet, "SOL", "", 9, Native), asset(SolanaDevnet, "USDC", "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", 6, Issuer)}},
+		{ID: SolanaDevnet, Family: Solana, Testnet: true, Assets: []Asset{asset(SolanaDevnet, "SOL", "", 9, Native), asset(SolanaDevnet, "USDC", devnetUSDCMint, 6, Issuer)}},
 		{ID: TRONNile, Family: TRON, Testnet: true, Assets: []Asset{asset(TRONNile, "TRX", "", 6, Native)}},
 	}
 }

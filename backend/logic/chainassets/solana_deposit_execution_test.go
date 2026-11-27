@@ -23,7 +23,7 @@ func TestSolDepositSponsorVerifiesSignedInstructions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	terms := SolDepositTerms{devnetDepositRecipient, 110000, 10000}
+	terms := SolDepositTerms{Recipient: devnetDepositRecipient, GrossLamports: 110000, FeeLamports: 10000}
 	order := strings.Repeat("c", 32)
 	hash, _ := base58.Decode(depositBlockhash)
 	msg := route.message([32]byte(source), hash, 110000, order)
@@ -63,15 +63,15 @@ func TestSolDepositSponsorVerifiesSignedInstructions(t *testing.T) {
 		q.MessageSHA256 = fmt.Sprintf("%x", sha256.Sum256(msg))
 		q.PayQuantity, q.USDPerCoin, q.GasUSDPerCoin = "0.000060003", "199.99", "199.99"
 		q.GasUSD, q.NetUSD = "0.0019999", "0.01"
-		net, err := q.FinalizedSolUSD(10000, sig)
+		net, err := q.FinalizedSolUSD(10000, 0, sig)
 		if err != nil || net.StringFixed(2) != "0.01" {
 			t.Fatal(net, err)
 		}
-		if _, err = q.FinalizedSolUSD(10001, sig); err == nil {
+		if _, err = q.FinalizedSolUSD(10001, 0, sig); err == nil {
 			t.Fatal("fee differs from quote")
 		}
 		q.NetUSD = "0.02"
-		if _, err = q.FinalizedSolUSD(10000, sig); err == nil {
+		if _, err = q.FinalizedSolUSD(10000, 0, sig); err == nil {
 			t.Fatal("net differs from quote")
 		}
 	})
@@ -82,7 +82,7 @@ func TestSolDepositFinalizedEvidence(t *testing.T) {
 	wire := make([]byte, 160)
 	wire[0] = 2
 	encoded := base64.StdEncoding.EncodeToString(wire)
-	terms := SolDepositTerms{devnetDepositRecipient, 110000, 10000}
+	terms := SolDepositTerms{Recipient: devnetDepositRecipient, GrossLamports: 110000, FeeLamports: 10000}
 	for _, tc := range []struct {
 		name, body    string
 		post          []uint64
@@ -151,7 +151,7 @@ func TestSolDepositReplayNeedsBothHistoriesAbsent(t *testing.T) {
 			})
 			wire := make([]byte, 160)
 			wire[0] = 2
-			obs, err := s.ObserveSolDeposit(context.Background(), wire, SolDepositTerms{devnetDepositRecipient, 110000, 10000})
+			obs, err := s.ObserveSolDeposit(context.Background(), wire, SolDepositTerms{Recipient: devnetDepositRecipient, GrossLamports: 110000, FeeLamports: 10000})
 			if err != nil || obs.Seen != tc.seen || obs.Finalized {
 				t.Fatal(obs, err)
 			}

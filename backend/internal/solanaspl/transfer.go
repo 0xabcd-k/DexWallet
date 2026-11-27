@@ -16,6 +16,7 @@ const (
 	Program           = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 	AssociatedProgram = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 	SystemProgram     = "11111111111111111111111111111111"
+	MemoProgram       = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
 	Decimals          = 6
 	transferChecked   = 12
 	createIdempotent  = 1
@@ -98,21 +99,37 @@ func (t Transfer) TransferIndex() int {
 	return 0
 }
 func (t Transfer) Message(blockhash string) ([]byte, error) {
-	return t.compile(blockhash, t.Sender, t.Keys(), 1, 0)
+	return t.compile(blockhash, t.Sender, t.Keys(), 1, 0, "")
 }
 
 // SponsoredMessage keeps the token authority read-only. The separate fee payer
 // signs first and supplies the storage deposit when the destination is created.
 func (t Transfer) SponsoredMessage(blockhash, payer string) ([]byte, error) {
+	return t.SponsoredMemoMessage(blockhash, payer, "")
+}
+
+func (t Transfer) SponsoredMemoMessage(blockhash, payer, memo string) ([]byte, error) {
 	for _, account := range []string{t.Sender, t.Recipient, t.Mint, t.SourceATA, t.DestinationATA, Program, SystemProgram, AssociatedProgram} {
 		if payer == account {
 			return nil, fmt.Errorf("overlapping SPL fee payer %s", payer)
 		}
 	}
-	return t.compile(blockhash, payer, append([]string{payer}, t.Keys()...), 2, 1)
+	keys := append([]string{payer}, t.Keys()...)
+	if memo != "" {
+		if len(memo) > 127 || t.Recipient == MemoProgram {
+			return nil, errors.New("invalid sponsored memo")
+		}
+		for _, k := range keys {
+			if k == MemoProgram {
+				return nil, errors.New("overlapping memo program")
+			}
+		}
+		keys = append(keys, MemoProgram)
+	}
+	return t.compile(blockhash, payer, keys, 2, 1, memo)
 }
 
-func (t Transfer) compile(blockhash, payer string, keys []string, signers, readonlySigners byte) ([]byte, error) {
+func (t Transfer) compile(blockhash, payer string, keys []string, signers, readonlySigners byte, memo string) ([]byte, error) {
 	hash, err := publicKey(blockhash)
 	if err != nil {
 		return nil, err
@@ -140,11 +157,18 @@ func (t Transfer) compile(blockhash, payer string, keys []string, signers, reado
 		msg = append(msg, byte(len(data)))
 		msg = append(msg, data...)
 	}
-	msg = append(msg, byte(1+t.TransferIndex()))
+	count := 1 + t.TransferIndex()
+	if memo != "" {
+		count++
+	}
+	msg = append(msg, byte(count))
 	if t.CreateATA {
 		appendInstruction(AssociatedProgram, []string{payer, t.DestinationATA, t.Recipient, t.Mint, SystemProgram, Program}, []byte{createIdempotent})
 	}
 	data := binary.LittleEndian.AppendUint64([]byte{transferChecked}, t.Amount)
 	appendInstruction(Program, []string{t.SourceATA, t.Mint, t.DestinationATA, t.Sender}, append(data, Decimals))
+	if memo != "" {
+		appendInstruction(MemoProgram, nil, []byte(memo))
+	}
 	return msg, nil
 }

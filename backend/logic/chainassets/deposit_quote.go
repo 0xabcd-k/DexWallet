@@ -15,21 +15,22 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
-	SolanaSOLReviewAfter time.Duration         `json:",optional"`
-	TONTestUSDT          *TONDepositFeeConfig  `json:",optional"`
-	TONNative            *TONDepositFeeConfig  `json:",optional"`
-	TRONTestUSDT         *TRONDepositFeeConfig `json:",optional"`
-	TRONTRX              *TRONDepositFeeConfig `json:",optional"`
-	BaseETH              *BaseDepositFeeConfig `json:",optional"`
-	BaseUSDC             *BaseDepositFeeConfig `json:",optional"`
-	Version              string
-	AsOf                 int64                   `json:",optional"`
-	ValidUntil           int64                   `json:",optional"`
-	Market               *DepositMarketConfig    `json:",optional"`
-	SolanaSOL            *SolanaDepositFeeConfig `json:",optional"`
-	SolanaUSDC           *SolanaDepositFeeConfig `json:",optional"`
-	SolanaTestUSDT       *SolanaDepositFeeConfig `json:",optional"`
-	Assets               []DepositQuoteRate
+	SolanaUSDCReviewAfter time.Duration         `json:",optional"`
+	SolanaSOLReviewAfter  time.Duration         `json:",optional"`
+	TONTestUSDT           *TONDepositFeeConfig  `json:",optional"`
+	TONNative             *TONDepositFeeConfig  `json:",optional"`
+	TRONTestUSDT          *TRONDepositFeeConfig `json:",optional"`
+	TRONTRX               *TRONDepositFeeConfig `json:",optional"`
+	BaseETH               *BaseDepositFeeConfig `json:",optional"`
+	BaseUSDC              *BaseDepositFeeConfig `json:",optional"`
+	Version               string
+	AsOf                  int64                   `json:",optional"`
+	ValidUntil            int64                   `json:",optional"`
+	Market                *DepositMarketConfig    `json:",optional"`
+	SolanaSOL             *SolanaDepositFeeConfig `json:",optional"`
+	SolanaUSDC            *SolanaDepositFeeConfig `json:",optional"`
+	SolanaTestUSDT        *SolanaDepositFeeConfig `json:",optional"`
+	Assets                []DepositQuoteRate
 }
 
 type DepositQuoteRate struct {
@@ -51,7 +52,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
-	solReviewAfter time.Duration
+	solReviewAfter map[string]time.Duration
 	ton            map[string]*tonDepositRoute
 	tron           map[string]*nileDepositRoute
 	base           map[string]*baseDepositRoute
@@ -80,7 +81,10 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	if c.SolanaSOLReviewAfter != 0 && (c.SolanaSOL == nil || c.SolanaSOLReviewAfter < time.Second) {
 		return book, fmt.Errorf("SOL authorization requires a Devnet SOL wallet route and a positive review interval of at least one second")
 	}
-	book = depositBook{solReviewAfter: c.SolanaSOLReviewAfter, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	if c.SolanaUSDCReviewAfter != 0 && (c.SolanaUSDC == nil || c.SolanaUSDCReviewAfter < time.Second) {
+		return book, fmt.Errorf("USDC authorization requires a Devnet USDC route and review interval of at least one second")
+	}
+	book = depositBook{solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, solanaDepositUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {

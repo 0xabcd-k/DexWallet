@@ -17,8 +17,8 @@ import (
 // Check the configured route and simulate exactly the priced message against Devnet.
 // The sponsor signature slot remains empty. Simulation never broadcasts a transaction.
 func (s *Service) CheckSolDeposit(ctx context.Context, user int64, q DepositPreview, msg, userSignature []byte) error {
-	route := s.quotes.solana[solanaDepositAsset]
-	if q.SolOrderIdx == "" || q.AssetID != solanaDepositAsset || route == nil || s.quotes.solReviewAfter <= 0 ||
+	route := s.quotes.solana[q.AssetID]
+	if q.SolOrderIdx == "" || route == nil || s.quotes.solReviewAfter[q.AssetID] <= 0 ||
 		q.Recipient != base58.Encode(route.recipient[:]) || q.FeePayer != base58.Encode(route.payer[:]) {
 		return apperror.New(apperror.Unprocessable, errors.New("SOL deposit authorization unavailable for this quote"))
 	}
@@ -40,7 +40,7 @@ func (s *Service) CheckSolDeposit(ctx context.Context, user int64, q DepositPrev
 	if height > q.SolLastValidHeight {
 		return apperror.New(apperror.Conflict, errors.New("quoted blockhash expired"))
 	}
-	n := s.quotes.assets[solanaDepositAsset].network
+	n := s.quotes.assets[q.AssetID].network
 	fee, err := s.messageFee(ctx, n, msg)
 	if err != nil {
 		return apperror.New(apperror.ServiceUnavailable, err)

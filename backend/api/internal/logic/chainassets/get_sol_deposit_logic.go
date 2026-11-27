@@ -5,14 +5,14 @@ package chainassets
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/httpapi"
-	"github.com/0xabcd-k/DexWallet/backend/apperror"
-	"github.com/0xabcd-k/DexWallet/backend/logic/deposit"
-
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/svc"
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/types"
-
+	"github.com/0xabcd-k/DexWallet/backend/apperror"
+	chainlogic "github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
+	"github.com/0xabcd-k/DexWallet/backend/logic/deposit"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -46,7 +46,10 @@ func (l *GetSolDepositLogic) GetSolDeposit(req *types.DepositQuoteLookupRequest)
 }
 
 func solOrderResponse(ctx context.Context, o deposit.SolOrder) *types.SolDepositOrderResponse {
-	data := types.SolDepositOrderData{ExecutionState: o.ExecutionState, TxSignature: o.TxSignature.String, ActualFeeLamports: o.ActualLamportsFee, QuoteIdx: o.QuoteIdx, OrderIdx: o.OrderIdx, State: deposit.AwaitingSignature, MessageBase64: o.MessageBase64, MessageSha256: o.MessageSha256, LastValidBlockHeight: o.LastValidHeight, QuoteExpiresAt: o.QuoteExpiresAt, ReviewAfter: o.ReviewAfter.UnixMilli()}
+	data := types.SolDepositOrderData{AssetId: o.AssetId, ExecutionState: o.ExecutionState, TxSignature: o.TxSignature.String, ActualFeeLamports: o.ActualLamportsFee, QuoteIdx: o.QuoteIdx, OrderIdx: o.OrderIdx, State: deposit.AwaitingSignature, MessageBase64: o.MessageBase64, MessageSha256: o.MessageSha256, LastValidBlockHeight: o.LastValidHeight, QuoteExpiresAt: o.QuoteExpiresAt, ReviewAfter: o.ReviewAfter.UnixMilli()}
+	if o.AssetId == chainlogic.SolanaDevnet+":usdc" && (o.ExecutionState == deposit.SolFinalized || o.ExecutionState == deposit.SolFailed) {
+		data.ActualFundingLamports = strconv.FormatInt(o.ActualFundingLamports, 10)
+	}
 	if o.CreditVoucherId.Valid {
 		data.CreditedUsd = o.CreditedUsd.Decimal.StringFixed(2)
 		data.CreditedAt = o.CreditedAt.Time.UnixMilli()
