@@ -963,6 +963,8 @@ export interface SolDepositOrderData {
 	executionState: 'waiting' | 'signed' | 'submitted' | 'review' | 'finalized' | 'failed'
 	txSignature?: string
 	actualFeeLamports?: number
+	creditedUsd?: string
+	creditedAt?: number
 	messageBase64: string
 	messageSha256: string
 	lastValidBlockHeight: number

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { Button } from 'antd-mobile';
 import { useTranslation } from '@dexwallet/i18n';
 import type { DepositQuoteData, SolDepositOrderData } from '@dexwallet/api-contract/platform';
@@ -10,9 +11,10 @@ function OrderStatus({ order }: { order: SolDepositOrderData }) {
   const { t } = useTranslation();
   const statuses = { waiting: 'solDepositAccepted', signed: 'solDepositSigned', submitted: 'solDepositSubmitted',
     review: 'solDepositReview', finalized: 'solDepositFinalized', failed: 'solDepositFailed' } as const;
-  const label = order.state === 'accepted' ? statuses[order.executionState] :
+  const label = order.creditedUsd !== undefined ? 'solDepositCredited' : order.state === 'accepted' ? statuses[order.executionState] :
     Date.now() >= order.quoteExpiresAt ? 'solDepositLate' : 'solDepositPending';
-  return <><p role="status">{t(label, { idx: order.orderIdx })}</p>
+  return <><p role="status">{t(label, { idx: order.orderIdx, amount: order.creditedUsd })}</p>
+    {order.creditedUsd !== undefined && <Link to="/records?kind=usd_balance">{t('viewAccountEntries')}</Link>}
     {order.txSignature && <dl><dt>{t('solDepositTransaction')}</dt><dd className="chain-address">{order.txSignature}</dd>
       {order.actualFeeLamports !== undefined && <><dt>{t('solDepositActualFee')}</dt><dd>{order.actualFeeLamports} lamports</dd></>}</dl>}</>;
 }

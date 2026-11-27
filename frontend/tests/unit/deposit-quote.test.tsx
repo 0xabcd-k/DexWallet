@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createAppI18n, I18nextProvider } from '@dexwallet/i18n';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -284,18 +285,19 @@ it('recovers a saved wallet quote by its original idx when the response is lost 
   expect(screen.queryByRole('button', { name: 'Confirm quote' })).toBeNull();
 });
 
-it('recovers a finalized SOL deposit with its sponsor fee and distinct USD settlement status', async () => {
+it.each([false, true])('recovers a finalized SOL deposit and its USD settlement (credited=%s)', async credited => {
   const idx = '2'.repeat(32);
   const tx = 'tTrrbqujhmBRtQwWnDNeZfU1SaWBWbPVsCC7dUqAovpBA2t2NtEWkKJYryNpBH6meGE5jLgdk3m8VXnbRbaFBrD';
   vi.mocked(nativeCatalog.get).mockResolvedValueOnce({ value: idx });
   vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode) => decode({ data: {
     quoteIdx: idx, orderIdx: idx, state: 'accepted', executionState: 'finalized', txSignature: tx, actualFeeLamports: 10000,
-    acceptedAt: 10, quoteExpiresAt: 20, reviewAfter: 30, lastValidBlockHeight: 100, messageSha256: 'a'.repeat(64), messageBase64: 'Ag==',
+    acceptedAt: 10, quoteExpiresAt: 20, reviewAfter: 30, lastValidBlockHeight: 100, messageSha256: 'a'.repeat(64), messageBase64: 'Ag==', ...(credited ? { creditedAt: 31, creditedUsd: '0.01' } : {}),
   } }));
   const i18n = await createAppI18n('user', appResources, 'en');
-  render(<I18nextProvider i18n={i18n}><LastSolDeposit userIdx="testuser"/></I18nextProvider>);
+  render(<MemoryRouter><I18nextProvider i18n={i18n}><LastSolDeposit userIdx="testuser"/></I18nextProvider></MemoryRouter>);
   fireEvent.click(await screen.findByRole('button', { name: 'Check SOL deposit status' }));
-  expect(await screen.findByRole('status')).toHaveTextContent('confirmed on Devnet. Test USD has not been credited.');
+  expect(await screen.findByRole('status')).toHaveTextContent(credited ? 'credited 0.01 test USD' : 'confirmed on Devnet. Test USD has not been credited.');
+  if (credited) expect(screen.getByRole('link')).toHaveAttribute('href', '/records?kind=usd_balance');
   expect(screen.getByText(tx)).toBeInTheDocument();
   expect(screen.getByText('10000 lamports')).toBeInTheDocument();
 });

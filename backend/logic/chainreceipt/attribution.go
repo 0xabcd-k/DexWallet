@@ -402,6 +402,11 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 	if when < row.OpensAt || when >= row.ExpiresAt {
 		return empty, ErrReceiveWindow
 	}
+	if k.Network == chainassets.SolanaDevnet && k.Kind == SolanaInstruction && k.Index == 0 && tx.FeePayer != ev.SourceOwner {
+		if err := a.checkSolDepositReservation(ctx, k.Signature); err != nil {
+			return empty, err
+		}
+	}
 	if !row.MatchedEventId.Valid {
 		// A request can accept one event and the unique index reserves each event globally.
 		_, err = a.conn.ExecCtx(ctx, `UPDATE chain_receive_request SET matched_event_id=?
@@ -425,4 +430,31 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 		return empty, ErrReceiveConflict
 	}
 	return found, nil
+}
+
+// The standalone collector also supports business 32–38, which predate sponsor
+// signatures. In newer databases a sponsor saved the ID before it could broadcast.
+func (a *Attribution) checkSolDepositReservation(ctx context.Context, signature string) error {
+	var schema struct {
+		Version int64 `db:"version"`
+		Dirty   bool  `db:"dirty"`
+	}
+	if err := a.conn.QueryRowCtx(ctx, &schema, "SELECT version,dirty FROM schema_migrations_business"); err != nil {
+		return err
+	}
+	if schema.Dirty {
+		return errors.New("cannot attribute SOL with a dirty business schema")
+	}
+	const firstSponsorSchema = 39
+	if schema.Version < firstSponsorSchema {
+		return nil
+	}
+	var reserved bool
+	if err := a.conn.QueryRowCtx(ctx, &reserved, "SELECT EXISTS(SELECT 1 FROM sol_deposit_order WHERE tx_signature=?)", signature); err != nil {
+		return err
+	}
+	if reserved {
+		return ErrReceiveConflict
+	}
+	return nil
 }

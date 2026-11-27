@@ -16,3 +16,11 @@ ALTER TABLE `sol_deposit_order`
    AND ((`execution_state` IN ('finalized','failed') AND `finalized_slot` > 0 AND `actual_lamports_fee` > 0)
      OR (`execution_state` NOT IN ('finalized','failed') AND `finalized_slot` = 0 AND `actual_lamports_fee` = 0))
  );
+
+ALTER TABLE `sol_deposit_order`
+ ADD CONSTRAINT `fk_sol_credit_voucher` FOREIGN KEY (`credit_voucher_id`) REFERENCES `ledger_voucher` (`id`),
+ ADD CONSTRAINT `ck_sol_deposit_credit` CHECK (
+   (`credit_voucher_id` IS NULL AND `credited_usd` IS NULL AND `credited_at` IS NULL)
+   OR (`execution_state`='finalized' AND `credit_voucher_id` IS NOT NULL AND `credited_usd` IS NOT NULL
+       AND `credited_usd` > 0 AND `credited_usd` = TRUNCATE(`credited_usd`,2) AND `credited_at` IS NOT NULL)
+ );

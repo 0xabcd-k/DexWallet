@@ -46,7 +46,7 @@ func (s *SolOrders) Get(ctx context.Context, owner int64, idx string) (SolOrder,
 	if err != nil {
 		return SolOrder{}, err
 	}
-	row, err := s.rows.FindOne(ctx, idx)
+	row, err := s.rows.FindOneByQuoteIdx(ctx, idx)
 	if errors.Is(err, sql.ErrNoRows) {
 		return SolOrder{}, apperror.New(apperror.NotFound, nil)
 	}
@@ -74,7 +74,7 @@ func (s *SolOrders) process(ctx context.Context, actor user.Actor, idx, signatur
 	if q.SolOrderIdx == "" {
 		return SolOrder{}, apperror.New(apperror.Unprocessable, errors.New("quote has no SOL signing terms"))
 	}
-	row, err := s.rows.FindOne(ctx, idx)
+	row, err := s.rows.FindOneByQuoteIdx(ctx, idx)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return SolOrder{}, err
 	}
@@ -119,7 +119,7 @@ func (s *SolOrders) persist(ctx context.Context, actor user.Actor, record Confir
 			return err
 		}
 		rows := model.NewSolDepositOrderModel(sqlx.NewSqlConnFromSession(session))
-		existing, err := rows.FindOne(ctx, q.QuoteIdx)
+		existing, err := rows.FindOneByQuoteIdx(ctx, q.QuoteIdx)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}

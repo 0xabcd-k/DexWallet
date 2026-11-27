@@ -33,6 +33,10 @@ function orderData(value: unknown, idx: string) {
     (final ? !Number.isSafeInteger(o.actualFeeLamports) || o.actualFeeLamports! <= 0 : o.actualFeeLamports !== undefined)) {
     throw new TypeError('Invalid SOL execution result');
   }
+  if (o.creditedUsd !== undefined || o.creditedAt !== undefined) {
+    if (executionState !== 'finalized' || typeof o.creditedUsd !== 'string' || !/^(0|[1-9]\d{0,17})\.\d{2}$/.test(o.creditedUsd) ||
+      o.creditedUsd === '0.00' || !Number.isSafeInteger(o.creditedAt) || o.creditedAt! < o.acceptedAt!) throw new TypeError('Invalid SOL credit');
+  }
   return { ...o, executionState };
 }
 export function getSolOrder(idx: string, signal: AbortSignal) {

@@ -1272,6 +1272,8 @@ type SolDepositOrderData {
     ExecutionState string `json:"executionState,options=waiting|signed|submitted|review|finalized|failed"`
     TxSignature string `json:"txSignature,optional,omitempty"`
     ActualFeeLamports int64 `json:"actualFeeLamports,optional,omitempty"`
+    CreditedUsd string `json:"creditedUsd,optional,omitempty"`
+    CreditedAt int64 `json:"creditedAt,optional,omitempty"`
     MessageBase64 string `json:"messageBase64"`
     MessageSha256 string `json:"messageSha256"`
     LastValidBlockHeight int64 `json:"lastValidBlockHeight"`

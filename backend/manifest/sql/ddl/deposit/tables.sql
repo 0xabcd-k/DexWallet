@@ -9,6 +9,7 @@ CREATE TABLE `deposit_quote_confirmation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;
 
 CREATE TABLE `sol_deposit_order` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
     `quote_idx` CHAR(32) NOT NULL,
     `order_idx` CHAR(32) NOT NULL,
     `message_base64` VARCHAR(512) NOT NULL,
@@ -22,7 +23,12 @@ CREATE TABLE `sol_deposit_order` (
     `tx_signature` VARCHAR(88) NULL,
     `actual_lamports_fee` BIGINT NOT NULL DEFAULT 0,
     `finalized_slot` BIGINT NOT NULL DEFAULT 0,
-    PRIMARY KEY (`quote_idx`),
+    `credit_voucher_id` BIGINT NULL,
+    `credited_usd` DECIMAL(36,18) NULL,
+    `credited_at` DATETIME(3) NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_sol_deposit_quote` (`quote_idx`),
+    UNIQUE KEY `uk_sol_credit_voucher` (`credit_voucher_id`),
     UNIQUE KEY `uk_sol_deposit_tx` (`tx_signature`),
     UNIQUE KEY `uk_sol_deposit_order` (`order_idx`),
     UNIQUE KEY `uk_sol_deposit_message` (`message_sha256`)

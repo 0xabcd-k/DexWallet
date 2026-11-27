@@ -27,23 +27,25 @@ func (m *customUserAccountModel) SetBalances(ctx context.Context, id int64, bala
 
 // StatementEntry deliberately omits counterpart accounts and system entries.
 type StatementEntry struct {
-	ID           int64           `db:"id"`
-	VoucherID    int64           `db:"voucher_id"`
-	BusinessType string          `db:"business_type"`
-	BusinessID   int64           `db:"business_id"`
-	Action       string          `db:"action"`
-	Kind         string          `db:"kind"`
-	Unit         string          `db:"unit"`
-	Side         string          `db:"side"`
-	Amount       decimal.Decimal `db:"amount"`
-	BalanceAfter decimal.Decimal `db:"balance_after"`
-	BalancePart  string          `db:"balance_part"`
-	CreatedAt    time.Time       `db:"created_at"`
+	ID              int64           `db:"id"`
+	VoucherID       int64           `db:"voucher_id"`
+	BusinessType    string          `db:"business_type"`
+	DepositOrderIdx string          `db:"deposit_order_idx"`
+	BusinessID      int64           `db:"business_id"`
+	Action          string          `db:"action"`
+	Kind            string          `db:"kind"`
+	Unit            string          `db:"unit"`
+	Side            string          `db:"side"`
+	Amount          decimal.Decimal `db:"amount"`
+	BalanceAfter    decimal.Decimal `db:"balance_after"`
+	BalancePart     string          `db:"balance_part"`
+	CreatedAt       time.Time       `db:"created_at"`
 }
 
 func (m *customUserAccountModel) ListEntries(ctx context.Context, userID int64, kind string, before int64, limit int) ([]StatementEntry, error) {
-	query := `SELECT e.id,e.voucher_id,v.business_type,v.business_id,v.action,a.kind,e.unit,e.side,e.amount,e.balance_after,e.balance_part,v.created_at
-		FROM user_account a JOIN ledger_entry e ON e.account_id=a.id JOIN ledger_voucher v ON v.id=e.voucher_id WHERE a.user_id=? AND NOT(e.balance_part='held' AND v.action IN ('hold','release'))`
+	query := `SELECT e.id,e.voucher_id,v.business_type,v.business_id,COALESCE(d.order_idx,'') AS deposit_order_idx,v.action,a.kind,e.unit,e.side,e.amount,e.balance_after,e.balance_part,v.created_at
+		FROM user_account a JOIN ledger_entry e ON e.account_id=a.id JOIN ledger_voucher v ON v.id=e.voucher_id
+        LEFT JOIN sol_deposit_order d ON d.credit_voucher_id=v.id WHERE a.user_id=? AND NOT(e.balance_part='held' AND v.action IN ('hold','release'))`
 	args := []any{userID}
 	if kind != "" {
 		query += " AND a.kind=?"

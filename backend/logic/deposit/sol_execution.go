@@ -54,7 +54,7 @@ func NewSolExecution(conn sqlx.SqlConn, chain SolDepositNetwork, idx string, ter
 // Step commits the first signature (the transaction ID) separately from any
 // submission. With the immutable user signature and message this is the full wire.
 func (s *SolExecution) Step(ctx context.Context) (*model.SolDepositOrder, error) {
-	o, err := s.rows.FindOne(ctx, s.idx)
+	o, err := s.rows.FindOneByQuoteIdx(ctx, s.idx)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (s *SolExecution) Step(ctx context.Context) (*model.SolDepositOrder, error)
 		if err := s.rows.AdvanceExecution(ctx, o, state, signature, policy, fee, slot); err != nil {
 			return o, err
 		}
-		return s.rows.FindOne(ctx, s.idx)
+		return s.rows.FindOneByQuoteIdx(ctx, s.idx)
 	}
 	var wire []byte
 	if o.TxSignature.Valid {

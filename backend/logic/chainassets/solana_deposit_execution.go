@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xabcd-k/DexWallet/backend/model/account"
 	"github.com/mr-tron/base58"
 	"github.com/shopspring/decimal"
 )
@@ -162,4 +163,29 @@ func (s *Service) ObserveSolDeposit(ctx context.Context, wire []byte, terms SolD
 		return obs, fmt.Errorf("unexpected finalized wallet or recipient balance delta at slot %d", tx.Slot)
 	}
 	return SolDepositObservation{Seen: true, Finalized: true, Failed: failed, Slot: tx.Slot, Fee: m.Fee}, nil
+}
+
+// FinalizedSolUSD uses the exact gross SOL transfer verified on finalization
+// and its actual fee. Both are denominated in SOL at the same locked rate.
+func (q DepositPreview) FinalizedSolUSD(feeLamports int64, userSignature string) (decimal.Decimal, error) {
+	fee := decimal.New(feeLamports, -9)
+	if q.USDPerCoin != q.GasUSDPerCoin || !rateSyntax.MatchString(q.USDPerCoin) || !rateSyntax.MatchString(q.PayQuantity) {
+		return decimal.Zero, errors.New("invalid SOL quantity or locked exchange rate")
+	}
+	rate, _ := decimal.NewFromString(q.USDPerCoin)
+	gross, _ := decimal.NewFromString(q.PayQuantity)
+	lamports := gross.Shift(9)
+	if !lamports.IsInteger() || !lamports.BigInt().IsInt64() {
+		return decimal.Zero, errors.New("invalid finalized SOL quantity")
+	}
+	terms := SolDepositTerms{Recipient: q.Recipient, GrossLamports: lamports.IntPart(), FeeLamports: feeLamports}
+	if _, err := terms.Check(q, q.FeePayer, userSignature); err != nil {
+		return decimal.Zero, err
+	}
+	usd, _ := account.Lookup(account.KindUSD)
+	net := gross.Sub(fee).Mul(rate).Truncate(usd.Scale)
+	if !rate.IsPositive() || !net.IsPositive() || net.StringFixed(usd.Scale) != q.NetUSD || fee.Mul(rate).String() != q.GasUSD {
+		return decimal.Zero, errors.New("finalized SOL net credit differs from accepted quote")
+	}
+	return net, usd.ValidateBalances(net, decimal.Zero)
 }

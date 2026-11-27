@@ -288,14 +288,59 @@ func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, cal
 		t.Fatal("recovery lookup", result, err)
 	}
 	call("GET", path+q.QuoteIdx, other, nil, 404, "NOT_FOUND")
+	if _, err = deposit.CreditSol(ctx, s.Tx, s.Accounts, q.QuoteIdx); !errors.Is(err, deposit.ErrSolNotFinalized) {
+		t.Fatal("failed order could credit", err)
+	}
+
+	// A separate owner begins with no balance or statement entries.
+	res, err := s.DB.Exec("INSERT INTO user(nickname) VALUES('sol-credit-owner')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	owner, err := res.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	viewer := token
+	token, _, err = s.Tokens.Issue(owner, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	success := newQuote()
+	_, raw = call("POST", path+"prepare", token, types.DepositQuoteConfirmRequest{QuoteIdx: success.QuoteIdx}, 200, "OK")
+	if err = json.Unmarshal(raw, &order); err != nil {
+		t.Fatal(err)
+	}
+	msg, err = base64.StdEncoding.DecodeString(order.MessageBase64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	call("POST", path+"authorize", token, types.SolDepositAuthorizeRequest{QuoteIdx: success.QuoteIdx, UserSignature: base58.Encode(ed25519.Sign(sk, msg))}, 200, "OK")
+	if _, err = deposit.CreditSol(ctx, s.Tx, s.Accounts, success.QuoteIdx); !errors.Is(err, deposit.ErrSolNotFinalized) {
+		t.Fatal("accepted order credited", err)
+	}
+	net.success = true
+	run, err := deposit.NewSolExecution(conn, net, success.QuoteIdx, terms, sponsor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if row, err := run.Step(ctx); err != nil || row.ExecutionState != deposit.SolSigned {
+		t.Fatal("sign", err)
+	}
+	if row, err := run.Step(ctx); err != nil || row.ExecutionState != deposit.SolFinalized {
+		t.Fatal("finalize", err)
+	}
+	checkSolCreditHTTP(t, s, success, token, viewer, call)
+
 }
 
 var errDroppedSolResponse = errors.New("test node dropped response")
 
 type solExecutionNode struct {
 	*chainassets.Service
-	sends [][]byte
-	final bool
+	sends   [][]byte
+	final   bool
+	success bool
 }
 
 func (n *solExecutionNode) SubmitSolDeposit(_ context.Context, wire []byte) error {
@@ -307,7 +352,82 @@ func (n *solExecutionNode) SubmitSolDeposit(_ context.Context, wire []byte) erro
 }
 func (n *solExecutionNode) ObserveSolDeposit(_ context.Context, _ []byte, terms chainassets.SolDepositTerms) (chainassets.SolDepositObservation, error) {
 	if n.final {
-		return chainassets.SolDepositObservation{Seen: true, Finalized: true, Failed: true, Slot: 99, Fee: terms.FeeLamports}, nil
+		return chainassets.SolDepositObservation{Seen: true, Finalized: true, Failed: !n.success, Slot: 99, Fee: terms.FeeLamports}, nil
 	}
 	return chainassets.SolDepositObservation{}, nil
+}
+
+func checkSolCreditHTTP(t *testing.T, s *shared.ServiceContext, q types.DepositQuoteData, token, viewer string, call func(string, string, string, any, int, string) (http.Header, json.RawMessage)) {
+	t.Helper()
+	ctx := context.Background()
+	path := "/v1/user/sol-deposit-orders/" + q.QuoteIdx
+	entries := func(tok string) []types.AccountEntry {
+		_, body := call("GET", "/v1/user/account-entries?kind=usd_balance", tok, nil, 200, "OK")
+		var page types.AccountEntriesData
+		if err := json.Unmarshal(body, &page); err != nil {
+			t.Fatal(err)
+		}
+		return page.Entries
+	}
+	// Force a failure after Post has written both lines and the balance.
+	if _, err := s.DB.Exec("ALTER TABLE sol_deposit_order ADD CONSTRAINT test_block_sol_credit CHECK (credited_at IS NULL)"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := deposit.CreditSol(ctx, s.Tx, s.Accounts, q.QuoteIdx); err == nil || !strings.Contains(err.Error(), "test_block_sol_credit") {
+		t.Fatal("missing injected rollback", err)
+	}
+	if _, err := s.DB.Exec("ALTER TABLE sol_deposit_order DROP CHECK test_block_sol_credit"); err != nil {
+		t.Fatal(err)
+	}
+	if got := entries(token); len(got) != 0 {
+		t.Fatal("partial bill after rollback", got)
+	}
+	_, body := call("GET", path, token, nil, 200, "OK")
+	var pending types.SolDepositOrderData
+	if err := json.Unmarshal(body, &pending); err != nil || pending.ExecutionState != deposit.SolFinalized || pending.CreditedUsd != "" || pending.CreditedAt != 0 {
+		t.Fatal("premature credit", pending, err)
+	}
+	type credit struct {
+		voucher, at int64
+		err         error
+	}
+	results := make(chan credit, 8)
+	for range cap(results) {
+		go func() {
+			o, err := deposit.CreditSol(ctx, s.Tx, s.Accounts, q.QuoteIdx)
+			if err != nil {
+				results <- credit{err: err}
+				return
+			}
+			results <- credit{voucher: o.CreditVoucherId.Int64, at: o.CreditedAt.Time.UnixMilli()}
+		}()
+	}
+	var first credit
+	for range cap(results) {
+		c := <-results
+		if c.err != nil || c.voucher <= 0 || c.at <= 0 || first.voucher != 0 && c != first {
+			t.Fatal("duplicate credit or failed recovery", first, c)
+		}
+		first = c
+	}
+	_, body = call("GET", path, token, nil, 200, "OK")
+	var order types.SolDepositOrderData
+	if err := json.Unmarshal(body, &order); err != nil || order.CreditedUsd != q.NetUsd || order.CreditedAt != first.at || order.OrderIdx != q.SolOrderIdx {
+		t.Fatal("credit status", order, err)
+	}
+	bills := entries(token)
+	if len(bills) != 1 || bills[0].BusinessIdx != order.OrderIdx || bills[0].BusinessType != "deposit" || bills[0].Direction != "in" || bills[0].Amount != q.NetUsd || bills[0].BalanceAfter != q.NetUsd {
+		t.Fatal("credit statement", bills)
+	}
+	_, body = call("GET", "/v1/user/accounts", token, nil, 200, "OK")
+	var balances types.AccountBalancesData
+	if err := json.Unmarshal(body, &balances); err != nil || balances.Accounts[0].Balance != q.NetUsd {
+		t.Fatal("first balance", balances, err)
+	}
+	call("GET", path, viewer, nil, 404, "NOT_FOUND")
+	for _, bill := range entries(viewer) {
+		if bill.BusinessIdx == order.OrderIdx {
+			t.Fatal("other user saw credit")
+		}
+	}
 }

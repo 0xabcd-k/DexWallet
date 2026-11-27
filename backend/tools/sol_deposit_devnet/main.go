@@ -14,9 +14,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/testenv"
+	"github.com/0xabcd-k/DexWallet/backend/logic/account"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/deposit"
-	"github.com/go-sql-driver/mysql"
+	accounts "github.com/0xabcd-k/DexWallet/backend/model/account"
+	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
@@ -27,9 +30,41 @@ func run() error {
 	fee := flag.Int64("fee-lamports", 0, "authorized test sponsor fee, including on execution failure")
 	keyFile := flag.String("sponsor-key-file", "", "dedicated Devnet sponsor CLI key file")
 	rpc := flag.String("rpc", "https://api.devnet.solana.com", "trusted Devnet RPC")
+	settleOnly := flag.Bool("settle-only", false, "credit an already finalized local SOL deposit without keys or RPC")
 	flag.Parse()
-	if os.Getenv("DEXWALLET_TEST_ENV") != "local" {
-		return errors.New("set DEXWALLET_TEST_ENV=local for the dedicated Devnet test database")
+	dsn, err := testenv.ValidateDSN(os.Getenv("DEXWALLET_MYSQL_DSN"), "deposit-credit")
+	if err != nil {
+		return err
+	}
+	dsn.ParseTime = true
+	db, err := sql.Open("mysql", dsn.FormatDSN())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	defer cancel()
+	var version int
+	var dirty bool
+	if err = db.QueryRowContext(ctx, "SELECT version,dirty FROM schema_migrations_business").Scan(&version, &dirty); err != nil {
+		return err
+	}
+	if dirty || version < 40 {
+		return errors.New("clean business schema >=40 required")
+	}
+	conn := sqlx.NewSqlConnFromDB(db)
+	credit := func() error {
+		row, err := deposit.CreditSol(ctx, transaction.New(db), account.New(accounts.NewUserAccountModel(conn)), *idx)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("order=%s credited_usd=%s credited_at=%s\n", row.OrderIdx, row.CreditedUsd.Decimal.StringFixed(2), row.CreditedAt.Time.UTC().Format(time.RFC3339Nano))
+		return nil
+	}
+	if *settleOnly {
+		return credit()
 	}
 	raw, err := os.ReadFile(*keyFile)
 	if err != nil {
@@ -41,37 +76,15 @@ func run() error {
 		return errors.New("invalid Devnet CLI key file")
 	}
 	defer clear(key)
-	dsn, err := mysql.ParseDSN(os.Getenv("DEXWALLET_MYSQL_DSN"))
-	if err != nil || dsn.DBName == "" {
-		return errors.New("dedicated DEXWALLET_MYSQL_DSN required")
-	}
-	dsn.ParseTime = true
-	db, err := sql.Open("mysql", dsn.FormatDSN())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
 	cfg := chainassets.Config{Timeout: 10 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: *rpc}}}
 	assets, err := chainassets.New(cfg, nil)
 	if err != nil {
 		return err
 	}
 	defer assets.Close()
-	work, err := deposit.NewSolExecution(sqlx.NewSqlConnFromDB(db), assets, *idx, chainassets.SolDepositTerms{Recipient: *recipient, GrossLamports: *gross, FeeLamports: *fee}, key)
+	work, err := deposit.NewSolExecution(conn, assets, *idx, chainassets.SolDepositTerms{Recipient: *recipient, GrossLamports: *gross, FeeLamports: *fee}, key)
 	if err != nil {
 		return err
-	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
-	defer cancel()
-	var version int
-	var dirty bool
-	if err = db.QueryRowContext(ctx, "SELECT version,dirty FROM schema_migrations_business").Scan(&version, &dirty); err != nil {
-		return err
-	}
-	if dirty || version < 39 {
-		return errors.New("clean business schema >=39 required")
 	}
 	for {
 		row, err := work.Step(ctx)
@@ -88,7 +101,7 @@ func run() error {
 		}
 		switch row.ExecutionState {
 		case deposit.SolFinalized:
-			return nil
+			return credit()
 		case deposit.SolFailed, deposit.SolReview:
 			return fmt.Errorf("order requires inspection: %s", row.ExecutionState)
 		}

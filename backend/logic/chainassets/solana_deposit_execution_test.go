@@ -53,6 +53,29 @@ func TestSolDepositSponsorVerifiesSignedInstructions(t *testing.T) {
 			}
 		})
 	}
+	t.Run("credit in cents after subtracting the actual fee", func(t *testing.T) {
+		q := base
+		// 60,003 lamports gross at 199.99 USD/SOL, including 10,000 lamports Gas.
+		// Truncating gross USD before deducting the fee would lose one cent.
+		msg := route.message([32]byte(source), hash, 60003, order)
+		sig := base58.Encode(ed25519.Sign(key, msg))
+		q.SolMessage = base64.StdEncoding.EncodeToString(msg)
+		q.MessageSHA256 = fmt.Sprintf("%x", sha256.Sum256(msg))
+		q.PayQuantity, q.USDPerCoin, q.GasUSDPerCoin = "0.000060003", "199.99", "199.99"
+		q.GasUSD, q.NetUSD = "0.0019999", "0.01"
+		net, err := q.FinalizedSolUSD(10000, sig)
+		if err != nil || net.StringFixed(2) != "0.01" {
+			t.Fatal(net, err)
+		}
+		if _, err = q.FinalizedSolUSD(10001, sig); err == nil {
+			t.Fatal("fee differs from quote")
+		}
+		q.NetUSD = "0.02"
+		if _, err = q.FinalizedSolUSD(10000, sig); err == nil {
+			t.Fatal("net differs from quote")
+		}
+	})
+
 }
 
 func TestSolDepositFinalizedEvidence(t *testing.T) {

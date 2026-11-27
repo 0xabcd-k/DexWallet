@@ -75,7 +75,9 @@ func (l *AccountEntriesLogic) AccountEntries(req *types.AccountEntriesRequest) (
 			return nil, err
 		}
 		sourceKind, _ := accountlogic.BusinessType(row.BusinessType).IDKind()
-		if entry.BusinessIdx, err = encode(sourceKind, row.BusinessID); err != nil {
+		if row.DepositOrderIdx != "" {
+			entry.BusinessIdx = row.DepositOrderIdx
+		} else if entry.BusinessIdx, err = encode(sourceKind, row.BusinessID); err != nil {
 			return nil, err
 		}
 		data.Entries = append(data.Entries, entry)

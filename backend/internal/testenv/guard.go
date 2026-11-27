@@ -49,6 +49,13 @@ func ValidateDSN(secret, role string) (*mysql.Config, error) {
 		if c.User != HTTPUser || c.DBName != HTTPDatabase || c.MultiStatements {
 			return nil, errors.New("HTTP tests require the scoped dexwallet_test_http account/schema")
 		}
+	case "deposit-credit":
+		dev := c.User == "dexwallet_dev" && c.DBName == "dexwallet_dev"
+		test := c.User == AdminUser && databaseName.MatchString(c.DBName)
+		if !dev && !test {
+			return nil, errors.New("test SOL credits require the local dev account/database or an isolated contract database")
+		}
+		c.MultiStatements = false
 	case "migration":
 		if c.User != AdminUser || !databaseName.MatchString(c.DBName) {
 			return nil, errors.New("migration requires a dedicated contract schema and test account")

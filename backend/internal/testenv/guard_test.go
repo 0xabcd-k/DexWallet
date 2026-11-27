@@ -134,3 +134,23 @@ func TestBackgroundConsumerResourcesStayWithinRun(t *testing.T) {
 		}
 	}
 }
+
+func TestDepositCreditDatabaseTargets(t *testing.T) {
+	t.Setenv("DEXWALLET_TEST_ENV", "local")
+	t.Setenv("DEXWALLET_TEST_MYSQL_ADDRESS", "127.0.0.1:3306")
+	for _, tc := range []struct {
+		target  string
+		allowed bool
+	}{
+		{"dexwallet_dev:fixture@tcp(127.0.0.1:3306)/dexwallet_dev", true},
+		{"dexwallet_test_admin:fixture@tcp(127.0.0.1:3306)/dexwallet_contract_example?multiStatements=true", true},
+		{"dexwallet_dev:fixture@tcp(127.0.0.1:3306)/production", false},
+		{"root:fixture@tcp(127.0.0.1:3306)/dexwallet_dev", false},
+		{"dexwallet_dev:fixture@tcp(192.0.2.1:3306)/dexwallet_dev", false},
+	} {
+		cfg, err := ValidateDSN(tc.target, "deposit-credit")
+		if (err == nil) != tc.allowed || err == nil && cfg.MultiStatements {
+			t.Fatal("unexpected credit database access", err)
+		}
+	}
+}

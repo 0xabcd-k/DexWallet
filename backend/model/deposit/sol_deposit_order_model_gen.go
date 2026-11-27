@@ -14,24 +14,28 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/builder"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/core/stringx"
+
+	"github.com/shopspring/decimal"
 )
 
 var (
 	solDepositOrderFieldNames          = builder.RawFieldNames(&SolDepositOrder{})
 	solDepositOrderRows                = strings.Join(solDepositOrderFieldNames, ",")
-	solDepositOrderRowsExpectAutoSet   = strings.Join(stringx.Remove(solDepositOrderFieldNames, "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
-	solDepositOrderRowsWithPlaceHolder = strings.Join(stringx.Remove(solDepositOrderFieldNames, "`quote_idx`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
+	solDepositOrderRowsExpectAutoSet   = strings.Join(stringx.Remove(solDepositOrderFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
+	solDepositOrderRowsWithPlaceHolder = strings.Join(stringx.Remove(solDepositOrderFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
 )
 
 type (
 	solDepositOrderModel interface {
 		Insert(ctx context.Context, data *SolDepositOrder) (sql.Result, error)
-		FindOne(ctx context.Context, quoteIdx string) (*SolDepositOrder, error)
+		FindOne(ctx context.Context, id int64) (*SolDepositOrder, error)
+		FindOneByCreditVoucherId(ctx context.Context, creditVoucherId sql.NullInt64) (*SolDepositOrder, error)
 		FindOneByMessageSha256(ctx context.Context, messageSha256 string) (*SolDepositOrder, error)
 		FindOneByOrderIdx(ctx context.Context, orderIdx string) (*SolDepositOrder, error)
+		FindOneByQuoteIdx(ctx context.Context, quoteIdx string) (*SolDepositOrder, error)
 		FindOneByTxSignature(ctx context.Context, txSignature sql.NullString) (*SolDepositOrder, error)
 		Update(ctx context.Context, data *SolDepositOrder) error
-		Delete(ctx context.Context, quoteIdx string) error
+		Delete(ctx context.Context, id int64) error
 	}
 
 	defaultSolDepositOrderModel struct {
@@ -40,19 +44,23 @@ type (
 	}
 
 	SolDepositOrder struct {
-		QuoteIdx          string         `db:"quote_idx"`
-		OrderIdx          string         `db:"order_idx"`
-		MessageBase64     string         `db:"message_base64"`
-		MessageSha256     string         `db:"message_sha256"`
-		LastValidHeight   int64          `db:"last_valid_height"`
-		ReviewAfter       time.Time      `db:"review_after"`
-		UserSignature     string         `db:"user_signature"`
-		AcceptedAt        sql.NullTime   `db:"accepted_at"`
-		ExecutionState    string         `db:"execution_state"`
-		SponsorPolicy     string         `db:"sponsor_policy"`
-		TxSignature       sql.NullString `db:"tx_signature"`
-		ActualLamportsFee int64          `db:"actual_lamports_fee"`
-		FinalizedSlot     int64          `db:"finalized_slot"`
+		Id                int64               `db:"id"`
+		QuoteIdx          string              `db:"quote_idx"`
+		OrderIdx          string              `db:"order_idx"`
+		MessageBase64     string              `db:"message_base64"`
+		MessageSha256     string              `db:"message_sha256"`
+		LastValidHeight   int64               `db:"last_valid_height"`
+		ReviewAfter       time.Time           `db:"review_after"`
+		UserSignature     string              `db:"user_signature"`
+		AcceptedAt        sql.NullTime        `db:"accepted_at"`
+		ExecutionState    string              `db:"execution_state"`
+		SponsorPolicy     string              `db:"sponsor_policy"`
+		TxSignature       sql.NullString      `db:"tx_signature"`
+		ActualLamportsFee int64               `db:"actual_lamports_fee"`
+		FinalizedSlot     int64               `db:"finalized_slot"`
+		CreditVoucherId   sql.NullInt64       `db:"credit_voucher_id"`
+		CreditedUsd       decimal.NullDecimal `db:"credited_usd"`
+		CreditedAt        sql.NullTime        `db:"credited_at"`
 	}
 )
 
@@ -63,16 +71,30 @@ func newSolDepositOrderModel(conn sqlx.SqlConn) *defaultSolDepositOrderModel {
 	}
 }
 
-func (m *defaultSolDepositOrderModel) Delete(ctx context.Context, quoteIdx string) error {
-	query := fmt.Sprintf("delete from %s where `quote_idx` = ?", m.table)
-	_, err := m.conn.ExecCtx(ctx, query, quoteIdx)
+func (m *defaultSolDepositOrderModel) Delete(ctx context.Context, id int64) error {
+	query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
+	_, err := m.conn.ExecCtx(ctx, query, id)
 	return err
 }
 
-func (m *defaultSolDepositOrderModel) FindOne(ctx context.Context, quoteIdx string) (*SolDepositOrder, error) {
-	query := fmt.Sprintf("select %s from %s where `quote_idx` = ? limit 1", solDepositOrderRows, m.table)
+func (m *defaultSolDepositOrderModel) FindOne(ctx context.Context, id int64) (*SolDepositOrder, error) {
+	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", solDepositOrderRows, m.table)
 	var resp SolDepositOrder
-	err := m.conn.QueryRowCtx(ctx, &resp, query, quoteIdx)
+	err := m.conn.QueryRowCtx(ctx, &resp, query, id)
+	switch err {
+	case nil:
+		return &resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
+func (m *defaultSolDepositOrderModel) FindOneByCreditVoucherId(ctx context.Context, creditVoucherId sql.NullInt64) (*SolDepositOrder, error) {
+	var resp SolDepositOrder
+	query := fmt.Sprintf("select %s from %s where `credit_voucher_id` = ? limit 1", solDepositOrderRows, m.table)
+	err := m.conn.QueryRowCtx(ctx, &resp, query, creditVoucherId)
 	switch err {
 	case nil:
 		return &resp, nil
@@ -111,6 +133,20 @@ func (m *defaultSolDepositOrderModel) FindOneByOrderIdx(ctx context.Context, ord
 	}
 }
 
+func (m *defaultSolDepositOrderModel) FindOneByQuoteIdx(ctx context.Context, quoteIdx string) (*SolDepositOrder, error) {
+	var resp SolDepositOrder
+	query := fmt.Sprintf("select %s from %s where `quote_idx` = ? limit 1", solDepositOrderRows, m.table)
+	err := m.conn.QueryRowCtx(ctx, &resp, query, quoteIdx)
+	switch err {
+	case nil:
+		return &resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
 func (m *defaultSolDepositOrderModel) FindOneByTxSignature(ctx context.Context, txSignature sql.NullString) (*SolDepositOrder, error) {
 	var resp SolDepositOrder
 	query := fmt.Sprintf("select %s from %s where `tx_signature` = ? limit 1", solDepositOrderRows, m.table)
@@ -126,14 +162,14 @@ func (m *defaultSolDepositOrderModel) FindOneByTxSignature(ctx context.Context, 
 }
 
 func (m *defaultSolDepositOrderModel) Insert(ctx context.Context, data *SolDepositOrder) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, solDepositOrderRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.OrderIdx, data.MessageBase64, data.MessageSha256, data.LastValidHeight, data.ReviewAfter, data.UserSignature, data.AcceptedAt, data.ExecutionState, data.SponsorPolicy, data.TxSignature, data.ActualLamportsFee, data.FinalizedSlot)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, solDepositOrderRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.OrderIdx, data.MessageBase64, data.MessageSha256, data.LastValidHeight, data.ReviewAfter, data.UserSignature, data.AcceptedAt, data.ExecutionState, data.SponsorPolicy, data.TxSignature, data.ActualLamportsFee, data.FinalizedSlot, data.CreditVoucherId, data.CreditedUsd, data.CreditedAt)
 	return ret, err
 }
 
 func (m *defaultSolDepositOrderModel) Update(ctx context.Context, newData *SolDepositOrder) error {
-	query := fmt.Sprintf("update %s set %s where `quote_idx` = ?", m.table, solDepositOrderRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.OrderIdx, newData.MessageBase64, newData.MessageSha256, newData.LastValidHeight, newData.ReviewAfter, newData.UserSignature, newData.AcceptedAt, newData.ExecutionState, newData.SponsorPolicy, newData.TxSignature, newData.ActualLamportsFee, newData.FinalizedSlot, newData.QuoteIdx)
+	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, solDepositOrderRowsWithPlaceHolder)
+	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.OrderIdx, newData.MessageBase64, newData.MessageSha256, newData.LastValidHeight, newData.ReviewAfter, newData.UserSignature, newData.AcceptedAt, newData.ExecutionState, newData.SponsorPolicy, newData.TxSignature, newData.ActualLamportsFee, newData.FinalizedSlot, newData.CreditVoucherId, newData.CreditedUsd, newData.CreditedAt, newData.Id)
 	return err
 }
 
