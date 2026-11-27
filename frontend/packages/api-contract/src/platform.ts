@@ -387,6 +387,9 @@ export interface DepositQuoteConfirmRequest {
 }
 
 export interface DepositQuoteData {
+	solOrderIdx?: string
+	solRecipient?: string
+	solFeePayer?: string
 	quoteIdx?: string
 	maxGas?: string
 	assetId: string
@@ -946,6 +949,30 @@ export interface SetDrawControlRequest {
 	versionIdx?: string
 	expectedRevision: number
 	reason: string
+}
+
+export interface SolDepositAuthorizeRequest {
+	quoteIdx: string
+	userSignature: string
+}
+
+export interface SolDepositOrderData {
+	quoteIdx: string
+	orderIdx: string
+	state: 'awaiting_signature' | 'accepted'
+	messageBase64: string
+	messageSha256: string
+	lastValidBlockHeight: number
+	quoteExpiresAt: number
+	reviewAfter: number
+	acceptedAt?: number
+}
+
+export interface SolDepositOrderResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: SolDepositOrderData
 }
 
 export interface SubmitTransferRequest {

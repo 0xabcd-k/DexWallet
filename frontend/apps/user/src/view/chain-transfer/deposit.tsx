@@ -6,6 +6,7 @@ import { Failure } from '../../auth/context';
 import { confirmDepositQuote, previewDeposit, validDepositTarget } from '../../app/native/chain-transfer/deposit';
 import { addressFor } from '../../app/native/chain-assets/wallets';
 import { useViewingWallets } from '../../app/native/chain-assets/use-wallets';
+import { SolDepositAuthorization, LastSolDeposit } from './sol-deposit';
 import { Link } from 'react-router';
 import { useChainCatalog } from './sources';
 
@@ -18,6 +19,7 @@ export default function DepositButton({ userIdx }: { userIdx: string }) {
       {open && <section className="payment-review transfer-result deposit-quote" role="dialog" aria-label={t('depositQuoteTitle')}>
         <h2>{t('depositQuoteTitle')}</h2><p>{t('depositBeneficiary', { idx: userIdx })}</p>
         <p>{t('depositTestNote')}</p>
+        <LastSolDeposit key={userIdx} userIdx={userIdx}/>
         <DepositFields key={userIdx} userIdx={userIdx} assetID={assetID} setAssetID={setAssetID} target={target} setTarget={setTarget}/>
       </section>}
     </Popup>
@@ -72,12 +74,12 @@ function WalletEstimate({ userIdx, network, ...input }: EstimateInput & { userId
     {compatible.filter(w => `${w.name} ${addressFor(w, network)}`.toLowerCase().includes(search.toLowerCase())).map(w =>
       <Button key={w.id} block aria-pressed={w.id === walletID} onClick={() => setWalletID(w.id)}>{w.name} · {t(w.source === 'local' ? 'chainLocal' : 'chainExternal')}</Button>)}
     {address && <><p className="chain-address">{t('chainFromAddress')}: {address}</p>
-      <DepositEstimate key={address} {...input} walletAddress={address}/></>}
+      <DepositEstimate key={wallet.id} {...input} walletAddress={address} {...(wallet.source === 'local' ? { local: { userIdx, walletId: wallet.id } } : {})}/></>}
   </>;
 }
 
-export function DepositEstimate({ asset, native, target, walletAddress, onChooseWallet, preview = previewDeposit }: EstimateInput & {
-  walletAddress?: string; onChooseWallet?: () => void; preview?: typeof previewDeposit;
+export function DepositEstimate({ asset, native, target, walletAddress, local, onChooseWallet, preview = previewDeposit }: EstimateInput & {
+  walletAddress?: string; local?: { userIdx: string; walletId: string }; onChooseWallet?: () => void; preview?: typeof previewDeposit;
 }) {
   const { t } = useTranslation();
   const [quote, setQuote] = useState<DepositQuoteData & { deadline: number }>(), [busy, setBusy] = useState(false);
@@ -141,9 +143,11 @@ export function DepositEstimate({ asset, native, target, walletAddress, onChoose
       <dt>{t('depositValidUntil')}</dt><dd>{new Date(quote.deadline).toLocaleTimeString()}</dd>
     </dl>)}
     {quote?.quoteIdx && (confirmedAt !== undefined
-      ? <p role="status">{t('depositQuoteSaved', { idx: quote.quoteIdx })}</p>
+      ? <p role="status">{t(quote.solOrderIdx && local ? 'solQuoteConfirmed' : 'depositQuoteSaved', { idx: quote.quoteIdx })}</p>
       : (!expired || attempted) && <Button block disabled={busy} onClick={() => void confirm()}>
         {t(expired ? 'depositCheckConfirmation' : 'depositConfirmQuote')}</Button>)}
+    {quote?.solOrderIdx && confirmedAt !== undefined && local &&
+      <SolDepositAuthorization key={quote.solOrderIdx} local={local} quote={quote} expired={expired}/>}
     {quote?.walletFeePreview === true && !expired && onChooseWallet && <Button block onClick={onChooseWallet}>{t('chainChooseWallet')}</Button>}
   </>;
 }

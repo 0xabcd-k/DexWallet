@@ -359,6 +359,7 @@ func TestProductSessionHTTP(t *testing.T) {
 	}
 	// An external write without invalidation leaves an accepted short cache window.
 	checkChainAssetsHTTP(t, s, tgToken, call)
+	checkSolOrderHTTP(t, s, tgToken, call)
 	checkLedgerHTTP(t, s, tgID, id, tgToken, call)
 	checkHoldsHTTP(t, s, tgID, id, tgToken, call)
 	checkPublicTransferHTTP(t, s, call)

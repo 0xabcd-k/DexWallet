@@ -15,20 +15,21 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
-	TONTestUSDT    *TONDepositFeeConfig  `json:",optional"`
-	TONNative      *TONDepositFeeConfig  `json:",optional"`
-	TRONTestUSDT   *TRONDepositFeeConfig `json:",optional"`
-	TRONTRX        *TRONDepositFeeConfig `json:",optional"`
-	BaseETH        *BaseDepositFeeConfig `json:",optional"`
-	BaseUSDC       *BaseDepositFeeConfig `json:",optional"`
-	Version        string
-	AsOf           int64                   `json:",optional"`
-	ValidUntil     int64                   `json:",optional"`
-	Market         *DepositMarketConfig    `json:",optional"`
-	SolanaSOL      *SolanaDepositFeeConfig `json:",optional"`
-	SolanaUSDC     *SolanaDepositFeeConfig `json:",optional"`
-	SolanaTestUSDT *SolanaDepositFeeConfig `json:",optional"`
-	Assets         []DepositQuoteRate
+	SolanaSOLReviewAfter time.Duration         `json:",optional"`
+	TONTestUSDT          *TONDepositFeeConfig  `json:",optional"`
+	TONNative            *TONDepositFeeConfig  `json:",optional"`
+	TRONTestUSDT         *TRONDepositFeeConfig `json:",optional"`
+	TRONTRX              *TRONDepositFeeConfig `json:",optional"`
+	BaseETH              *BaseDepositFeeConfig `json:",optional"`
+	BaseUSDC             *BaseDepositFeeConfig `json:",optional"`
+	Version              string
+	AsOf                 int64                   `json:",optional"`
+	ValidUntil           int64                   `json:",optional"`
+	Market               *DepositMarketConfig    `json:",optional"`
+	SolanaSOL            *SolanaDepositFeeConfig `json:",optional"`
+	SolanaUSDC           *SolanaDepositFeeConfig `json:",optional"`
+	SolanaTestUSDT       *SolanaDepositFeeConfig `json:",optional"`
+	Assets               []DepositQuoteRate
 }
 
 type DepositQuoteRate struct {
@@ -50,14 +51,15 @@ type depositAsset struct {
 }
 
 type depositBook struct {
-	ton         map[string]*tonDepositRoute
-	tron        map[string]*nileDepositRoute
-	base        map[string]*baseDepositRoute
-	market      *DepositMarketConfig
-	solana      map[string]*solanaDepositRoute
-	version     string
-	asOf, until int64
-	assets      map[string]depositAsset
+	solReviewAfter time.Duration
+	ton            map[string]*tonDepositRoute
+	tron           map[string]*nileDepositRoute
+	base           map[string]*baseDepositRoute
+	market         *DepositMarketConfig
+	solana         map[string]*solanaDepositRoute
+	version        string
+	asOf, until    int64
+	assets         map[string]depositAsset
 }
 
 func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMaster string) (depositBook, error) {
@@ -75,7 +77,10 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	} else if c.Market.Source != marketdata.Kraken || c.Market.MaxAge < time.Second || c.AsOf != 0 || c.ValidUntil != 0 {
 		return book, fmt.Errorf("exchange rates require a supported source, MaxAge of at least one second and no static time window")
 	}
-	book = depositBook{market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	if c.SolanaSOLReviewAfter != 0 && (c.SolanaSOL == nil || c.SolanaSOLReviewAfter < time.Second) {
+		return book, fmt.Errorf("SOL authorization requires a Devnet SOL wallet route and a positive review interval of at least one second")
+	}
+	book = depositBook{solReviewAfter: c.SolanaSOLReviewAfter, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {
@@ -189,7 +194,9 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 }
 
 type DepositPreview struct {
-	QuoteIdx, MaxGas string
+	SolOrderIdx, SolMessage         string
+	SolLastValidHeight, SolReviewAt int64
+	QuoteIdx, MaxGas                string
 	// Server-side terms retained with a wallet quote for subsequent order checks.
 	Recipient, FeePayer, GasUSDPerCoin, RuleVersion  string
 	PayDecimals, GasDecimals                         int

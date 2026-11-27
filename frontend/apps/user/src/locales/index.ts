@@ -1,5 +1,13 @@
 export const appResources = {
   "en": {
+    "solQuoteConfirmed": "Quote {{idx}} confirmed. This test verifies wallet authorization only.",
+    "solDepositSign": "Authorize SOL deposit with this wallet",
+    "solDepositTarget": "Devnet receiving address",
+    "solDepositSponsor": "Devnet fee payer",
+    "solDepositAccepted": "Wallet signature accepted for order {{idx}}. Test authorization complete.",
+    "solDepositPending": "Order {{idx}} is awaiting a wallet signature.",
+    "solDepositLate": "The signing window for order {{idx}} has closed.",
+    "solDepositLookup": "Check last SOL deposit authorization",
     "depositQuoteTitle": "Deposit estimate",
     "depositBeneficiary": "To your USD balance · {{idx}}",
     "depositTestNote": "Testnet preview with estimated platform-paid gas.",
@@ -411,6 +419,14 @@ export const appResources = {
 
   },
   "zh-CN": {
+    "solQuoteConfirmed": "报价 {{idx}} 已确认，本次测试到钱包签名受理为止。",
+    "solDepositSign": "使用此钱包签名授权 SOL 充值",
+    "solDepositTarget": "Devnet 收款地址",
+    "solDepositSponsor": "Devnet 网络费支付地址",
+    "solDepositAccepted": "订单 {{idx}} 的钱包签名已受理，测试授权完成。",
+    "solDepositPending": "订单 {{idx}} 待钱包签名。",
+    "solDepositLate": "订单 {{idx}} 的签名期限已过。",
+    "solDepositLookup": "查询上次 SOL 充值授权",
     "depositQuoteTitle": "充值试算",
     "depositBeneficiary": "到账至本人美元余额 · {{idx}}",
     "depositTestNote": "本次为测试网充值试算，包含预计由平台代付的 Gas。",

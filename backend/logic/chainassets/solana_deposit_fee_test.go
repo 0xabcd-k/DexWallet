@@ -143,9 +143,9 @@ func TestSolanaDepositMatchesFinalizedFeeEvidence(t *testing.T) {
 		t.Fatal(err)
 	}
 	gross := total.Shift(9).BigInt().Uint64()
-	msg := route.message(user, block, gross)
+	msg := route.message(user, block, gross, "")
 	if len(f.Fees) != 2 || gross <= f.Meta.Fee || f.Quote.WalletAddress != f.Addresses.User ||
-		!bytes.Equal(f.Fees[0].MessageBase64, route.message(user, block, gross-f.Meta.Fee)) ||
+		!bytes.Equal(f.Fees[0].MessageBase64, route.message(user, block, gross-f.Meta.Fee, "")) ||
 		!bytes.Equal(f.Fees[1].MessageBase64, msg) || fmt.Sprintf("%x", sha256.Sum256(msg)) != f.Quote.MessageSHA256 {
 		t.Fatal("priced messages differ from the deposit")
 	}

@@ -50,6 +50,7 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
+	SolDepositOrders      *deposit.SolOrders
 	DepositConfirmations  *deposit.Confirmations
 	TRONListener          *chainreceipt.ListenerRuntime
 	BaseListener          *chainreceipt.ListenerRuntime
@@ -203,6 +204,7 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	d.TONReceipts = chainreceipt.NewTON(conn, d.Tx, d.ChainAssets)
 	d.TONSendIntents = chainsend.NewStore(conn, d.Tx)
 	d.Users = userlogic.New(d.ModelUser, d.ModelEmailIdentity, d.ModelTelegramIdentity, d.Tx, c.Transfer.DefaultLimitPlanID)
+	d.SolDepositOrders = deposit.NewSolOrders(conn, d.DepositConfirmations, d.Users, d.Tx, d.ChainAssets)
 	var sender authlogic.Mailer
 	if c.Auth != nil {
 		if c.Auth.EmailEnabled {

@@ -1193,6 +1193,9 @@ type DepositQuoteRequest {
     WalletAddress string `json:"walletAddress,optional"`
 }
 type DepositQuoteData {
+    SolOrderIdx string `json:"solOrderIdx,optional,omitempty"`
+    SolRecipient string `json:"solRecipient,optional,omitempty"`
+    SolFeePayer string `json:"solFeePayer,optional,omitempty"`
     QuoteIdx string `json:"quoteIdx,optional,omitempty"`
     MaxGas string `json:"maxGas,optional,omitempty"`
     AssetId string `json:"assetId"`
@@ -1256,4 +1259,39 @@ service platform {
     post /v1/user/deposit-quotes/confirm (DepositQuoteConfirmRequest) returns (ConfirmedDepositQuoteResponse)
     @handler confirmedDepositQuote
     get /v1/user/deposit-quotes/:quoteIdx (DepositQuoteLookupRequest) returns (ConfirmedDepositQuoteResponse)
+}
+
+type SolDepositAuthorizeRequest {
+    QuoteIdx string `json:"quoteIdx"`
+    UserSignature string `json:"userSignature"`
+}
+type SolDepositOrderData {
+    QuoteIdx string `json:"quoteIdx"`
+    OrderIdx string `json:"orderIdx"`
+    State string `json:"state,options=awaiting_signature|accepted"`
+    MessageBase64 string `json:"messageBase64"`
+    MessageSha256 string `json:"messageSha256"`
+    LastValidBlockHeight int64 `json:"lastValidBlockHeight"`
+    QuoteExpiresAt int64 `json:"quoteExpiresAt"`
+    ReviewAfter int64 `json:"reviewAfter"`
+    AcceptedAt int64 `json:"acceptedAt,optional,omitempty"`
+}
+type SolDepositOrderResponse {
+    Code string `json:"code,options=OK"`
+    Message string `json:"message"`
+    TraceId string `json:"traceId"`
+    Data SolDepositOrderData `json:"data"`
+}
+@server (
+    group: chainassets
+    timeout: 30s
+    middleware: AuthTransport,UserAuth
+)
+service platform {
+    @handler prepareSolDeposit
+    post /v1/user/sol-deposit-orders/prepare (DepositQuoteConfirmRequest) returns (SolDepositOrderResponse)
+    @handler authorizeSolDeposit
+    post /v1/user/sol-deposit-orders/authorize (SolDepositAuthorizeRequest) returns (SolDepositOrderResponse)
+    @handler getSolDeposit
+    get /v1/user/sol-deposit-orders/:quoteIdx (DepositQuoteLookupRequest) returns (SolDepositOrderResponse)
 }

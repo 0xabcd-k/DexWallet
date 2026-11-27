@@ -374,6 +374,9 @@ type DepositQuoteConfirmRequest struct {
 }
 
 type DepositQuoteData struct {
+	SolOrderIdx         string `json:"solOrderIdx,optional,omitempty"`
+	SolRecipient        string `json:"solRecipient,optional,omitempty"`
+	SolFeePayer         string `json:"solFeePayer,optional,omitempty"`
 	QuoteIdx            string `json:"quoteIdx,optional,omitempty"`
 	MaxGas              string `json:"maxGas,optional,omitempty"`
 	AssetId             string `json:"assetId"`
@@ -915,6 +918,30 @@ type SetDrawControlRequest struct {
 	VersionIdx       string `json:"versionIdx,optional"`
 	ExpectedRevision int64  `json:"expectedRevision"`
 	Reason           string `json:"reason"`
+}
+
+type SolDepositAuthorizeRequest struct {
+	QuoteIdx      string `json:"quoteIdx"`
+	UserSignature string `json:"userSignature"`
+}
+
+type SolDepositOrderData struct {
+	QuoteIdx             string `json:"quoteIdx"`
+	OrderIdx             string `json:"orderIdx"`
+	State                string `json:"state,options=awaiting_signature|accepted"`
+	MessageBase64        string `json:"messageBase64"`
+	MessageSha256        string `json:"messageSha256"`
+	LastValidBlockHeight int64  `json:"lastValidBlockHeight"`
+	QuoteExpiresAt       int64  `json:"quoteExpiresAt"`
+	ReviewAfter          int64  `json:"reviewAfter"`
+	AcceptedAt           int64  `json:"acceptedAt,optional,omitempty"`
+}
+
+type SolDepositOrderResponse struct {
+	Code    string              `json:"code,options=OK"`
+	Message string              `json:"message"`
+	TraceId string              `json:"traceId"`
+	Data    SolDepositOrderData `json:"data"`
 }
 
 type SubmitTransferRequest struct {

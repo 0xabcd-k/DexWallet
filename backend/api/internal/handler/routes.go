@@ -372,6 +372,30 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
+					Path:    "/v1/user/sol-deposit-orders/:quoteIdx",
+					Handler: chainassets.GetSolDepositHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/sol-deposit-orders/authorize",
+					Handler: chainassets.AuthorizeSolDepositHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/sol-deposit-orders/prepare",
+					Handler: chainassets.PrepareSolDepositHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithTimeout(30000*time.Millisecond),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
 					Path:    "/v1/user/draw-state",
 					Handler: draw.DrawStateHandler(serverCtx),
 				},

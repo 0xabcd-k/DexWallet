@@ -2,9 +2,11 @@ package chainassets
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -66,16 +68,28 @@ func newSolanaDepositRoute(c SolanaDepositFeeConfig) (*solanaDepositRoute, error
 
 // Legacy SystemProgram.transfer. Both the fee payer and the source sign.
 // The source transfers the full gross amount, including the quoted fee recovery.
-func (r solanaDepositRoute) message(source [32]byte, blockhash []byte, lamports uint64) []byte {
+func (r solanaDepositRoute) message(source [32]byte, blockhash []byte, lamports uint64, orderIdx string) []byte {
 	msg := []byte{2, 0, 1, 4}
 	msg = append(msg, r.payer[:]...)
 	msg = append(msg, source[:]...)
 	msg = append(msg, r.recipient[:]...)
 	msg = append(msg, make([]byte, 32)...) // System Program
+	instructions := byte(1)
+	if orderIdx != "" {
+		msg[2], msg[3], instructions = 2, 5, 2 // additional readonly Memo program
+		memoProgram, _ := base58.Decode("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
+		msg = append(msg, memoProgram...)
+	}
 	msg = append(msg, blockhash...)
-	msg = append(msg, 1, 3, 2, 1, 2, 12)           // one instruction; program #3, source #1, recipient #2
-	msg = binary.LittleEndian.AppendUint32(msg, 2) // SystemInstruction::Transfer
-	return binary.LittleEndian.AppendUint64(msg, lamports)
+	msg = append(msg, instructions, 3, 2, 1, 2, 12) // one instruction; program #3, source #1, recipient #2
+	msg = binary.LittleEndian.AppendUint32(msg, 2)  // SystemInstruction::Transfer
+	msg = binary.LittleEndian.AppendUint64(msg, lamports)
+	if orderIdx != "" {
+		memo := "dexwallet:deposit:" + orderIdx
+		msg = append(msg, 4, 0, byte(len(memo)))
+		msg = append(msg, memo...)
+	}
+	return msg
 }
 
 func (s *Service) messageFee(ctx context.Context, n Network, msg []byte) (uint64, error) {
@@ -132,6 +146,13 @@ func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID,
 	}
 	entry := s.quotes.assets[assetID]
 	draft := solanaDepositDraft{route: route, source: source, blockhash: block.Blockhash, decimals: entry.asset.Decimals}
+	if assetID == solanaDepositAsset && s.quotes.solReviewAfter > 0 {
+		var nonce [16]byte
+		if _, err := rand.Read(nonce[:]); err != nil {
+			return empty, err
+		}
+		draft.orderIdx = hex.EncodeToString(nonce[:])
+	}
 	if entry.asset.Contract != "" {
 		draft.token, err = s.depositTokenAccounts(ctx, entry, address, base58.Encode(route.recipient[:]), draft.atoms(q))
 		if err != nil {
@@ -172,12 +193,17 @@ func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID,
 		funding := decimal.NewFromBigInt(new(big.Int).SetUint64(draft.token.rent), solScale)
 		q.AccountFunding, q.AccountFundingUSD = funding.String(), funding.Mul(prices.native).String()
 	}
+	if draft.orderIdx != "" {
+		q.SolOrderIdx, q.SolMessage = draft.orderIdx, base64.StdEncoding.EncodeToString(msg)
+		q.SolLastValidHeight, q.SolReviewAt = block.LastValidBlockHeight, time.UnixMilli(q.ExpiresAt).Add(s.quotes.solReviewAfter).UnixMilli()
+	}
 	q.Recipient, q.FeePayer = base58.Encode(route.recipient[:]), base58.Encode(route.payer[:])
 	q.WalletAddress, q.MessageSHA256 = address, fmt.Sprintf("%x", sha256.Sum256(msg))
 	return q, nil
 }
 
 type solanaDepositDraft struct {
+	orderIdx  string
 	route     *solanaDepositRoute
 	source    [32]byte
 	blockhash string
@@ -195,7 +221,7 @@ func (d solanaDepositDraft) message(q DepositPreview) ([]byte, error) {
 	amount := d.atoms(q)
 	if d.token == nil {
 		hash, _ := base58.Decode(d.blockhash) // LatestSolanaBlock validated the blockhash.
-		return d.route.message(d.source, hash, amount), nil
+		return d.route.message(d.source, hash, amount, d.orderIdx), nil
 	}
 	if amount > d.token.balance {
 		return nil, apperror.New(apperror.InsufficientBalance, nil)

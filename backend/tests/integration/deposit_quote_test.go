@@ -37,3 +37,32 @@ func TestDepositQuoteMigration(t *testing.T) {
 		t.Fatal(owner, err)
 	}
 }
+
+func TestSolDepositOrderMigration(t *testing.T) {
+	name, dsn, db, err := testRun.NewDatabase(context.Background(), "sol_order_migrate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	m, err := migration.Open(dsn, name, "../../manifest/sql/diff/business", "business")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	for _, v := range []uint{37, 38, 37, 38} {
+		if err = m.Migrate(v); err != nil {
+			t.Fatal(v, err)
+		}
+	}
+	const idx = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	mustExec(t, db, "INSERT INTO user(id,nickname) VALUES(1,'owner')")
+	mustExec(t, db, "INSERT INTO deposit_quote_confirmation(quote_idx,user_id,snapshot_json,quote_expires_at) VALUES(?,1,'{}',UTC_TIMESTAMP()+INTERVAL 1 MINUTE)", idx)
+	mustExec(t, db, "INSERT INTO sol_deposit_order(quote_idx,order_idx,message_base64,message_sha256,last_valid_height,review_after) VALUES(?,?, 'msg',?,10,UTC_TIMESTAMP()+INTERVAL 1 HOUR)", idx, idx, strings.Repeat("b", 64))
+	if err = m.Migrate(37); err == nil || !strings.Contains(err.Error(), "sol_deposit_rollback_guard") {
+		t.Fatal("unsafe rollback", err)
+	}
+	var saved string
+	if err = db.QueryRow("SELECT order_idx FROM sol_deposit_order WHERE quote_idx=?", idx).Scan(&saved); err != nil || saved != idx {
+		t.Fatal(saved, err)
+	}
+}

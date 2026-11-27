@@ -62,7 +62,11 @@ func (l *DepositQuotePreviewLogic) DepositQuotePreview(req *types.DepositQuoteRe
 }
 
 func depositQuoteData(q assets.DepositPreview) types.DepositQuoteData {
-	return types.DepositQuoteData{QuoteIdx: q.QuoteIdx, MaxGas: q.MaxGas, AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
+	var recipient, payer string
+	if q.SolOrderIdx != "" {
+		recipient, payer = q.Recipient, q.FeePayer
+	}
+	return types.DepositQuoteData{SolOrderIdx: q.SolOrderIdx, SolRecipient: recipient, SolFeePayer: payer, QuoteIdx: q.QuoteIdx, MaxGas: q.MaxGas, AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
 		PayQuantity: q.PayQuantity, GasAssetId: q.GasAssetID, EstimatedGas: q.EstimatedGas, GasUsd: q.GasUSD,
 		NetUsd: q.NetUSD, RateVersion: q.Version, RateSource: q.RateSource, AsOf: q.AsOf, QuotedAt: q.QuotedAt, ExpiresAt: q.ExpiresAt,
 		EmulatedMessageHash: q.EmulatedMessageHash, RelayAttached: q.RelayAttached, RelaySurplus: q.RelaySurplus, JettonExcess: q.JettonExcess,
