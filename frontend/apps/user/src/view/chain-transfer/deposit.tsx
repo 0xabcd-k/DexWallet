@@ -3,7 +3,7 @@ import { Button, Popup } from 'antd-mobile';
 import { useTranslation } from '@dexwallet/i18n';
 import type { ChainAsset, ChainNetwork, DepositQuoteData } from '@dexwallet/api-contract/platform';
 import { Failure } from '../../auth/context';
-import { previewDeposit, validDepositTarget } from '../../app/native/chain-transfer/deposit';
+import { confirmDepositQuote, previewDeposit, validDepositTarget } from '../../app/native/chain-transfer/deposit';
 import { addressFor } from '../../app/native/chain-assets/wallets';
 import { useViewingWallets } from '../../app/native/chain-assets/use-wallets';
 import { Link } from 'react-router';
@@ -82,6 +82,7 @@ export function DepositEstimate({ asset, native, target, walletAddress, onChoose
   const { t } = useTranslation();
   const [quote, setQuote] = useState<DepositQuoteData & { deadline: number }>(), [busy, setBusy] = useState(false);
   const [expired, setExpired] = useState(false), [error, setError] = useState<unknown>();
+  const [confirmedAt, setConfirmedAt] = useState<number>(), [attempted, setAttempted] = useState(false);
   const active = useRef<AbortController | null>(null);
   useEffect(() => () => active.current?.abort(), []);
   useEffect(() => {
@@ -97,7 +98,7 @@ export function DepositEstimate({ asset, native, target, walletAddress, onChoose
     active.current?.abort();
     const started = Date.now();
     const request = new AbortController(); active.current = request;
-    setQuote(undefined); setError(undefined); setBusy(true);
+    setQuote(undefined); setConfirmedAt(undefined); setAttempted(false); setError(undefined); setBusy(true);
     try {
       const next = await preview(asset, native, target, request.signal, walletAddress);
       if (!request.signal.aborted) {
@@ -108,16 +109,30 @@ export function DepositEstimate({ asset, native, target, walletAddress, onChoose
     } catch (e) { if (!request.signal.aborted) setError(e); }
     finally { if (!request.signal.aborted) setBusy(false); }
   }
+  async function confirm() {
+    if (!quote?.quoteIdx || busy || confirmedAt !== undefined) return;
+    const { deadline, ...terms } = quote;
+    const lookupOnly = Date.now() >= deadline;
+    if (lookupOnly && !attempted) { setExpired(true); return; }
+    const request = new AbortController(); active.current = request;
+    setError(undefined); setBusy(true); setAttempted(true);
+    try {
+      const at = await confirmDepositQuote(terms, lookupOnly, request.signal);
+      if (!request.signal.aborted) setConfirmedAt(at);
+    } catch (e) { if (!request.signal.aborted) setError(e); }
+    finally { if (!request.signal.aborted) setBusy(false); }
+  }
   return <>
     <Button block color="primary" disabled={!validDepositTarget(target) || busy} loading={busy} onClick={() => void estimate()}>{t(walletAddress ? 'depositGetWalletFee' : 'depositGetEstimate')}</Button>
     {error !== undefined && <Failure error={error}/>}
-    {quote && (expired ? <p role="status">{t('depositExpired')}</p> : <dl aria-live="polite">
+    {quote && (expired && confirmedAt === undefined ? <p role="status">{t('depositExpired')}</p> : <dl aria-live="polite">
       <dt>{t('depositRate')}</dt><dd>1 {asset.symbol} = ${quote.usdPerCoin}</dd>
       <dt>{t('depositRateSource')}</dt><dd>{t(quote.rateSource === 'kraken' ? 'depositSourceKraken' : 'depositSourceTest')} · {new Date(quote.asOf).toLocaleString()}</dd>
       <dt>{t('depositPay')}</dt><dd>{quote.payQuantity} {asset.symbol}</dd>
       {quote.delegatedEnergy !== undefined && <><dt>{t('depositPlatformEnergy')}</dt><dd>{quote.delegatedEnergy}</dd></>}
       {quote.delegatedBandwidth !== undefined && <><dt>{t('depositPlatformBandwidth')}</dt><dd>{quote.delegatedBandwidth}</dd></>}
       <dt>{t(quote.delegatedBandwidth !== undefined ? 'depositTrxBurn' : quote.feeBlockHash || quote.emulatedMessageHash ? 'depositPreSignGas' : walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
+      {quote.maxGas !== undefined && <><dt>{t('depositMaxGas')}</dt><dd>{quote.maxGas} {native.symbol}</dd></>}
       {quote.relayAttached && <><dt>{t('depositRelayAttached')}</dt><dd>{quote.relayAttached} {native.symbol}</dd>
         <dt>{t('depositRelaySurplus')}</dt><dd>{quote.relaySurplus} {native.symbol}</dd></>}
       {quote.jettonExcess && <><dt>{t('depositJettonExcess')}</dt><dd>{quote.jettonExcess} {native.symbol}</dd></>}
@@ -125,6 +140,10 @@ export function DepositEstimate({ asset, native, target, walletAddress, onChoose
       <dt>{t('depositNet')}</dt><dd>${quote.netUsd}</dd>
       <dt>{t('depositValidUntil')}</dt><dd>{new Date(quote.deadline).toLocaleTimeString()}</dd>
     </dl>)}
+    {quote?.quoteIdx && (confirmedAt !== undefined
+      ? <p role="status">{t('depositQuoteSaved', { idx: quote.quoteIdx })}</p>
+      : (!expired || attempted) && <Button block disabled={busy} onClick={() => void confirm()}>
+        {t(expired ? 'depositCheckConfirmation' : 'depositConfirmQuote')}</Button>)}
     {quote?.walletFeePreview === true && !expired && onChooseWallet && <Button block onClick={onChooseWallet}>{t('chainChooseWallet')}</Button>}
   </>;
 }

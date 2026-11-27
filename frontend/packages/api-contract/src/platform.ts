@@ -349,6 +349,18 @@ export interface CompletionListRequestParams {
 	limit: number
 }
 
+export interface ConfirmedDepositQuoteData {
+	quote: DepositQuoteData
+	confirmedAt: number
+}
+
+export interface ConfirmedDepositQuoteResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: ConfirmedDepositQuoteData
+}
+
 export interface CreateLimitPlanRequest {
 	requestKey: string
 	name: string
@@ -370,7 +382,13 @@ export interface CurrentUserResponse {
 	traceId: string
 }
 
+export interface DepositQuoteConfirmRequest {
+	quoteIdx: string
+}
+
 export interface DepositQuoteData {
+	quoteIdx?: string
+	maxGas?: string
 	assetId: string
 	targetUsd: string
 	usdPerCoin: string
@@ -397,6 +415,11 @@ export interface DepositQuoteData {
 	accountFunding?: string
 	accountFundingUsd?: string
 	canSubmit: boolean
+}
+
+export interface DepositQuoteLookupRequest {
+}
+export interface DepositQuoteLookupRequestParams {
 }
 
 export interface DepositQuoteRequest {

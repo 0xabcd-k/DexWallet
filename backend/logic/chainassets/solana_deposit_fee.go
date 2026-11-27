@@ -172,6 +172,7 @@ func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID,
 		funding := decimal.NewFromBigInt(new(big.Int).SetUint64(draft.token.rent), solScale)
 		q.AccountFunding, q.AccountFundingUSD = funding.String(), funding.Mul(prices.native).String()
 	}
+	q.Recipient, q.FeePayer = base58.Encode(route.recipient[:]), base58.Encode(route.payer[:])
 	q.WalletAddress, q.MessageSHA256 = address, fmt.Sprintf("%x", sha256.Sum256(msg))
 	return q, nil
 }

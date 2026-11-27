@@ -17,7 +17,7 @@ import (
 type TRONDepositFeeConfig struct{ ResourceOwner, Recipient string }
 
 type nileDepositRoute struct {
-	recipient, recipientHex, ownerHex string
+	resourceOwner, recipient, recipientHex, ownerHex string
 }
 
 func newNileDepositRoute(c TRONDepositFeeConfig) (*nileDepositRoute, error) {
@@ -29,7 +29,7 @@ func newNileDepositRoute(c TRONDepositFeeConfig) (*nileDepositRoute, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid Nile deposit recipient: %w", err)
 	}
-	return &nileDepositRoute{recipient: c.Recipient, recipientHex: hex.EncodeToString(recipient), ownerHex: hex.EncodeToString(owner)}, nil
+	return &nileDepositRoute{resourceOwner: c.ResourceOwner, recipient: c.Recipient, recipientHex: hex.EncodeToString(recipient), ownerHex: hex.EncodeToString(owner)}, nil
 }
 
 type nileQuoteAccount struct {
@@ -140,6 +140,7 @@ func (s *Service) previewNileDeposit(ctx context.Context, user int64, assetID, t
 	if time.Now().UnixMilli() >= q.ExpiresAt {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Nile deposit estimate expired"))
 	}
+	q.Recipient, q.FeePayer = route.recipient, route.resourceOwner
 	q.WalletAddress, q.MessageSHA256, q.DelegatedBandwidth = address, tronnative.TxID(raw), required
 	return q, nil
 }

@@ -189,6 +189,10 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 }
 
 type DepositPreview struct {
+	QuoteIdx, MaxGas string
+	// Server-side terms retained with a wallet quote for subsequent order checks.
+	Recipient, FeePayer, GasUSDPerCoin, RuleVersion  string
+	PayDecimals, GasDecimals                         int
 	EmulatedMessageHash, RelayAttached, RelaySurplus string
 	JettonExcess                                     string
 	DelegatedEnergy                                  int64
@@ -257,6 +261,7 @@ func (s *Service) depositQuote(assetID, targetUSD string, gas decimal.Decimal, n
 		expires = prices.until
 	}
 	return DepositPreview{
+		RuleVersion: s.quotes.version, GasUSDPerCoin: prices.native.String(), PayDecimals: entry.asset.Decimals, GasDecimals: entry.native.Decimals,
 		AssetID: assetID, TargetUSD: target.StringFixed(usd.Scale), USDPerCoin: prices.pay.String(), PayQuantity: pay,
 		GasAssetID: entry.native.ID, EstimatedGas: gas.String(), GasUSD: gasUSD.String(), NetUSD: net.StringFixed(usd.Scale),
 		WalletFeePreview: s.quotes.ton[assetID] != nil || s.quotes.solana[assetID] != nil || s.quotes.base[assetID] != nil || s.quotes.tron[assetID] != nil,

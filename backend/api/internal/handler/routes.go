@@ -347,6 +347,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.AuthTransport, serverCtx.UserAuth},
 			[]rest.Route{
 				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/deposit-quotes/:quoteIdx",
+					Handler: chainassets.ConfirmedDepositQuoteHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/deposit-quotes/confirm",
+					Handler: chainassets.DepositQuoteConfirmHandler(serverCtx),
+				},
+				{
 					Method:  http.MethodPost,
 					Path:    "/v1/user/deposit-quotes/preview",
 					Handler: chainassets.DepositQuotePreviewHandler(serverCtx),

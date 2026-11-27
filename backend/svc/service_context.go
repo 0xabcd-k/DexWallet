@@ -20,6 +20,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainsend"
+	"github.com/0xabcd-k/DexWallet/backend/logic/deposit"
 	drawlogic "github.com/0xabcd-k/DexWallet/backend/logic/draw"
 	"github.com/0xabcd-k/DexWallet/backend/logic/marketdata"
 	rewardtransfer "github.com/0xabcd-k/DexWallet/backend/logic/rewardtransfer"
@@ -49,6 +50,7 @@ const (
 // ServiceContext owns shared clients and health checks. API handlers and future
 // background services receive the same instance; only main closes it.
 type ServiceContext struct {
+	DepositConfirmations  *deposit.Confirmations
 	TRONListener          *chainreceipt.ListenerRuntime
 	BaseListener          *chainreceipt.ListenerRuntime
 	SolanaListener        *chainreceipt.ListenerRuntime
@@ -179,6 +181,12 @@ func NewServiceContext(ctx context.Context, c config.Config) (d *ServiceContext,
 	if d.Redis != nil {
 		chainLimiter = chainassets.NewRedisLimiter(d.Redis, d.Namespace, c.ChainAssets.PerUserPerMinute)
 	}
+	// Keep confirmed quotes readable when operators disable new offers.
+	var quoteCache *redis.Client
+	if c.ChainAssets.DepositQuotes != nil {
+		quoteCache = d.Redis
+	}
+	d.DepositConfirmations = deposit.NewConfirmations(conn, quoteCache, d.Namespace)
 	var rates chainassets.MarketRateReader
 	if q := c.ChainAssets.DepositQuotes; q != nil && q.Market != nil {
 		d.MarketRates = marketdata.NewStore(d.Redis, d.Namespace)

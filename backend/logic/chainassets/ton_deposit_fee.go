@@ -138,6 +138,7 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 			if now().UnixMilli() >= next.ExpiresAt {
 				return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("TON estimate expired"))
 			}
+			next.Recipient, next.FeePayer = route.platform, route.platform
 			next.WalletAddress = walletAddress
 			next.EmulatedMessageHash = hex.EncodeToString(message.external.Hash())
 			next.RelayAttached, next.RelaySurplus = attached.String(), decimal.New(tonRelayNano, -9).Sub(budget.execution).String()

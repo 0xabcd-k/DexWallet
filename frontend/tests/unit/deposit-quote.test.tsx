@@ -251,3 +251,28 @@ it('quotes TON test USDT in token units and keeps refund and wallet reserve outs
     await expect(previewDeposit(asset, ton, '0.01', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
   }
 });
+
+it('recovers a saved wallet quote by its original idx when the response is lost and the offer expires', async () => {
+  const wallet = '0xecd14F7586f5053CECae148Ae26309C2277D86A8';
+  const terms = { ...quote(), walletAddress: wallet, walletFeePreview: true, feeBlockHash: '0x' + 'a'.repeat(64),
+    quoteIdx: '1'.repeat(32), maxGas: '0.0001' };
+  const request = vi.spyOn(client, 'userRequest')
+    .mockImplementationOnce(async (_path, decode) => decode({ data: terms }))
+    .mockRejectedValueOnce(new Error('connection lost after confirmation'))
+    .mockImplementationOnce(async (_path, decode) => decode({ data: { quote: terms, confirmedAt: terms.quotedAt + 1 } }));
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<I18nextProvider i18n={i18n}><DepositEstimate asset={network.assets[1]!} native={network.assets[0]!} target="10" walletAddress={wallet}/></I18nextProvider>);
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(await screen.findByText('Maximum network fee included in this quote')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm quote' }));
+  expect(await screen.findByRole('alert')).toBeInTheDocument();
+  expect(request.mock.calls[1]?.[0]).toBe('/v1/user/deposit-quotes/confirm');
+  expect(request.mock.calls[1]?.[2]?.body).toEqual({ quoteIdx: terms.quoteIdx });
+  vi.spyOn(Date, 'now').mockReturnValue(terms.expiresAt + 1000);
+  act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+  fireEvent.click(await screen.findByRole('button', { name: 'Check confirmation' }));
+  expect(await screen.findByText(new RegExp(terms.quoteIdx))).toBeInTheDocument();
+  expect(request.mock.calls[2]?.[0]).toBe('/v1/user/deposit-quotes/' + terms.quoteIdx);
+  expect(request.mock.calls[2]?.[2]?.body).toBeUndefined();
+  expect(screen.queryByRole('button', { name: 'Confirm quote' })).toBeNull();
+});

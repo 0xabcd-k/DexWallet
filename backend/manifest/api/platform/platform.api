@@ -1193,6 +1193,8 @@ type DepositQuoteRequest {
     WalletAddress string `json:"walletAddress,optional"`
 }
 type DepositQuoteData {
+    QuoteIdx string `json:"quoteIdx,optional,omitempty"`
+    MaxGas string `json:"maxGas,optional,omitempty"`
     AssetId string `json:"assetId"`
     TargetUsd string `json:"targetUsd"`
     UsdPerCoin string `json:"usdPerCoin"`
@@ -1226,6 +1228,22 @@ type DepositQuoteResponse {
     TraceId string `json:"traceId"`
     Data DepositQuoteData `json:"data"`
 }
+type DepositQuoteConfirmRequest {
+    QuoteIdx string `json:"quoteIdx"`
+}
+type DepositQuoteLookupRequest {
+    QuoteIdx string `path:"quoteIdx"`
+}
+type ConfirmedDepositQuoteData {
+    Quote DepositQuoteData `json:"quote"`
+    ConfirmedAt int64 `json:"confirmedAt"`
+}
+type ConfirmedDepositQuoteResponse {
+    Code string `json:"code,options=OK"`
+    Message string `json:"message"`
+    TraceId string `json:"traceId"`
+    Data ConfirmedDepositQuoteData `json:"data"`
+}
 @server (
     group: chainassets
     timeout: 30s
@@ -1234,4 +1252,8 @@ type DepositQuoteResponse {
 service platform {
     @handler depositQuotePreview
     post /v1/user/deposit-quotes/preview (DepositQuoteRequest) returns (DepositQuoteResponse)
+    @handler depositQuoteConfirm
+    post /v1/user/deposit-quotes/confirm (DepositQuoteConfirmRequest) returns (ConfirmedDepositQuoteResponse)
+    @handler confirmedDepositQuote
+    get /v1/user/deposit-quotes/:quoteIdx (DepositQuoteLookupRequest) returns (ConfirmedDepositQuoteResponse)
 }

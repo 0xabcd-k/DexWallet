@@ -336,6 +336,18 @@ type CompletionListRequest struct {
 	Limit   int64  `form:"limit,default=20,range=[1:100]"`
 }
 
+type ConfirmedDepositQuoteData struct {
+	Quote       DepositQuoteData `json:"quote"`
+	ConfirmedAt int64            `json:"confirmedAt"`
+}
+
+type ConfirmedDepositQuoteResponse struct {
+	Code    string                    `json:"code,options=OK"`
+	Message string                    `json:"message"`
+	TraceId string                    `json:"traceId"`
+	Data    ConfirmedDepositQuoteData `json:"data"`
+}
+
 type CreateLimitPlanRequest struct {
 	RequestKey         string `json:"requestKey"`
 	Name               string `json:"name"`
@@ -357,7 +369,13 @@ type CurrentUserResponse struct {
 	TraceId string          `json:"traceId"`
 }
 
+type DepositQuoteConfirmRequest struct {
+	QuoteIdx string `json:"quoteIdx"`
+}
+
 type DepositQuoteData struct {
+	QuoteIdx            string `json:"quoteIdx,optional,omitempty"`
+	MaxGas              string `json:"maxGas,optional,omitempty"`
 	AssetId             string `json:"assetId"`
 	TargetUsd           string `json:"targetUsd"`
 	UsdPerCoin          string `json:"usdPerCoin"`
@@ -384,6 +402,10 @@ type DepositQuoteData struct {
 	AccountFunding      string `json:"accountFunding,optional"`
 	AccountFundingUsd   string `json:"accountFundingUsd,optional"`
 	CanSubmit           bool   `json:"canSubmit"`
+}
+
+type DepositQuoteLookupRequest struct {
+	QuoteIdx string `path:"quoteIdx"`
 }
 
 type DepositQuoteRequest struct {

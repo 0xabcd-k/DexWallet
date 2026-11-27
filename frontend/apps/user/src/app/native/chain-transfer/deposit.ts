@@ -1,5 +1,5 @@
 import { decodeData } from '@dexwallet/api-client';
-import type { ChainAsset, DepositQuoteData } from '@dexwallet/api-contract/platform';
+import type { ChainAsset, ConfirmedDepositQuoteData, DepositQuoteData } from '@dexwallet/api-contract/platform';
 import { userRequest } from '../../../api/account';
 import { atomicAmount } from './api';
 
@@ -42,7 +42,9 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validFunding = tokenWallet
       ? funding !== undefined && fundingUsd !== undefined && (funding === 0n) === (fundingUsd === 0n)
       : !q.accountFunding && !q.accountFundingUsd;
-    if (!validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
+    const validOffer = q.quoteIdx === undefined && q.maxGas === undefined ||
+      !!walletAddress && typeof q.quoteIdx === 'string' && /^[0-9a-f]{32}$/.test(q.quoteIdx) && q.maxGas === q.estimatedGas;
+    if (!validOffer || !validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||
       (q.rateSource !== undefined && q.rateSource !== 'test_sheet' && q.rateSource !== 'kraken') ||
@@ -53,4 +55,16 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     method: 'POST', body: { assetId: asset.id, targetUsd: target, walletAddress }, signal,
     ...(walletAddress ? { timeoutMs: depositQuoteTTLms } : {}),
   });
+}
+
+export function confirmDepositQuote(quote: DepositQuoteData, lookupOnly: boolean, signal: AbortSignal) {
+  const path = '/v1/user/deposit-quotes/' + (lookupOnly ? quote.quoteIdx : 'confirm');
+  return userRequest(path, value => {
+    const record = decodeData<ConfirmedDepositQuoteData>(value);
+    if (!record.quote || !Number.isSafeInteger(record.confirmedAt) || record.confirmedAt < quote.quotedAt || record.confirmedAt >= quote.expiresAt ||
+      Object.entries(quote).some(([key, term]) => record.quote[key as keyof DepositQuoteData] !== term)) {
+      throw new TypeError('Invalid deposit quote confirmation');
+    }
+    return record.confirmedAt;
+  }, lookupOnly ? { signal } : { method: 'POST', body: { quoteIdx: quote.quoteIdx }, signal });
 }

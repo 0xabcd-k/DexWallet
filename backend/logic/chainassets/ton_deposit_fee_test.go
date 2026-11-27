@@ -194,6 +194,13 @@ func testTONDeposit(t *testing.T, name, platform string, cases []tonDepositCase)
 				}
 				return
 			}
+			// The original RPC capture predates the stored order terms.
+			f.Preview.FeePayer, f.Preview.Recipient = platform, platform
+			f.Preview.RuleVersion = f.Preview.Version
+			f.Preview.PayDecimals, f.Preview.GasDecimals, f.Preview.GasUSDPerCoin = 9, 9, "1"
+			if f.Preview.AssetID != tonDepositAsset {
+				f.Preview.PayDecimals, f.Preview.GasUSDPerCoin = 6, "2"
+			}
 			if err != nil || q != f.Preview || attempts != len(f.Attempts) {
 				t.Fatal(q, err, attempts)
 			}

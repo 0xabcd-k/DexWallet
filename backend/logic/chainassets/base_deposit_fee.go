@@ -139,6 +139,7 @@ func (s *Service) previewBaseDeposit(ctx context.Context, user int64, assetID, t
 	if gross.Shift(int32(entry.asset.Decimals)).BigInt().Cmp(budget.balance) > 0 {
 		return empty, apperror.New(apperror.InsufficientBalance, nil)
 	}
+	q.Recipient, q.FeePayer = route.Recipient, route.FeePayer
 	q.WalletAddress, q.FeeBlockHash = address, budget.block.Hash.Hex()
 	return q, nil
 }

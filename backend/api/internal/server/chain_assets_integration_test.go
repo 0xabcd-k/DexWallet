@@ -15,7 +15,9 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/types"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
+	"github.com/0xabcd-k/DexWallet/backend/logic/deposit"
 	shared "github.com/0xabcd-k/DexWallet/backend/svc"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 const (
@@ -140,6 +142,7 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 		_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1, "result": result})
 	}))
 	defer upstream.Close()
+	s.DepositConfirmations = deposit.NewConfirmations(sqlx.NewSqlConnFromDB(s.DB), s.Redis, s.Namespace)
 	const depositPath = "/v1/user/deposit-quotes/preview"
 	deposit := types.DepositQuoteRequest{AssetId: chainassets.BaseSepoliaETH, TargetUsd: "10"}
 	call("POST", depositPath, "", deposit, 401, "UNAUTHENTICATED")
@@ -190,7 +193,7 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	}
 	_, raw = call("POST", depositPath, token, deposit, 200, "OK")
 	var quote types.DepositQuoteData
-	if err := json.Unmarshal(raw, &quote); err != nil || quote.AssetId != deposit.AssetId || quote.PayQuantity != "0.0051" || quote.NetUsd != "10.00" || quote.GasUsd != "0.2" || quote.CanSubmit || quote.RateVersion != rates.Version {
+	if err := json.Unmarshal(raw, &quote); err != nil || quote.QuoteIdx != "" || quote.MaxGas != "" || quote.AssetId != deposit.AssetId || quote.PayQuantity != "0.0051" || quote.NetUsd != "10.00" || quote.GasUsd != "0.2" || quote.CanSubmit || quote.RateVersion != rates.Version {
 		t.Fatal(quote, err)
 	}
 	deposit.TargetUsd = "0.001"
@@ -230,4 +233,5 @@ func checkChainAssetsHTTP(t *testing.T, s *shared.ServiceContext, token string, 
 	call("POST", "/v1/user/chain-assets/balances", token, request, 429, "RATE_LIMITED")
 	call("POST", depositPath, token, sol, 429, "RATE_LIMITED")
 	checkMarketRatesHTTP(t, s, token, upstream.URL, call)
+	checkDepositConfirmationHTTP(t, s, token, walletQuote, call)
 }
