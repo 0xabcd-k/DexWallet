@@ -6,3 +6,13 @@ ALTER TABLE `sol_deposit_order`
  ADD CONSTRAINT `fk_sol_deposit_quote` FOREIGN KEY (`quote_idx`) REFERENCES `deposit_quote_confirmation` (`quote_idx`),
  ADD CONSTRAINT `ck_sol_deposit_height` CHECK (`last_valid_height` > 0),
  ADD CONSTRAINT `ck_sol_deposit_signature` CHECK ((`user_signature` = '' AND `accepted_at` IS NULL) OR (`user_signature` <> '' AND `accepted_at` IS NOT NULL));
+
+ALTER TABLE `sol_deposit_order`
+ ADD CONSTRAINT `ck_sol_deposit_execution` CHECK (
+   (`execution_state` = 'waiting' AND `tx_signature` IS NULL OR
+    `execution_state` = 'review' AND `accepted_at` IS NOT NULL OR
+    `execution_state` IN ('signed','submitted','finalized','failed') AND `accepted_at` IS NOT NULL AND `tx_signature` IS NOT NULL)
+   AND ((`tx_signature` IS NULL AND `sponsor_policy` = '') OR (`tx_signature` IS NOT NULL AND `sponsor_policy` <> ''))
+   AND ((`execution_state` IN ('finalized','failed') AND `finalized_slot` > 0 AND `actual_lamports_fee` > 0)
+     OR (`execution_state` NOT IN ('finalized','failed') AND `finalized_slot` = 0 AND `actual_lamports_fee` = 0))
+ );

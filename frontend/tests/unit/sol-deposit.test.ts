@@ -15,7 +15,7 @@ const quote: DepositQuoteData = { quoteIdx: '1'.repeat(32), solOrderIdx: '2'.rep
   assetId: 'solana-devnet:sol', gasAssetId: 'solana-devnet:sol', targetUsd: '0.01', netUsd: '0.01', usdPerCoin: '100', payQuantity: '0.00011',
   estimatedGas: '0.00001', maxGas: '0.00001', gasUsd: '0.001', rateVersion: 'test', asOf: now, quotedAt: now, expiresAt: now + 30000,
   messageSha256: 'dcd09fa7d4f66ba3de5f0e1cf615fb13c3a04e13361a919b7d5869f23ce1c922', canSubmit: false };
-const order: SolDepositOrderData = { quoteIdx: quote.quoteIdx!, orderIdx: quote.solOrderIdx!, state: 'awaiting_signature',
+const order: SolDepositOrderData = { quoteIdx: quote.quoteIdx!, orderIdx: quote.solOrderIdx!, state: 'awaiting_signature', executionState: 'waiting',
   messageBase64: 'AgACBbtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk18DYnYkanW53jNJ7UKxXiMvZRj8IPX81PHWToH5vSWPdet76rPhnRbUWumOzXkErufS+rzXYQx2sGbk6vvio4ngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABUpTWpkpIQZNJOhxYNo4fHw1td28kruB5B+oQEEFRI3QJFNbwCH4iosm+L1MVUyRP1PvIerM6xlFR9kfaRhbXQIDAgECDAIAAACwrQEAAAAAAAQAMmRleHdhbGxldDpkZXBvc2l0OjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy', messageSha256: quote.messageSha256!, lastValidBlockHeight: 120, quoteExpiresAt: quote.expiresAt, reviewAfter: quote.expiresAt + 60000 };
 const signature = 'mfAWpqfGcCpZYmLdaC5hERoYNF4VpSuv3xqdViFw5FPcB6FouimYwbovc3ES4GDCwuD2RHVkV4aw7ebgYqceXRd';
 

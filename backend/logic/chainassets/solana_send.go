@@ -3,6 +3,7 @@ package chainassets
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/mr-tron/base58"
@@ -14,18 +15,26 @@ type SolanaBlock struct {
 }
 
 func (s *Service) devnetRPC(ctx context.Context, method string, params any, result any) error {
+	raw, err := s.devnetRPCRaw(ctx, method, params)
+	if err != nil {
+		return err
+	}
+	return decodeRPCResult(raw, result)
+}
+
+func (s *Service) devnetRPCRaw(ctx context.Context, method string, params any) (json.RawMessage, error) {
 	for _, n := range s.networks {
 		if n.ID == SolanaDevnet && n.Enabled {
 			ctx, cancel := context.WithTimeout(ctx, s.timeout)
 			defer cancel()
 			endpoint := s.endpoints[n.ID]
 			if err := s.checkNetwork(ctx, n, endpoint); err != nil {
-				return err
+				return nil, err
 			}
-			return s.rpc(ctx, n, endpoint, method, params, result)
+			return s.rpcRaw(ctx, n, endpoint, method, params)
 		}
 	}
-	return fmt.Errorf("Solana Devnet endpoint required")
+	return nil, fmt.Errorf("Solana Devnet endpoint required")
 }
 func (s *Service) LatestSolanaBlock(ctx context.Context) (SolanaBlock, error) {
 	var response struct{ Value SolanaBlock }
@@ -50,7 +59,11 @@ func (s *Service) SolanaBlockHeight(ctx context.Context) (int64, error) {
 func (s *Service) SubmitSolana(ctx context.Context, wire []byte) error {
 	// The first signature is also the RPC acknowledgement. Only the single-signer
 	// legacy transaction emitted by the payout executor is submitted here.
-	if len(wire) <= 65 || len(wire) > 1232 || wire[0] != 1 {
+	return s.submitSolana(ctx, wire, 1)
+}
+
+func (s *Service) submitSolana(ctx context.Context, wire []byte, signatures byte) error {
+	if len(wire) <= 1+64*int(signatures) || len(wire) > 1232 || wire[0] != signatures {
 		return invalid("invalid Solana transaction envelope")
 	}
 	var accepted string

@@ -29,6 +29,7 @@ type (
 		FindOne(ctx context.Context, quoteIdx string) (*SolDepositOrder, error)
 		FindOneByMessageSha256(ctx context.Context, messageSha256 string) (*SolDepositOrder, error)
 		FindOneByOrderIdx(ctx context.Context, orderIdx string) (*SolDepositOrder, error)
+		FindOneByTxSignature(ctx context.Context, txSignature sql.NullString) (*SolDepositOrder, error)
 		Update(ctx context.Context, data *SolDepositOrder) error
 		Delete(ctx context.Context, quoteIdx string) error
 	}
@@ -39,14 +40,19 @@ type (
 	}
 
 	SolDepositOrder struct {
-		QuoteIdx        string       `db:"quote_idx"`
-		OrderIdx        string       `db:"order_idx"`
-		MessageBase64   string       `db:"message_base64"`
-		MessageSha256   string       `db:"message_sha256"`
-		LastValidHeight int64        `db:"last_valid_height"`
-		ReviewAfter     time.Time    `db:"review_after"`
-		UserSignature   string       `db:"user_signature"`
-		AcceptedAt      sql.NullTime `db:"accepted_at"`
+		QuoteIdx          string         `db:"quote_idx"`
+		OrderIdx          string         `db:"order_idx"`
+		MessageBase64     string         `db:"message_base64"`
+		MessageSha256     string         `db:"message_sha256"`
+		LastValidHeight   int64          `db:"last_valid_height"`
+		ReviewAfter       time.Time      `db:"review_after"`
+		UserSignature     string         `db:"user_signature"`
+		AcceptedAt        sql.NullTime   `db:"accepted_at"`
+		ExecutionState    string         `db:"execution_state"`
+		SponsorPolicy     string         `db:"sponsor_policy"`
+		TxSignature       sql.NullString `db:"tx_signature"`
+		ActualLamportsFee int64          `db:"actual_lamports_fee"`
+		FinalizedSlot     int64          `db:"finalized_slot"`
 	}
 )
 
@@ -105,15 +111,29 @@ func (m *defaultSolDepositOrderModel) FindOneByOrderIdx(ctx context.Context, ord
 	}
 }
 
+func (m *defaultSolDepositOrderModel) FindOneByTxSignature(ctx context.Context, txSignature sql.NullString) (*SolDepositOrder, error) {
+	var resp SolDepositOrder
+	query := fmt.Sprintf("select %s from %s where `tx_signature` = ? limit 1", solDepositOrderRows, m.table)
+	err := m.conn.QueryRowCtx(ctx, &resp, query, txSignature)
+	switch err {
+	case nil:
+		return &resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
 func (m *defaultSolDepositOrderModel) Insert(ctx context.Context, data *SolDepositOrder) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?)", m.table, solDepositOrderRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.OrderIdx, data.MessageBase64, data.MessageSha256, data.LastValidHeight, data.ReviewAfter, data.UserSignature, data.AcceptedAt)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, solDepositOrderRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.OrderIdx, data.MessageBase64, data.MessageSha256, data.LastValidHeight, data.ReviewAfter, data.UserSignature, data.AcceptedAt, data.ExecutionState, data.SponsorPolicy, data.TxSignature, data.ActualLamportsFee, data.FinalizedSlot)
 	return ret, err
 }
 
 func (m *defaultSolDepositOrderModel) Update(ctx context.Context, newData *SolDepositOrder) error {
 	query := fmt.Sprintf("update %s set %s where `quote_idx` = ?", m.table, solDepositOrderRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.OrderIdx, newData.MessageBase64, newData.MessageSha256, newData.LastValidHeight, newData.ReviewAfter, newData.UserSignature, newData.AcceptedAt, newData.QuoteIdx)
+	_, err := m.conn.ExecCtx(ctx, query, newData.OrderIdx, newData.MessageBase64, newData.MessageSha256, newData.LastValidHeight, newData.ReviewAfter, newData.UserSignature, newData.AcceptedAt, newData.ExecutionState, newData.SponsorPolicy, newData.TxSignature, newData.ActualLamportsFee, newData.FinalizedSlot, newData.QuoteIdx)
 	return err
 }
 

@@ -17,7 +17,13 @@ CREATE TABLE `sol_deposit_order` (
     `review_after` DATETIME(3) NOT NULL,
     `user_signature` VARCHAR(88) NOT NULL DEFAULT '',
     `accepted_at` DATETIME(3) NULL,
+    `execution_state` VARCHAR(16) NOT NULL DEFAULT 'waiting',
+    `sponsor_policy` VARCHAR(48) NOT NULL DEFAULT '',
+    `tx_signature` VARCHAR(88) NULL,
+    `actual_lamports_fee` BIGINT NOT NULL DEFAULT 0,
+    `finalized_slot` BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (`quote_idx`),
+    UNIQUE KEY `uk_sol_deposit_tx` (`tx_signature`),
     UNIQUE KEY `uk_sol_deposit_order` (`order_idx`),
     UNIQUE KEY `uk_sol_deposit_message` (`message_sha256`)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;

@@ -23,7 +23,17 @@ function orderData(value: unknown, idx: string) {
     !Number.isSafeInteger(o.quoteExpiresAt) || !Number.isSafeInteger(o.reviewAfter) || o.reviewAfter <= o.quoteExpiresAt ||
     !(o.state === 'awaiting_signature' && o.acceptedAt === undefined ||
       o.state === 'accepted' && Number.isSafeInteger(o.acceptedAt) && o.acceptedAt! > 0 && o.acceptedAt! < o.quoteExpiresAt)) throw new TypeError('Invalid SOL deposit order');
-  return o;
+  const executionState = o.executionState ?? 'waiting'; // servers serving authorization-only orders
+  const final = executionState === 'finalized' || executionState === 'failed';
+  if (!['waiting','signed','submitted','review','finalized','failed'].includes(executionState) ||
+    (o.state !== 'accepted' && executionState !== 'waiting') ||
+    (executionState === 'waiting' && o.txSignature !== undefined) ||
+    (executionState !== 'waiting' && executionState !== 'review' && !o.txSignature) ||
+    (o.txSignature !== undefined && !/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(o.txSignature)) ||
+    (final ? !Number.isSafeInteger(o.actualFeeLamports) || o.actualFeeLamports! <= 0 : o.actualFeeLamports !== undefined)) {
+    throw new TypeError('Invalid SOL execution result');
+  }
+  return { ...o, executionState };
 }
 export function getSolOrder(idx: string, signal: AbortSignal) {
   if (!idxFormat.test(idx)) throw new TypeError('Invalid quote ID');

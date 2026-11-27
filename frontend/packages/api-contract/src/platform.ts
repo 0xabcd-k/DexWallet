@@ -960,6 +960,9 @@ export interface SolDepositOrderData {
 	quoteIdx: string
 	orderIdx: string
 	state: 'awaiting_signature' | 'accepted'
+	executionState: 'waiting' | 'signed' | 'submitted' | 'review' | 'finalized' | 'failed'
+	txSignature?: string
+	actualFeeLamports?: number
 	messageBase64: string
 	messageSha256: string
 	lastValidBlockHeight: number

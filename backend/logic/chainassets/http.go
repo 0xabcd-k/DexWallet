@@ -82,10 +82,14 @@ func (s *Service) rpc(ctx context.Context, n Network, e Endpoint, method string,
 	if err != nil {
 		return err
 	}
+	return decodeRPCResult(raw, out)
+}
+
+func decodeRPCResult(raw json.RawMessage, out any) error {
 	if string(raw) == "null" {
 		return invalid("missing RPC result")
 	}
-	if err = json.Unmarshal(raw, out); err != nil {
+	if err := json.Unmarshal(raw, out); err != nil {
 		return invalid("invalid RPC result shape")
 	}
 	return nil

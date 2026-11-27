@@ -149,7 +149,7 @@ func (s *SolOrders) persist(ctx context.Context, actor user.Actor, record Confir
 				return err
 			}
 		} else {
-			existing = &model.SolDepositOrder{QuoteIdx: q.QuoteIdx, OrderIdx: q.SolOrderIdx, MessageBase64: q.SolMessage, MessageSha256: q.MessageSHA256, LastValidHeight: q.SolLastValidHeight, ReviewAfter: time.UnixMilli(q.SolReviewAt).UTC()}
+			existing = &model.SolDepositOrder{ExecutionState: SolWaiting, QuoteIdx: q.QuoteIdx, OrderIdx: q.SolOrderIdx, MessageBase64: q.SolMessage, MessageSha256: q.MessageSHA256, LastValidHeight: q.SolLastValidHeight, ReviewAfter: time.UnixMilli(q.SolReviewAt).UTC()}
 			if _, err := rows.Insert(ctx, existing); err != nil {
 				return err
 			}

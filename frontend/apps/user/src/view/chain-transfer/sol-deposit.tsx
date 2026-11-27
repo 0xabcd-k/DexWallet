@@ -8,13 +8,18 @@ import { authorizeSolDeposit, getSolOrder, lastSolQuoteKey } from '../../app/nat
 
 function OrderStatus({ order }: { order: SolDepositOrderData }) {
   const { t } = useTranslation();
-  return <p role="status">{t(order.state === 'accepted' ? 'solDepositAccepted' :
-    Date.now() >= order.quoteExpiresAt ? 'solDepositLate' : 'solDepositPending', { idx: order.orderIdx })}</p>;
+  const statuses = { waiting: 'solDepositAccepted', signed: 'solDepositSigned', submitted: 'solDepositSubmitted',
+    review: 'solDepositReview', finalized: 'solDepositFinalized', failed: 'solDepositFailed' } as const;
+  const label = order.state === 'accepted' ? statuses[order.executionState] :
+    Date.now() >= order.quoteExpiresAt ? 'solDepositLate' : 'solDepositPending';
+  return <><p role="status">{t(label, { idx: order.orderIdx })}</p>
+    {order.txSignature && <dl><dt>{t('solDepositTransaction')}</dt><dd className="chain-address">{order.txSignature}</dd>
+      {order.actualFeeLamports !== undefined && <><dt>{t('solDepositActualFee')}</dt><dd>{order.actualFeeLamports} lamports</dd></>}</dl>}</>;
 }
 
-function Lookup({ idx }: { idx: string }) {
+function Lookup({ idx, initial }: { idx: string; initial?: SolDepositOrderData }) {
   const { t } = useTranslation();
-  const [order, setOrder] = useState<SolDepositOrderData>(), [error, setError] = useState<unknown>(), [busy, setBusy] = useState(false);
+  const [order, setOrder] = useState(initial), [error, setError] = useState<unknown>(), [busy, setBusy] = useState(false);
   const active = useRef<AbortController>();
   useEffect(() => () => active.current?.abort(), []);
   async function lookup() {
@@ -62,7 +67,7 @@ export function SolDepositAuthorization({ local, quote, expired }: {
     } catch (e) { if (!request.signal.aborted) setError(e); }
     finally { if (!request.signal.aborted) setBusy(false); }
   }
-  if (order) return <OrderStatus order={order}/>;
+  if (order) return <Lookup idx={order.quoteIdx} initial={order}/>;
   return <><dl><dt>{t('solDepositTarget')}</dt><dd className="chain-address">{quote.solRecipient}</dd>
     <dt>{t('solDepositSponsor')}</dt><dd className="chain-address">{quote.solFeePayer}</dd></dl>
     <Button color="primary" block disabled={busy || expired} onClick={() => void sign()}>{t('solDepositSign')}</Button>

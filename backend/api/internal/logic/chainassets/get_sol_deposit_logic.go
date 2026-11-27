@@ -46,7 +46,7 @@ func (l *GetSolDepositLogic) GetSolDeposit(req *types.DepositQuoteLookupRequest)
 }
 
 func solOrderResponse(ctx context.Context, o deposit.SolOrder) *types.SolDepositOrderResponse {
-	data := types.SolDepositOrderData{QuoteIdx: o.QuoteIdx, OrderIdx: o.OrderIdx, State: deposit.AwaitingSignature, MessageBase64: o.MessageBase64, MessageSha256: o.MessageSha256, LastValidBlockHeight: o.LastValidHeight, QuoteExpiresAt: o.QuoteExpiresAt, ReviewAfter: o.ReviewAfter.UnixMilli()}
+	data := types.SolDepositOrderData{ExecutionState: o.ExecutionState, TxSignature: o.TxSignature.String, ActualFeeLamports: o.ActualLamportsFee, QuoteIdx: o.QuoteIdx, OrderIdx: o.OrderIdx, State: deposit.AwaitingSignature, MessageBase64: o.MessageBase64, MessageSha256: o.MessageSha256, LastValidBlockHeight: o.LastValidHeight, QuoteExpiresAt: o.QuoteExpiresAt, ReviewAfter: o.ReviewAfter.UnixMilli()}
 	if o.AcceptedAt.Valid {
 		data.State = deposit.Accepted
 		data.AcceptedAt = o.AcceptedAt.Time.UnixMilli()

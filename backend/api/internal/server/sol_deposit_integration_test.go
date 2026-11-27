@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -32,6 +33,10 @@ func (solTestLimit) Allow(context.Context, int64) error { return nil }
 func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, call func(string, string, string, any, int, string) (http.Header, json.RawMessage)) {
 	t.Helper()
 	pub, sk, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	payer, sponsor, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +89,7 @@ func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, cal
 	defer rpc.Close()
 	now := time.Now()
 	cfg := chainassets.Config{Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: rpc.URL}}, DepositQuotes: &chainassets.DepositQuoteConfig{Version: "sign-test", AsOf: now.Unix() - 60, ValidUntil: now.Unix() + 300, SolanaSOLReviewAfter: time.Minute,
-		SolanaSOL: &chainassets.SolanaDepositFeeConfig{FeePayer: "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN", Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}, Assets: []chainassets.DepositQuoteRate{{AssetID: "solana-devnet:sol", USDPerCoin: "100", EstimatedGas: "0"}}}}
+		SolanaSOL: &chainassets.SolanaDepositFeeConfig{FeePayer: base58.Encode(payer), Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}, Assets: []chainassets.DepositQuoteRate{{AssetID: "solana-devnet:sol", USDPerCoin: "100", EstimatedGas: "0"}}}}
 	chain, err := chainassets.New(cfg, solTestLimit{})
 	if err != nil {
 		t.Fatal(err)
@@ -226,4 +231,83 @@ func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, cal
 		t.Fatal("expired order mutated", err)
 	}
 
+	// Drive the accepted HTTP order with a node that loses the first submission
+	// and temporarily cannot find it in history. No replacement signature is allowed.
+	height.Store(100)
+	net := &solExecutionNode{Service: chain}
+	terms := chainassets.SolDepositTerms{Recipient: q.SolRecipient, GrossLamports: 10010000, FeeLamports: 10000}
+	worker := func(terms chainassets.SolDepositTerms) *deposit.SolExecution {
+		e, err := deposit.NewSolExecution(conn, net, q.QuoteIdx, terms, sponsor)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return e
+	}
+	changed := terms
+	changed.GrossLamports++
+	if row, err := worker(changed).Step(ctx); err == nil || row.TxSignature.Valid {
+		t.Fatal("wrong amount reached signer")
+	}
+	fee.Add(1)
+	if row, err := worker(terms).Step(ctx); err == nil || row.TxSignature.Valid {
+		t.Fatal("fee increase reached signer")
+	}
+	fee.Add(-1)
+	signed, err := worker(terms).Step(ctx)
+	if err != nil || signed.ExecutionState != deposit.SolSigned || signed.SponsorPolicy == "" || len(net.sends) != 0 {
+		t.Fatal("persist-before-submit", err)
+	}
+	if _, err = worker(terms).Step(ctx); !errors.Is(err, errDroppedSolResponse) {
+		t.Fatal("expected lost acknowledgement", err)
+	}
+	resent, err := worker(terms).Step(ctx)
+	if err != nil || resent.ExecutionState != deposit.SolSubmitted || len(net.sends) != 2 || !bytes.Equal(net.sends[0], net.sends[1]) ||
+		base58.Encode(net.sends[0][1:65]) != signed.TxSignature.String || !ed25519.Verify(payer, msg, net.sends[0][1:65]) {
+		t.Fatal("resubmission replaced original wire", err)
+	}
+	height.Store(121)
+	review, err := worker(terms).Step(ctx)
+	if err != nil || review.ExecutionState != deposit.SolReview || len(net.sends) != 2 {
+		t.Fatal("expired blockhash", err)
+	}
+	height.Store(100)
+	if _, err = worker(terms).Step(ctx); err != nil || len(net.sends) != 2 {
+		t.Fatal("review resumed broadcasting", err)
+	}
+	net.final = true
+	failed, err := worker(terms).Step(ctx)
+	if err != nil || failed.ExecutionState != deposit.SolFailed || failed.ActualLamportsFee != terms.FeeLamports {
+		t.Fatal("missing late failed receipt", err)
+	}
+	if _, err = worker(changed).Step(ctx); err == nil {
+		t.Fatal("terminal recovery accepted another amount")
+	}
+	_, raw = call("GET", path+q.QuoteIdx, token, nil, 200, "OK")
+	var result types.SolDepositOrderData
+	if err = json.Unmarshal(raw, &result); err != nil || result.TxSignature != signed.TxSignature.String || result.ExecutionState != deposit.SolFailed || result.ActualFeeLamports != terms.FeeLamports {
+		t.Fatal("recovery lookup", result, err)
+	}
+	call("GET", path+q.QuoteIdx, other, nil, 404, "NOT_FOUND")
+}
+
+var errDroppedSolResponse = errors.New("test node dropped response")
+
+type solExecutionNode struct {
+	*chainassets.Service
+	sends [][]byte
+	final bool
+}
+
+func (n *solExecutionNode) SubmitSolDeposit(_ context.Context, wire []byte) error {
+	n.sends = append(n.sends, bytes.Clone(wire))
+	if len(n.sends) == 1 {
+		return errDroppedSolResponse
+	}
+	return nil
+}
+func (n *solExecutionNode) ObserveSolDeposit(_ context.Context, _ []byte, terms chainassets.SolDepositTerms) (chainassets.SolDepositObservation, error) {
+	if n.final {
+		return chainassets.SolDepositObservation{Seen: true, Finalized: true, Failed: true, Slot: 99, Fee: terms.FeeLamports}, nil
+	}
+	return chainassets.SolDepositObservation{}, nil
 }

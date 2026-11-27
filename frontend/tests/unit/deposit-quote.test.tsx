@@ -7,7 +7,14 @@ import * as catalog from '../../apps/user/src/app/native/chain-assets/api';
 import * as walletSource from '../../apps/user/src/app/native/chain-assets/use-wallets';
 import { previewDeposit } from '../../apps/user/src/app/native/chain-transfer/deposit';
 import DepositButton, { DepositEstimate } from '../../apps/user/src/view/chain-transfer/deposit';
+import { LastSolDeposit } from '../../apps/user/src/view/chain-transfer/sol-deposit';
+import { nativeCatalog } from '../../apps/user/src/app/native/local-wallet/bridge';
 import { appResources } from '../../apps/user/src/locales';
+
+vi.mock('../../apps/user/src/app/native/local-wallet/bridge', async (load) => ({
+  ...await load<typeof import('../../apps/user/src/app/native/local-wallet/bridge')>(),
+  nativeCatalog: { get: vi.fn().mockResolvedValue({ value: null }) },
+}));
 
 const network: ChainNetwork = { id: 'base-sepolia', family: 'base', enabled: false, testnet: true, assets: [
   { id: 'base-sepolia:eth', symbol: 'ETH', contract: '', decimals: 18, origin: 'native', depositPreview: true },
@@ -275,4 +282,20 @@ it('recovers a saved wallet quote by its original idx when the response is lost 
   expect(request.mock.calls[2]?.[0]).toBe('/v1/user/deposit-quotes/' + terms.quoteIdx);
   expect(request.mock.calls[2]?.[2]?.body).toBeUndefined();
   expect(screen.queryByRole('button', { name: 'Confirm quote' })).toBeNull();
+});
+
+it('recovers a finalized SOL deposit with its sponsor fee and distinct USD settlement status', async () => {
+  const idx = '2'.repeat(32);
+  const tx = 'tTrrbqujhmBRtQwWnDNeZfU1SaWBWbPVsCC7dUqAovpBA2t2NtEWkKJYryNpBH6meGE5jLgdk3m8VXnbRbaFBrD';
+  vi.mocked(nativeCatalog.get).mockResolvedValueOnce({ value: idx });
+  vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode) => decode({ data: {
+    quoteIdx: idx, orderIdx: idx, state: 'accepted', executionState: 'finalized', txSignature: tx, actualFeeLamports: 10000,
+    acceptedAt: 10, quoteExpiresAt: 20, reviewAfter: 30, lastValidBlockHeight: 100, messageSha256: 'a'.repeat(64), messageBase64: 'Ag==',
+  } }));
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<I18nextProvider i18n={i18n}><LastSolDeposit userIdx="testuser"/></I18nextProvider>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Check SOL deposit status' }));
+  expect(await screen.findByRole('status')).toHaveTextContent('confirmed on Devnet. Test USD has not been credited.');
+  expect(screen.getByText(tx)).toBeInTheDocument();
+  expect(screen.getByText('10000 lamports')).toBeInTheDocument();
 });
