@@ -69,14 +69,14 @@ func newSolanaDepositRoute(c SolanaDepositFeeConfig) (*solanaDepositRoute, error
 
 // Legacy SystemProgram.transfer. Both the fee payer and the source sign.
 // The source transfers the full gross amount, including the quoted fee recovery.
-func (r solanaDepositRoute) message(source [32]byte, blockhash []byte, lamports uint64, orderIdx string) []byte {
+func (r solanaDepositRoute) message(source [32]byte, blockhash []byte, lamports uint64, orderRef string) []byte {
 	msg := []byte{2, 0, 1, 4}
 	msg = append(msg, r.payer[:]...)
 	msg = append(msg, source[:]...)
 	msg = append(msg, r.recipient[:]...)
 	msg = append(msg, make([]byte, 32)...) // System Program
 	instructions := byte(1)
-	if orderIdx != "" {
+	if orderRef != "" {
 		msg[2], msg[3], instructions = 2, 5, 2 // additional readonly Memo program
 		memoProgram, _ := base58.Decode(solanaspl.MemoProgram)
 		msg = append(msg, memoProgram...)
@@ -85,8 +85,8 @@ func (r solanaDepositRoute) message(source [32]byte, blockhash []byte, lamports 
 	msg = append(msg, instructions, 3, 2, 1, 2, 12) // one instruction; program #3, source #1, recipient #2
 	msg = binary.LittleEndian.AppendUint32(msg, 2)  // SystemInstruction::Transfer
 	msg = binary.LittleEndian.AppendUint64(msg, lamports)
-	if orderIdx != "" {
-		memo := "dexwallet:deposit:" + orderIdx
+	if orderRef != "" {
+		memo := "dexwallet:deposit:" + orderRef
 		msg = append(msg, 4, 0, byte(len(memo)))
 		msg = append(msg, memo...)
 	}
@@ -110,7 +110,32 @@ func (s *Service) messageFee(ctx context.Context, n Network, msg []byte) (uint64
 	return *response.Value, nil
 }
 
-func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID, targetUSD, address string) (DepositPreview, error) {
+func (s *Service) SupportsBeneficiaryDeposit(assetID string) bool {
+	return assetID == solanaDepositAsset && s.quotes.solBeneficiary
+}
+
+func (s *Service) PreviewBeneficiaryDeposit(ctx context.Context, user int64, b DepositBeneficiary, assetID, targetUSD, address string) (DepositPreview, error) {
+	if !s.SupportsBeneficiaryDeposit(assetID) || b.UserID <= 0 || b.UserID == user || b.Idx == "" {
+		return DepositPreview{}, badTarget("unsupported beneficiary deposit")
+	}
+	if address == "" {
+		q, err := s.PreviewDepositContext(ctx, assetID, targetUSD, time.Now())
+		q.Beneficiary = &b
+		return q, err
+	}
+	return s.previewSolanaDeposit(ctx, user, assetID, targetUSD, address, &b)
+}
+
+// Include the order in the commitment so two payments to one user have different memos.
+func solMemoReference(orderIdx string, b *DepositBeneficiary) string {
+	if b == nil {
+		return orderIdx
+	}
+	digest := sha256.Sum256([]byte(orderIdx + ":" + b.Idx))
+	return orderIdx + ":" + hex.EncodeToString(digest[:])
+}
+
+func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID, targetUSD, address string, beneficiary *DepositBeneficiary) (DepositPreview, error) {
 	var empty DepositPreview
 	route := s.quotes.solana[assetID]
 	if route == nil {
@@ -146,7 +171,7 @@ func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID,
 		return empty, apperror.New(apperror.ServiceUnavailable, err)
 	}
 	entry := s.quotes.assets[assetID]
-	draft := solanaDepositDraft{route: route, source: source, blockhash: block.Blockhash, decimals: entry.asset.Decimals}
+	draft := solanaDepositDraft{beneficiary: beneficiary, route: route, source: source, blockhash: block.Blockhash, decimals: entry.asset.Decimals}
 	if s.quotes.solReviewAfter[assetID] > 0 {
 		var nonce [16]byte
 		if _, err := rand.Read(nonce[:]); err != nil {
@@ -198,18 +223,20 @@ func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID,
 		q.SolOrderIdx, q.SolMessage = draft.orderIdx, base64.StdEncoding.EncodeToString(msg)
 		q.SolLastValidHeight, q.SolReviewAt = block.LastValidBlockHeight, time.UnixMilli(q.ExpiresAt).Add(s.quotes.solReviewAfter[assetID]).UnixMilli()
 	}
+	q.Beneficiary = beneficiary
 	q.Recipient, q.FeePayer = base58.Encode(route.recipient[:]), base58.Encode(route.payer[:])
 	q.WalletAddress, q.MessageSHA256 = address, fmt.Sprintf("%x", sha256.Sum256(msg))
 	return q, nil
 }
 
 type solanaDepositDraft struct {
-	orderIdx  string
-	route     *solanaDepositRoute
-	source    [32]byte
-	blockhash string
-	decimals  int
-	token     *depositTokenAccounts
+	beneficiary *DepositBeneficiary
+	orderIdx    string
+	route       *solanaDepositRoute
+	source      [32]byte
+	blockhash   string
+	decimals    int
+	token       *depositTokenAccounts
 }
 
 func (d solanaDepositDraft) atoms(q DepositPreview) uint64 {
@@ -222,7 +249,7 @@ func (d solanaDepositDraft) message(q DepositPreview) ([]byte, error) {
 	amount := d.atoms(q)
 	if d.token == nil {
 		hash, _ := base58.Decode(d.blockhash) // LatestSolanaBlock validated the blockhash.
-		return d.route.message(d.source, hash, amount, d.orderIdx), nil
+		return d.route.message(d.source, hash, amount, solMemoReference(d.orderIdx, d.beneficiary)), nil
 	}
 	if amount > d.token.balance {
 		return nil, apperror.New(apperror.InsufficientBalance, nil)

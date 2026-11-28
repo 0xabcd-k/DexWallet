@@ -16,6 +16,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	SolanaSOLBeneficiary      bool                  `json:",optional"`
 	TONTestUSDTExecution      bool                  `json:",optional"`
 	TONNativeExecution        bool                  `json:",optional"`
 	TRONTestUSDTExecution     bool                  `json:",optional"`
@@ -60,6 +61,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
+	solBeneficiary                bool
 	tonExecution                  map[string]bool
 	tronExecution                 map[string]bool
 	baseETHWindow, baseUSDCWindow time.Duration
@@ -89,6 +91,9 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	} else if c.Market.Source != marketdata.Kraken || c.Market.MaxAge < time.Second || c.AsOf != 0 || c.ValidUntil != 0 {
 		return book, fmt.Errorf("exchange rates require a supported source, MaxAge of at least one second and no static time window")
 	}
+	if c.SolanaSOLBeneficiary && c.SolanaSOLReviewAfter <= 0 {
+		return book, fmt.Errorf("beneficiary deposits require a signable Devnet SOL route")
+	}
 	if c.SolanaSOLReviewAfter != 0 && (c.SolanaSOL == nil || c.SolanaSOLReviewAfter < time.Second) {
 		return book, fmt.Errorf("SOL authorization requires a Devnet SOL wallet route and a positive review interval of at least one second")
 	}
@@ -116,7 +121,7 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	if c.TONTestUSDTExecution && (c.TONTestUSDT == nil || tonMaster != TONDepositTestMaster) {
 		return book, fmt.Errorf("Jetton execution requires the canonical test USDT relay route")
 	}
-	book = depositBook{tonExecution: map[string]bool{tonDepositAsset: c.TONNativeExecution, TONDepositTestUSDT: c.TONTestUSDTExecution}, tronExecution: map[string]bool{TRONNileTRX: c.TRONTRXExecution, nileDepositUSDTID: c.TRONTestUSDTExecution}, baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	book = depositBook{solBeneficiary: c.SolanaSOLBeneficiary, tonExecution: map[string]bool{tonDepositAsset: c.TONNativeExecution, TONDepositTestUSDT: c.TONTestUSDTExecution}, tronExecution: map[string]bool{TRONNileTRX: c.TRONTRXExecution, nileDepositUSDTID: c.TRONTestUSDTExecution}, baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {
@@ -231,9 +236,23 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	return book, nil
 }
 
+// DepositBeneficiary is resolved from the public user idx before the payer sees the quote.
+type DepositBeneficiary struct {
+	UserID int64
+	Idx    string
+}
+
+func (b *DepositBeneficiary) PublicIdx() string {
+	if b == nil {
+		return ""
+	}
+	return b.Idx
+}
+
 type DepositPreview struct {
-	TON                             *TONDepositTerms `json:",omitempty"`
-	TRONReference                   *tronnative.Head `json:",omitempty"`
+	Beneficiary                     *DepositBeneficiary `json:",omitempty"`
+	TON                             *TONDepositTerms    `json:",omitempty"`
+	TRONReference                   *tronnative.Head    `json:",omitempty"`
 	BaseValidBefore                 int64
 	SolOrderIdx, SolMessage         string
 	SolLastValidHeight, SolReviewAt int64
@@ -264,7 +283,7 @@ func (s *Service) PreviewWalletDeposit(ctx context.Context, user int64, assetID,
 	if assetID == BaseSepoliaETH || assetID == baseusdc.AssetID {
 		return s.previewBaseDeposit(ctx, user, assetID, targetUSD, address)
 	}
-	return s.previewSolanaDeposit(ctx, user, assetID, targetUSD, address)
+	return s.previewSolanaDeposit(ctx, user, assetID, targetUSD, address, nil)
 }
 
 func (s *Service) PreviewDeposit(assetID, targetUSD string, now time.Time) (DepositPreview, error) {

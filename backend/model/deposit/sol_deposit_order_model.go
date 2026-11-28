@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -16,6 +17,7 @@ type (
 	// and implement the added methods in customSolDepositOrderModel.
 	SolDepositOrderModel interface {
 		solDepositOrderModel
+		ListBeneficiaryPayments(context.Context, int64, string, int) ([]BeneficiaryPayment, error)
 		LockByQuoteIdx(context.Context, string) (*SolDepositOrder, error)
 		MarkCredited(context.Context, int64, int64, decimal.Decimal) error
 		AdvanceExecution(context.Context, *SolDepositOrder, string, sql.NullString, string, int64, int64, int64) error
@@ -66,4 +68,28 @@ func (m *customSolDepositOrderModel) MarkCredited(ctx context.Context, id, vouch
 		return fmt.Errorf("SOL order %d credit marker affected %d rows", id, n)
 	}
 	return nil
+}
+
+type BeneficiaryPayment struct {
+	QuoteIdx       string    `db:"quote_idx"`
+	BeneficiaryIdx string    `db:"beneficiary_idx"`
+	PayQuantity    string    `db:"pay_quantity"`
+	TargetUSD      string    `db:"target_usd"`
+	AcceptedAt     time.Time `db:"accepted_at"`
+}
+
+func (m *customSolDepositOrderModel) ListBeneficiaryPayments(ctx context.Context, payer int64, before string, limit int) ([]BeneficiaryPayment, error) {
+	query := `SELECT o.quote_idx, q.snapshot_json->>'$.Beneficiary.Idx' AS beneficiary_idx,
+     q.snapshot_json->>'$.PayQuantity' AS pay_quantity, q.snapshot_json->>'$.TargetUSD' AS target_usd, o.accepted_at
+     FROM deposit_quote_confirmation q JOIN sol_deposit_order o ON o.quote_idx=q.quote_idx
+     WHERE q.user_id=? AND o.accepted_at IS NOT NULL AND q.snapshot_json->>'$.Beneficiary.Idx' IS NOT NULL`
+	args := []any{payer}
+	if before != "" {
+		query += ` AND o.id < (SELECT prev.id FROM sol_deposit_order prev JOIN deposit_quote_confirmation owner ON owner.quote_idx=prev.quote_idx WHERE prev.quote_idx=? AND owner.user_id=?)`
+		args = append(args, before, payer)
+	}
+	query += " ORDER BY o.id DESC LIMIT ?"
+	var rows []BeneficiaryPayment
+	err := m.conn.QueryRowsCtx(ctx, &rows, query, append(args, limit)...)
+	return rows, err
 }

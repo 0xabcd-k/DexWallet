@@ -29,6 +29,23 @@ func TestSolDepositSponsorVerifiesSignedInstructions(t *testing.T) {
 	msg := route.message([32]byte(source), hash, 110000, order)
 	base := DepositPreview{SolOrderIdx: order, AssetID: solanaDepositAsset, GasAssetID: solanaDepositAsset, WalletFeePreview: true,
 		FeePayer: devnetFeePayer, Recipient: devnetDepositRecipient, MaxGas: "0.00001", EstimatedGas: "0.00001", PayQuantity: "0.00011", WalletAddress: base58.Encode(source)}
+	t.Run("beneficiary bound to the signed payment", func(t *testing.T) {
+		q := base
+		q.Beneficiary = &DepositBeneficiary{UserID: 2, Idx: "01234567890123456"}
+		wire := route.message([32]byte(source), hash, 110000, solMemoReference(order, q.Beneficiary))
+		q.SolMessage = base64.StdEncoding.EncodeToString(wire)
+		q.MessageSHA256 = fmt.Sprintf("%x", sha256.Sum256(wire))
+		sig := base58.Encode(ed25519.Sign(key, wire))
+		if _, err := terms.Check(q, devnetFeePayer, sig); err != nil {
+			t.Fatal(err)
+		}
+		for _, replacement := range []*DepositBeneficiary{nil, {UserID: 3, Idx: "09876543210987654"}} {
+			q.Beneficiary = replacement
+			if _, err := terms.Check(q, devnetFeePayer, sig); err == nil {
+				t.Fatal("reassigned signed payment")
+			}
+		}
+	})
 	for _, tc := range []struct {
 		name    string
 		message []byte

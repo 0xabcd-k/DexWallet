@@ -11,7 +11,7 @@ const depositQuoteTTLms = 30_000;
 
 export const validDepositTarget = (value: string) => /^(0|[1-9]\d{0,17})(\.\d{1,2})?$/.test(value) && (atomicAmount(value, 2) ?? 0n) > 0n;
 
-export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: string, signal: AbortSignal, walletAddress?: string) {
+export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: string, signal: AbortSignal, walletAddress?: string, beneficiaryIdx?: string) {
   return userRequest('/v1/user/deposit-quotes/preview', value => {
     const q = decodeData<DepositQuoteData>(value);
     const units = (v: unknown, scale: number) => typeof v === 'string' ? atomicAmount(v, scale) : undefined;
@@ -74,7 +74,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
       typeof q.tonRecipient === 'string' && /^0:[a-f0-9]{64}$/.test(q.tonRecipient) &&
       typeof q.tonAuthorizationHash === 'string' && /^[a-f0-9]{64}$/.test(q.tonAuthorizationHash) &&
       (units(q.tonSimulatedGas, 9) ?? 0n) > 0n && units(q.tonSimulatedGas, 9)! <= (units(q.maxGas, 9) ?? 0n));
-    if (!validTon || !validTron || !validBase || !solTerms || !validOffer || !validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
+    if (q.beneficiaryIdx !== beneficiaryIdx || (beneficiaryIdx !== undefined && (asset.id !== solanaDepositSOL || (!!walletAddress && !q.solOrderIdx))) || !validTon || !validTron || !validBase || !solTerms || !validOffer || !validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||
       (q.rateSource !== undefined && q.rateSource !== 'test_sheet' && q.rateSource !== 'kraken') ||
@@ -82,7 +82,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
       q.asOf <= 0 || q.quotedAt < q.asOf || q.expiresAt <= q.quotedAt || q.expiresAt - q.quotedAt > depositQuoteTTLms || q.canSubmit !== false) throw new TypeError('Invalid test deposit estimate');
     return q;
   }, {
-    method: 'POST', body: { assetId: asset.id, targetUsd: target, walletAddress }, signal,
+    method: 'POST', body: { assetId: asset.id, targetUsd: target, walletAddress, beneficiaryIdx }, signal,
     ...(walletAddress ? { timeoutMs: depositQuoteTTLms } : {}),
   });
 }
@@ -91,7 +91,7 @@ export function confirmDepositQuote(quote: DepositQuoteData, lookupOnly: boolean
   const path = '/v1/user/deposit-quotes/' + (lookupOnly ? quote.quoteIdx : 'confirm');
   return userRequest(path, value => {
     const record = decodeData<ConfirmedDepositQuoteData>(value);
-    if (!record.quote || !Number.isSafeInteger(record.confirmedAt) || record.confirmedAt < quote.quotedAt || record.confirmedAt >= quote.expiresAt ||
+    if (!record.quote || record.quote.beneficiaryIdx !== quote.beneficiaryIdx || !Number.isSafeInteger(record.confirmedAt) || record.confirmedAt < quote.quotedAt || record.confirmedAt >= quote.expiresAt ||
       Object.entries(quote).some(([key, term]) => record.quote[key as keyof DepositQuoteData] !== term)) {
       throw new TypeError('Invalid deposit quote confirmation');
     }

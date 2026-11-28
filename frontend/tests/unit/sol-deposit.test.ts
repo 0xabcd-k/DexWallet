@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import beneficiary from '../../../backend/logic/chainassets/testdata/sol-beneficiary-deposit.json';
 import created from '../../../backend/logic/chainassets/testdata/usdc-self-deposit-create.json';
 import existing from '../../../backend/logic/chainassets/testdata/usdc-self-deposit-existing.json';
 import usdtCreated from '../../../backend/logic/chainassets/testdata/test-usdt-self-deposit-create.json';
@@ -73,4 +74,18 @@ it.each([created.quote, existing.quote, usdtCreated.quote, usdtExisting.quote])(
   expect(() => checkedSolMessage({ ...q, messageSha256: hash }, { ...o, messageSha256: hash, messageBase64: alteredMint.toString('base64') })).toThrow();
   const changed = 'a'.repeat(32);
   expect(() => checkedSolMessage({ ...q, solOrderIdx: changed }, { ...o, orderIdx: changed })).toThrow();
+});
+
+it('verifies the Devnet beneficiary payment and refuses reassignment or conversion to a self-deposit', () => {
+  const q = { ...quote, beneficiaryIdx: beneficiary.beneficiaryIdx, quoteIdx: beneficiary.quoteIdx, solOrderIdx: beneficiary.orderIdx,
+    walletAddress: beneficiary.walletAddress, solFeePayer: beneficiary.feePayer, solRecipient: beneficiary.recipient,
+    payQuantity: beneficiary.payQuantity, messageSha256: beneficiary.messageSha256 };
+  const o = { ...order, beneficiaryIdx: q.beneficiaryIdx, quoteIdx: q.quoteIdx, orderIdx: q.solOrderIdx,
+    messageBase64: beneficiary.messageBase64, messageSha256: q.messageSha256 };
+  expect(Buffer.from(checkedSolMessage(q, o)).toString('base64')).toBe(beneficiary.messageBase64);
+  const { beneficiaryIdx: _q, ...selfQuote } = q, { beneficiaryIdx: _o, ...selfOrder } = o;
+  expect(() => checkedSolMessage(q, selfOrder)).toThrow();
+  expect(() => checkedSolMessage(selfQuote, selfOrder)).toThrow();
+  const other = '09876543210987654';
+  expect(() => checkedSolMessage({ ...q, beneficiaryIdx: other }, { ...o, beneficiaryIdx: other })).toThrow();
 });

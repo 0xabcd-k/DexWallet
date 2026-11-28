@@ -14,7 +14,7 @@ export const decodeCatalog: Decoder<ChainNetwork[]> = value => {
     networkIDs.add(n.id);
     const assets = n.assets.map((a: unknown): ChainAsset => {
       if (!isRecord(a) || typeof a.id !== 'string' || !a.id.startsWith(`${n.id}:`) || assetIDs.has(a.id) ||
-        (a.depositPreview !== undefined && typeof a.depositPreview !== 'boolean') || typeof a.symbol !== 'string' || !/^[A-Z0-9]{1,12}$/.test(a.symbol) || typeof a.contract !== 'string' || a.contract.length > 128 ||
+        (a.beneficiaryDeposit !== undefined && typeof a.beneficiaryDeposit !== 'boolean') || (a.depositPreview !== undefined && typeof a.depositPreview !== 'boolean') || typeof a.symbol !== 'string' || !/^[A-Z0-9]{1,12}$/.test(a.symbol) || typeof a.contract !== 'string' || a.contract.length > 128 ||
         typeof a.decimals !== 'number' || !Number.isInteger(a.decimals) || a.decimals < 0 || a.decimals > 18 ||
         !['native', 'issuer', 'test_fixture'].includes(String(a.origin)) || (a.origin === 'test_fixture' && !n.testnet) ||
         (a.origin === 'native') !== (a.contract === '')) throw new TypeError('Invalid asset identity');

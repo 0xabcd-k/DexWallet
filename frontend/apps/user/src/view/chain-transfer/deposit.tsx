@@ -9,8 +9,9 @@ import { useViewingWallets } from '../../app/native/chain-assets/use-wallets';
 import { TonDepositOrder, LastTonDeposit } from './ton-deposit';
 import { TronDepositOrder, LastTronDeposit } from './tron-deposit';
 import { BaseDepositOrder, LastBaseDeposit } from './base-deposit';
-import { SolDepositAuthorization, LastSolDeposit } from './sol-deposit';
+import { BeneficiaryPaymentHistory, SolDepositAuthorization, LastSolDeposit } from './sol-deposit';
 import { Link } from 'react-router';
+import { solanaDepositSOL } from '../../app/native/chain-transfer/sol-deposit-asset';
 import { useChainCatalog } from './sources';
 
 export default function DepositButton({ userIdx }: { userIdx: string }) {
@@ -18,6 +19,7 @@ export default function DepositButton({ userIdx }: { userIdx: string }) {
   const [open, setOpen] = useState(false), [assetID, setAssetID] = useState(''), [target, setTarget] = useState('');
   return <>
     <Button block onClick={() => setOpen(true)}>{t('deposit')}</Button>
+    <BeneficiaryPaymentHistory userIdx={userIdx}/>
     <Popup visible={open} onMaskClick={() => setOpen(false)} onClose={() => setOpen(false)} showCloseButton>
       {open && <section className="payment-review transfer-result deposit-quote" role="dialog" aria-label={t('depositQuoteTitle')}>
         <h2>{t('depositQuoteTitle')}</h2><p>{t('depositBeneficiary', { idx: userIdx })}</p>
@@ -30,6 +32,20 @@ export default function DepositButton({ userIdx }: { userIdx: string }) {
       </section>}
     </Popup>
   </>;
+}
+
+export function BeneficiaryDeposit({ userIdx, beneficiaryIdx, target, selected, disabled, onSelect }: {
+  userIdx: string; beneficiaryIdx: string; target: string; selected: boolean; disabled: boolean; onSelect: () => void;
+}) {
+  const { t } = useTranslation(), catalog = useChainCatalog();
+  if (catalog.loading) return <p role="status">{t('common:loading')}</p>;
+  if (catalog.error !== undefined) return <><Failure error={catalog.error}/><Button onClick={catalog.retry}>{t('common:retry')}</Button></>;
+  const network = catalog.networks.find(n => n.id === 'solana-devnet' && n.testnet);
+  const asset = network?.assets.find(a => a.id === solanaDepositSOL && a.beneficiaryDeposit === true);
+  if (!network || !asset) return <p role="status">{t('beneficiaryUnavailable')}</p>;
+  if (!selected) return <Button block disabled={disabled} onClick={onSelect}>{t('beneficiaryPaySol')}</Button>;
+  return <><p>{t('depositTestNote')} · {t('chainNetwork_solana-devnet')} · SOL</p>
+    <DepositSteps network={network} asset={asset} native={asset} target={target} userIdx={userIdx} beneficiaryIdx={beneficiaryIdx}/></>;
 }
 
 function DepositFields({ userIdx, assetID, setAssetID, target, setTarget }: {
@@ -52,7 +68,7 @@ function DepositFields({ userIdx, assetID, setAssetID, target, setTarget }: {
   </>;
 }
 
-type EstimateInput = { asset: ChainAsset; native: ChainAsset; target: string };
+type EstimateInput = { asset: ChainAsset; native: ChainAsset; target: string; beneficiaryIdx?: string };
 
 function DepositSteps({ userIdx, network, ...input }: EstimateInput & { userIdx: string; network: ChainNetwork }) {
   const { t } = useTranslation();
@@ -67,7 +83,7 @@ function DepositSteps({ userIdx, network, ...input }: EstimateInput & { userIdx:
 function WalletEstimate({ userIdx, network, ...input }: EstimateInput & { userIdx: string; network: ChainNetwork }) {
   const { t } = useTranslation(), source = useViewingWallets(userIdx);
   const [walletID, setWalletID] = useState(''), [search, setSearch] = useState('');
-  const compatible = source.wallets.filter(w => addressFor(w, network));
+  const compatible = source.wallets.filter(w => (!input.beneficiaryIdx || w.source === 'local') && addressFor(w, network));
   const wallet = compatible.find(w => w.id === walletID);
   const address = wallet && addressFor(wallet, network);
   return <>
@@ -84,7 +100,7 @@ function WalletEstimate({ userIdx, network, ...input }: EstimateInput & { userId
   </>;
 }
 
-export function DepositEstimate({ asset, native, target, walletAddress, local, onChooseWallet, preview = previewDeposit }: EstimateInput & {
+export function DepositEstimate({ asset, native, target, beneficiaryIdx, walletAddress, local, onChooseWallet, preview = previewDeposit }: EstimateInput & {
   walletAddress?: string; local?: { userIdx: string; walletId: string }; onChooseWallet?: () => void; preview?: typeof previewDeposit;
 }) {
   const { t } = useTranslation();
@@ -108,7 +124,7 @@ export function DepositEstimate({ asset, native, target, walletAddress, local, o
     const request = new AbortController(); active.current = request;
     setQuote(undefined); setConfirmedAt(undefined); setAttempted(false); setError(undefined); setBusy(true);
     try {
-      const next = await preview(asset, native, target, request.signal, walletAddress);
+      const next = await preview(asset, native, target, request.signal, walletAddress, beneficiaryIdx);
       if (!request.signal.aborted) {
         const deadline = started + (next.expiresAt - next.quotedAt);
         setExpired(Date.now() >= deadline);

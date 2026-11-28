@@ -18,7 +18,7 @@ import (
 // The sponsor signature slot remains empty. Simulation never broadcasts a transaction.
 func (s *Service) CheckSolDeposit(ctx context.Context, user int64, q DepositPreview, msg, userSignature []byte) error {
 	route := s.quotes.solana[q.AssetID]
-	if q.SolOrderIdx == "" || route == nil || s.quotes.solReviewAfter[q.AssetID] <= 0 ||
+	if (q.Beneficiary != nil && !s.SupportsBeneficiaryDeposit(q.AssetID)) || q.SolOrderIdx == "" || route == nil || s.quotes.solReviewAfter[q.AssetID] <= 0 ||
 		q.Recipient != base58.Encode(route.recipient[:]) || q.FeePayer != base58.Encode(route.payer[:]) {
 		return apperror.New(apperror.Unprocessable, errors.New("SOL deposit authorization unavailable for this quote"))
 	}

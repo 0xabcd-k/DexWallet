@@ -382,6 +382,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				},
 				{
 					Method:  http.MethodGet,
+					Path:    "/v1/user/sol-beneficiary-payments",
+					Handler: chainassets.BeneficiarySolPaymentsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
 					Path:    "/v1/user/sol-deposit-orders/:quoteIdx",
 					Handler: chainassets.GetSolDepositHandler(serverCtx),
 				},

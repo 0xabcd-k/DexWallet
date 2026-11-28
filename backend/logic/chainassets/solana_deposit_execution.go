@@ -69,6 +69,9 @@ func (t SolDepositTerms) token(sender string) (solanaspl.Transfer, error) {
 // Reconstruct the quoted message independently of the stored wire.
 // Only the original recent blockhash comes from the signed bytes.
 func (t SolDepositTerms) Check(q DepositPreview, payer, userSignature string) ([]byte, error) {
+	if q.Beneficiary != nil && (q.AssetID != solanaDepositAsset || q.Beneficiary.UserID <= 0 || q.Beneficiary.Idx == "") {
+		return nil, errors.New("invalid SOL deposit beneficiary")
+	}
 	if len(q.SolOrderIdx) != 32 || !t.Valid() || q.GasAssetID != solanaDepositAsset ||
 		!q.WalletFeePreview || q.FeePayer != payer || q.Recipient != t.Recipient ||
 		q.EstimatedGas != q.MaxGas || decimal.New(t.FeeLamports, -9).String() != q.MaxGas {
@@ -111,7 +114,7 @@ func (t SolDepositTerms) Check(q DepositPreview, payer, userSignature string) ([
 		if q.AssetID != solanaDepositAsset || q.AccountFunding != "" || decimal.New(t.GrossLamports, -9).String() != q.PayQuantity || len(msg) < offset+32 {
 			return nil, errors.New("invalid SOL deposit terms")
 		}
-		expected = route.message(source, msg[offset:offset+32], uint64(t.GrossLamports), q.SolOrderIdx)
+		expected = route.message(source, msg[offset:offset+32], uint64(t.GrossLamports), solMemoReference(q.SolOrderIdx, q.Beneficiary))
 	}
 	if !bytes.Equal(expected, msg) {
 		return nil, errors.New("deposit instructions differ from authorization")

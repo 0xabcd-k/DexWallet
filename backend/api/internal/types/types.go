@@ -213,13 +213,38 @@ type BaseDepositOrderResponse struct {
 	Data    BaseDepositOrderData `json:"data"`
 }
 
+type BeneficiaryPayment struct {
+	QuoteIdx       string `json:"quoteIdx"`
+	BeneficiaryIdx string `json:"beneficiaryIdx"`
+	PayQuantity    string `json:"payQuantity"`
+	TargetUsd      string `json:"targetUsd"`
+	AcceptedAt     int64  `json:"acceptedAt"`
+}
+
+type BeneficiaryPaymentsData struct {
+	Items      []BeneficiaryPayment `json:"items"`
+	NextCursor string               `json:"nextCursor,optional,omitempty"`
+}
+
+type BeneficiaryPaymentsRequest struct {
+	Before string `form:"before,optional"`
+}
+
+type BeneficiaryPaymentsResponse struct {
+	Code    string                  `json:"code,options=OK"`
+	Message string                  `json:"message"`
+	TraceId string                  `json:"traceId"`
+	Data    BeneficiaryPaymentsData `json:"data"`
+}
+
 type ChainAsset struct {
-	Id             string `json:"id"`
-	Symbol         string `json:"symbol"`
-	Contract       string `json:"contract"`
-	Decimals       int    `json:"decimals"`
-	Origin         string `json:"origin,options=native|issuer|test_fixture"`
-	DepositPreview bool   `json:"depositPreview,optional"`
+	Id                 string `json:"id"`
+	Symbol             string `json:"symbol"`
+	Contract           string `json:"contract"`
+	Decimals           int    `json:"decimals"`
+	Origin             string `json:"origin,options=native|issuer|test_fixture"`
+	DepositPreview     bool   `json:"depositPreview,optional"`
+	BeneficiaryDeposit bool   `json:"beneficiaryDeposit,optional,omitempty"`
 }
 
 type ChainAssetBalance struct {
@@ -395,6 +420,7 @@ type DepositQuoteConfirmRequest struct {
 }
 
 type DepositQuoteData struct {
+	BeneficiaryIdx       string `json:"beneficiaryIdx,optional,omitempty"`
 	TonSenderPaidGas     string `json:"tonSenderPaidGas,optional,omitempty"`
 	TonJettonWalletCode  string `json:"tonJettonWalletCode,optional,omitempty"`
 	TonSimulatedGas      string `json:"tonSimulatedGas,optional,omitempty"`
@@ -447,9 +473,10 @@ type DepositQuoteLookupRequest struct {
 }
 
 type DepositQuoteRequest struct {
-	AssetId       string `json:"assetId"`
-	TargetUsd     string `json:"targetUsd"`
-	WalletAddress string `json:"walletAddress,optional"`
+	BeneficiaryIdx string `json:"beneficiaryIdx,optional,omitempty"`
+	AssetId        string `json:"assetId"`
+	TargetUsd      string `json:"targetUsd"`
+	WalletAddress  string `json:"walletAddress,optional"`
 }
 
 type DepositQuoteResponse struct {
@@ -961,6 +988,7 @@ type SolDepositAuthorizeRequest struct {
 }
 
 type SolDepositOrderData struct {
+	BeneficiaryIdx        string `json:"beneficiaryIdx,optional,omitempty"`
 	QuoteIdx              string `json:"quoteIdx"`
 	OrderIdx              string `json:"orderIdx"`
 	State                 string `json:"state,options=awaiting_signature|accepted"`

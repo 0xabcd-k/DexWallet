@@ -1090,6 +1090,7 @@ type (
         Decimals int `json:"decimals"`
         Origin string `json:"origin,options=native|issuer|test_fixture"`
         DepositPreview bool `json:"depositPreview,optional"`
+        BeneficiaryDeposit bool `json:"beneficiaryDeposit,optional,omitempty"`
     }
     ChainNetwork {
         Id string `json:"id"`
@@ -1186,13 +1187,15 @@ service platform {
     post /v1/user/chain-transfers/preview (ChainTransferPreviewRequest) returns (ChainTransferPreviewResponse)
 }
 
-// Indicative testnet estimate for the authenticated user's own USD balance.
+// Omitting beneficiaryIdx selects the authenticated user.
 type DepositQuoteRequest {
+    BeneficiaryIdx string `json:"beneficiaryIdx,optional,omitempty"`
     AssetId string `json:"assetId"`
     TargetUsd string `json:"targetUsd"`
     WalletAddress string `json:"walletAddress,optional"`
 }
 type DepositQuoteData {
+    BeneficiaryIdx string `json:"beneficiaryIdx,optional,omitempty"`
     TonSenderPaidGas string `json:"tonSenderPaidGas,optional,omitempty"`
     TonJettonWalletCode string `json:"tonJettonWalletCode,optional,omitempty"`
     TonSimulatedGas string `json:"tonSimulatedGas,optional,omitempty"`
@@ -1343,6 +1346,7 @@ type SolDepositAuthorizeRequest {
     UserSignature string `json:"userSignature"`
 }
 type SolDepositOrderData {
+    BeneficiaryIdx string `json:"beneficiaryIdx,optional,omitempty"`
     QuoteIdx string `json:"quoteIdx"`
     OrderIdx string `json:"orderIdx"`
     State string `json:"state,options=awaiting_signature|accepted"`
@@ -1359,6 +1363,26 @@ type SolDepositOrderData {
     QuoteExpiresAt int64 `json:"quoteExpiresAt"`
     ReviewAfter int64 `json:"reviewAfter"`
     AcceptedAt int64 `json:"acceptedAt,optional,omitempty"`
+}
+type BeneficiaryPaymentsRequest {
+    Before string `form:"before,optional"`
+}
+type BeneficiaryPayment {
+    QuoteIdx string `json:"quoteIdx"`
+    BeneficiaryIdx string `json:"beneficiaryIdx"`
+    PayQuantity string `json:"payQuantity"`
+    TargetUsd string `json:"targetUsd"`
+    AcceptedAt int64 `json:"acceptedAt"`
+}
+type BeneficiaryPaymentsData {
+    Items []BeneficiaryPayment `json:"items"`
+    NextCursor string `json:"nextCursor,optional,omitempty"`
+}
+type BeneficiaryPaymentsResponse {
+    Code string `json:"code,options=OK"`
+    Message string `json:"message"`
+    TraceId string `json:"traceId"`
+    Data BeneficiaryPaymentsData `json:"data"`
 }
 type SolDepositOrderResponse {
     Code string `json:"code,options=OK"`
@@ -1384,6 +1408,8 @@ service platform {
     post /v1/user/base-deposit-orders/authorize (BaseDepositAuthorizeRequest) returns (BaseDepositOrderResponse)
     @handler getBaseDeposit
     get /v1/user/base-deposit-orders/:quoteIdx (DepositQuoteLookupRequest) returns (BaseDepositOrderResponse)
+    @handler beneficiarySolPayments
+    get /v1/user/sol-beneficiary-payments (BeneficiaryPaymentsRequest) returns (BeneficiaryPaymentsResponse)
     @handler prepareSolDeposit
     post /v1/user/sol-deposit-orders/prepare (DepositQuoteConfirmRequest) returns (SolDepositOrderResponse)
     @handler authorizeSolDeposit

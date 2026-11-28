@@ -223,6 +223,32 @@ export interface BaseDepositOrderResponse {
 	data: BaseDepositOrderData
 }
 
+export interface BeneficiaryPayment {
+	quoteIdx: string
+	beneficiaryIdx: string
+	payQuantity: string
+	targetUsd: string
+	acceptedAt: number
+}
+
+export interface BeneficiaryPaymentsData {
+	items: Array<BeneficiaryPayment>
+	nextCursor?: string
+}
+
+export interface BeneficiaryPaymentsRequest {
+}
+export interface BeneficiaryPaymentsRequestParams {
+	before?: string
+}
+
+export interface BeneficiaryPaymentsResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: BeneficiaryPaymentsData
+}
+
 export interface ChainAsset {
 	id: string
 	symbol: string
@@ -230,6 +256,7 @@ export interface ChainAsset {
 	decimals: number
 	origin: 'native' | 'issuer' | 'test_fixture'
 	depositPreview?: boolean
+	beneficiaryDeposit?: boolean
 }
 
 export interface ChainAssetBalance {
@@ -408,6 +435,7 @@ export interface DepositQuoteConfirmRequest {
 }
 
 export interface DepositQuoteData {
+	beneficiaryIdx?: string
 	tonSenderPaidGas?: string
 	tonJettonWalletCode?: string
 	tonSimulatedGas?: string
@@ -461,6 +489,7 @@ export interface DepositQuoteLookupRequestParams {
 }
 
 export interface DepositQuoteRequest {
+	beneficiaryIdx?: string
 	assetId: string
 	targetUsd: string
 	walletAddress?: string
@@ -992,6 +1021,7 @@ export interface SolDepositAuthorizeRequest {
 }
 
 export interface SolDepositOrderData {
+	beneficiaryIdx?: string
 	quoteIdx: string
 	orderIdx: string
 	state: 'awaiting_signature' | 'accepted'

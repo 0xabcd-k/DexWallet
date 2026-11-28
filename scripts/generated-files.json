@@ -1,7 +1,7 @@
 {
   "generated": {
-    "backend/api/internal/handler/routes.go": "d01281f714a9d7d0b1b17adf2afc82382284e5f84de7ec5d2f4691a42dd14fbb",
-    "backend/api/internal/types/types.go": "443b7456cd3c9e1280898864fb0b117f67e0568c74d1baad32022f4cd670ce89",
+    "backend/api/internal/handler/routes.go": "4a21ecabb29b4e862cfd99061af13b37d02f04494421f1de4cccddae3d7d7149",
+    "backend/api/internal/types/types.go": "eac6cd96dc94508614c4beff29179b6f29099eb0b8ec9bea6badaaba5f437e3d",
     "backend/apperror/codes_gen.go": "4b434f65456f36b4553c690a4b0d84c9ab33875cf049055d91703314dd10c76a",
     "backend/model/account/account_hold_model_gen.go": "655b47b540fb7dad9b6e587dcf64d61741bb6d66353f4ccf23ec531e4ebb4b04",
     "backend/model/account/ledger_entry_model_gen.go": "9d04c873851e71ec5a318a252a217e855ad2060bec1990715d1ac9cd71f20425",
@@ -51,7 +51,7 @@
     "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
     "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
     "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c",
-    "frontend/packages/api-contract/src/platform.ts": "db06a4ed519eb91a19eb6b1035bdcc0311a3e02f53ae0f383331956466ac98d0"
+    "frontend/packages/api-contract/src/platform.ts": "4162561597518c1c357d375ff5b22c6347d710b019f6af5125584fb8b0b2ad37"
   },
   "scaffold": [
     "backend/api/etc/platform.yaml",
@@ -98,6 +98,7 @@
     "backend/api/internal/handler/chainassets/authorize_sol_deposit_handler.go",
     "backend/api/internal/handler/chainassets/authorize_ton_deposit_handler.go",
     "backend/api/internal/handler/chainassets/authorize_tron_deposit_handler.go",
+    "backend/api/internal/handler/chainassets/beneficiary_sol_payments_handler.go",
     "backend/api/internal/handler/chainassets/chain_asset_catalog_handler.go",
     "backend/api/internal/handler/chainassets/chain_balances_handler.go",
     "backend/api/internal/handler/chainassets/chain_target_handler.go",
@@ -189,6 +190,7 @@
     "backend/api/internal/logic/chainassets/authorize_sol_deposit_logic.go",
     "backend/api/internal/logic/chainassets/authorize_ton_deposit_logic.go",
     "backend/api/internal/logic/chainassets/authorize_tron_deposit_logic.go",
+    "backend/api/internal/logic/chainassets/beneficiary_sol_payments_logic.go",
     "backend/api/internal/logic/chainassets/chain_asset_catalog_logic.go",
     "backend/api/internal/logic/chainassets/chain_balances_logic.go",
     "backend/api/internal/logic/chainassets/chain_target_logic.go",

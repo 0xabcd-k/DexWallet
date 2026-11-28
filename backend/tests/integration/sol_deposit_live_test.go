@@ -34,14 +34,21 @@ type liveDepositToken struct {
 
 // Explicit live test using only the user key of the funded disposable Devnet fixture.
 func TestSolanaDevnetDepositAuthorization(t *testing.T) {
-	liveSolOrder(t, false, nil, 0)
+	liveSolOrder(t, false, nil, 0, false)
 }
 
 func TestSolanaDevnetDepositExecution(t *testing.T) {
 	if os.Getenv("DEXWALLET_TEST_SOL_EXECUTE") != "1" {
 		t.Skip("explicit one-order Devnet SOL transfer only")
 	}
-	liveSolOrder(t, true, nil, 0)
+	liveSolOrder(t, true, nil, 0, false)
+}
+
+func TestSolanaDevnetBeneficiaryDepositExecution(t *testing.T) {
+	if os.Getenv("DEXWALLET_TEST_SOL_BENEFICIARY_EXECUTE") != "1" {
+		t.Skip("explicit one-order Devnet SOL transfer for another user only")
+	}
+	liveSolOrder(t, true, nil, 0, true)
 }
 
 // Two independent orders use the same dedicated recipient. Only the first may fund its ATA.
@@ -61,13 +68,13 @@ func TestSolanaDevnetTestUSDTDepositExecution(t *testing.T) {
 
 func liveTokenOrders(t *testing.T, token liveDepositToken) {
 	t.Helper()
-	if !t.Run("create", func(t *testing.T) { liveSolOrder(t, true, &token, 1488440) }) {
+	if !t.Run("create", func(t *testing.T) { liveSolOrder(t, true, &token, 1488440, false) }) {
 		return
 	}
-	t.Run("existing", func(t *testing.T) { liveSolOrder(t, true, &token, 0) })
+	t.Run("existing", func(t *testing.T) { liveSolOrder(t, true, &token, 0, false) })
 }
 
-func liveSolOrder(t *testing.T, execute bool, token *liveDepositToken, funding int64) {
+func liveSolOrder(t *testing.T, execute bool, token *liveDepositToken, funding int64, forOther bool) {
 	t.Helper()
 	keyFile := os.Getenv("DEXWALLET_TEST_SOL_USER_KEY_FILE")
 	if keyFile == "" {
@@ -98,6 +105,9 @@ func liveSolOrder(t *testing.T, execute bool, token *liveDepositToken, funding i
 	if execute {
 		resource = "sol_deposit_exec"
 	}
+	if forOther {
+		resource = "sol_for_other"
+	}
 	if token != nil {
 		resource = token.resource + "_existing"
 		if funding > 0 {
@@ -112,7 +122,7 @@ func liveSolOrder(t *testing.T, execute bool, token *liveDepositToken, funding i
 	now := time.Now().Unix()
 	assetID := "solana-devnet:sol"
 	route := &chainassets.SolanaDepositFeeConfig{FeePayer: "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN", Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}
-	config := &chainassets.DepositQuoteConfig{SolanaSOLReviewAfter: 10 * time.Minute, Version: "devnet-auth-test", AsOf: now - 60, ValidUntil: now + 300, SolanaSOL: route, Assets: []chainassets.DepositQuoteRate{{AssetID: assetID, USDPerCoin: "100", EstimatedGas: "0"}}}
+	config := &chainassets.DepositQuoteConfig{SolanaSOLBeneficiary: forOther, SolanaSOLReviewAfter: 10 * time.Minute, Version: "devnet-auth-test", AsOf: now - 60, ValidUntil: now + 300, SolanaSOL: route, Assets: []chainassets.DepositQuoteRate{{AssetID: assetID, USDPerCoin: "100", EstimatedGas: "0"}}}
 	terms := chainassets.SolDepositTerms{Recipient: route.Recipient, GrossLamports: 110000, FeeLamports: 10000}
 	network := chainassets.Endpoint{Network: chainassets.SolanaDevnet, URL: endpoint}
 	if token != nil {
@@ -141,7 +151,15 @@ func liveSolOrder(t *testing.T, execute bool, token *liveDepositToken, funding i
 	orders := deposit.NewSolOrders(conn, quotes, users, transaction.New(db), chain)
 	actor := user.Actor{UserID: 1, AuthVersion: 1}
 	ctx := context.Background()
-	q, err := chain.PreviewWalletDeposit(ctx, actor.UserID, assetID, "0.01", wallet)
+	creditUser := actor.UserID
+	var q chainassets.DepositPreview
+	if forOther {
+		mustExec(t, db, "INSERT INTO user(id,nickname) VALUES(2,'beneficiary')")
+		creditUser = 2
+		q, err = chain.PreviewBeneficiaryDeposit(ctx, actor.UserID, chainassets.DepositBeneficiary{UserID: creditUser, Idx: "01234567890123456"}, assetID, "0.01", wallet)
+	} else {
+		q, err = chain.PreviewWalletDeposit(ctx, actor.UserID, assetID, "0.01", wallet)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +257,17 @@ func liveSolOrder(t *testing.T, execute bool, token *liveDepositToken, funding i
 				t.Fatal("USD settlement", err)
 			}
 		}
-		entries, err := ledger.Entries(ctx, actor.UserID, accounts.KindUSD, 0, 2)
+		if forOther {
+			payer, err := ledger.Entries(ctx, actor.UserID, accounts.KindUSD, 0, 2)
+			if err != nil || len(payer.Entries) != 0 {
+				t.Fatal("payer received a USD entry", err)
+			}
+			records, _, err := orders.BeneficiaryPayments(ctx, actor.UserID, "")
+			if err != nil || len(records) != 1 || records[0].QuoteIdx != q.QuoteIdx || records[0].BeneficiaryIdx != q.Beneficiary.Idx {
+				t.Fatal("payer history", err)
+			}
+		}
+		entries, err := ledger.Entries(ctx, creditUser, accounts.KindUSD, 0, 2)
 		if err != nil || len(entries.Entries) != 1 || entries.Entries[0].DepositOrderIdx != o.OrderIdx || entries.Entries[0].BalanceAfter.StringFixed(2) != "0.01" {
 			t.Fatal("owner statement", err)
 		}

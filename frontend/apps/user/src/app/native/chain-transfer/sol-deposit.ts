@@ -1,5 +1,5 @@
 import { decodeData } from '@dexwallet/api-client';
-import type { DepositQuoteData, SolDepositOrderData } from '@dexwallet/api-contract/platform';
+import type { BeneficiaryPaymentsData, DepositQuoteData, SolDepositOrderData } from '@dexwallet/api-contract/platform';
 import { base58, base64 } from '@scure/base';
 import { bytesToHex, concatBytes } from '@noble/hashes/utils.js';
 import { sha256 } from '@noble/hashes/sha2.js';
@@ -18,11 +18,23 @@ const encoder = new TextEncoder();
 const orders = '/v1/user/sol-deposit-orders/';
 const idxFormat = /^[a-f0-9]{32}$/;
 const memoProgram = base58.decode('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
-export const lastSolQuoteKey = (userIdx: string) => 'dexwallet:sol-deposit:last:' + userIdx;
+export const lastSolQuoteKey = (userIdx: string, forOther = false) =>
+  (forOther ? 'dexwallet:sol-deposit:last-beneficiary:' : 'dexwallet:sol-deposit:last:') + userIdx;
+
+export function getBeneficiaryPayments(before: string, signal: AbortSignal) {
+  return userRequest('/v1/user/sol-beneficiary-payments' + (before ? '?before=' + encodeURIComponent(before) : ''), value => {
+    const page = decodeData<BeneficiaryPaymentsData>(value);
+    if (!Array.isArray(page.items) || page.items.some(p => !p || !idxFormat.test(p.quoteIdx) ||
+      !/^0\d{16,19}$/.test(p.beneficiaryIdx) || (atomicAmount(p.payQuantity, 9) ?? 0n) <= 0n ||
+      (atomicAmount(p.targetUsd, 2) ?? 0n) <= 0n || !Number.isSafeInteger(p.acceptedAt) || p.acceptedAt <= 0) ||
+      (page.nextCursor !== undefined && page.nextCursor !== page.items.at(-1)?.quoteIdx)) throw new TypeError('Invalid SOL payment history');
+    return page;
+  }, { signal });
+}
 
 function orderData(value: unknown, idx: string) {
   const o = decodeData<SolDepositOrderData>(value);
-  if (o.quoteIdx !== idx || !idxFormat.test(o.orderIdx) || typeof o.messageBase64 !== 'string' || o.messageBase64.length > 1024 ||
+  if ((o.beneficiaryIdx !== undefined && (!/^0\d{16,19}$/.test(o.beneficiaryIdx) || o.assetId !== sol)) || o.quoteIdx !== idx || !idxFormat.test(o.orderIdx) || typeof o.messageBase64 !== 'string' || o.messageBase64.length > 1024 ||
     !/^[a-f0-9]{64}$/.test(o.messageSha256) || !Number.isSafeInteger(o.lastValidBlockHeight) || o.lastValidBlockHeight <= 0 ||
     !Number.isSafeInteger(o.quoteExpiresAt) || !Number.isSafeInteger(o.reviewAfter) || o.reviewAfter <= o.quoteExpiresAt ||
     !(o.state === 'awaiting_signature' && o.acceptedAt === undefined ||
@@ -82,7 +94,7 @@ function tokenDepositMessage(msg: Uint8Array, mint: Uint8Array, payer: Uint8Arra
 // Rebuild the signed transfer, optional ATA creation and order memo before unlocking the wallet.
 export function checkedSolMessage(q: DepositQuoteData, o: SolDepositOrderData) {
   const mint = depositTokenMint(q.assetId);
-  if (!q.quoteIdx || q.quoteIdx !== o.quoteIdx || !q.solOrderIdx || !idxFormat.test(q.solOrderIdx) || q.solOrderIdx !== o.orderIdx ||
+  if (q.beneficiaryIdx !== o.beneficiaryIdx || !q.quoteIdx || q.quoteIdx !== o.quoteIdx || !q.solOrderIdx || !idxFormat.test(q.solOrderIdx) || q.solOrderIdx !== o.orderIdx ||
     q.expiresAt !== o.quoteExpiresAt || (q.assetId !== sol && !mint) || q.assetId !== (o.assetId ?? sol) || q.gasAssetId !== sol ||
     !q.walletAddress || !q.solFeePayer || !q.solRecipient || new Set([q.walletAddress,q.solFeePayer,q.solRecipient]).size !== 3 ||
     q.estimatedGas !== q.maxGas || q.messageSha256 !== o.messageSha256) throw new TypeError('SOL order differs from wallet quote');
@@ -91,7 +103,8 @@ export function checkedSolMessage(q: DepositQuoteData, o: SolDepositOrderData) {
   if (amount === undefined || amount <= 0n || amount > 0xffffffffffffffffn) throw new TypeError('Invalid SOL transfer amount');
   const quantity = new Uint8Array(8);
   new DataView(quantity.buffer).setBigUint64(0, amount, true);
-  const memo = encoder.encode('dexwallet:deposit:' + o.orderIdx);
+  const suffix = q.beneficiaryIdx ? ':' + bytesToHex(sha256(encoder.encode(o.orderIdx + ':' + q.beneficiaryIdx))) : '';
+  const memo = encoder.encode('dexwallet:deposit:' + o.orderIdx + suffix);
   const keys = [q.solFeePayer, q.walletAddress, q.solRecipient].map(s => base58.decode(s));
   if (keys.some(k => k.length !== 32)) throw new TypeError('Invalid SOL account');
   const header = Uint8Array.of(2, 0, 2, 5);
@@ -126,6 +139,6 @@ export async function authorizeSolDeposit(userIdx: string, walletId: string, quo
   const userSignature = await signLocalSolDeposit(userIdx, walletId, quote, order, signal);
   checkTime();
   const accepted = await userRequest(orders + 'authorize', read, { method: 'POST', body: { quoteIdx: idx, userSignature }, signal });
-  if (accepted.state !== 'accepted' || accepted.assetId !== quote.assetId || accepted.orderIdx !== order.orderIdx || accepted.messageSha256 !== order.messageSha256) throw new TypeError('Invalid SOL acceptance');
+  if (accepted.beneficiaryIdx !== quote.beneficiaryIdx || accepted.state !== 'accepted' || accepted.assetId !== quote.assetId || accepted.orderIdx !== order.orderIdx || accepted.messageSha256 !== order.messageSha256) throw new TypeError('Invalid SOL acceptance');
   return accepted;
 }

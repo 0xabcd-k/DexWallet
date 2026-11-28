@@ -88,7 +88,7 @@ func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, cal
 	}))
 	defer rpc.Close()
 	now := time.Now()
-	cfg := chainassets.Config{Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: rpc.URL}}, DepositQuotes: &chainassets.DepositQuoteConfig{Version: "sign-test", AsOf: now.Unix() - 60, ValidUntil: now.Unix() + 300, SolanaSOLReviewAfter: time.Minute,
+	cfg := chainassets.Config{Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: rpc.URL}}, DepositQuotes: &chainassets.DepositQuoteConfig{Version: "sign-test", AsOf: now.Unix() - 60, ValidUntil: now.Unix() + 300, SolanaSOLBeneficiary: true, SolanaSOLReviewAfter: time.Minute,
 		SolanaSOL: &chainassets.SolanaDepositFeeConfig{FeePayer: base58.Encode(payer), Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}, Assets: []chainassets.DepositQuoteRate{{AssetID: "solana-devnet:sol", USDPerCoin: "100", EstimatedGas: "0"}}}}
 	chain, err := chainassets.New(cfg, solTestLimit{})
 	if err != nil {
@@ -102,10 +102,11 @@ func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, cal
 	s.DepositConfirmations = deposit.NewConfirmations(conn, s.Redis, s.Namespace)
 	s.SolDepositOrders = deposit.NewSolOrders(conn, s.DepositConfirmations, s.Users, s.Tx, chain)
 	const path = "/v1/user/sol-deposit-orders/"
+	beneficiaryIdx := ""
 	newQuote := func() types.DepositQuoteData {
-		_, raw := call("POST", "/v1/user/deposit-quotes/preview", token, types.DepositQuoteRequest{AssetId: "solana-devnet:sol", TargetUsd: "1", WalletAddress: base58.Encode(pub)}, 200, "OK")
+		_, raw := call("POST", "/v1/user/deposit-quotes/preview", token, types.DepositQuoteRequest{BeneficiaryIdx: beneficiaryIdx, AssetId: "solana-devnet:sol", TargetUsd: "1", WalletAddress: base58.Encode(pub)}, 200, "OK")
 		var q types.DepositQuoteData
-		if err = json.Unmarshal(raw, &q); err != nil || len(q.SolOrderIdx) != 32 {
+		if err = json.Unmarshal(raw, &q); err != nil || len(q.SolOrderIdx) != 32 || q.BeneficiaryIdx != beneficiaryIdx {
 			t.Fatal(q, err)
 		}
 		call("POST", "/v1/user/deposit-quotes/confirm", token, types.DepositQuoteConfirmRequest{QuoteIdx: q.QuoteIdx}, 200, "OK")
@@ -306,6 +307,30 @@ func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, cal
 	if err != nil {
 		t.Fatal(err)
 	}
+	// A keeps the signed payment record while only B receives a USD posting.
+	recipient, err := s.DB.Exec("INSERT INTO user(nickname) VALUES('sol-beneficiary')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	beneficiary, err := recipient.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	beneficiaryIdx, err = s.UserIdx.Encode(beneficiary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	receiver, _, err := s.Tokens.Issue(beneficiary, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	self, err := s.UserIdx.Encode(owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const preview = "/v1/user/deposit-quotes/preview"
+	call("POST", preview, token, types.DepositQuoteRequest{AssetId: q.AssetId, TargetUsd: "1", BeneficiaryIdx: self}, 400, "INVALID_ARGUMENT")
+	call("POST", preview, token, types.DepositQuoteRequest{AssetId: "solana-devnet:usdc", TargetUsd: "1", BeneficiaryIdx: beneficiaryIdx}, 400, "INVALID_ARGUMENT")
 	success := newQuote()
 	_, raw = call("POST", path+"prepare", token, types.DepositQuoteConfirmRequest{QuoteIdx: success.QuoteIdx}, 200, "OK")
 	if err = json.Unmarshal(raw, &order); err != nil {
@@ -315,7 +340,15 @@ func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, cal
 	if err != nil {
 		t.Fatal(err)
 	}
-	call("POST", path+"authorize", token, types.SolDepositAuthorizeRequest{QuoteIdx: success.QuoteIdx, UserSignature: base58.Encode(ed25519.Sign(sk, msg))}, 200, "OK")
+	authorize := types.SolDepositAuthorizeRequest{QuoteIdx: success.QuoteIdx, UserSignature: base58.Encode(ed25519.Sign(sk, msg))}
+	if _, err = s.DB.Exec("UPDATE user SET status='disabled' WHERE id=?", beneficiary); err != nil {
+		t.Fatal(err)
+	}
+	call("POST", path+"authorize", token, authorize, 404, "TRANSFER_RECIPIENT_UNAVAILABLE")
+	if _, err = s.DB.Exec("UPDATE user SET status='active' WHERE id=?", beneficiary); err != nil {
+		t.Fatal(err)
+	}
+	call("POST", path+"authorize", token, authorize, 200, "OK")
 	if _, err = deposit.CreditSol(ctx, s.Tx, s.Accounts, success.QuoteIdx); !errors.Is(err, deposit.ErrSolNotFinalized) {
 		t.Fatal("accepted order credited", err)
 	}
@@ -330,7 +363,23 @@ func checkSolOrderHTTP(t *testing.T, s *shared.ServiceContext, token string, cal
 	if row, err := run.Step(ctx); err != nil || row.ExecutionState != deposit.SolFinalized {
 		t.Fatal("finalize", err)
 	}
-	checkSolCreditHTTP(t, s, success, token, viewer, call)
+	checkSolCreditHTTP(t, s, success, token, receiver, viewer, call)
+	const history = "/v1/user/sol-beneficiary-payments"
+	for _, who := range []string{token, receiver, viewer} {
+		_, raw = call("GET", history, who, nil, 200, "OK")
+		var data types.BeneficiaryPaymentsData
+		if err = json.Unmarshal(raw, &data); err != nil {
+			t.Fatal(err)
+		}
+		if who == token {
+			if len(data.Items) != 1 || data.Items[0].QuoteIdx != success.QuoteIdx || data.Items[0].BeneficiaryIdx != beneficiaryIdx {
+				t.Fatalf("payer records %+v", data)
+			}
+		} else if len(data.Items) != 0 {
+			t.Fatal("foreign payment visible", data)
+		}
+	}
+	call("GET", path+success.QuoteIdx, receiver, nil, 404, "NOT_FOUND")
 
 }
 
@@ -357,7 +406,7 @@ func (n *solExecutionNode) ObserveSolDeposit(_ context.Context, _ []byte, terms 
 	return chainassets.SolDepositObservation{}, nil
 }
 
-func checkSolCreditHTTP(t *testing.T, s *shared.ServiceContext, q types.DepositQuoteData, token, viewer string, call func(string, string, string, any, int, string) (http.Header, json.RawMessage)) {
+func checkSolCreditHTTP(t *testing.T, s *shared.ServiceContext, q types.DepositQuoteData, token, receiver, viewer string, call func(string, string, string, any, int, string) (http.Header, json.RawMessage)) {
 	t.Helper()
 	ctx := context.Background()
 	path := "/v1/user/sol-deposit-orders/" + q.QuoteIdx
@@ -379,7 +428,7 @@ func checkSolCreditHTTP(t *testing.T, s *shared.ServiceContext, q types.DepositQ
 	if _, err := s.DB.Exec("ALTER TABLE sol_deposit_order DROP CHECK test_block_sol_credit"); err != nil {
 		t.Fatal(err)
 	}
-	if got := entries(token); len(got) != 0 {
+	if got := entries(receiver); len(got) != 0 {
 		t.Fatal("partial bill after rollback", got)
 	}
 	_, body := call("GET", path, token, nil, 200, "OK")
@@ -415,11 +464,14 @@ func checkSolCreditHTTP(t *testing.T, s *shared.ServiceContext, q types.DepositQ
 	if err := json.Unmarshal(body, &order); err != nil || order.CreditedUsd != q.NetUsd || order.CreditedAt != first.at || order.OrderIdx != q.SolOrderIdx {
 		t.Fatal("credit status", order, err)
 	}
-	bills := entries(token)
+	if len(entries(token)) != 0 || order.BeneficiaryIdx != q.BeneficiaryIdx {
+		t.Fatal("payer attribution", order)
+	}
+	bills := entries(receiver)
 	if len(bills) != 1 || bills[0].BusinessIdx != order.OrderIdx || bills[0].BusinessType != "deposit" || bills[0].Direction != "in" || bills[0].Amount != q.NetUsd || bills[0].BalanceAfter != q.NetUsd {
 		t.Fatal("credit statement", bills)
 	}
-	_, body = call("GET", "/v1/user/accounts", token, nil, 200, "OK")
+	_, body = call("GET", "/v1/user/accounts", receiver, nil, 200, "OK")
 	var balances types.AccountBalancesData
 	if err := json.Unmarshal(body, &balances); err != nil || balances.Accounts[0].Balance != q.NetUsd {
 		t.Fatal("first balance", balances, err)

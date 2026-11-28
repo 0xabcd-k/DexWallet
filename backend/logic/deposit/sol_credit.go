@@ -80,9 +80,13 @@ func CreditSol(ctx context.Context, tx *transaction.Runner, ledger *account.Serv
 		case strings.HasPrefix(q.AssetID, chainassets.SolanaDevnetTestUSDTPrefix):
 			action = ActionCreditTestUSDT
 		}
+		creditUser := quote.UserId
+		if q.Beneficiary != nil {
+			creditUser = q.Beneficiary.UserID
+		}
 		voucher, err := ledger.Post(ctx, session, account.Posting{
 			Source:  account.Source{Type: account.BusinessDeposit, ID: order.Id, Action: action},
-			Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(quote.UserId, accounts.KindUSD, net)},
+			Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(creditUser, accounts.KindUSD, net)},
 		})
 		if err != nil {
 			return err

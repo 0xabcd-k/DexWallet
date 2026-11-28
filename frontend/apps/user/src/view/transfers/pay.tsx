@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Button, Input, Popup, Tabs } from 'antd-mobile';
 import { ApiError } from '@dexwallet/api-client';
@@ -13,6 +13,7 @@ import { Scanner } from './scanner';
 import { TransferResult } from './detail';
 import { chainPreparationRoute, isChainInput } from '../../app/chain-intent';
 import './style.less';
+const BeneficiaryDeposit = import.meta.env.NATIVE_APP ? lazy(() => import('../chain-transfer/deposit').then(m => ({ default: m.BeneficiaryDeposit }))) : undefined;
 interface Review { target: CurrentUserData; policy: TransferPolicyData; balance: string; amount: string; ticket: Session }
 // These reject a new operation before commit. Unknown recovery never discards
 // its saved key even when a subsequent request is rejected.
@@ -26,6 +27,7 @@ function Payment() {
   const [scanning, setScanning] = useState(!code && !params.has('manual'));
   const [recipient, setRecipient] = useState(''); const [amount, setAmount] = useState('');
   const [raw, setRaw] = useState(code); const [manual, setManual] = useState(!code);
+  const [chainFunding, setChainFunding] = useState(false);
   const [review, setReview] = useState<Review>(); const [pending, setPending] = useState<PendingTransfer>();
   const [result, setResult] = useState<TransferData>(); const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false); const [storageError, setStorageError] = useState(false);
@@ -63,6 +65,7 @@ function Payment() {
   async function preview(saved?: PendingTransfer) {
     if (!saved && !manual && isChainInput(raw.trim())) { scanned(raw.trim()); return; }
     if (running.current) return; running.current = true; setBusy(true); setError(undefined); setReview(undefined);
+    setChainFunding(false);
     const ticket = session.capture(); const version = targetVersion.current;
     try {
       const targetInput = saved ? { recipientIdx: saved.recipientIdx } : manual ? { recipientIdx: recipient.trim() } : { receiveCode: raw.trim() };
@@ -127,13 +130,19 @@ function Payment() {
     {storageError && <p role="alert">{t('paymentStorageUnavailable')}</p>}
     {error !== undefined && <Failure error={error} />}{busy && <p role="status">{t('common:loading')}</p>}
     <Popup visible={!!review} onMaskClick={() => { if (!busy) setReview(undefined); }} bodyStyle={{ borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
-      {review && <div className="payment-review"><h2>{t('reviewPayment')}</h2><p>{review.target.nickname || t('defaultNickname')}</p><p className="transfer-idx">{review.target.idx}</p>
-        <strong>{formatAmount(review.amount, 'USD')}</strong><p>{t('payAsset')}: {t('usdBalance')}</p><p>{t('transferFee')}: 0.00 USD</p>
+      {review && <div className={chainFunding ? "payment-review transfer-result deposit-quote" : "payment-review"}><h2>{t('reviewPayment')}</h2><p>{review.target.nickname || t('defaultNickname')}</p><p className="transfer-idx">{review.target.idx}</p>
+        <strong>{formatAmount(review.amount, 'USD')}</strong>
+        {!chainFunding && <><p>{t('payAsset')}: {t('usdBalance')}</p><p>{t('transferFee')}: 0.00 USD</p>
         <p>{t('availableBalance')}: <span className={problem === 'transferInsufficient' ? 'auth-error' : ''}>{formatAmount(review.balance, 'USD')}</span></p>
         <p>{t('limitSummary', { min: review.policy.plan.minAmount, max: review.policy.plan.maxAmount, remaining: review.policy.remainingToday })}</p>
         <p>{t('limitReset', { time: new Date(review.policy.resetAt).toLocaleString(i18n.resolvedLanguage) })}</p>
         {problem && <p role="alert">{t(problem)}</p>}{restriction && <p>{new Date(review.policy.restrictedUntil).toLocaleString(i18n.resolvedLanguage)}</p>}
         <Button block color="primary" loading={busy} disabled={busy || !!problem || storageError} onClick={() => { void confirm(); }}>{t('confirmPayment')}</Button>
+        </>}
+        {BeneficiaryDeposit && !pending && <Suspense fallback={null}><BeneficiaryDeposit
+          userIdx={auth.session.credential!.idx} beneficiaryIdx={review.target.idx} target={review.amount}
+          selected={chainFunding} disabled={busy || !!restriction || !value || value <= 0n} onSelect={() => setChainFunding(true)}/>
+        </Suspense>}
         <Button block disabled={busy} onClick={() => setReview(undefined)}>{t('cancel')}</Button>
       </div>}
     </Popup>

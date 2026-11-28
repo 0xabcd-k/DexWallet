@@ -14,6 +14,7 @@ import (
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/user"
 	model "github.com/0xabcd-k/DexWallet/backend/model/deposit"
+	usermodel "github.com/0xabcd-k/DexWallet/backend/model/user"
 	"github.com/0xabcd-k/DexWallet/backend/transaction"
 	"github.com/mr-tron/base58"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -39,6 +40,7 @@ func NewSolOrders(conn sqlx.SqlConn, quotes *Confirmations, users *user.Service,
 type SolOrder struct {
 	*model.SolDepositOrder
 	QuoteExpiresAt int64
+	BeneficiaryIdx string
 }
 
 func (s *SolOrders) Get(ctx context.Context, owner int64, idx string) (SolOrder, error) {
@@ -50,7 +52,7 @@ func (s *SolOrders) Get(ctx context.Context, owner int64, idx string) (SolOrder,
 	if errors.Is(err, sql.ErrNoRows) {
 		return SolOrder{}, apperror.New(apperror.NotFound, nil)
 	}
-	return SolOrder{row, record.Quote.ExpiresAt}, err
+	return SolOrder{row, record.Quote.ExpiresAt, record.Quote.Beneficiary.PublicIdx()}, err
 }
 
 func (s *SolOrders) Prepare(ctx context.Context, actor user.Actor, idx string) (SolOrder, error) {
@@ -82,7 +84,7 @@ func (s *SolOrders) process(ctx context.Context, actor user.Actor, idx, signatur
 		return SolOrder{}, apperror.New(apperror.NotFound, nil)
 	}
 	if row != nil && (signature == "" || row.AcceptedAt.Valid) {
-		return solReplay(row, q.ExpiresAt, signature)
+		return solReplay(row, q, signature)
 	}
 	msg, err := base64.StdEncoding.DecodeString(q.SolMessage)
 	if err != nil || fmt.Sprintf("%x", sha256.Sum256(msg)) != q.MessageSHA256 {
@@ -118,13 +120,14 @@ func (s *SolOrders) persist(ctx context.Context, actor user.Actor, record Confir
 		if err != nil {
 			return err
 		}
-		rows := model.NewSolDepositOrderModel(sqlx.NewSqlConnFromSession(session))
+		conn := sqlx.NewSqlConnFromSession(session)
+		rows := model.NewSolDepositOrderModel(conn)
 		existing, err := rows.FindOneByQuoteIdx(ctx, q.QuoteIdx)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
 		if existing != nil && (signature == "" || existing.AcceptedAt.Valid) {
-			result, err = solReplay(existing, q.ExpiresAt, signature)
+			result, err = solReplay(existing, q, signature)
 			return err
 		}
 		var clock struct {
@@ -140,6 +143,15 @@ func (s *SolOrders) persist(ctx context.Context, actor user.Actor, record Confir
 		if u.PaymentRestrictedUntil.Valid && now.Before(u.PaymentRestrictedUntil.Time) {
 			return apperror.New(apperror.PaymentRestricted, nil)
 		}
+		if b := q.Beneficiary; b != nil {
+			target, err := usermodel.NewUserModel(conn).FindOne(ctx, b.UserID)
+			if errors.Is(err, usermodel.ErrNotFound) || err == nil && target.Status != usermodel.StatusActive {
+				return apperror.New(apperror.TransferRecipientUnavailable, nil)
+			}
+			if err != nil {
+				return err
+			}
+		}
 		if signature != "" {
 			if existing == nil {
 				return apperror.New(apperror.NotFound, nil)
@@ -154,15 +166,30 @@ func (s *SolOrders) persist(ctx context.Context, actor user.Actor, record Confir
 				return err
 			}
 		}
-		result = SolOrder{existing, q.ExpiresAt}
+		result = SolOrder{existing, q.ExpiresAt, q.Beneficiary.PublicIdx()}
 		return nil
 	})
 	return result, err
 }
 
-func solReplay(row *model.SolDepositOrder, expiry int64, signature string) (SolOrder, error) {
+func solReplay(row *model.SolDepositOrder, q chainassets.DepositPreview, signature string) (SolOrder, error) {
 	if signature != "" && row.UserSignature != signature {
 		return SolOrder{}, apperror.New(apperror.Conflict, errors.New("order already accepted another signature"))
 	}
-	return SolOrder{row, expiry}, nil
+	return SolOrder{row, q.ExpiresAt, q.Beneficiary.PublicIdx()}, nil
+}
+
+func (s *SolOrders) BeneficiaryPayments(ctx context.Context, payer int64, before string) ([]model.BeneficiaryPayment, string, error) {
+	if before != "" && !idxSyntax.MatchString(before) {
+		return nil, "", apperror.New(apperror.InvalidArgument, nil)
+	}
+	const pageSize = 20
+	rows, err := s.rows.ListBeneficiaryPayments(ctx, payer, before, pageSize+1)
+	if err != nil {
+		return nil, "", err
+	}
+	if len(rows) > pageSize {
+		return rows[:pageSize], rows[pageSize-1].QuoteIdx, nil
+	}
+	return rows, "", nil
 }

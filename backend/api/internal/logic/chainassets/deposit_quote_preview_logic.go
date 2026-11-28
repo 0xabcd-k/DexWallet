@@ -40,7 +40,22 @@ func (l *DepositQuotePreviewLogic) DepositQuotePreview(req *types.DepositQuoteRe
 		return nil, apperror.New(apperror.ServiceUnavailable, nil)
 	}
 	var q assets.DepositPreview
-	if req.WalletAddress == "" {
+	if req.BeneficiaryIdx != "" {
+		id, err := l.svcCtx.UserIdx.Decode(req.BeneficiaryIdx)
+		if err != nil {
+			return nil, apperror.New(apperror.InvalidArgument, err)
+		}
+		target, err := l.svcCtx.Transfers.Target(l.ctx, authorization.Actor, id)
+		if err != nil {
+			return nil, err
+		}
+		beneficiary := assets.DepositBeneficiary{UserID: target.Id, Idx: req.BeneficiaryIdx}
+		quote, err := l.svcCtx.ChainAssets.PreviewBeneficiaryDeposit(l.ctx, authorization.Actor.UserID, beneficiary, req.AssetId, req.TargetUsd, req.WalletAddress)
+		if err != nil {
+			return nil, err
+		}
+		q = quote
+	} else if req.WalletAddress == "" {
 		q, err = l.svcCtx.ChainAssets.PreviewDepositContext(l.ctx, req.AssetId, req.TargetUsd, time.Now())
 	} else {
 		q, err = l.svcCtx.ChainAssets.PreviewWalletDeposit(l.ctx, authorization.Actor.UserID, req.AssetId, req.TargetUsd, req.WalletAddress)
@@ -82,7 +97,7 @@ func depositQuoteData(q assets.DepositPreview) types.DepositQuoteData {
 		tonSimulated, tonCode = q.TON.SimulatedGas, q.TON.JettonWalletCode
 		tonUntil, tonSeq, tonRecipient, tonAuth = int64(q.TON.ValidUntil), int64(q.TON.UserSeqno), q.Recipient, q.TON.AuthorizationHash
 	}
-	return types.DepositQuoteData{TonSenderPaidGas: tonSenderPaid, TonJettonWalletCode: tonCode, TonSimulatedGas: tonSimulated, TonValidUntil: tonUntil, TonUserSeqno: tonSeq, TonRecipient: tonRecipient, TonAuthorizationHash: tonAuth, TronRefBlock: ref, TronRefTime: refTime, TronRecipient: tronRecipient, TronResourceOwner: owner, BaseValidBefore: q.BaseValidBefore, BaseRecipient: baseRecipient, BaseFeePayer: basePayer, SolOrderIdx: q.SolOrderIdx, SolRecipient: recipient, SolFeePayer: payer, QuoteIdx: q.QuoteIdx, MaxGas: q.MaxGas, AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
+	return types.DepositQuoteData{BeneficiaryIdx: q.Beneficiary.PublicIdx(), TonSenderPaidGas: tonSenderPaid, TonJettonWalletCode: tonCode, TonSimulatedGas: tonSimulated, TonValidUntil: tonUntil, TonUserSeqno: tonSeq, TonRecipient: tonRecipient, TonAuthorizationHash: tonAuth, TronRefBlock: ref, TronRefTime: refTime, TronRecipient: tronRecipient, TronResourceOwner: owner, BaseValidBefore: q.BaseValidBefore, BaseRecipient: baseRecipient, BaseFeePayer: basePayer, SolOrderIdx: q.SolOrderIdx, SolRecipient: recipient, SolFeePayer: payer, QuoteIdx: q.QuoteIdx, MaxGas: q.MaxGas, AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
 		PayQuantity: q.PayQuantity, GasAssetId: q.GasAssetID, EstimatedGas: q.EstimatedGas, GasUsd: q.GasUSD,
 		NetUsd: q.NetUSD, RateVersion: q.Version, RateSource: q.RateSource, AsOf: q.AsOf, QuotedAt: q.QuotedAt, ExpiresAt: q.ExpiresAt,
 		EmulatedMessageHash: q.EmulatedMessageHash, RelayAttached: q.RelayAttached, RelaySurplus: q.RelaySurplus, JettonExcess: q.JettonExcess,

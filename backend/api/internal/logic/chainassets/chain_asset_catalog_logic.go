@@ -44,7 +44,7 @@ func (l *ChainAssetCatalogLogic) ChainAssetCatalog() (resp *types.ChainAssetCata
 	for _, n := range l.svcCtx.ChainAssets.Catalog() {
 		assets := make([]types.ChainAsset, 0, len(n.Assets))
 		for _, a := range n.Assets {
-			assets = append(assets, types.ChainAsset{Id: a.ID, Symbol: a.Symbol, Contract: a.Contract, Decimals: a.Decimals, Origin: a.Origin, DepositPreview: active[a.ID]})
+			assets = append(assets, types.ChainAsset{Id: a.ID, Symbol: a.Symbol, Contract: a.Contract, Decimals: a.Decimals, Origin: a.Origin, DepositPreview: active[a.ID], BeneficiaryDeposit: active[a.ID] && l.svcCtx.ChainAssets.SupportsBeneficiaryDeposit(a.ID)})
 		}
 		networks = append(networks, types.ChainNetwork{Id: n.ID, Family: string(n.Family), Testnet: n.Testnet, Enabled: n.Enabled, Assets: assets})
 	}

@@ -8,7 +8,7 @@ import * as client from '../../apps/user/src/api/account';
 import * as catalog from '../../apps/user/src/app/native/chain-assets/api';
 import * as walletSource from '../../apps/user/src/app/native/chain-assets/use-wallets';
 import { previewDeposit } from '../../apps/user/src/app/native/chain-transfer/deposit';
-import DepositButton, { DepositEstimate } from '../../apps/user/src/view/chain-transfer/deposit';
+import DepositButton, { BeneficiaryDeposit, DepositEstimate } from '../../apps/user/src/view/chain-transfer/deposit';
 import { LastBaseDeposit } from '../../apps/user/src/view/chain-transfer/base-deposit';
 import { LastSolDeposit } from '../../apps/user/src/view/chain-transfer/sol-deposit';
 import { nativeCatalog } from '../../apps/user/src/app/native/local-wallet/bridge';
@@ -30,7 +30,7 @@ afterEach(() => vi.restoreAllMocks());
 async function open() {
   const i18n = await createAppI18n('user', appResources, 'en');
   render(<I18nextProvider i18n={i18n}><DepositButton userIdx="uid123"/></I18nextProvider>);
-  fireEvent.click(screen.getByRole('button'));
+  fireEvent.click(screen.getByRole('button', { name: 'Deposit' }));
 }
 it('shows only quoted test assets, ties results to the current input and expires a displayed estimate', async () => {
   vi.spyOn(catalog, 'getCatalog').mockResolvedValue([network]);
@@ -439,4 +439,27 @@ it('confirms a test Jetton quote and shows the existing wallet fee separately fr
   expect(await screen.findByText('3546786 nanoTON')).toBeInTheDocument();
   for (const amount of ['12','3546798','47786383','2526650','0']) expect(screen.getByText(amount + ' nanoTON')).toBeInTheDocument();
   expect(screen.getByRole('link')).toHaveAttribute('href', '/records?kind=usd_balance');
+});
+
+it('keeps the recipient fixed between the SOL estimate and wallet quote and rejects a self quote', async () => {
+  const beneficiaryIdx = '01234567890123456', address = '9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf';
+  const sol = { id: 'solana-devnet:sol', symbol: 'SOL', contract: '', origin: 'native' as const, decimals: 9, depositPreview: true, beneficiaryDeposit: true };
+  vi.spyOn(catalog, 'getCatalog').mockResolvedValue([{ id: 'solana-devnet', family: 'solana', testnet: true, enabled: true, assets: [sol] }]);
+  vi.spyOn(walletSource, 'useViewingWallets').mockReturnValue({ wallets: [{ id: 'w', name: 'Pay wallet', source: 'local', accounts: [{ network: 'solana', address }] }],
+    loading: false, error: undefined, connectionError: false, refresh: vi.fn() });
+  const preview = vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode, options) => {
+    const { walletAddress, ...input } = options?.body as { walletAddress?: string; targetUsd: string; assetId: string; beneficiaryIdx: string };
+    expect(input).toEqual({ targetUsd: '10', assetId: sol.id, beneficiaryIdx });
+    const terms = { ...quote(), assetId: sol.id, gasAssetId: sol.id, payQuantity: '0.101', walletFeePreview: true };
+    return decode({ data: walletAddress ? { ...terms, walletAddress, messageSha256: 'a'.repeat(64) } : { ...terms, beneficiaryIdx } });
+  });
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<I18nextProvider i18n={i18n}><BeneficiaryDeposit userIdx="payer" beneficiaryIdx={beneficiaryIdx} target="10" selected disabled={false} onSelect={vi.fn()}/></I18nextProvider>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Get estimate' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Choose payment wallet' }));
+  fireEvent.click(await screen.findByRole('button', { name: /Pay wallet/ }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(await screen.findByRole('alert')).toBeInTheDocument();
+  expect(preview).toHaveBeenCalledTimes(2);
+  expect(screen.queryByRole('button', { name: 'Confirm quote' })).toBeNull();
 });

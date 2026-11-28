@@ -18,7 +18,13 @@ export const decodeTransfer: Decoder<TransferData> = value => {
   return { idx: d.idx, counterparty: { idx: d.counterparty.idx, nickname: d.counterparty.nickname, avatarUrl: d.counterparty.avatarUrl }, amount: d.amount, fee: d.fee, unit: d.unit, status: d.status, direction: d.direction, createdAt: d.createdAt };
 };
 export const getReceiveCode = (signal: AbortSignal) => userRequest('/v1/user/receive-code', decodeData<ReceiveCodeData>, { signal });
-export const resolveTarget = (body: TransferTargetRequest, ticket: Session) => userRequest('/v1/user/transfer-targets/resolve', decodeData<CurrentUserData>, { method: 'POST', body }, ticket);
+export const resolveTarget = (body: TransferTargetRequest, ticket: Session) => userRequest('/v1/user/transfer-targets/resolve', value => {
+  const target = decodeData<CurrentUserData>(value);
+  if (typeof target.idx !== 'string' || !/^0\d{16,19}$/.test(target.idx) || (body.recipientIdx !== undefined && target.idx !== body.recipientIdx)) {
+    throw new TypeError('Invalid transfer recipient');
+  }
+  return target;
+}, { method: 'POST', body }, ticket);
 export const getTransferPolicy = (ticket: Session) => userRequest('/v1/user/transfer-policy', decodeData<TransferPolicyData>, {}, ticket);
 export const submitTransfer = (body: SubmitTransferRequest, ticket: Session) => userRequest('/v1/user/transfers', decodeTransfer, { method: 'POST', body }, ticket);
 export const findTransfer = (key: string, ticket: Session) => userRequest(`/v1/user/transfers/by-request/${encodeURIComponent(key)}`, decodeTransfer, {}, ticket);
