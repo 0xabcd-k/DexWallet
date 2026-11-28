@@ -19,11 +19,11 @@ import (
 const depositTestUSDTMint = "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"
 
 func TestUSDCDepositFinalizedQuotes(t *testing.T) {
-	checkTokenDepositReceipts(t, "usdc", solanaDepositUSDC, "1", "0.011")
+	checkTokenDepositReceipts(t, "usdc", SolanaDevnetUSDC, "1", "0.011")
 }
 
 func TestSolanaTestUSDTDepositFinalizedQuotes(t *testing.T) {
-	checkTokenDepositReceipts(t, "usdt", solanaDepositUSDTPrefix+depositTestUSDTMint, "0.98", "0.011225")
+	checkTokenDepositReceipts(t, "usdt", SolanaDevnetTestUSDTPrefix+depositTestUSDTMint, "0.98", "0.011225")
 }
 
 // Replay both getFeeForMessage calls for each finalized transfer.
@@ -99,16 +99,17 @@ func checkTokenDepositReceipts(t *testing.T, token, assetID, rate, payQuantity s
 			}, func(c *Config) {
 				c.DepositQuotes = solanaQuoteSheet()
 				route := &SolanaDepositFeeConfig{f.Addresses.Sponsor, f.Addresses.Recipient}
-				if assetID == solanaDepositUSDC {
+				if assetID == SolanaDevnetUSDC {
 					c.DepositQuotes.SolanaUSDC = route
 				} else {
 					c.Networks[0].TestUSDTContract = depositTestUSDTMint
 					c.DepositQuotes.SolanaTestUSDT = route
+					c.DepositQuotes.SolanaSOLReviewAfter = time.Minute // Native SOL enablement never enables the fixture.
 				}
 				c.DepositQuotes.Assets = append(c.DepositQuotes.Assets, DepositQuoteRate{assetID, rate, "0"})
 			})
 			q, err := s.PreviewWalletDeposit(context.Background(), 7, assetID, "0.01", f.Addresses.User)
-			if err != nil || fees != 2 || (rents == 1) != (tc.account == "new") || q.EstimatedGas != "0.00001" || q.GasUSD != "0.001" ||
+			if err != nil || q.SolOrderIdx != "" || fees != 2 || (rents == 1) != (tc.account == "new") || q.EstimatedGas != "0.00001" || q.GasUSD != "0.001" ||
 				q.AccountFunding != tc.funding || q.AccountFundingUSD != tc.fundingUSD || q.AssetID != assetID || q.USDPerCoin != rate || q.PayQuantity != payQuantity || q.NetUSD != "0.01" ||
 				q.MessageSHA256 != f.Quote.MessageSHA256 || q.WalletAddress != f.Addresses.User {
 				t.Fatal(q, err, fees, rents)
@@ -169,9 +170,9 @@ func TestUSDCDepositRejectsUnusableAccounts(t *testing.T) {
 			}, func(c *Config) {
 				c.DepositQuotes = solanaQuoteSheet()
 				c.DepositQuotes.SolanaUSDC = c.DepositQuotes.SolanaSOL
-				c.DepositQuotes.Assets = append(c.DepositQuotes.Assets, DepositQuoteRate{solanaDepositUSDC, "1", "0"})
+				c.DepositQuotes.Assets = append(c.DepositQuotes.Assets, DepositQuoteRate{SolanaDevnetUSDC, "1", "0"})
 			})
-			q, err := s.PreviewWalletDeposit(context.Background(), 7, solanaDepositUSDC, "0.01", solOwner)
+			q, err := s.PreviewWalletDeposit(context.Background(), 7, SolanaDevnetUSDC, "0.01", solOwner)
 			var actual *apperror.Error
 			if !errors.As(err, &actual) || actual.Code != tc.code || q.PayQuantity != "" {
 				t.Fatal(q, err)
@@ -181,10 +182,10 @@ func TestUSDCDepositRejectsUnusableAccounts(t *testing.T) {
 }
 
 func TestSolanaTestUSDTDepositUsesConfiguredMint(t *testing.T) {
-	const id = solanaDepositUSDTPrefix + depositTestUSDTMint
+	const id = SolanaDevnetTestUSDTPrefix + depositTestUSDTMint
 	const usdcMint = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
 	for _, tc := range []struct{ mint, rateID string }{
-		{"", ""}, {depositTestUSDTMint, ""}, {usdcMint, solanaDepositUSDTPrefix + usdcMint}, {solOwner, id},
+		{"", ""}, {depositTestUSDTMint, ""}, {usdcMint, SolanaDevnetTestUSDTPrefix + usdcMint}, {solOwner, id},
 	} {
 		cfg := Config{Networks: []Endpoint{{Network: SolanaDevnet, URL: "http://127.0.0.1:1", TestUSDTContract: tc.mint}}, DepositQuotes: solanaQuoteSheet()}
 		cfg.DepositQuotes.SolanaTestUSDT = cfg.DepositQuotes.SolanaSOL
@@ -206,7 +207,7 @@ func TestSolanaTestUSDTDepositUsesConfiguredMint(t *testing.T) {
 		t.Fatal(q, err)
 	}
 	for assetID, want := range map[string]apperror.Code{
-		id: apperror.ServiceUnavailable, SolanaDevnet + ":usdt": apperror.InvalidArgument, solanaDepositUSDTPrefix + solOwner: apperror.InvalidArgument,
+		id: apperror.ServiceUnavailable, SolanaDevnet + ":usdt": apperror.InvalidArgument, SolanaDevnetTestUSDTPrefix + solOwner: apperror.InvalidArgument,
 	} {
 		_, err := s.PreviewWalletDeposit(context.Background(), 7, assetID, "0.01", solOwner)
 		var got *apperror.Error

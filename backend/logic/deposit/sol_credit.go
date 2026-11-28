@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/0xabcd-k/DexWallet/backend/logic/account"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
@@ -19,6 +20,7 @@ import (
 // same order idx as the signed memo. Historical deposit/post entries are separate.
 const ActionCreditSol account.Action = "credit_sol"
 const ActionCreditUSDC account.Action = "credit_usdc"
+const ActionCreditTestUSDT account.Action = "credit_test_usdt"
 
 var ErrSolNotFinalized = errors.New("successful finalized SOL deposit required")
 
@@ -72,8 +74,11 @@ func CreditSol(ctx context.Context, tx *transaction.Runner, ledger *account.Serv
 			return fmt.Errorf("SOL deposit %s: %w", order.OrderIdx, chainreceipt.ErrReceiveConflict)
 		}
 		action := ActionCreditSol
-		if q.AssetID == chainassets.SolanaDevnet+":usdc" {
+		switch {
+		case q.AssetID == chainassets.SolanaDevnetUSDC:
 			action = ActionCreditUSDC
+		case strings.HasPrefix(q.AssetID, chainassets.SolanaDevnetTestUSDTPrefix):
+			action = ActionCreditTestUSDT
 		}
 		voucher, err := ledger.Post(ctx, session, account.Posting{
 			Source:  account.Source{Type: account.BusinessDeposit, ID: order.Id, Action: action},

@@ -25,16 +25,23 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
+const liveTestUSDTMint = "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5"
+
+type liveDepositToken struct {
+	assetID, recipientEnv, usdRate, resource string
+	atoms                                    uint64
+}
+
 // Explicit live test using only the user key of the funded disposable Devnet fixture.
 func TestSolanaDevnetDepositAuthorization(t *testing.T) {
-	liveSolOrder(t, false, false, 0)
+	liveSolOrder(t, false, nil, 0)
 }
 
 func TestSolanaDevnetDepositExecution(t *testing.T) {
 	if os.Getenv("DEXWALLET_TEST_SOL_EXECUTE") != "1" {
 		t.Skip("explicit one-order Devnet SOL transfer only")
 	}
-	liveSolOrder(t, true, false, 0)
+	liveSolOrder(t, true, nil, 0)
 }
 
 // Two independent orders use the same dedicated recipient. Only the first may fund its ATA.
@@ -42,13 +49,25 @@ func TestSolanaDevnetUSDCDepositExecution(t *testing.T) {
 	if os.Getenv("DEXWALLET_TEST_USDC_EXECUTE") != "1" {
 		t.Skip("explicit two-order Devnet USDC transfer only")
 	}
-	if !t.Run("create", func(t *testing.T) { liveSolOrder(t, true, true, 1488440) }) {
-		return
-	}
-	t.Run("existing", func(t *testing.T) { liveSolOrder(t, true, true, 0) })
+	liveTokenOrders(t, liveDepositToken{chainassets.SolanaDevnetUSDC, "DEXWALLET_TEST_USDC_RECIPIENT", "1", "usdc", 11000})
 }
 
-func liveSolOrder(t *testing.T, execute, usdc bool, funding int64) {
+func TestSolanaDevnetTestUSDTDepositExecution(t *testing.T) {
+	if os.Getenv("DEXWALLET_TEST_USDT_EXECUTE") != "1" {
+		t.Skip("explicit two-order Devnet test USDT transfer only")
+	}
+	liveTokenOrders(t, liveDepositToken{chainassets.SolanaDevnetTestUSDTPrefix + liveTestUSDTMint, "DEXWALLET_TEST_USDT_RECIPIENT", "0.98", "test_usdt", 11225})
+}
+
+func liveTokenOrders(t *testing.T, token liveDepositToken) {
+	t.Helper()
+	if !t.Run("create", func(t *testing.T) { liveSolOrder(t, true, &token, 1488440) }) {
+		return
+	}
+	t.Run("existing", func(t *testing.T) { liveSolOrder(t, true, &token, 0) })
+}
+
+func liveSolOrder(t *testing.T, execute bool, token *liveDepositToken, funding int64) {
 	t.Helper()
 	keyFile := os.Getenv("DEXWALLET_TEST_SOL_USER_KEY_FILE")
 	if keyFile == "" {
@@ -79,11 +98,11 @@ func liveSolOrder(t *testing.T, execute, usdc bool, funding int64) {
 	if execute {
 		resource = "sol_deposit_exec"
 	}
-	if usdc && funding > 0 {
-		resource = "usdc_new"
-	}
-	if usdc && funding == 0 {
-		resource = "usdc_existing"
+	if token != nil {
+		resource = token.resource + "_existing"
+		if funding > 0 {
+			resource = token.resource + "_new"
+		}
 	}
 	db, users := userDatabase(t, resource)
 	mustExec(t, db, "INSERT INTO user(id,nickname) VALUES(1,'devnet')")
@@ -95,18 +114,24 @@ func liveSolOrder(t *testing.T, execute, usdc bool, funding int64) {
 	route := &chainassets.SolanaDepositFeeConfig{FeePayer: "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN", Recipient: "7Njq3pBVPhZWEoRh8w22eC2KBcGUhhCvwFFitsyTg7A5"}
 	config := &chainassets.DepositQuoteConfig{SolanaSOLReviewAfter: 10 * time.Minute, Version: "devnet-auth-test", AsOf: now - 60, ValidUntil: now + 300, SolanaSOL: route, Assets: []chainassets.DepositQuoteRate{{AssetID: assetID, USDPerCoin: "100", EstimatedGas: "0"}}}
 	terms := chainassets.SolDepositTerms{Recipient: route.Recipient, GrossLamports: 110000, FeeLamports: 10000}
-	if usdc {
-		recipient := os.Getenv("DEXWALLET_TEST_USDC_RECIPIENT")
+	network := chainassets.Endpoint{Network: chainassets.SolanaDevnet, URL: endpoint}
+	if token != nil {
+		recipient := os.Getenv(token.recipientEnv)
 		if recipient == "" {
-			t.Fatal("dedicated fresh Devnet USDC collection wallet required")
+			t.Fatal("dedicated token collection wallet required")
 		}
-		assetID = "solana-devnet:usdc"
-		config.SolanaUSDC = &chainassets.SolanaDepositFeeConfig{FeePayer: route.FeePayer, Recipient: recipient}
-		config.SolanaUSDCReviewAfter = 10 * time.Minute
-		config.Assets = append(config.Assets, chainassets.DepositQuoteRate{AssetID: assetID, USDPerCoin: "1", EstimatedGas: "0"})
-		terms = chainassets.SolDepositTerms{Recipient: recipient, USDCAtoms: 11000, FeeLamports: 10000, MaxFundingLamports: funding}
+		assetID = token.assetID
+		collection := &chainassets.SolanaDepositFeeConfig{FeePayer: route.FeePayer, Recipient: recipient}
+		if assetID == chainassets.SolanaDevnetUSDC {
+			config.SolanaUSDC, config.SolanaUSDCReviewAfter = collection, 10*time.Minute
+		} else {
+			config.SolanaTestUSDT, config.SolanaTestUSDTReviewAfter = collection, 10*time.Minute
+			network.TestUSDTContract = liveTestUSDTMint
+		}
+		config.Assets = append(config.Assets, chainassets.DepositQuoteRate{AssetID: assetID, USDPerCoin: token.usdRate, EstimatedGas: "0"})
+		terms = chainassets.SolDepositTerms{Recipient: recipient, TokenAssetID: assetID, TokenAtoms: token.atoms, FeeLamports: 10000, MaxFundingLamports: funding}
 	}
-	chain, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.SolanaDevnet, URL: endpoint}}, DepositQuotes: config}, chainassets.NewRedisLimiter(client, ns, 30))
+	chain, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{network}, DepositQuotes: config}, chainassets.NewRedisLimiter(client, ns, 30))
 	if err != nil {
 		t.Fatal(err)
 	}

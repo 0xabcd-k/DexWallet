@@ -89,7 +89,7 @@ func TestSolDepositCreditRecovery(t *testing.T) {
 	mustExec(t, db, "INSERT INTO deposit_quote_confirmation(quote_idx,user_id,snapshot_json,quote_expires_at,confirmed_at) VALUES(?,1,?,?,?)", q.QuoteIdx, snapshot, time.UnixMilli(q.ExpiresAt).UTC(), fixture.AcceptedAt)
 	mustExec(t, db, `INSERT INTO sol_deposit_order(quote_idx,order_idx,message_base64,message_sha256,last_valid_height,review_after,user_signature,accepted_at,execution_state,sponsor_policy,tx_signature,actual_lamports_fee,finalized_slot)
 	VALUES(?,?,?,?,?,?,?,?,'finalized','devnet-sol-single-order-v1',?,?,?)`, q.QuoteIdx, q.SolOrderIdx, q.SolMessage, q.MessageSHA256, q.SolLastValidHeight, time.UnixMilli(q.SolReviewAt).UTC(), fixture.UserSignature, fixture.AcceptedAt, fixture.TxSignature, terms.FeeLamports, fixture.Slot)
-	for _, v := range []uint{41, 39, 41} {
+	for _, v := range []uint{42, 39, 42} {
 		if err = m.Migrate(v); err != nil {
 			t.Fatal(v, err)
 		}

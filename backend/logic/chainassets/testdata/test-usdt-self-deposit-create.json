@@ -1,0 +1,110 @@
+{
+  "quote": {
+    "SolOrderIdx": "72df7a0c9cc44081e2940c0c084f8d8f",
+    "SolMessage": "AgEGCrtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrQamc8qpaNVzcUy9+8TqlzZgOIucFJzce9gWpeUGOBjkN+N4FjDY3GsPLGAz3XLGnqRxAvQN9fqSRthh5HpZPQvjJclj04kifG7PRApFI4NgwtaE5na/xCEBI572Nvp+FlDrEzMNfyoj9ygzaxqyuk5O0p6jWrknkgR2C+3cABDbB1dU9OtjQTd4KEM6s9lr6EwrLW68eL/P5W14OwgHgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqQVKU1qZKSEGTSTocWDaOHx8NbXdvJK7geQfqEBBBUSN/ibfjp3+77Hc/xgC8fiYVfE8PWrh6YBfT9Jfq4UpQvsDBAYAAgUGBwgBAQgEAwYCAQoM2SsAAAAAAAAGCQAyZGV4d2FsbGV0OmRlcG9zaXQ6NzJkZjdhMGM5Y2M0NDA4MWUyOTQwYzBjMDg0ZjhkOGY=",
+    "SolLastValidHeight": 514239717,
+    "SolReviewAt": 1795852912582,
+    "QuoteIdx": "c6dd0a9c209379e001dad601011eb392",
+    "MaxGas": "0.00001",
+    "Recipient": "5ZAhXYgaYEZ9UgH8KKFdncPjA4NBq2c1VbefvBd3Dgif",
+    "FeePayer": "DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN",
+    "GasUSDPerCoin": "100",
+    "RuleVersion": "devnet-auth-test",
+    "PayDecimals": 6,
+    "GasDecimals": 9,
+    "AssetID": "solana-devnet:usdt:2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+    "TargetUSD": "0.01",
+    "USDPerCoin": "0.98",
+    "PayQuantity": "0.011225",
+    "GasAssetID": "solana-devnet:sol",
+    "EstimatedGas": "0.00001",
+    "GasUSD": "0.001",
+    "NetUSD": "0.01",
+    "AccountFunding": "0.00148844",
+    "AccountFundingUSD": "0.148844",
+    "WalletFeePreview": true,
+    "WalletAddress": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+    "MessageSHA256": "a38199acf71e65d8115b54ca23fdcd8e5ec140a0f4904f8d20e30347ef57005f",
+    "Version": "devnet-auth-test",
+    "RateSource": "test_sheet",
+    "AsOf": 1795852222000,
+    "QuotedAt": 1795852282582,
+    "ExpiresAt": 1795852312582
+  },
+  "signature": "ajxVVAVaoW8uRGCfpqa7pmuNsSTcLiCVBLjoPvKv3p7Ma4ccsC5WxanE5pzCkactGdRtfKFP7qQ3QN89R2gacgE",
+  "transaction": {
+    "slot": 527158398,
+    "meta": {
+      "err": null,
+      "fee": 10000,
+      "preBalances": [
+        4983811560,
+        1781120,
+        0,
+        1488440,
+        5938070540,
+        0,
+        1066800,
+        1,
+        20518277857,
+        41509619334
+      ],
+      "postBalances": [
+        4982313120,
+        1781120,
+        1488440,
+        1488440,
+        5938070540,
+        0,
+        1066800,
+        1,
+        20518277857,
+        41509619334
+      ],
+      "preTokenBalances": [
+        {
+          "accountIndex": 3,
+          "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+          "owner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+          "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "uiTokenAmount": {
+            "amount": "19945550",
+            "decimals": 6,
+            "uiAmount": 19.94555,
+            "uiAmountString": "19.94555"
+          }
+        }
+      ],
+      "postTokenBalances": [
+        {
+          "accountIndex": 2,
+          "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+          "owner": "5ZAhXYgaYEZ9UgH8KKFdncPjA4NBq2c1VbefvBd3Dgif",
+          "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "uiTokenAmount": {
+            "amount": "11225",
+            "decimals": 6,
+            "uiAmount": 0.011225,
+            "uiAmountString": "0.011225"
+          }
+        },
+        {
+          "accountIndex": 3,
+          "mint": "2ydN2Tr1FhRmJJcdqATsFCq5Q1t43bfRQD5tKfSxL7d5",
+          "owner": "9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf",
+          "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          "uiTokenAmount": {
+            "amount": "19934325",
+            "decimals": 6,
+            "uiAmount": 19.934325,
+            "uiAmountString": "19.934325"
+          }
+        }
+      ]
+    },
+    "transaction": [
+      "Ah0YvYCz47IjdGv1ZNMbRWSQN9tOLbaF1uIjvL2BOeJe6u3ppxXD3Hj3e7lcNL0OW5JzYmF5PnGtdWAsCMvL9gfcLSdvuaH6DJOtjbRwtpvLWJS7busp115QlJYUOPc9MQnOqOgje/MAHk3swhdFPTvgmYIWi+UsKtqDnOwChDEOAgEGCrtu5UznH0IODqQvtEDIOd4fnBCsFVW9DjOSQOLewUk1hFf4S6IYPSaG8ZZPHBE97QE8lNdUBPH9lBG0aUWCnrQamc8qpaNVzcUy9+8TqlzZgOIucFJzce9gWpeUGOBjkN+N4FjDY3GsPLGAz3XLGnqRxAvQN9fqSRthh5HpZPQvjJclj04kifG7PRApFI4NgwtaE5na/xCEBI572Nvp+FlDrEzMNfyoj9ygzaxqyuk5O0p6jWrknkgR2C+3cABDbB1dU9OtjQTd4KEM6s9lr6EwrLW68eL/P5W14OwgHgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG3fbh12Whk9nL4UbO63msHLSF7V9bN5E6jPWFfv8AqQVKU1qZKSEGTSTocWDaOHx8NbXdvJK7geQfqEBBBUSN/ibfjp3+77Hc/xgC8fiYVfE8PWrh6YBfT9Jfq4UpQvsDBAYAAgUGBwgBAQgEAwYCAQoM2SsAAAAAAAAGCQAyZGV4d2FsbGV0OmRlcG9zaXQ6NzJkZjdhMGM5Y2M0NDA4MWUyOTQwYzBjMDg0ZjhkOGY=",
+      "base64"
+    ]
+  }
+}

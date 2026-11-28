@@ -114,12 +114,14 @@ it.each([
   { ...usdt, funding: '0', usd: '0' }, { ...usdt, funding: '0.00148844', usd: '0.148844' },
 ])('shows $funding SOL of platform account funding separately from the $symbol total', async ({ symbol, id, contract, rate, pay, funding, usd }) => {
   const native = { ...network.assets[0]!, id: 'solana-devnet:sol', symbol: 'SOL', decimals: 9 };
-  const asset = { ...network.assets[1]!, id, symbol, contract };
+  const asset = { ...network.assets[1]!, id, symbol, contract, origin: symbol === 'USDT' ? 'test_fixture' as const : 'issuer' as const };
   const wallet = '9ucco3Ath4uS71gyfHggdo9jXzUnhkRr5oPHp8qVUVGf';
   const result = { ...quote(), assetId: asset.id, gasAssetId: native.id, usdPerCoin: rate, targetUsd: '0.01', netUsd: '0.01',
     estimatedGas: '0.00001', gasUsd: '0.001', payQuantity: pay, walletAddress: wallet, walletFeePreview: true, messageSha256: 'a'.repeat(64) };
   vi.spyOn(client, 'userRequest').mockImplementationOnce(async (_path, decode) =>
-    decode({ data: { ...result, accountFunding: funding, accountFundingUsd: usd } })).mockImplementationOnce(async (_path, decode) =>
+    decode({ data: { ...result, accountFunding: funding, accountFundingUsd: usd, quoteIdx: '1'.repeat(32),
+      maxGas: result.estimatedGas, solOrderIdx: '2'.repeat(32), solRecipient: '5ZAhXYgaYEZ9UgH8KKFdncPjA4NBq2c1VbefvBd3Dgif',
+      solFeePayer: 'DcfKLiLsSsoJrrf3t6QXwkjfUarE4yW5sKjzF7xBQkPN' } })).mockImplementationOnce(async (_path, decode) =>
     decode({ data: result })).mockImplementationOnce(async (_path, decode) =>
     decode({ data: { ...result, accountFunding: funding, accountFundingUsd: usd, assetId: id + '-other' } }));
   const i18n = await createAppI18n('user', appResources, 'en');
@@ -291,7 +293,7 @@ it.each([[false, undefined], [true, undefined], [true, '0'], [true, '1488440']] 
   vi.mocked(nativeCatalog.get).mockResolvedValueOnce({ value: idx });
   vi.spyOn(client, 'userRequest').mockImplementation(async (_path, decode) => decode({ data: {
     quoteIdx: idx, orderIdx: idx, state: 'accepted', executionState: 'finalized', txSignature: tx, actualFeeLamports: 10000,
-    ...(funding !== undefined ? { assetId: 'solana-devnet:usdc', actualFundingLamports: funding } : {}),
+    ...(funding !== undefined ? { assetId: funding === '0' ? usdc.id : usdt.id, actualFundingLamports: funding } : {}),
     acceptedAt: 10, quoteExpiresAt: 20, reviewAfter: 30, lastValidBlockHeight: 100, messageSha256: 'a'.repeat(64), messageBase64: 'Ag==', ...(credited ? { creditedAt: 31, creditedUsd: '0.01' } : {}),
   } }));
   const i18n = await createAppI18n('user', appResources, 'en');

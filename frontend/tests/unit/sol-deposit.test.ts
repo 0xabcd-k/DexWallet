@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import created from '../../../backend/logic/chainassets/testdata/usdc-self-deposit-create.json';
 import existing from '../../../backend/logic/chainassets/testdata/usdc-self-deposit-existing.json';
+import usdtCreated from '../../../backend/logic/chainassets/testdata/test-usdt-self-deposit-create.json';
+import usdtExisting from '../../../backend/logic/chainassets/testdata/test-usdt-self-deposit-existing.json';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { DepositQuoteData, SolDepositOrderData } from '../../packages/api-contract/src/platform';
 import { authorizeSolDeposit, checkedSolMessage } from '../../apps/user/src/app/native/chain-transfer/sol-deposit';
@@ -53,13 +55,16 @@ it('rejects changes to the transfer amount, accounts, and order memo before devi
   expect(vault.get).not.toHaveBeenCalled();
 });
 
-it.each([created.quote, existing.quote])('verifies the finalized USDC signing message with storage funding $AccountFunding', f => {
+it.each([created.quote, existing.quote, usdtCreated.quote, usdtExisting.quote])('verifies the finalized $AssetID signing message with storage funding $AccountFunding', f => {
   const q = { ...quote, assetId: f.AssetID, quoteIdx: f.QuoteIdx, solOrderIdx: f.SolOrderIdx, walletAddress: f.WalletAddress,
     solFeePayer: f.FeePayer, solRecipient: f.Recipient, payQuantity: f.PayQuantity, accountFunding: f.AccountFunding, messageSha256: f.MessageSHA256 };
   const o = { ...order, assetId: q.assetId, quoteIdx: f.QuoteIdx, orderIdx: f.SolOrderIdx, messageBase64: f.SolMessage, messageSha256: f.MessageSHA256 };
   expect(checkedSolMessage(q, o).length).toBeGreaterThan(300);
   for (const changes of [{ payQuantity: '0.012' }, { solRecipient: quote.walletAddress! }, { accountFunding: f.AccountFunding === '0' ? '0.001' : '0' }]) {
     expect(() => checkedSolMessage({ ...q, ...changes }, o)).toThrow();
+  }
+  for (const assetId of ['solana-devnet:usdt:' + f.WalletAddress, 'solana-devnet:usdt:4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU']) {
+    expect(() => checkedSolMessage({ ...q, assetId }, { ...o, assetId })).toThrow();
   }
   const alteredMint = Buffer.from(f.SolMessage, 'base64');
   const mintOffset = 4 + 32 * (f.AccountFunding === '0' ? 5 : 6);

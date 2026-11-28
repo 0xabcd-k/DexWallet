@@ -11,9 +11,8 @@ import { nativeVault } from '../local-wallet/bridge';
 import { DERIVATION, parseMaterial, WalletError } from '../local-wallet/crypto';
 import { atomicAmount } from './api';
 
-const sol = 'solana-devnet:sol';
-const usdc = 'solana-devnet:usdc';
-const usdcMint = base58.decode('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
+import { depositTokenMint, solanaDepositSOL as sol } from './sol-deposit-asset';
+
 const tokenProgram = base58.decode('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ataProgram = base58.decode('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
 const encoder = new TextEncoder();
@@ -40,7 +39,8 @@ function orderData(value: unknown, idx: string) {
     throw new TypeError('Invalid SOL execution result');
   }
   const assetId = o.assetId ?? sol; // older authorization-only servers returned native SOL
-  if ((assetId !== sol && assetId !== usdc) || (assetId === usdc && final
+  const mint = depositTokenMint(assetId);
+  if ((assetId !== sol && !mint) || (mint && final
     ? typeof o.actualFundingLamports !== 'string' || !/^(0|[1-9]\d{0,18})$/.test(o.actualFundingLamports) ||
       (executionState === 'failed' && o.actualFundingLamports !== '0')
     : o.actualFundingLamports !== undefined)) throw new TypeError('Invalid Solana account funding');
@@ -56,22 +56,22 @@ export function getSolOrder(idx: string, signal: AbortSignal) {
 }
 
 // Solana derives each associated token account from owner, token program and mint.
-function associatedTokenAccount(owner: Uint8Array) {
+function associatedTokenAccount(owner: Uint8Array, mint: Uint8Array) {
   for (let bump = 255; bump >= 0; bump--) {
-    const candidate = sha256(concatBytes(owner, tokenProgram, usdcMint, Uint8Array.of(bump), ataProgram, encoder.encode('ProgramDerivedAddress')));
+    const candidate = sha256(concatBytes(owner, tokenProgram, mint, Uint8Array.of(bump), ataProgram, encoder.encode('ProgramDerivedAddress')));
     try { ed25519.Point.fromBytes(candidate, true); } catch { return candidate; }
   }
   throw new TypeError('Invalid associated token account');
 }
 
-function usdcDepositMessage(msg: Uint8Array, payer: Uint8Array, sender: Uint8Array, recipient: Uint8Array, quantity: Uint8Array, memo: Uint8Array, funding: string | undefined) {
+function tokenDepositMessage(msg: Uint8Array, mint: Uint8Array, payer: Uint8Array, sender: Uint8Array, recipient: Uint8Array, quantity: Uint8Array, memo: Uint8Array, funding: string | undefined) {
   const cap = funding === undefined ? undefined : atomicAmount(funding, 9);
-  if (cap === undefined) throw new TypeError('Missing USDC storage funding');
+  if (cap === undefined) throw new TypeError('Missing token account storage funding');
   const create = cap > 0n;
-  const source = associatedTokenAccount(sender), destination = associatedTokenAccount(recipient);
+  const source = associatedTokenAccount(sender, mint), destination = associatedTokenAccount(recipient, mint);
   const keys = create
-    ? [payer, sender, destination, source, ataProgram, recipient, usdcMint, new Uint8Array(32), tokenProgram, memoProgram]
-    : [payer, sender, source, destination, tokenProgram, usdcMint, memoProgram];
+    ? [payer, sender, destination, source, ataProgram, recipient, mint, new Uint8Array(32), tokenProgram, memoProgram]
+    : [payer, sender, source, destination, tokenProgram, mint, memoProgram];
   const offset = 4 + keys.length * 32;
   const instructions = create
     ? Uint8Array.of(3, 4, 6, 0, 2, 5, 6, 7, 8, 1, 1, 8, 4, 3, 6, 2, 1, 10, 12)
@@ -82,12 +82,13 @@ function usdcDepositMessage(msg: Uint8Array, payer: Uint8Array, sender: Uint8Arr
 
 // Rebuild the signed transfer, optional ATA creation and order memo before unlocking the wallet.
 export function checkedSolMessage(q: DepositQuoteData, o: SolDepositOrderData) {
+  const mint = depositTokenMint(q.assetId);
   if (!q.quoteIdx || q.quoteIdx !== o.quoteIdx || !q.solOrderIdx || !idxFormat.test(q.solOrderIdx) || q.solOrderIdx !== o.orderIdx ||
-    q.expiresAt !== o.quoteExpiresAt || (q.assetId !== sol && q.assetId !== usdc) || q.assetId !== (o.assetId ?? sol) || q.gasAssetId !== sol ||
+    q.expiresAt !== o.quoteExpiresAt || (q.assetId !== sol && !mint) || q.assetId !== (o.assetId ?? sol) || q.gasAssetId !== sol ||
     !q.walletAddress || !q.solFeePayer || !q.solRecipient || new Set([q.walletAddress,q.solFeePayer,q.solRecipient]).size !== 3 ||
     q.estimatedGas !== q.maxGas || q.messageSha256 !== o.messageSha256) throw new TypeError('SOL order differs from wallet quote');
   const msg = base64.decode(o.messageBase64);
-  const amount = atomicAmount(q.payQuantity, q.assetId === usdc ? 6 : 9);
+  const amount = atomicAmount(q.payQuantity, mint ? 6 : 9);
   if (amount === undefined || amount <= 0n || amount > 0xffffffffffffffffn) throw new TypeError('Invalid SOL transfer amount');
   const quantity = new Uint8Array(8);
   new DataView(quantity.buffer).setBigUint64(0, amount, true);
@@ -96,7 +97,7 @@ export function checkedSolMessage(q: DepositQuoteData, o: SolDepositOrderData) {
   if (keys.some(k => k.length !== 32)) throw new TypeError('Invalid SOL account');
   const header = Uint8Array.of(2, 0, 2, 5);
   const blockStart = header.length + 5 * 32;
-  const expected = q.assetId === usdc ? usdcDepositMessage(msg, keys[0]!, keys[1]!, keys[2]!, quantity, memo, q.accountFunding) : concatBytes(header, ...keys, new Uint8Array(32), memoProgram, msg.slice(blockStart, blockStart + 32),
+  const expected = mint ? tokenDepositMessage(msg, mint, keys[0]!, keys[1]!, keys[2]!, quantity, memo, q.accountFunding) : concatBytes(header, ...keys, new Uint8Array(32), memoProgram, msg.slice(blockStart, blockStart + 32),
     Uint8Array.of(2, 3, 2, 1, 2, 12, 2, 0, 0, 0), quantity, Uint8Array.of(4, 0, memo.length), memo);
   if (expected.length !== msg.length || !expected.every((b, i) => b === msg[i]) || bytesToHex(sha256(msg)) !== q.messageSha256) throw new TypeError('Unexpected SOL signing message');
   return msg;

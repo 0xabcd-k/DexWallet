@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/0xabcd-k/DexWallet/backend/internal/solanaspl"
 	"github.com/0xabcd-k/DexWallet/backend/model/account"
@@ -25,22 +26,44 @@ import (
 type SolDepositTerms struct {
 	Recipient                  string
 	GrossLamports, FeeLamports int64
-	USDCAtoms                  uint64
+	TokenAssetID               string
+	TokenAtoms                 uint64
 	MaxFundingLamports         int64
+}
+
+// SolanaDepositTokenMint resolves the exact token identity bound by an order.
+// The fixture mint is part of its asset ID, including when replaying an old order.
+func SolanaDepositTokenMint(assetID string) (string, bool) {
+	if assetID == SolanaDevnetUSDC {
+		return devnetUSDCMint, true
+	}
+	mint, ok := strings.CutPrefix(assetID, SolanaDevnetTestUSDTPrefix)
+	if !ok || mint == devnetUSDCMint {
+		return "", false
+	}
+	if _, err := depositKey(mint, false); err != nil {
+		return "", false
+	}
+	return mint, true
 }
 
 func (t SolDepositTerms) Valid() bool {
 	if t.FeeLamports <= 0 {
 		return false
 	}
-	if t.USDCAtoms > 0 {
-		return t.GrossLamports == 0 && t.MaxFundingLamports >= 0
+	if t.TokenAtoms > 0 {
+		_, ok := SolanaDepositTokenMint(t.TokenAssetID)
+		return ok && t.GrossLamports == 0 && t.MaxFundingLamports >= 0
 	}
-	return t.MaxFundingLamports == 0 && t.GrossLamports > t.FeeLamports
+	return t.TokenAssetID == "" && t.MaxFundingLamports == 0 && t.GrossLamports > t.FeeLamports
 }
 
 func (t SolDepositTerms) token(sender string) (solanaspl.Transfer, error) {
-	return solanaspl.New(sender, t.Recipient, devnetUSDCMint, strconv.FormatUint(t.USDCAtoms, 10), t.MaxFundingLamports > 0)
+	mint, ok := SolanaDepositTokenMint(t.TokenAssetID)
+	if !ok {
+		return solanaspl.Transfer{}, errors.New("invalid Devnet deposit token")
+	}
+	return solanaspl.New(sender, t.Recipient, mint, strconv.FormatUint(t.TokenAtoms, 10), t.MaxFundingLamports > 0)
 }
 
 // Reconstruct the quoted message independently of the stored wire.
@@ -67,9 +90,9 @@ func (t SolDepositTerms) Check(q DepositPreview, payer, userSignature string) ([
 		return nil, errors.New("invalid deposit message hash")
 	}
 	var expected []byte
-	if t.USDCAtoms > 0 {
-		if q.AssetID != solanaDepositUSDC || decimal.NewFromBigInt(new(big.Int).SetUint64(t.USDCAtoms), -6).String() != q.PayQuantity || decimal.New(t.MaxFundingLamports, -9).String() != q.AccountFunding {
-			return nil, errors.New("USDC amount or account funding differs from authorized terms")
+	if t.TokenAtoms > 0 {
+		if q.AssetID != t.TokenAssetID || decimal.NewFromBigInt(new(big.Int).SetUint64(t.TokenAtoms), -6).String() != q.PayQuantity || decimal.New(t.MaxFundingLamports, -9).String() != q.AccountFunding {
+			return nil, errors.New("SPL amount or account funding differs from authorized terms")
 		}
 		transfer, err := t.token(q.WalletAddress)
 		if err != nil {
@@ -77,7 +100,7 @@ func (t SolDepositTerms) Check(q DepositPreview, payer, userSignature string) ([
 		}
 		offset := 4 + 32*(len(transfer.Keys())+2) // sponsor and memo program
 		if len(msg) < offset+32 {
-			return nil, errors.New("truncated USDC deposit message")
+			return nil, errors.New("truncated token deposit message")
 		}
 		expected, err = transfer.SponsoredMemoMessage(base58.Encode(msg[offset:offset+32]), payer, "dexwallet:deposit:"+q.SolOrderIdx)
 		if err != nil {
@@ -211,10 +234,10 @@ func (s *Service) ObserveSolDeposit(ctx context.Context, wire []byte, terms SolD
 			return obs, errors.New("missing finalized balance")
 		}
 	}
-	if terms.USDCAtoms > 0 {
+	if terms.TokenAtoms > 0 {
 		const senderOffset = 129 + 4 + 32
 		if len(wire) < senderOffset+32 {
-			return obs, errors.New("missing USDC authority")
+			return obs, errors.New("missing token authority")
 		}
 		t, err := terms.token(base58.Encode(wire[senderOffset : senderOffset+32]))
 		if err != nil {
@@ -246,7 +269,7 @@ func (s *Service) ObserveSolDeposit(ctx context.Context, wire []byte, terms SolD
 // Reconcile both token accounts and all SOL movement against the original wire.
 func (terms SolDepositTerms) checkTokenReceipt(t solanaspl.Transfer, failed bool, pre, post []*uint64, preTokens, postTokens []solanaspl.TokenBalance) (int64, error) {
 	if len(pre) != len(t.Keys())+2 {
-		return 0, errors.New("unexpected sponsored USDC account count")
+		return 0, errors.New("unexpected sponsored SPL account count")
 	}
 	source, dest := 2, 3
 	if t.CreateATA {
@@ -254,7 +277,7 @@ func (terms SolDepositTerms) checkTokenReceipt(t solanaspl.Transfer, failed bool
 	}
 	for i := 1; i < len(pre); i++ {
 		if i != dest && *pre[i] != *post[i] {
-			return 0, errors.New("unexpected USDC deposit SOL movement")
+			return 0, errors.New("unexpected token deposit SOL movement")
 		}
 	}
 	if *pre[dest] > *post[dest] {
@@ -262,7 +285,7 @@ func (terms SolDepositTerms) checkTokenReceipt(t solanaspl.Transfer, failed bool
 	}
 	funding := *post[dest] - *pre[dest]
 	if funding > uint64(terms.MaxFundingLamports) || *pre[0] < *post[0] || *pre[0]-*post[0] < funding || *pre[0]-*post[0]-funding != uint64(terms.FeeLamports) {
-		return 0, errors.New("USDC sponsor fee and storage funding do not reconcile")
+		return 0, errors.New("SPL sponsor fee and storage funding do not reconcile")
 	}
 	if funding > 0 {
 		for _, balance := range preTokens {
@@ -273,7 +296,7 @@ func (terms SolDepositTerms) checkTokenReceipt(t solanaspl.Transfer, failed bool
 	}
 	if failed {
 		if funding != 0 || !reflect.DeepEqual(preTokens, postTokens) {
-			return 0, errors.New("failed USDC deposit moved funds")
+			return 0, errors.New("failed token deposit moved funds")
 		}
 	} else if err := t.CheckTokenDeltas(source, dest, preTokens, postTokens); err != nil {
 		return 0, err
@@ -293,7 +316,9 @@ func (q DepositPreview) FinalizedSolUSD(feeLamports, fundingLamports int64, user
 	gross, _ := decimal.NewFromString(q.PayQuantity)
 	terms := SolDepositTerms{Recipient: q.Recipient, FeeLamports: feeLamports}
 	units := gross.Shift(9)
-	if q.AssetID == solanaDepositUSDC {
+	_, isToken := SolanaDepositTokenMint(q.AssetID)
+	if isToken {
+		terms.TokenAssetID = q.AssetID
 		if !rateSyntax.MatchString(q.AccountFunding) {
 			return decimal.Zero, errors.New("invalid quoted storage funding")
 		}
@@ -303,14 +328,14 @@ func (q DepositPreview) FinalizedSolUSD(feeLamports, fundingLamports int64, user
 		}
 		terms.MaxFundingLamports = cap.Shift(9).IntPart()
 		units = gross.Shift(6)
-	} else if !rate.Equal(gasRate) {
+	} else if q.AssetID != solanaDepositAsset || !rate.Equal(gasRate) {
 		return decimal.Zero, errors.New("inconsistent native SOL price")
 	}
 	if !units.IsInteger() || !units.BigInt().IsUint64() || fundingLamports < 0 || fundingLamports > terms.MaxFundingLamports {
 		return decimal.Zero, errors.New("invalid finalized quantity or funding")
 	}
-	if q.AssetID == solanaDepositUSDC {
-		terms.USDCAtoms = units.BigInt().Uint64()
+	if isToken {
+		terms.TokenAtoms = units.BigInt().Uint64()
 	} else {
 		if !units.BigInt().IsInt64() {
 			return decimal.Zero, errors.New("SOL principal exceeds execution budget range")

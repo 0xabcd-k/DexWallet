@@ -21,11 +21,11 @@ import (
 )
 
 const (
-	devnetUSDCMint          = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
-	solanaDepositAsset      = SolanaDevnet + ":sol"
-	solanaDepositUSDC       = SolanaDevnet + ":usdc"
-	solanaDepositUSDTPrefix = SolanaDevnet + ":usdt:"
-	legacyTokenAccountSize  = 165
+	devnetUSDCMint             = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+	solanaDepositAsset         = SolanaDevnet + ":sol"
+	SolanaDevnetUSDC           = SolanaDevnet + ":usdc"
+	SolanaDevnetTestUSDTPrefix = SolanaDevnet + ":usdt:"
+	legacyTokenAccountSize     = 165
 )
 
 type SolanaDepositFeeConfig struct {
@@ -115,7 +115,7 @@ func (s *Service) previewSolanaDeposit(ctx context.Context, user int64, assetID,
 	route := s.quotes.solana[assetID]
 	if route == nil {
 		mint := s.endpoints[SolanaDevnet].TestUSDTContract
-		if assetID != solanaDepositAsset && assetID != solanaDepositUSDC && (mint == "" || assetID != solanaDepositUSDTPrefix+mint) {
+		if assetID != solanaDepositAsset && assetID != SolanaDevnetUSDC && (mint == "" || assetID != SolanaDevnetTestUSDTPrefix+mint) {
 			return empty, badTarget("wallet fee preview unsupported for asset")
 		}
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Solana wallet fee preview disabled"))

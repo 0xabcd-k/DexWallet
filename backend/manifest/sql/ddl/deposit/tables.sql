@@ -12,7 +12,7 @@ CREATE TABLE `sol_deposit_order` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `quote_idx` CHAR(32) NOT NULL,
     `order_idx` CHAR(32) NOT NULL,
-    `asset_id` VARCHAR(32) NOT NULL DEFAULT 'solana-devnet:sol',
+    `asset_id` VARCHAR(96) NOT NULL DEFAULT 'solana-devnet:sol',
     `actual_funding_lamports` BIGINT NOT NULL DEFAULT 0,
     `message_base64` VARCHAR(1024) NOT NULL,
     `message_sha256` CHAR(64) NOT NULL,

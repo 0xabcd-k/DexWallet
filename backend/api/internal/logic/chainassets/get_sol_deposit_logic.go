@@ -47,7 +47,7 @@ func (l *GetSolDepositLogic) GetSolDeposit(req *types.DepositQuoteLookupRequest)
 
 func solOrderResponse(ctx context.Context, o deposit.SolOrder) *types.SolDepositOrderResponse {
 	data := types.SolDepositOrderData{AssetId: o.AssetId, ExecutionState: o.ExecutionState, TxSignature: o.TxSignature.String, ActualFeeLamports: o.ActualLamportsFee, QuoteIdx: o.QuoteIdx, OrderIdx: o.OrderIdx, State: deposit.AwaitingSignature, MessageBase64: o.MessageBase64, MessageSha256: o.MessageSha256, LastValidBlockHeight: o.LastValidHeight, QuoteExpiresAt: o.QuoteExpiresAt, ReviewAfter: o.ReviewAfter.UnixMilli()}
-	if o.AssetId == chainlogic.SolanaDevnet+":usdc" && (o.ExecutionState == deposit.SolFinalized || o.ExecutionState == deposit.SolFailed) {
+	if _, isToken := chainlogic.SolanaDepositTokenMint(o.AssetId); isToken && (o.ExecutionState == deposit.SolFinalized || o.ExecutionState == deposit.SolFailed) {
 		data.ActualFundingLamports = strconv.FormatInt(o.ActualFundingLamports, 10)
 	}
 	if o.CreditVoucherId.Valid {

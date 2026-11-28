@@ -28,7 +28,9 @@ func run() error {
 	recipient := flag.String("recipient", "", "expected Devnet collection address")
 	gross := flag.Int64("gross-lamports", 0, "exact gross transfer authorized for this order")
 	usdc := flag.Uint64("usdc-atoms", 0, "exact gross Devnet USDC in millionths, mutually exclusive with gross-lamports")
-	funding := flag.Int64("max-funding-lamports", 0, "separate sponsor authorization for quoted USDC ATA funding")
+	testUSDT := flag.Uint64("test-usdt-atoms", 0, "exact gross Devnet test USDT in millionths")
+	mint := flag.String("test-usdt-mint", "", "expected Devnet test USDT mint for this order")
+	funding := flag.Int64("max-funding-lamports", 0, "separate sponsor authorization for quoted SPL account funding")
 	fee := flag.Int64("fee-lamports", 0, "authorized test sponsor fee, including on execution failure")
 	keyFile := flag.String("sponsor-key-file", "", "dedicated Devnet sponsor CLI key file")
 	rpc := flag.String("rpc", "https://api.devnet.solana.com", "trusted Devnet RPC")
@@ -53,8 +55,8 @@ func run() error {
 	if err = db.QueryRowContext(ctx, "SELECT version,dirty FROM schema_migrations_business").Scan(&version, &dirty); err != nil {
 		return err
 	}
-	if dirty || version < 41 {
-		return errors.New("clean business schema >=41 required")
+	if dirty || version < 42 {
+		return errors.New("clean business schema >=42 required")
 	}
 	conn := sqlx.NewSqlConnFromDB(db)
 	credit := func() error {
@@ -67,6 +69,19 @@ func run() error {
 	}
 	if *settleOnly {
 		return credit()
+	}
+	terms := chainassets.SolDepositTerms{Recipient: *recipient, GrossLamports: *gross, FeeLamports: *fee, MaxFundingLamports: *funding}
+	if *usdc > 0 {
+		terms.TokenAssetID, terms.TokenAtoms = chainassets.SolanaDevnetUSDC, *usdc
+	}
+	if *testUSDT > 0 || *mint != "" {
+		if *usdc != 0 || *testUSDT == 0 || *mint == "" {
+			return errors.New("test USDT requires its mint, quantity and a single transfer asset")
+		}
+		terms.TokenAssetID, terms.TokenAtoms = chainassets.SolanaDevnetTestUSDTPrefix+*mint, *testUSDT
+	}
+	if !terms.Valid() {
+		return errors.New("invalid Devnet asset, gross or sponsor budget")
 	}
 	raw, err := os.ReadFile(*keyFile)
 	if err != nil {
@@ -84,7 +99,7 @@ func run() error {
 		return err
 	}
 	defer assets.Close()
-	work, err := deposit.NewSolExecution(conn, assets, *idx, chainassets.SolDepositTerms{Recipient: *recipient, GrossLamports: *gross, FeeLamports: *fee, USDCAtoms: *usdc, MaxFundingLamports: *funding}, key)
+	work, err := deposit.NewSolExecution(conn, assets, *idx, terms, key)
 	if err != nil {
 		return err
 	}

@@ -7,9 +7,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/migration"
 	"github.com/0xabcd-k/DexWallet/backend/logic/account"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/deposit"
@@ -19,19 +21,37 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
-// Recover both public Devnet orders into one isolated user's USD ledger without a signer.
-func TestUSDCDepositCreditRecovery(t *testing.T) {
+// Recover USDC and test USDT orders into one isolated user's USD ledger without a signer.
+func TestSPLDepositCreditRecovery(t *testing.T) {
 	ctx := context.Background()
-	db, _ := userDatabase(t, "usdc_credit")
+	name, dsn, db, err := testRun.NewDatabase(ctx, "spl_credit")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	m, err := migration.Open(dsn, name, "../../manifest/sql/diff/business", "business")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	if err = m.Up(); err != nil {
+		t.Fatal(err)
+	}
 	mustExec(t, db, "INSERT INTO user(id,nickname) VALUES(1,'devnet')")
 	conn := sqlx.NewSqlConnFromDB(db)
 	ledger := account.New(accounts.NewUserAccountModel(conn))
 	tx := transaction.New(db)
-	orders := map[string]bool{}
+	orders := map[string]account.Action{}
 	for _, tc := range []struct {
 		name    string
 		funding int64
-	}{{"create", 1488440}, {"existing", 0}} {
+		action  account.Action
+	}{
+		{"usdc-self-deposit-create", 1488440, deposit.ActionCreditUSDC},
+		{"usdc-self-deposit-existing", 0, deposit.ActionCreditUSDC},
+		{"test-usdt-self-deposit-create", 1488440, deposit.ActionCreditTestUSDT},
+		{"test-usdt-self-deposit-existing", 0, deposit.ActionCreditTestUSDT},
+	} {
 		var f struct {
 			Quote       chainassets.DepositPreview
 			Signature   string
@@ -40,7 +60,7 @@ func TestUSDCDepositCreditRecovery(t *testing.T) {
 				Transaction []string
 			}
 		}
-		raw, err := os.ReadFile("../../logic/chainassets/testdata/usdc-self-deposit-" + tc.name + ".json")
+		raw, err := os.ReadFile("../../logic/chainassets/testdata/" + tc.name + ".json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -66,18 +86,22 @@ func TestUSDCDepositCreditRecovery(t *testing.T) {
 		}
 		replay, err := deposit.CreditSol(ctx, tx, ledger, q.QuoteIdx)
 		if err != nil || !order.CreditVoucherId.Valid || replay.CreditVoucherId != order.CreditVoucherId {
-			t.Fatal("replayed USDC credit", err)
+			t.Fatal("replayed token credit", err)
 		}
-		orders[q.SolOrderIdx] = true
+		orders[q.SolOrderIdx] = tc.action
 	}
-	page, err := ledger.Entries(ctx, 1, accounts.KindUSD, 0, 3)
-	if err != nil || len(page.Entries) != 2 || page.Entries[0].BalanceAfter.StringFixed(2) != "0.02" {
+	page, err := ledger.Entries(ctx, 1, accounts.KindUSD, 0, 5)
+	if err != nil || len(page.Entries) != len(orders) || page.Entries[0].BalanceAfter.StringFixed(2) != "0.04" {
 		t.Fatal("USD statement", page, err)
 	}
 	for _, e := range page.Entries {
-		if !orders[e.DepositOrderIdx] || e.Amount.StringFixed(2) != "0.01" || e.Action != string(deposit.ActionCreditUSDC) {
-			t.Fatal("unexpected USDC credit", e)
+		action, ok := orders[e.DepositOrderIdx]
+		if !ok || e.Amount.StringFixed(2) != "0.01" || e.Action != string(action) {
+			t.Fatal("unexpected token credit", e)
 		}
 		delete(orders, e.DepositOrderIdx)
+	}
+	if err = m.Migrate(41); err == nil || !strings.Contains(err.Error(), "sol_test_usdt_rollback_guard") {
+		t.Fatal("downgrade did not protect fixture orders", err)
 	}
 }

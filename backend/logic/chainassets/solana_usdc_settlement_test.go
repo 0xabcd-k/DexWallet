@@ -13,13 +13,20 @@ import (
 	"github.com/mr-tron/base58"
 )
 
-// These fixtures are the public messages and finalized metadata of two Devnet orders.
-func TestSelfDepositUSDC(t *testing.T) {
+// Replay signed orders for both Devnet deposit tokens independently of live RPC.
+func TestSelfDepositSPL(t *testing.T) {
 	for _, tc := range []struct {
-		caseName string
-		funding  int64
-	}{{"create", 1488440}, {"existing", 0}} {
-		t.Run(tc.caseName, func(t *testing.T) {
+		fixture string
+		assetID string
+		atoms   uint64
+		funding int64
+	}{
+		{"usdc-self-deposit-create", SolanaDevnetUSDC, 11000, 1488440},
+		{"usdc-self-deposit-existing", SolanaDevnetUSDC, 11000, 0},
+		{"test-usdt-self-deposit-create", SolanaDevnetTestUSDTPrefix + depositTestUSDTMint, 11225, 1488440},
+		{"test-usdt-self-deposit-existing", SolanaDevnetTestUSDTPrefix + depositTestUSDTMint, 11225, 0},
+	} {
+		t.Run(tc.fixture, func(t *testing.T) {
 			var f struct {
 				Quote       DepositPreview
 				Signature   string
@@ -34,7 +41,7 @@ func TestSelfDepositUSDC(t *testing.T) {
 					Transaction []string
 				}
 			}
-			raw, err := os.ReadFile("testdata/usdc-self-deposit-" + tc.caseName + ".json")
+			raw, err := os.ReadFile("testdata/" + tc.fixture + ".json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -47,7 +54,7 @@ func TestSelfDepositUSDC(t *testing.T) {
 				t.Fatal(err)
 			}
 			sig := base58.Encode(wire[65:129])
-			terms := SolDepositTerms{Recipient: q.Recipient, USDCAtoms: 11000, FeeLamports: 10000, MaxFundingLamports: tc.funding}
+			terms := SolDepositTerms{Recipient: q.Recipient, TokenAssetID: tc.assetID, TokenAtoms: tc.atoms, FeeLamports: 10000, MaxFundingLamports: tc.funding}
 			msg, err := terms.Check(q, q.FeePayer, sig)
 			if err != nil || !bytes.Equal(msg, wire[129:]) {
 				t.Fatal("signed terms", err)
@@ -60,9 +67,25 @@ func TestSelfDepositUSDC(t *testing.T) {
 				t.Fatal("unapproved funding")
 			}
 			changed := terms
-			changed.USDCAtoms++
+			changed.TokenAtoms++
 			if _, err = changed.Check(q, q.FeePayer, sig); err == nil {
 				t.Fatal("unapproved gross amount")
+			}
+
+			for _, otherID := range []string{SolanaDevnetTestUSDTPrefix + devnetUSDCMint, SolanaDevnetTestUSDTPrefix + q.WalletAddress, SolanaDevnetUSDC} {
+				if otherID == tc.assetID {
+					continue
+				}
+				wrong := terms
+				wrong.TokenAssetID = otherID
+				if _, err := wrong.Check(q, q.FeePayer, sig); err == nil {
+					t.Fatal("order accepted for a different sponsored asset")
+				}
+				altered := q
+				altered.AssetID = otherID
+				if _, err := wrong.Check(altered, q.FeePayer, sig); err == nil {
+					t.Fatal("asset substitution kept the original signature")
+				}
 			}
 
 			s := service(t, SolanaDevnet, func(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +127,7 @@ func TestSelfDepositUSDC(t *testing.T) {
 			m.PostTokenBalances[last].UITokenAmount.Amount = "0"
 			reject()
 			m.PostTokenBalances[last] = orig
-			if tc.caseName == "create" {
+			if tc.funding > 0 {
 				// Another transaction created this ATA after pricing. The idempotent
 				// creation in our signed wire can legitimately spend zero storage SOL.
 				m.PreBalances[2] = m.PostBalances[2]
@@ -143,7 +166,7 @@ func TestUSDCStorageBudgetBeforeSigningAndBroadcast(t *testing.T) {
 			t.Error(method)
 		}
 	})
-	terms := SolDepositTerms{USDCAtoms: 11000, FeeLamports: 10000, MaxFundingLamports: authorized}
+	terms := SolDepositTerms{TokenAssetID: SolanaDevnetUSDC, TokenAtoms: 11000, FeeLamports: 10000, MaxFundingLamports: authorized}
 	for _, cost := range []int64{authorized, authorized + 1, 0} {
 		current = cost
 		err := s.CheckDevnetDepositFee(context.Background(), []byte{1}, terms)
