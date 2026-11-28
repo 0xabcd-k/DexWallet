@@ -15,6 +15,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	BaseUSDCExecutionWindow   time.Duration         `json:",optional"`
 	SolanaTestUSDTReviewAfter time.Duration         `json:",optional"`
 	SolanaUSDCReviewAfter     time.Duration         `json:",optional"`
 	SolanaSOLReviewAfter      time.Duration         `json:",optional"`
@@ -53,6 +54,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
+	baseUSDCWindow time.Duration
 	solReviewAfter map[string]time.Duration
 	ton            map[string]*tonDepositRoute
 	tron           map[string]*nileDepositRoute
@@ -88,7 +90,10 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	if c.SolanaTestUSDTReviewAfter != 0 && (c.SolanaTestUSDT == nil || c.SolanaTestUSDTReviewAfter < time.Second) {
 		return book, fmt.Errorf("test USDT authorization requires a Devnet test USDT route and review interval of at least one second")
 	}
-	book = depositBook{solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	if c.BaseUSDCExecutionWindow != 0 && (c.BaseUSDC == nil || c.BaseUSDCExecutionWindow < time.Second) {
+		return book, fmt.Errorf("Base USDC execution requires a wallet route and a positive signing window")
+	}
+	book = depositBook{baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {
@@ -204,6 +209,7 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 }
 
 type DepositPreview struct {
+	BaseValidBefore                 int64
 	SolOrderIdx, SolMessage         string
 	SolLastValidHeight, SolReviewAt int64
 	QuoteIdx, MaxGas                string

@@ -30,3 +30,11 @@ ALTER TABLE `sol_deposit_order`
    (LEFT(`asset_id`,19)='solana-devnet:usdt:' AND CHAR_LENGTH(`asset_id`) BETWEEN 51 AND 63)),
  ADD CONSTRAINT `ck_sol_deposit_spl_funding` CHECK (`actual_funding_lamports`=0 OR
    (`asset_id`<>'solana-devnet:sol' AND `execution_state`='finalized' AND `actual_funding_lamports`>0));
+
+ALTER TABLE `base_deposit_order`
+ ADD CONSTRAINT `fk_base_deposit_quote` FOREIGN KEY (`quote_idx`) REFERENCES `deposit_quote_confirmation` (`quote_idx`),
+ ADD CONSTRAINT `fk_base_deposit_voucher` FOREIGN KEY (`credit_voucher_id`) REFERENCES `ledger_voucher` (`id`),
+ ADD CONSTRAINT `ck_base_deposit_wire` CHECK ((`tx_hash` IS NULL AND `sponsor_nonce` IS NULL AND `signed_wire`='' AND `state` IN ('accepted','review'))
+   OR (`tx_hash` IS NOT NULL AND `sponsor_nonce` IS NOT NULL AND `signed_wire`<>'' AND `state` IN ('signed','review','credited'))),
+ ADD CONSTRAINT `ck_base_deposit_credit` CHECK ((`credit_voucher_id` IS NULL AND `credited_usd` IS NULL AND `state`<>'credited')
+   OR (`state`='credited' AND `credit_voucher_id` IS NOT NULL AND `credited_usd` IS NOT NULL AND `credited_usd`>0 AND `finalized_height`>0 AND `actual_fee_wei`<>''));

@@ -49,7 +49,11 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
       (asset.id === solanaDepositSOL || asset.id === solanaDepositUSDC ||
         (asset.origin === 'test_fixture' && asset.decimals === 6 && asset.id === solanaTestUSDTPrefix + asset.contract && !!depositTokenMint(asset.id))) && !!walletAddress && !!q.quoteIdx && typeof q.solOrderIdx === 'string' && /^[a-f0-9]{32}$/.test(q.solOrderIdx) &&
       [q.solFeePayer, q.solRecipient].every(v => typeof v === 'string' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v));
-    if (!solTerms || !validOffer || !validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
+    const hasBaseTerms = q.baseValidBefore !== undefined || q.baseRecipient !== undefined || q.baseFeePayer !== undefined;
+    const validBase = !hasBaseTerms || (asset.id === 'base-sepolia:usdc' && asset.contract.toLowerCase() === '0x036cbd53842c5426634e7929541ec2318f3dcf7e' &&
+      asset.decimals === 6 && !!walletAddress && !!q.quoteIdx && Number.isSafeInteger(q.baseValidBefore) && q.baseValidBefore! > Math.floor(q.expiresAt / 1000) &&
+      [q.baseRecipient, q.baseFeePayer].every(a => typeof a === 'string' && /^0x[a-fA-F0-9]{40}$/.test(a) && !/^0x0{40}$/.test(a) && a.toLowerCase() !== walletAddress.toLowerCase()));
+    if (!validBase || !solTerms || !validOffer || !validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||
       (q.rateSource !== undefined && q.rateSource !== 'test_sheet' && q.rateSource !== 'kraken') ||

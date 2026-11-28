@@ -202,6 +202,26 @@ export interface BackofficeStatusRequest {
 	reason: string
 }
 
+export interface BaseDepositAuthorizeRequest {
+	quoteIdx: string
+	userSignature: string
+}
+
+export interface BaseDepositOrderData {
+	quoteIdx: string
+	state: 'awaiting_signature' | 'expired' | 'accepted' | 'signed' | 'review' | 'credited'
+	txHash?: string
+	actualFeeWei?: string
+	creditedUsd?: string
+}
+
+export interface BaseDepositOrderResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: BaseDepositOrderData
+}
+
 export interface ChainAsset {
 	id: string
 	symbol: string
@@ -387,6 +407,9 @@ export interface DepositQuoteConfirmRequest {
 }
 
 export interface DepositQuoteData {
+	baseRecipient?: string
+	baseFeePayer?: string
+	baseValidBefore?: number
 	solOrderIdx?: string
 	solRecipient?: string
 	solFeePayer?: string

@@ -8,6 +8,7 @@ import * as catalog from '../../apps/user/src/app/native/chain-assets/api';
 import * as walletSource from '../../apps/user/src/app/native/chain-assets/use-wallets';
 import { previewDeposit } from '../../apps/user/src/app/native/chain-transfer/deposit';
 import DepositButton, { DepositEstimate } from '../../apps/user/src/view/chain-transfer/deposit';
+import { LastBaseDeposit } from '../../apps/user/src/view/chain-transfer/base-deposit';
 import { LastSolDeposit } from '../../apps/user/src/view/chain-transfer/sol-deposit';
 import { nativeCatalog } from '../../apps/user/src/app/native/local-wallet/bridge';
 import { appResources } from '../../apps/user/src/locales';
@@ -304,4 +305,41 @@ it.each([[false, undefined], [true, undefined], [true, '0'], [true, '1488440']] 
   expect(screen.getByText(tx)).toBeInTheDocument();
   expect(screen.getByText('10000 lamports')).toBeInTheDocument();
   if (funding !== undefined) expect(screen.getByText(funding + ' lamports')).toBeInTheDocument();
+});
+
+it('looks up a finalized Base deposit without a wallet and opens the USD statement', async () => {
+  const idx = 'a'.repeat(32), txHash = '0x' + 'b'.repeat(64);
+  vi.mocked(nativeCatalog.get).mockResolvedValueOnce({ value: idx });
+  const api = vi.spyOn(client, 'userRequest').mockImplementation(async (path, decode) => {
+    expect(path).toBe('/v1/user/base-deposit-orders/' + idx);
+    return decode({ data: { quoteIdx: idx, state: 'credited', txHash, actualFeeWei: '558417902115', creditedUsd: '0.01' } });
+  });
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<MemoryRouter><I18nextProvider i18n={i18n}><LastBaseDeposit userIdx="testuser"/></I18nextProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Check Base deposit status' }));
+  expect(await screen.findByText(txHash)).toBeInTheDocument();
+  expect(screen.getByText('558417902115 wei')).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('0.01 test USD');
+  expect(screen.getByRole('link')).toHaveAttribute('href', '/records?kind=usd_balance');
+  expect(api).toHaveBeenCalledOnce();
+});
+
+it('offers Base USDC signing only after confirming the exact Circle wallet quote', async () => {
+  const native = network.assets[0]!, asset = { ...network.assets[1]!, contract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' };
+  const wallet = '0x' + '1'.repeat(40), recipient = '0x' + '2'.repeat(40), sponsor = '0x' + '3'.repeat(40);
+  const now = Date.now(), terms = { ...quote(now), quoteIdx: 'd'.repeat(32), walletAddress: wallet, walletFeePreview: true,
+    feeBlockHash: '0x' + 'b'.repeat(64), maxGas: '0.0001', baseFeePayer: sponsor, baseRecipient: recipient, baseValidBefore: Math.floor(now / 1000) + 330 };
+  vi.spyOn(client, 'userRequest').mockImplementation(async (path, decode) => decode({ data:
+    path.endsWith('/confirm') ? { quote: terms, confirmedAt: now + 1 } : terms }));
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<MemoryRouter><I18nextProvider i18n={i18n}><DepositEstimate asset={asset} native={native} target="10"
+    walletAddress={wallet} local={{ userIdx: 'testuser', walletId: 'base' }}/></I18nextProvider></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  const confirm = await screen.findByRole('button', { name: 'Confirm quote' });
+  expect(screen.queryByRole('button', { name: 'Authorize Base USDC deposit' })).toBeNull();
+  fireEvent.click(confirm);
+  expect(await screen.findByRole('button', { name: 'Authorize Base USDC deposit' })).toBeEnabled();
+  expect(screen.getByText(sponsor)).toBeInTheDocument();
+  expect(screen.getByText(recipient)).toBeInTheDocument();
+  await expect(previewDeposit({ ...asset, contract: wallet }, native, '10', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
 });

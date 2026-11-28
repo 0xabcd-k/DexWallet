@@ -192,6 +192,26 @@ type BackofficeStatusRequest struct {
 	Reason string `json:"reason"`
 }
 
+type BaseDepositAuthorizeRequest struct {
+	QuoteIdx      string `json:"quoteIdx"`
+	UserSignature string `json:"userSignature"`
+}
+
+type BaseDepositOrderData struct {
+	QuoteIdx     string `json:"quoteIdx"`
+	State        string `json:"state,options=awaiting_signature|expired|accepted|signed|review|credited"`
+	TxHash       string `json:"txHash,optional,omitempty"`
+	ActualFeeWei string `json:"actualFeeWei,optional,omitempty"`
+	CreditedUsd  string `json:"creditedUsd,optional,omitempty"`
+}
+
+type BaseDepositOrderResponse struct {
+	Code    string               `json:"code,options=OK"`
+	Message string               `json:"message"`
+	TraceId string               `json:"traceId"`
+	Data    BaseDepositOrderData `json:"data"`
+}
+
 type ChainAsset struct {
 	Id             string `json:"id"`
 	Symbol         string `json:"symbol"`
@@ -374,6 +394,9 @@ type DepositQuoteConfirmRequest struct {
 }
 
 type DepositQuoteData struct {
+	BaseRecipient       string `json:"baseRecipient,optional,omitempty"`
+	BaseFeePayer        string `json:"baseFeePayer,optional,omitempty"`
+	BaseValidBefore     int64  `json:"baseValidBefore,optional,omitempty"`
 	SolOrderIdx         string `json:"solOrderIdx,optional,omitempty"`
 	SolRecipient        string `json:"solRecipient,optional,omitempty"`
 	SolFeePayer         string `json:"solFeePayer,optional,omitempty"`

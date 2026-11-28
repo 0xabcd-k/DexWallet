@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"math"
 	"regexp"
 	"slices"
@@ -407,6 +409,11 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 			return empty, err
 		}
 	}
+	if k.Network == chainassets.BaseSepolia && k.Kind == EVMLog && ev.AssetId == baseusdc.AssetID {
+		if err := a.checkBaseDepositReservation(ctx, tx.EvidenceJson, ev.SourceOwner, ev.RecipientOwner); err != nil {
+			return empty, err
+		}
+	}
 	if !row.MatchedEventId.Valid {
 		// A request can accept one event and the unique index reserves each event globally.
 		_, err = a.conn.ExecCtx(ctx, `UPDATE chain_receive_request SET matched_event_id=?
@@ -430,6 +437,39 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 		return empty, ErrReceiveConflict
 	}
 	return found, nil
+}
+
+// Reserve the signed order nonce even if a different relayer submitted the call.
+func (a *Attribution) checkBaseDepositReservation(ctx context.Context, raw, source, recipient string) error {
+	var evidence struct{ Receipt baseReceipt }
+	if err := json.Unmarshal([]byte(raw), &evidence); err != nil {
+		return err
+	}
+	ids, err := baseDepositReferences(evidence.Receipt, source)
+	if err != nil || len(ids) == 0 {
+		return err
+	}
+	var version int
+	if err := a.conn.QueryRowCtx(ctx, &version, "SELECT version FROM schema_migrations_business WHERE dirty=0"); err != nil {
+		return err
+	}
+	if version < 43 {
+		return nil
+	}
+	for _, id := range ids {
+		var reserved bool
+		if err := a.conn.QueryRowCtx(ctx, &reserved, `SELECT EXISTS(SELECT 1 FROM deposit_quote_confirmation WHERE quote_idx=?
+			AND JSON_UNQUOTE(JSON_EXTRACT(snapshot_json,'$.AssetID'))=?
+			AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(snapshot_json,'$.WalletAddress')))=?
+			AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(snapshot_json,'$.Recipient')))=?
+			AND JSON_EXTRACT(snapshot_json,'$.BaseValidBefore')>0)`, id, baseusdc.AssetID, source, recipient); err != nil {
+			return err
+		}
+		if reserved {
+			return ErrReceiveConflict
+		}
+	}
+	return nil
 }
 
 // The standalone collector also supports business 32–38, which predate sponsor

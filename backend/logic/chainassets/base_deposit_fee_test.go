@@ -111,6 +111,7 @@ func checkBaseDepositBudget(t *testing.T, assetID, fixture string) {
 		)
 	} else {
 		cases = append(cases,
+			baseFeeCase{name: "authorization enabled"},
 			baseFeeCase{name: "plain EOA", method: "eth_getCode", override: "0x"},
 			baseFeeCase{name: "nonzero operator fee", method: "eth_call", prefix: "0x275aedd2", override: fmt.Sprintf("0x%064x", 1000)},
 			baseFeeCase{name: "insufficient USDC after fee", method: "eth_call", prefix: "0x70a08231", override: fmt.Sprintf("0x%064x", 11000), want: apperror.InsufficientBalance},
@@ -156,6 +157,9 @@ func checkBaseDepositBudget(t *testing.T, assetID, fixture string) {
 					c.DepositQuotes.BaseETH = route
 				} else {
 					c.DepositQuotes.BaseUSDC = route
+					if tc.name == "authorization enabled" {
+						c.DepositQuotes.BaseUSDCExecutionWindow = 5 * time.Minute
+					}
 				}
 			})
 			q, err := s.PreviewWalletDeposit(context.Background(), 7, assetID, "0.01", evidence.Preview.WalletAddress)
@@ -165,6 +169,13 @@ func checkBaseDepositBudget(t *testing.T, assetID, fixture string) {
 					t.Fatal(q, err)
 				}
 				return
+			}
+			var wantExpiry int64
+			if tc.name == "authorization enabled" {
+				wantExpiry = time.UnixMilli(q.ExpiresAt).Add(5 * time.Minute).Unix()
+			}
+			if q.BaseValidBefore != wantExpiry {
+				t.Fatalf("authorization expiry %d, want %d", q.BaseValidBefore, wantExpiry)
 			}
 			want := evidence.Preview
 			if tc.name == "nonzero operator fee" {

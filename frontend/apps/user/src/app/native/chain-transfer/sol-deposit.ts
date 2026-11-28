@@ -4,11 +4,10 @@ import { base58, base64 } from '@scure/base';
 import { bytesToHex, concatBytes } from '@noble/hashes/utils.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { ed25519 } from '@noble/curves/ed25519.js';
-import { mnemonicToSeed } from '@scure/bip39';
+import { signWithSeed } from './sign-with-seed';
 import { HDKey } from 'micro-key-producer/slip10.js';
 import { userRequest } from '../../../api/account';
-import { nativeVault } from '../local-wallet/bridge';
-import { DERIVATION, parseMaterial, WalletError } from '../local-wallet/crypto';
+import { DERIVATION, WalletError } from '../local-wallet/crypto';
 import { atomicAmount } from './api';
 
 import { depositTokenMint, solanaDepositSOL as sol } from './sol-deposit-asset';
@@ -105,36 +104,15 @@ export function checkedSolMessage(q: DepositQuoteData, o: SolDepositOrderData) {
 
 export async function signLocalSolDeposit(userIdx: string, walletId: string, q: DepositQuoteData, o: SolDepositOrderData, signal: AbortSignal) {
   const msg = checkedSolMessage(q, o);
-  const token = crypto.randomUUID();
-  const close = () => { void nativeVault.unprotect({ token }).catch(() => {}); };
-  signal.throwIfAborted();
-  const listener = await nativeVault.addListener('privacyChange', state => {
-    if (state.token === token && state.active && !signal.aborted) void nativeVault.acknowledge({ token, revision: state.revision }).catch(() => {});
-  });
-  try {
-    signal.throwIfAborted();
-    signal.addEventListener('abort', close, { once: true });
-    const state = await nativeVault.protect({ token });
-    if (!state.active) throw new WalletError('LOCAL_VIEW_CLOSED');
-    await nativeVault.acknowledge({ token, revision: state.revision });
-    signal.throwIfAborted();
-    const { secret } = await nativeVault.get({ userIdx, walletId, viewToken: token });
-    const material = await parseMaterial(secret);
-    if (material.scheme !== 'bip39') throw new WalletError('LOCAL_INVALID_SECRET');
-    const seed = await mnemonicToSeed(material.words, '');
+  return signWithSeed(userIdx, walletId, signal, seed => {
     const root = HDKey.fromMasterSeed(seed), key = root.derive(DERIVATION.solana);
     try {
-      signal.throwIfAborted();
-      if (document.visibilityState === 'hidden' || base58.encode(key.publicKeyRaw) !== q.walletAddress) throw new WalletError('LOCAL_VIEW_CLOSED');
+      if (base58.encode(key.publicKeyRaw) !== q.walletAddress) throw new WalletError('LOCAL_VIEW_CLOSED');
       return base58.encode(ed25519.sign(msg, key.privateKey));
     } finally {
-      seed.fill(0);
       for (const node of [root, key]) { node.privateKey.fill(0); node.chainCode.fill(0); }
     }
-  } finally {
-    signal.removeEventListener('abort', close);
-    try { await nativeVault.unprotect({ token }); } finally { await listener.remove(); }
-  }
+  });
 }
 
 export async function authorizeSolDeposit(userIdx: string, walletId: string, quote: DepositQuoteData, deadline: number, signal: AbortSignal) {

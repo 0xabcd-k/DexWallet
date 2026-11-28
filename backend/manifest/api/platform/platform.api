@@ -1193,6 +1193,9 @@ type DepositQuoteRequest {
     WalletAddress string `json:"walletAddress,optional"`
 }
 type DepositQuoteData {
+    BaseRecipient string `json:"baseRecipient,optional,omitempty"`
+    BaseFeePayer string `json:"baseFeePayer,optional,omitempty"`
+    BaseValidBefore int64 `json:"baseValidBefore,optional,omitempty"`
     SolOrderIdx string `json:"solOrderIdx,optional,omitempty"`
     SolRecipient string `json:"solRecipient,optional,omitempty"`
     SolFeePayer string `json:"solFeePayer,optional,omitempty"`
@@ -1261,6 +1264,23 @@ service platform {
     get /v1/user/deposit-quotes/:quoteIdx (DepositQuoteLookupRequest) returns (ConfirmedDepositQuoteResponse)
 }
 
+type BaseDepositAuthorizeRequest {
+    QuoteIdx string `json:"quoteIdx"`
+    UserSignature string `json:"userSignature"`
+}
+type BaseDepositOrderData {
+    QuoteIdx string `json:"quoteIdx"`
+    State string `json:"state,options=awaiting_signature|expired|accepted|signed|review|credited"`
+    TxHash string `json:"txHash,optional,omitempty"`
+    ActualFeeWei string `json:"actualFeeWei,optional,omitempty"`
+    CreditedUsd string `json:"creditedUsd,optional,omitempty"`
+}
+type BaseDepositOrderResponse {
+    Code string `json:"code,options=OK"`
+    Message string `json:"message"`
+    TraceId string `json:"traceId"`
+    Data BaseDepositOrderData `json:"data"`
+}
 type SolDepositAuthorizeRequest {
     QuoteIdx string `json:"quoteIdx"`
     UserSignature string `json:"userSignature"`
@@ -1295,6 +1315,10 @@ type SolDepositOrderResponse {
     middleware: AuthTransport,UserAuth
 )
 service platform {
+    @handler authorizeBaseDeposit
+    post /v1/user/base-deposit-orders/authorize (BaseDepositAuthorizeRequest) returns (BaseDepositOrderResponse)
+    @handler getBaseDeposit
+    get /v1/user/base-deposit-orders/:quoteIdx (DepositQuoteLookupRequest) returns (BaseDepositOrderResponse)
     @handler prepareSolDeposit
     post /v1/user/sol-deposit-orders/prepare (DepositQuoteConfirmRequest) returns (SolDepositOrderResponse)
     @handler authorizeSolDeposit

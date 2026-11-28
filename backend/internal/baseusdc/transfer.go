@@ -1,4 +1,4 @@
-// Package baseusdc handles the single direct ERC-20 transfer accepted for Sepolia payouts.
+// Package baseusdc encodes Base Sepolia USDC payouts and EIP-3009 deposit authorizations.
 package baseusdc
 
 import (

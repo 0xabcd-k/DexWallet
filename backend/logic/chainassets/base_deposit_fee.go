@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -138,6 +139,9 @@ func (s *Service) previewBaseDeposit(ctx context.Context, user int64, assetID, t
 	gross, _ := decimal.NewFromString(q.PayQuantity)
 	if gross.Shift(int32(entry.asset.Decimals)).BigInt().Cmp(budget.balance) > 0 {
 		return empty, apperror.New(apperror.InsufficientBalance, nil)
+	}
+	if assetID == baseusdc.AssetID && s.quotes.baseUSDCWindow > 0 {
+		q.BaseValidBefore = time.UnixMilli(q.ExpiresAt).Add(s.quotes.baseUSDCWindow).Unix()
 	}
 	q.Recipient, q.FeePayer = route.Recipient, route.FeePayer
 	q.WalletAddress, q.FeeBlockHash = address, budget.block.Hash.Hex()

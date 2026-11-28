@@ -372,6 +372,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
+					Path:    "/v1/user/base-deposit-orders/:quoteIdx",
+					Handler: chainassets.GetBaseDepositHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/base-deposit-orders/authorize",
+					Handler: chainassets.AuthorizeBaseDepositHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
 					Path:    "/v1/user/sol-deposit-orders/:quoteIdx",
 					Handler: chainassets.GetSolDepositHandler(serverCtx),
 				},

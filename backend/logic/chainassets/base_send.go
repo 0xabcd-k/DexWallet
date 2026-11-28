@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-const BaseSepoliaChainID = 84532
+const BaseSepoliaChainID = baseusdc.SepoliaChainID
 
 func (s *Service) baseSepoliaRPC(ctx context.Context, method string, params any, out any) error {
 	for _, n := range s.networks {

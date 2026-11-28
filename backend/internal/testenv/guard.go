@@ -53,7 +53,7 @@ func ValidateDSN(secret, role string) (*mysql.Config, error) {
 		dev := c.User == "dexwallet_dev" && c.DBName == "dexwallet_dev"
 		test := c.User == AdminUser && databaseName.MatchString(c.DBName)
 		if !dev && !test {
-			return nil, errors.New("test SOL credits require the local dev account/database or an isolated contract database")
+			return nil, errors.New("test deposit credits require the local dev account/database or an isolated contract database")
 		}
 		c.MultiStatements = false
 	case "migration":

@@ -6,6 +6,7 @@ import { Failure } from '../../auth/context';
 import { confirmDepositQuote, previewDeposit, validDepositTarget } from '../../app/native/chain-transfer/deposit';
 import { addressFor } from '../../app/native/chain-assets/wallets';
 import { useViewingWallets } from '../../app/native/chain-assets/use-wallets';
+import { BaseDepositOrder, LastBaseDeposit } from './base-deposit';
 import { SolDepositAuthorization, LastSolDeposit } from './sol-deposit';
 import { Link } from 'react-router';
 import { useChainCatalog } from './sources';
@@ -19,7 +20,8 @@ export default function DepositButton({ userIdx }: { userIdx: string }) {
       {open && <section className="payment-review transfer-result deposit-quote" role="dialog" aria-label={t('depositQuoteTitle')}>
         <h2>{t('depositQuoteTitle')}</h2><p>{t('depositBeneficiary', { idx: userIdx })}</p>
         <p>{t('depositTestNote')}</p>
-        <LastSolDeposit key={userIdx} userIdx={userIdx}/>
+        <LastSolDeposit key={'sol-' + userIdx} userIdx={userIdx}/>
+        <LastBaseDeposit key={'base-' + userIdx} userIdx={userIdx}/>
         <DepositFields key={userIdx} userIdx={userIdx} assetID={assetID} setAssetID={setAssetID} target={target} setTarget={setTarget}/>
       </section>}
     </Popup>
@@ -143,9 +145,11 @@ export function DepositEstimate({ asset, native, target, walletAddress, local, o
       <dt>{t('depositValidUntil')}</dt><dd>{new Date(quote.deadline).toLocaleTimeString()}</dd>
     </dl>)}
     {quote?.quoteIdx && (confirmedAt !== undefined
-      ? <p role="status">{t(quote.solOrderIdx && local ? 'solQuoteConfirmed' : 'depositQuoteSaved', { idx: quote.quoteIdx })}</p>
+      ? <p role="status">{t(quote.solOrderIdx && local ? 'solQuoteConfirmed' : quote.baseValidBefore && local ? 'baseQuoteConfirmed' : 'depositQuoteSaved', { idx: quote.quoteIdx })}</p>
       : (!expired || attempted) && <Button block disabled={busy} onClick={() => void confirm()}>
         {t(expired ? 'depositCheckConfirmation' : 'depositConfirmQuote')}</Button>)}
+    {quote?.baseValidBefore && quote.quoteIdx && confirmedAt !== undefined && local &&
+      <BaseDepositOrder key={quote.quoteIdx} idx={quote.quoteIdx} quote={quote} local={local} expired={expired}/>}
     {quote?.solOrderIdx && confirmedAt !== undefined && local &&
       <SolDepositAuthorization key={quote.solOrderIdx} local={local} quote={quote} expired={expired}/>}
     {quote?.walletFeePreview === true && !expired && onChooseWallet && <Button block onClick={onChooseWallet}>{t('chainChooseWallet')}</Button>}
