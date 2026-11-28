@@ -6,6 +6,7 @@ import { Failure } from '../../auth/context';
 import { confirmDepositQuote, previewDeposit, validDepositTarget } from '../../app/native/chain-transfer/deposit';
 import { addressFor } from '../../app/native/chain-assets/wallets';
 import { useViewingWallets } from '../../app/native/chain-assets/use-wallets';
+import { TronDepositOrder, LastTronDeposit } from './tron-deposit';
 import { BaseDepositOrder, LastBaseDeposit } from './base-deposit';
 import { SolDepositAuthorization, LastSolDeposit } from './sol-deposit';
 import { Link } from 'react-router';
@@ -21,6 +22,7 @@ export default function DepositButton({ userIdx }: { userIdx: string }) {
         <h2>{t('depositQuoteTitle')}</h2><p>{t('depositBeneficiary', { idx: userIdx })}</p>
         <p>{t('depositTestNote')}</p>
         <LastSolDeposit key={'sol-' + userIdx} userIdx={userIdx}/>
+        <LastTronDeposit key={'tron-' + userIdx} userIdx={userIdx}/>
         <LastBaseDeposit key={'base-' + userIdx} userIdx={userIdx}/>
         <DepositFields key={userIdx} userIdx={userIdx} assetID={assetID} setAssetID={setAssetID} target={target} setTarget={setTarget}/>
       </section>}
@@ -148,6 +150,8 @@ export function DepositEstimate({ asset, native, target, walletAddress, local, o
       ? <p role="status">{t(quote.solOrderIdx && local ? 'solQuoteConfirmed' : quote.baseValidBefore && local ? 'baseQuoteConfirmed' : 'depositQuoteSaved', { idx: quote.quoteIdx, asset: asset.symbol })}</p>
       : (!expired || attempted) && <Button block disabled={busy} onClick={() => void confirm()}>
         {t(expired ? 'depositCheckConfirmation' : 'depositConfirmQuote')}</Button>)}
+    {quote?.tronRefBlock && quote.quoteIdx && confirmedAt !== undefined && local &&
+      <TronDepositOrder key={quote.quoteIdx} idx={quote.quoteIdx} quote={quote} local={local} expired={expired}/>}
     {quote?.baseValidBefore && quote.quoteIdx && confirmedAt !== undefined && local &&
       <BaseDepositOrder key={quote.quoteIdx} idx={quote.quoteIdx} quote={quote} local={local} expired={expired}/>}
     {quote?.solOrderIdx && confirmedAt !== undefined && local &&

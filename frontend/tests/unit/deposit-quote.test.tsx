@@ -343,3 +343,31 @@ it.each(['USDC','ETH'])('offers Base %s signing after confirming the exact walle
   expect(screen.getAllByText(recipient).length).toBeGreaterThan(0);
   await expect(previewDeposit({ ...asset, contract: wallet }, native, '10', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
 });
+
+it('shows the Nile receiving address and burn condition before signing and links a credited order to its statement', async () => {
+  const txId = 'a'.repeat(64);
+  const trx = { id: 'tron-nile:trx', symbol: 'TRX', origin: 'native' as const, contract: '', decimals: 6 };
+  const owner = 'TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH', wallet = 'TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio';
+  const terms = { ...quote(), quoteIdx: 'd'.repeat(32), assetId: trx.id, gasAssetId: trx.id, targetUsd: '0.01', netUsd: '0.01',
+    usdPerCoin: '10', payQuantity: '0.001', estimatedGas: '0', maxGas: '0', gasUsd: '0', walletFeePreview: true,
+    walletAddress: wallet, messageSha256: txId, delegatedBandwidth: 266, tronRefBlock: '1'.repeat(64), tronRefTime: Date.now() - 2000,
+    tronRecipient: owner, tronResourceOwner: owner };
+  vi.spyOn(client, 'userRequest').mockImplementation(async (path, decode) => {
+    if (path.endsWith('/preview')) return decode({ data: terms });
+    if (path.endsWith('/confirm')) return decode({ data: { quote: terms, confirmedAt: terms.quotedAt + 1 } });
+    return decode({ data: { quoteIdx: terms.quoteIdx, txId, actualFeeSun: '0', actualBandwidth: 266, state: 'credited', creditedUsd: '0.01' } });
+  });
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<MemoryRouter><I18nextProvider i18n={i18n}><DepositEstimate asset={trx} native={trx} target="0.01"
+    walletAddress={wallet} local={{ userIdx: 'self', walletId: 'nile' }}/></I18nextProvider></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(screen.queryByRole('button', { name: 'Authorize TRX deposit' })).toBeNull();
+  fireEvent.click(await screen.findByRole('button', { name: 'Confirm quote' }));
+  expect(await screen.findByRole('button', { name: 'Authorize TRX deposit' })).toBeEnabled();
+  expect(screen.getAllByText(owner)).toHaveLength(2);
+  expect(screen.getByText(/TRON may burn TRX from your wallet/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Check TRX deposit status' }));
+  expect(await screen.findByText(txId)).toBeInTheDocument();
+  expect(screen.getByText('0 sun')).toBeInTheDocument();
+  expect(screen.getByRole('link')).toHaveAttribute('href', '/records?kind=usd_balance');
+});

@@ -1,5 +1,15 @@
 export const appResources = {
   "en": {
+    "tronSign": "Authorize TRX deposit",
+    "tronLookup": "Check TRX deposit status",
+    "tronSigned": "Order {{idx}} is signed and awaiting Nile solidification.",
+    "tronRecipient": "Nile TRX receiving address",
+    "tronResourceOwner": "Bandwidth provider",
+    "tronExpiry": "TRX transaction expires",
+    "tronTx": "Nile transaction ID",
+    "tronActualFee": "TRX burned (sun)",
+    "tronActualBandwidth": "Bandwidth used",
+    "tronResourceNotice": "The platform checks delegated bandwidth before broadcasting. If resources change before inclusion, TRON may burn TRX from your wallet. Any burn sends the order to review.",
     "baseQuoteConfirmed": "Quote {{idx}} confirmed. Authorize the Base Sepolia {{asset}} transfer with your wallet.",
     "baseSign": "Authorize Base {{asset}} deposit",
     "baseLookup": "Check Base deposit status",
@@ -439,6 +449,16 @@ export const appResources = {
 
   },
   "zh-CN": {
+    "tronSign": "授权 TRX 本人充值",
+    "tronLookup": "查询 TRX 充值进度",
+    "tronSigned": "订单 {{idx}} 已签名，等待 Nile 固化。",
+    "tronRecipient": "Nile TRX 收款地址",
+    "tronResourceOwner": "带宽提供地址",
+    "tronExpiry": "TRX 交易到期时间",
+    "tronTx": "Nile 交易 ID",
+    "tronActualFee": "实际燃烧（sun）",
+    "tronActualBandwidth": "实际消耗带宽",
+    "tronResourceNotice": "平台在广播前复查委托带宽。如果上链前资源发生变化，TRON 可能从你的钱包燃烧 TRX。出现燃烧时，订单进入核验。",
     "baseQuoteConfirmed": "报价 {{idx}} 已确认，可用钱包授权 Base Sepolia {{asset}} 转账。",
     "baseSign": "使用此钱包授权 Base {{asset}} 充值",
     "baseLookup": "查询 Base 充值进度",

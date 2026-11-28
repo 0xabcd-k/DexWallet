@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -151,6 +152,7 @@ func testNileQuotes(t *testing.T, path, assetID string, cases []nileQuoteCase) {
 			}
 			now := time.Now()
 			var head tronnative.Head
+			var resourceSpent atomic.Bool
 			s := service(t, TRONNile, func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]any
 				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -164,6 +166,10 @@ func testNileQuotes(t *testing.T, path, assetID string, cases []nileQuoteCase) {
 					scope := c.Path
 					changed := c.Result
 					switch scope {
+					case "/wallet/getaccountresource":
+						if resourceSpent.Load() {
+							changed["NetUsed"] = changed["NetLimit"]
+						}
 					case "/wallet/getaccount":
 						scope = "recipient"
 						if body["address"] == "412461517cf642358c8c0650b2cbccee4c31e16d7d" {
@@ -229,6 +235,17 @@ func testNileQuotes(t *testing.T, path, assetID string, cases []nileQuoteCase) {
 			raw, buildErr := tx.Raw()
 			if err != nil || buildErr != nil || q.MessageSHA256 != tronnative.TxID(raw) || q.DelegatedBandwidth != fixture.Preview.DelegatedBandwidth || q.WalletAddress != tronOwner || q.PayQuantity != fixture.Preview.PayQuantity || q.DelegatedEnergy != fixture.Preview.DelegatedEnergy || q.EstimatedGas != "0" || q.GasUSD != "0" || q.NetUSD != "0.01" || q.ExpiresAt != head.Timestamp+depositPreviewTTL.Milliseconds() {
 				t.Fatal(q, err, buildErr)
+			}
+			if tc.name == "covered" && assetID == TRONNileTRX {
+				q.TRONReference = &head
+				q.MaxGas = q.EstimatedGas
+				if e := s.CheckNileDepositResources(context.Background(), q); e != nil {
+					t.Fatal("covered broadcast preflight", e)
+				}
+				resourceSpent.Store(true)
+				if e := s.CheckNileDepositResources(context.Background(), q); e == nil {
+					t.Fatal("broadcast preflight accepted exhausted bandwidth")
+				}
 			}
 		})
 	}

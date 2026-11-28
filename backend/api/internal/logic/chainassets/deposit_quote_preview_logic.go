@@ -70,7 +70,12 @@ func depositQuoteData(q assets.DepositPreview) types.DepositQuoteData {
 	if q.BaseValidBefore > 0 {
 		baseRecipient, basePayer = q.Recipient, q.FeePayer
 	}
-	return types.DepositQuoteData{BaseValidBefore: q.BaseValidBefore, BaseRecipient: baseRecipient, BaseFeePayer: basePayer, SolOrderIdx: q.SolOrderIdx, SolRecipient: recipient, SolFeePayer: payer, QuoteIdx: q.QuoteIdx, MaxGas: q.MaxGas, AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
+	var ref, tronRecipient, owner string
+	var refTime int64
+	if q.TRONReference != nil {
+		ref, refTime, tronRecipient, owner = q.TRONReference.ID, q.TRONReference.Timestamp, q.Recipient, q.FeePayer
+	}
+	return types.DepositQuoteData{TronRefBlock: ref, TronRefTime: refTime, TronRecipient: tronRecipient, TronResourceOwner: owner, BaseValidBefore: q.BaseValidBefore, BaseRecipient: baseRecipient, BaseFeePayer: basePayer, SolOrderIdx: q.SolOrderIdx, SolRecipient: recipient, SolFeePayer: payer, QuoteIdx: q.QuoteIdx, MaxGas: q.MaxGas, AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
 		PayQuantity: q.PayQuantity, GasAssetId: q.GasAssetID, EstimatedGas: q.EstimatedGas, GasUsd: q.GasUSD,
 		NetUsd: q.NetUSD, RateVersion: q.Version, RateSource: q.RateSource, AsOf: q.AsOf, QuotedAt: q.QuotedAt, ExpiresAt: q.ExpiresAt,
 		EmulatedMessageHash: q.EmulatedMessageHash, RelayAttached: q.RelayAttached, RelaySurplus: q.RelaySurplus, JettonExcess: q.JettonExcess,

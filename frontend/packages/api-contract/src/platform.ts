@@ -408,6 +408,10 @@ export interface DepositQuoteConfirmRequest {
 }
 
 export interface DepositQuoteData {
+	tronRefBlock?: string
+	tronRefTime?: number
+	tronRecipient?: string
+	tronResourceOwner?: string
 	baseRecipient?: string
 	baseFeePayer?: string
 	baseValidBefore?: number
@@ -1221,6 +1225,28 @@ export interface TransferTargetResponse {
 	message: string
 	data: CurrentUserData
 	traceId: string
+}
+
+export interface TronDepositAuthorizeRequest {
+	quoteIdx: string
+	userSignature: string
+	orderSignature: string
+}
+
+export interface TronDepositOrderData {
+	quoteIdx: string
+	state: 'awaiting_signature' | 'expired' | 'signed' | 'review' | 'credited'
+	txId?: string
+	actualBandwidth?: number
+	actualFeeSun?: string
+	creditedUsd?: string
+}
+
+export interface TronDepositOrderResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: TronDepositOrderData
 }
 
 export interface UnbindRequest {

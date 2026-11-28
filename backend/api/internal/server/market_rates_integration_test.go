@@ -18,8 +18,10 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/api/internal/types"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
+	"github.com/0xabcd-k/DexWallet/backend/logic/deposit"
 	"github.com/0xabcd-k/DexWallet/backend/logic/marketdata"
 	shared "github.com/0xabcd-k/DexWallet/backend/svc"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 type exchangeTransport func(*http.Request) (*http.Response, error)
@@ -43,6 +45,7 @@ func checkMarketRatesHTTP(t *testing.T, s *shared.ServiceContext, token, rpcURL 
 	const nileToken = "TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn"
 	q.TRONTRX = &chainassets.TRONDepositFeeConfig{ResourceOwner: nileOwner, Recipient: nileOwner}
 	q.TRONTestUSDT = q.TRONTRX
+	q.TRONTRXExecution = true
 	q.Assets = append(q.Assets, chainassets.DepositQuoteRate{AssetID: chainassets.TRONNileTRX, EstimatedGas: "0.1"}, chainassets.DepositQuoteRate{AssetID: chainassets.NileUSDT(nileToken).ID, EstimatedGas: "0.1"})
 	networks = append(networks, chainassets.Endpoint{Network: chainassets.TRONNile, URL: nileDepositTestEndpoint(t), TestUSDTContract: nileToken})
 	service, err := chainassets.NewWithMarketRates(chainassets.Config{DepositQuotes: &q, Networks: networks}, chainassets.NewRedisLimiter(s.Redis, s.Namespace+":market", 1), store)
@@ -111,6 +114,21 @@ func checkMarketRatesHTTP(t *testing.T, s *shared.ServiceContext, token, rpcURL 
 	if err := json.Unmarshal(trxRaw, &nile); err != nil || nile.DelegatedBandwidth != 266 || nile.EstimatedGas != "0" || nile.GasUsd != "0" || nile.PayQuantity != "0.001" || nile.NetUsd != "0.01" || nile.WalletAddress != trx.WalletAddress || len(nile.MessageSha256) != 64 || nile.RateSource != marketdata.Kraken || nile.CanSubmit {
 		t.Fatal(nile, err)
 	}
+	if nile.TronRefBlock == "" || nile.TronRefTime <= 0 || nile.TronRecipient != nileOwner || nile.TronResourceOwner != nileOwner {
+		t.Fatal("missing signing terms", nile)
+	}
+	oldOrders := s.TronDepositOrders
+	s.TronDepositOrders = deposit.NewTronOrders(sqlx.NewSqlConnFromDB(s.DB), s.DepositConfirmations, s.Users, s.Tx, service)
+	defer func() { s.TronDepositOrders = oldOrders }()
+	call("POST", "/v1/user/deposit-quotes/confirm", token, types.DepositQuoteConfirmRequest{QuoteIdx: nile.QuoteIdx}, 200, "OK")
+	lookup := "/v1/user/tron-deposit-orders/" + nile.QuoteIdx
+	call("GET", lookup, "", nil, 401, "UNAUTHENTICATED")
+	_, pending := call("GET", lookup, token, nil, 200, "OK")
+	var order types.TronDepositOrderData
+	if err := json.Unmarshal(pending, &order); err != nil || order.State != deposit.AwaitingSignature || order.TxId != "" || order.QuoteIdx != nile.QuoteIdx {
+		t.Fatal("unsigned order", order, err)
+	}
+	call("POST", "/v1/user/tron-deposit-orders/authorize", token, types.TronDepositAuthorizeRequest{QuoteIdx: nile.QuoteIdx, UserSignature: strings.Repeat("0", 130), OrderSignature: strings.Repeat("0", 130)}, 400, "INVALID_ARGUMENT")
 	usdt := trx
 	usdt.AssetId = chainassets.NileUSDT(nileToken).ID
 	_, usdtRaw := call("POST", path, token, usdt, 200, "OK")

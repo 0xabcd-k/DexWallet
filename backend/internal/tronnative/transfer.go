@@ -175,12 +175,22 @@ func (t Transfer) Bind(rawHex, txID, signature string) (Signed, error) {
 	if err != nil || hex.EncodeToString(raw) != rawHex || TxID(raw) != txID {
 		return Signed{}, errors.New("TRON authorization differs from original raw data or txID")
 	}
+	sig, err := VerifyOwner(t.Sender, sha256.Sum256(raw), signature)
+	if err != nil {
+		return Signed{}, err
+	}
+	wire := appendBytes(nil, 1, raw)
+	return Signed{tokenContract: t.TokenContract, hash: txID, wire: hex.EncodeToString(appendBytes(wire, 2, sig)), expiration: t.Expiration}, nil
+}
+
+// VerifyOwner recovers the Nile owner for a transaction or a domain-separated off-chain digest.
+func VerifyOwner(sender string, digest [32]byte, signature string) ([]byte, error) {
 	if len(signature) != hex.EncodedLen(crypto.SignatureLength) {
-		return Signed{}, errors.New("invalid TRON signature size")
+		return nil, errors.New("invalid TRON signature size")
 	}
 	sig, err := hex.DecodeString(signature)
 	if err != nil {
-		return Signed{}, errors.New("invalid TRON signature size")
+		return nil, errors.New("invalid TRON signature size")
 	}
 	recoverSig := bytes.Clone(sig)
 	// TronWeb may encode the recovery ID as 27/28; preserve the original on the wire.
@@ -188,14 +198,12 @@ func (t Transfer) Bind(rawHex, txID, signature string) (Signed, error) {
 		recoverSig[64] -= 27
 	}
 	if !crypto.ValidateSignatureValues(recoverSig[64], new(big.Int).SetBytes(sig[:32]), new(big.Int).SetBytes(sig[32:64]), true) {
-		return Signed{}, errors.New("invalid TRON signature values")
+		return nil, errors.New("invalid TRON signature values")
 	}
-	digest := sha256.Sum256(raw)
 	pub, err := crypto.SigToPub(digest[:], recoverSig)
-	owner, _ := AddressBytes(t.Sender)
-	if err != nil || !bytes.Equal(crypto.PubkeyToAddress(*pub).Bytes(), owner[1:]) {
-		return Signed{}, errors.New("TRON signature does not authorize platform sender")
+	owner, errAddr := AddressBytes(sender)
+	if err != nil || errAddr != nil || !bytes.Equal(crypto.PubkeyToAddress(*pub).Bytes(), owner[1:]) {
+		return nil, errors.New("unexpected TRON signer")
 	}
-	wire := appendBytes(nil, 1, raw)
-	return Signed{tokenContract: t.TokenContract, hash: txID, wire: hex.EncodeToString(appendBytes(wire, 2, sig)), expiration: t.Expiration}, nil
+	return sig, nil
 }

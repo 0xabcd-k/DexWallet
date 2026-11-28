@@ -2,7 +2,7 @@ import { mnemonicToSeed } from '@scure/bip39';
 import { nativeVault } from '../local-wallet/bridge';
 import { parseMaterial, WalletError } from '../local-wallet/crypto';
 
-export async function signWithSeed(userIdx: string, walletId: string, signal: AbortSignal, sign: (seed: Uint8Array) => string) {
+export async function signWithSeed<T>(userIdx: string, walletId: string, signal: AbortSignal, sign: (seed: Uint8Array) => T) {
   const token = crypto.randomUUID();
   const close = () => { void nativeVault.unprotect({ token }).catch(() => {}); };
   signal.throwIfAborted();

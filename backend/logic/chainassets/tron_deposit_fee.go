@@ -109,13 +109,9 @@ func (s *Service) previewNileDeposit(ctx context.Context, user int64, assetID, t
 	if err != nil {
 		return empty, apperror.New(apperror.ServiceUnavailable, err)
 	}
-	head, err := s.nileHeadAt(ctx, n, e)
+	head, err := s.nileDepositHead(ctx, n, e)
 	if err != nil {
-		return empty, apperror.New(apperror.ServiceUnavailable, err)
-	}
-	now := time.Now().UnixMilli()
-	if head.Timestamp > now || now-head.Timestamp >= depositPreviewTTL.Milliseconds() {
-		return empty, apperror.New(apperror.ServiceUnavailable, invalid("invalid or stale Nile fee reference"))
+		return empty, err
 	}
 	q.ExpiresAt = min(q.ExpiresAt, head.Timestamp+depositPreviewTTL.Milliseconds())
 	pay, _ := decimal.NewFromString(q.PayQuantity)
@@ -123,6 +119,9 @@ func (s *Service) previewNileDeposit(ctx context.Context, user int64, assetID, t
 	atoms := pay.Shift(int32(asset.Decimals)).BigInt()
 	tx := tronnative.Transfer{Sender: address, Recipient: route.recipient, Reference: head, Expiration: head.Timestamp + tronnative.Lifetime.Milliseconds()}
 	if asset.Contract == "" {
+		if !atoms.IsInt64() {
+			return empty, badTarget("TRX amount exceeds signed int64 sun")
+		}
 		tx.Sun = atoms.Int64()
 	} else {
 		tx.TokenContract, tx.TokenAtoms, tx.FeeLimitSun = asset.Contract, atoms.String(), nileUSDTFeeLimitSun
@@ -140,9 +139,24 @@ func (s *Service) previewNileDeposit(ctx context.Context, user int64, assetID, t
 	if time.Now().UnixMilli() >= q.ExpiresAt {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Nile deposit estimate expired"))
 	}
+	if assetID == TRONNileTRX && s.quotes.tronTRXExecution {
+		q.TRONReference = &head
+	}
 	q.Recipient, q.FeePayer = route.recipient, route.resourceOwner
 	q.WalletAddress, q.MessageSHA256, q.DelegatedBandwidth = address, tronnative.TxID(raw), required
 	return q, nil
+}
+
+func (s *Service) nileDepositHead(ctx context.Context, n Network, e Endpoint) (tronnative.Head, error) {
+	head, err := s.nileHeadAt(ctx, n, e)
+	if err != nil {
+		return head, apperror.New(apperror.ServiceUnavailable, err)
+	}
+	age := time.Now().UnixMilli() - head.Timestamp
+	if age < 0 || age >= depositPreviewTTL.Milliseconds() {
+		return head, apperror.New(apperror.ServiceUnavailable, invalid("invalid or stale Nile resource reference"))
+	}
+	return head, nil
 }
 
 type nileQuoteRead func(string, map[string]any, any) error

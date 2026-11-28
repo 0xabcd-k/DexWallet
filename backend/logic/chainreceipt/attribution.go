@@ -431,11 +431,25 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 			return empty, err
 		}
 	}
+	var nileReservation bool
+	if k.Network == chainassets.TRONNile && k.Kind == TRONTransfer && ev.AssetId == chainassets.TRONNileTRX {
+		var version int
+		if err := a.conn.QueryRowCtx(ctx, &version, "SELECT version FROM schema_migrations_business WHERE dirty=0"); err != nil {
+			return empty, err
+		}
+		nileReservation = version >= 45
+	}
 	if !row.MatchedEventId.Valid {
 		// A request can accept one event and the unique index reserves each event globally.
-		_, err = a.conn.ExecCtx(ctx, `UPDATE chain_receive_request SET matched_event_id=?
-			WHERE id=? AND matched_event_id IS NULL AND NOT EXISTS (
-				SELECT 1 FROM chain_receive_address WHERE network=? AND owner=?)`, ev.Id, row.Id, k.Network, ev.SourceOwner)
+		query := `UPDATE chain_receive_request SET matched_event_id=?
+            WHERE id=? AND matched_event_id IS NULL AND NOT EXISTS (
+                SELECT 1 FROM chain_receive_address WHERE network=? AND owner=?)`
+		args := []any{ev.Id, row.Id, k.Network, ev.SourceOwner}
+		if nileReservation {
+			query += " AND NOT EXISTS (SELECT 1 FROM tron_deposit_order WHERE tx_id=?)"
+			args = append(args, k.Signature)
+		}
+		_, err = a.conn.ExecCtx(ctx, query, args...)
 		if receiveDuplicate(err) {
 			return empty, ErrReceiveConflict
 		}
@@ -446,6 +460,15 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 	found, err := a.Find(ctx, row.RequestKey)
 	if err != nil {
 		return empty, err
+	}
+	if nileReservation && found.Event == nil {
+		var reserved bool
+		if err := a.conn.QueryRowCtx(ctx, &reserved, "SELECT EXISTS(SELECT 1 FROM tron_deposit_order WHERE tx_id=?)", k.Signature); err != nil {
+			return empty, err
+		}
+		if reserved {
+			return empty, ErrReceiveConflict
+		}
 	}
 	if found.Event == nil {
 		return empty, fmt.Errorf("%w: platform source withheld", ErrReceiveMismatch)

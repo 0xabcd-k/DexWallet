@@ -395,6 +395,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/v1/user/sol-deposit-orders/prepare",
 					Handler: chainassets.PrepareSolDepositHandler(serverCtx),
 				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/v1/user/tron-deposit-orders/:quoteIdx",
+					Handler: chainassets.GetTronDepositHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/tron-deposit-orders/authorize",
+					Handler: chainassets.AuthorizeTronDepositHandler(serverCtx),
+				},
 			}...,
 		),
 		rest.WithTimeout(30000*time.Millisecond),

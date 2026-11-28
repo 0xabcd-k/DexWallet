@@ -136,7 +136,7 @@ func checkBaseDepositRecovery(t *testing.T, symbol, action string, downgrade uin
 			t.Fatal(err)
 		}
 		mustExec(t, db, `INSERT INTO base_deposit_order(quote_idx,user_signature,accepted_at,state,sponsor,sponsor_nonce,signed_wire,tx_hash) VALUES(?,?,?,'signed',?,?,?,?)`, q.QuoteIdx, f.UserSignature, at, q.FeePayer, signed.Nonce(), f.Wire, n.hash)
-		if err = m.Migrate(44); err != nil {
+		if err = m.Up(); err != nil {
 			t.Fatal("upgrade signed USDC order", err)
 		}
 	} else {

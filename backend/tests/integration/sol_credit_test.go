@@ -119,6 +119,10 @@ func TestSolDepositCreditRecovery(t *testing.T) {
 			t.Fatalf("keyless recovery: %v %s", err, out)
 		}
 	}
+	// Credit under schema 43, then read the same voucher with the current statement schema.
+	if err = m.Migrate(businessSchemaVersion); err != nil {
+		t.Fatal("upgrade credited SOL statement", err)
+	}
 	page, err := ledger.Entries(ctx, 1, accounts.KindUSD, 0, 2)
 	if err != nil || len(page.Entries) != 1 || page.Entries[0].DepositOrderIdx != q.SolOrderIdx || page.Entries[0].BalanceAfter.StringFixed(2) != "0.01" {
 		t.Fatal("recovered statement", page, err)

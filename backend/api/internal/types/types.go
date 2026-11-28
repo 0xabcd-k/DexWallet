@@ -395,6 +395,10 @@ type DepositQuoteConfirmRequest struct {
 }
 
 type DepositQuoteData struct {
+	TronRefBlock        string `json:"tronRefBlock,optional,omitempty"`
+	TronRefTime         int64  `json:"tronRefTime,optional,omitempty"`
+	TronRecipient       string `json:"tronRecipient,optional,omitempty"`
+	TronResourceOwner   string `json:"tronResourceOwner,optional,omitempty"`
 	BaseRecipient       string `json:"baseRecipient,optional,omitempty"`
 	BaseFeePayer        string `json:"baseFeePayer,optional,omitempty"`
 	BaseValidBefore     int64  `json:"baseValidBefore,optional,omitempty"`
@@ -1182,6 +1186,28 @@ type TransferTargetResponse struct {
 	Message string          `json:"message"`
 	Data    CurrentUserData `json:"data"`
 	TraceId string          `json:"traceId"`
+}
+
+type TronDepositAuthorizeRequest struct {
+	QuoteIdx       string `json:"quoteIdx"`
+	UserSignature  string `json:"userSignature"`
+	OrderSignature string `json:"orderSignature"`
+}
+
+type TronDepositOrderData struct {
+	QuoteIdx        string `json:"quoteIdx"`
+	State           string `json:"state,options=awaiting_signature|expired|signed|review|credited"`
+	TxId            string `json:"txId,optional,omitempty"`
+	ActualBandwidth int64  `json:"actualBandwidth,optional,omitempty"`
+	ActualFeeSun    string `json:"actualFeeSun,optional,omitempty"`
+	CreditedUsd     string `json:"creditedUsd,optional,omitempty"`
+}
+
+type TronDepositOrderResponse struct {
+	Code    string               `json:"code,options=OK"`
+	Message string               `json:"message"`
+	TraceId string               `json:"traceId"`
+	Data    TronDepositOrderData `json:"data"`
 }
 
 type UnbindRequest struct {
