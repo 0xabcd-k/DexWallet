@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/0xabcd-k/DexWallet/backend/logic/account"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainreceipt"
@@ -27,11 +28,13 @@ import (
 )
 
 const baseCreditAction account.Action = "credit_base_usdc"
+const baseETHCreditAction account.Action = "credit_base_eth"
 
 type BaseDepositNetwork interface {
 	BaseDepositEnvelope(context.Context, chainassets.DepositPreview, []byte) (*types.Transaction, error)
 	BroadcastBaseDeposit(context.Context, *types.Transaction, chainassets.DepositPreview, string) error
 	ReadBaseEvidence(context.Context, string, string) (chainassets.BaseEvidence, error)
+	ReadBaseDepositETHEvidence(context.Context, string, string) (chainassets.BaseEvidence, error)
 }
 type BaseExecution struct {
 	conn   sqlx.SqlConn
@@ -45,8 +48,8 @@ func NewBaseExecution(conn sqlx.SqlConn, db *transaction.Runner, ledger *account
 }
 
 type BaseBudget struct {
-	Recipient            string
-	USDCAtoms, MaxFeeWei *big.Int
+	Recipient                    string
+	ETHWei, USDCAtoms, MaxFeeWei *big.Int
 }
 
 // Only the unsigned stage needs the local operator's one-order budget and key.
@@ -68,7 +71,7 @@ func (s *BaseExecution) Step(ctx context.Context, idx string, budget BaseBudget,
 	if err = json.Unmarshal([]byte(record.SnapshotJson), &q); err != nil {
 		return o, err
 	}
-	if q.QuoteIdx != idx || q.ExpiresAt != record.QuoteExpiresAt.UnixMilli() || o.AcceptedAt.Before(record.ConfirmedAt) || o.AcceptedAt.UnixMilli() >= q.ExpiresAt || !strings.EqualFold(o.Sponsor, q.FeePayer) {
+	if o.AssetId != q.AssetID || q.QuoteIdx != idx || q.ExpiresAt != record.QuoteExpiresAt.UnixMilli() || o.AcceptedAt.Before(record.ConfirmedAt) || o.AcceptedAt.UnixMilli() >= q.ExpiresAt || !strings.EqualFold(o.Sponsor, q.FeePayer) {
 		return o, errors.New("inconsistent Base deposit admission")
 	}
 	a, err := q.BaseAuthorization()
@@ -97,8 +100,12 @@ func (s *BaseExecution) Step(ctx context.Context, idx string, budget BaseBudget,
 		if time.Now().Unix() >= q.BaseValidBefore {
 			return mark(BaseReview)
 		}
-		if key == nil || budget.USDCAtoms == nil || budget.MaxFeeWei == nil || a.Amount.Cmp(budget.USDCAtoms) != 0 || cap.Cmp(budget.MaxFeeWei) > 0 || !common.IsHexAddress(budget.Recipient) || common.HexToAddress(budget.Recipient) != a.To || crypto.PubkeyToAddress(key.PublicKey) != common.HexToAddress(q.FeePayer) {
-			return o, errors.New("explicit matching Base sponsor, recipient, USDC quantity and fee budget required")
+		gross := budget.USDCAtoms
+		if q.AssetID == chainassets.BaseSepoliaETH {
+			gross = budget.ETHWei
+		}
+		if key == nil || gross == nil || budget.MaxFeeWei == nil || a.Amount.Cmp(gross) != 0 || cap.Cmp(budget.MaxFeeWei) > 0 || !common.IsHexAddress(budget.Recipient) || common.HexToAddress(budget.Recipient) != a.To || crypto.PubkeyToAddress(key.PublicKey) != common.HexToAddress(q.FeePayer) {
+			return o, errors.New("explicit matching Base sponsor, recipient, asset quantity and fee budget required")
 		}
 		unsigned, err := s.chain.BaseDepositEnvelope(ctx, q, data)
 		if err != nil {
@@ -138,7 +145,11 @@ func (s *BaseExecution) Step(ctx context.Context, idx string, budget BaseBudget,
 	if err := chainassets.CheckBaseDepositWire(q, &tx, data); err != nil {
 		return o, err
 	}
-	e, err := s.chain.ReadBaseEvidence(ctx, chainassets.BaseSepolia, o.TxHash.String)
+	read := s.chain.ReadBaseEvidence
+	if q.AssetID == chainassets.BaseSepoliaETH {
+		read = s.chain.ReadBaseDepositETHEvidence
+	}
+	e, err := read(ctx, chainassets.BaseSepolia, o.TxHash.String)
 	if err != nil {
 		return o, err
 	}
@@ -150,8 +161,8 @@ func (s *BaseExecution) Step(ctx context.Context, idx string, budget BaseBudget,
 		}
 		return rows.FindOne(ctx, o.Id)
 	case errors.Is(err, chainreceipt.ErrExecutionFailed):
-		// A third party can relay this authorization before our transaction.
-		// A reverted sponsor transaction alone cannot establish whether USDC moved.
+		// Keep finalized reverts for review. For EIP-3009 another relayer
+		// may already have transferred USDC under the same authorization.
 		return mark(BaseReview)
 	case errors.Is(err, chainreceipt.ErrUnconfirmed):
 		return o, nil
@@ -200,13 +211,17 @@ func (s *BaseExecution) credit(ctx context.Context, o *model.BaseDepositOrder, u
 		}
 		var assigned bool
 		if err := session.QueryRowCtx(ctx, &assigned, `SELECT EXISTS(SELECT 1 FROM chain_observed_transaction t JOIN chain_transfer_event e ON e.transaction_id=t.id
-   JOIN chain_receive_request r ON r.matched_event_id=e.id WHERE t.network=? AND t.signature=? AND e.event_kind=? AND e.instruction_index=?)`, chainassets.BaseSepolia, o.TxHash.String, chainreceipt.EVMLog, r.Event.Instruction); err != nil {
+   JOIN chain_receive_request r ON r.matched_event_id=e.id WHERE t.network=? AND t.signature=? AND e.event_kind=? AND e.instruction_index=?)`, chainassets.BaseSepolia, o.TxHash.String, r.Event.Kind, r.Event.Instruction); err != nil {
 			return err
 		}
 		if assigned {
 			return fmt.Errorf("Base deposit %s: %w", o.QuoteIdx, chainreceipt.ErrReceiveConflict)
 		}
-		voucher, err := s.ledger.Post(ctx, session, account.Posting{Source: account.Source{Type: account.BusinessDeposit, ID: o.Id, Action: baseCreditAction}, Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(userID, accounts.KindUSD, net)}})
+		action := baseCreditAction
+		if q.AssetID == chainassets.BaseSepoliaETH {
+			action = baseETHCreditAction
+		}
+		voucher, err := s.ledger.Post(ctx, session, account.Posting{Source: account.Source{Type: account.BusinessDeposit, ID: o.Id, Action: action}, Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(userID, accounts.KindUSD, net)}})
 		if err != nil {
 			return err
 		}
@@ -219,7 +234,7 @@ func (s *BaseExecution) credit(ctx context.Context, o *model.BaseDepositOrder, u
 func baseCreditAmount(q chainassets.DepositPreview, atoms string, fee, cap *big.Int) (decimal.Decimal, error) {
 	rate, err := decimal.NewFromString(q.USDPerCoin)
 	if err != nil || !rate.IsPositive() {
-		return decimal.Zero, errors.New("invalid locked USDC/USD rate")
+		return decimal.Zero, errors.New("invalid locked deposit asset rate")
 	}
 	gasRate, err := decimal.NewFromString(q.GasUSDPerCoin)
 	if err != nil || !gasRate.IsPositive() {
@@ -230,7 +245,19 @@ func baseCreditAmount(q chainassets.DepositPreview, atoms string, fee, cap *big.
 		return decimal.Zero, err
 	}
 	usd, _ := accounts.Lookup(accounts.KindUSD)
-	gross := received.Shift(-6).Mul(rate)
+	var scale int32
+	switch q.AssetID {
+	case baseusdc.AssetID:
+		scale = 6
+	case chainassets.BaseSepoliaETH:
+		scale = 18
+		if !rate.Equal(gasRate) {
+			return decimal.Zero, errors.New("different ETH rates in same quote")
+		}
+	default:
+		return decimal.Zero, errors.New("unsupported deposit settlement asset")
+	}
+	gross := received.Shift(-scale).Mul(rate)
 	quoted := gross.Sub(decimal.NewFromBigInt(cap, -18).Mul(gasRate)).Truncate(usd.Scale)
 	if quoted.StringFixed(usd.Scale) != q.NetUSD {
 		return decimal.Zero, errors.New("original Base net differs from locked terms")

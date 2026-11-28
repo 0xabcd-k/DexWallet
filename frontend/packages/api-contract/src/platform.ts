@@ -208,6 +208,7 @@ export interface BaseDepositAuthorizeRequest {
 }
 
 export interface BaseDepositOrderData {
+	assetId: string
 	quoteIdx: string
 	state: 'awaiting_signature' | 'expired' | 'accepted' | 'signed' | 'review' | 'credited'
 	txHash?: string

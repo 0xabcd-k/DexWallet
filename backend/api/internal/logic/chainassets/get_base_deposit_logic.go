@@ -44,7 +44,7 @@ func (l *GetBaseDepositLogic) GetBaseDeposit(req *types.DepositQuoteLookupReques
 }
 
 func baseOrderResponse(ctx context.Context, o *model.BaseDepositOrder) *types.BaseDepositOrderResponse {
-	data := types.BaseDepositOrderData{QuoteIdx: o.QuoteIdx, State: o.State, TxHash: o.TxHash.String, ActualFeeWei: o.ActualFeeWei}
+	data := types.BaseDepositOrderData{AssetId: o.AssetId, QuoteIdx: o.QuoteIdx, State: o.State, TxHash: o.TxHash.String, ActualFeeWei: o.ActualFeeWei}
 	if o.CreditedUsd.Valid {
 		data.CreditedUsd = o.CreditedUsd.Decimal.StringFixed(2)
 	}

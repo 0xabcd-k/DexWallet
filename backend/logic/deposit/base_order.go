@@ -47,7 +47,7 @@ func (s *BaseOrders) Get(ctx context.Context, owner int64, idx string) (*model.B
 		if time.Now().UnixMilli() >= record.Quote.ExpiresAt {
 			state = BaseQuoteExpired
 		}
-		return &model.BaseDepositOrder{QuoteIdx: idx, State: state}, nil
+		return &model.BaseDepositOrder{QuoteIdx: idx, AssetId: record.Quote.AssetID, State: state}, nil
 	}
 	return o, err
 }
@@ -85,7 +85,7 @@ func (s *BaseOrders) Authorize(ctx context.Context, actor user.Actor, idx, signa
 	if time.Now().UnixMilli() >= q.ExpiresAt {
 		return nil, apperror.New(apperror.Conflict, errors.New("quote expired"))
 	}
-	if err := s.chain.AdmitBaseUSDC(ctx, actor.UserID, q, data); err != nil {
+	if err := s.chain.AdmitBaseDeposit(ctx, actor.UserID, q, data); err != nil {
 		return nil, err
 	}
 	err = s.tx.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
@@ -113,7 +113,7 @@ func (s *BaseOrders) Authorize(ctx context.Context, actor user.Actor, idx, signa
 		if u.PaymentRestrictedUntil.Valid && now.Before(u.PaymentRestrictedUntil.Time) {
 			return apperror.New(apperror.PaymentRestricted, nil)
 		}
-		_, err = lockedRows.Insert(ctx, &model.BaseDepositOrder{QuoteIdx: idx, UserSignature: signature, State: Accepted, Sponsor: strings.ToLower(q.FeePayer), AcceptedAt: now})
+		_, err = lockedRows.Insert(ctx, &model.BaseDepositOrder{QuoteIdx: idx, AssetId: q.AssetID, UserSignature: signature, State: Accepted, Sponsor: strings.ToLower(q.FeePayer), AcceptedAt: now})
 		return err
 	})
 	if err != nil {

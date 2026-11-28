@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseeth"
 	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/0xabcd-k/DexWallet/backend/logic/chainassets"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,6 +38,16 @@ func VerifyBaseDeposit(e chainassets.BaseEvidence, tx *types.Transaction, q chai
 	}
 	asset := chainassets.Asset{ID: baseusdc.AssetID, Contract: baseusdc.SepoliaContract, Origin: chainassets.Issuer, Decimals: 6}
 	r := BaseRequest{Network: chainassets.BaseSepolia, AssetID: asset.ID, Hash: tx.Hash().Hex(), Recipient: strings.ToLower(a.To.Hex()), Atoms: a.Amount.String()}
+	native, isETH := a.BaseProof.(baseeth.Redemption)
+	if isETH {
+		asset = chainassets.Asset{ID: baseeth.AssetID, Origin: chainassets.Native, Decimals: 18}
+		r.AssetID = asset.ID
+		index, err := nativeDepositCallIndex(e.CallTrace, native)
+		if err != nil {
+			return out, err
+		}
+		r.CallIndex = &index
+	}
 	out, err = verifyBase(r, asset, e)
 	if err != nil {
 		return out, err
@@ -51,6 +62,9 @@ func VerifyBaseDeposit(e chainassets.BaseEvidence, tx *types.Transaction, q chai
 	}
 	if !strings.EqualFold(out.Event.SourceOwner, q.WalletAddress) || !strings.EqualFold(out.Transaction.FeePayer, q.FeePayer) {
 		return out, bad("unexpected Base deposit sender")
+	}
+	if isETH {
+		return out, verifyRedemptionEvent(receipt, native, signature)
 	}
 	ids, err := baseDepositReferences(receipt, q.WalletAddress)
 	if err != nil || len(ids) != 1 || ids[0] != q.QuoteIdx {

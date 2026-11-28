@@ -39,16 +39,28 @@ func (n *historicalBaseDeposit) ReadBaseEvidence(_ context.Context, network, has
 	}
 	return n.e, nil
 }
+func (n *historicalBaseDeposit) ReadBaseCallEvidence(ctx context.Context, network, hash string) (chainassets.BaseEvidence, error) {
+	return n.ReadBaseEvidence(ctx, network, hash)
+}
+func (n *historicalBaseDeposit) ReadBaseDepositETHEvidence(ctx context.Context, network, hash string) (chainassets.BaseEvidence, error) {
+	return n.ReadBaseEvidence(ctx, network, hash)
+}
 func (n *historicalBaseDeposit) Catalog() []chainassets.Network {
-	return []chainassets.Network{{ID: chainassets.BaseSepolia, Family: chainassets.Base, Assets: []chainassets.Asset{{ID: baseusdc.AssetID, Origin: chainassets.Issuer, Decimals: 6, Contract: baseusdc.SepoliaContract}}}}
+	return []chainassets.Network{{ID: chainassets.BaseSepolia, Family: chainassets.Base, Assets: []chainassets.Asset{{ID: baseusdc.AssetID, Origin: chainassets.Issuer, Decimals: 6, Contract: baseusdc.SepoliaContract}, {ID: chainassets.BaseSepoliaETH, Origin: chainassets.Native, Decimals: 18}}}}
 }
 func TestBaseUSDCDepositRecovery(t *testing.T) {
+	checkBaseDepositRecovery(t, "usdc", "credit_base_usdc", 42, "base_deposit_rollback_guard")
+}
+func TestBaseETHDepositRecovery(t *testing.T) {
+	checkBaseDepositRecovery(t, "eth", "credit_base_eth", 43, "base_eth_deposit_rollback_guard")
+}
+func checkBaseDepositRecovery(t *testing.T, symbol, action string, downgrade uint, guard string) {
 	var f struct {
 		Quote               chainassets.DepositPreview
 		Wire, UserSignature string
 		Evidence            chainassets.BaseEvidence
 	}
-	raw, err := os.ReadFile("../../logic/chainreceipt/testdata/base-usdc-self-deposit.json")
+	raw, err := os.ReadFile("../../logic/chainreceipt/testdata/base-" + symbol + "-self-deposit.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +76,7 @@ func TestBaseUSDCDepositRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	name, dsn, db, err := testRun.NewDatabase(ctx, "base_deposit_history")
+	name, dsn, db, err := testRun.NewDatabase(ctx, "base_history_"+symbol)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,17 +111,38 @@ func TestBaseUSDCDepositRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	pos := verified.Event.Instruction
-	_, err = chainreceipt.NewBase(conn, runner, n).Record(ctx, chainreceipt.BaseRequest{Network: chainassets.BaseSepolia, AssetID: q.AssetID, Hash: n.hash, Recipient: q.Recipient, Atoms: verified.Event.Atoms, LogIndex: &pos})
+	request := chainreceipt.BaseRequest{Network: chainassets.BaseSepolia, AssetID: q.AssetID, Hash: n.hash, Recipient: q.Recipient, Atoms: verified.Event.Atoms}
+	if symbol == "eth" {
+		request.CallIndex = &pos
+	} else {
+		request.LogIndex = &pos
+	}
+	_, err = chainreceipt.NewBase(conn, runner, n).Record(ctx, request)
 	if err != nil {
 		t.Fatal(err)
 	}
 	mustExec(t, db, "INSERT INTO chain_receive_address(id,network,owner,route) VALUES(1,?,?,'single_use')", chainassets.BaseSepolia, q.Recipient)
 	mustExec(t, db, `INSERT INTO chain_receive_request(request_key,address_id,payment_reference,purpose,beneficiary_id,payer_owner,asset_id,amount_atoms,opens_at,expires_at) VALUES('merchant',1,'','merchant_payment',2,?,?,?,1,4102444800)`, strings.ToLower(q.WalletAddress), q.AssetID, verified.Event.Atoms)
-	key := chainreceipt.EventKey{Network: chainassets.BaseSepolia, Signature: n.hash, Kind: chainreceipt.EVMLog, Index: pos}
-	if _, err = chainreceipt.NewAttribution(conn, nil).Match(ctx, key); !errors.Is(err, chainreceipt.ErrReceiveConflict) {
-		t.Fatal("reserved order nonce before signature admission", err)
+	key := chainreceipt.EventKey{Network: chainassets.BaseSepolia, Signature: n.hash, Kind: verified.Event.Kind, Index: pos}
+	assertReserved := func() {
+		t.Helper()
+		if _, err := chainreceipt.NewAttribution(conn, nil).Match(ctx, key); !errors.Is(err, chainreceipt.ErrReceiveConflict) {
+			t.Fatal("merchant claimed a deposit", err)
+		}
 	}
-	mustExec(t, db, `INSERT INTO base_deposit_order(quote_idx,user_signature,accepted_at,state,sponsor,sponsor_nonce,signed_wire,tx_hash) VALUES(?,?,?,'signed',?,?,?,?)`, q.QuoteIdx, f.UserSignature, at, q.FeePayer, signed.Nonce(), f.Wire, n.hash)
+	if symbol == "usdc" {
+		assertReserved()
+		if err = m.Migrate(43); err != nil {
+			t.Fatal(err)
+		}
+		mustExec(t, db, `INSERT INTO base_deposit_order(quote_idx,user_signature,accepted_at,state,sponsor,sponsor_nonce,signed_wire,tx_hash) VALUES(?,?,?,'signed',?,?,?,?)`, q.QuoteIdx, f.UserSignature, at, q.FeePayer, signed.Nonce(), f.Wire, n.hash)
+		if err = m.Migrate(44); err != nil {
+			t.Fatal("upgrade signed USDC order", err)
+		}
+	} else {
+		mustExec(t, db, `INSERT INTO base_deposit_order(asset_id,quote_idx,user_signature,accepted_at,state,sponsor,sponsor_nonce,signed_wire,tx_hash) VALUES(?,?,?,?,'signed',?,?,?,?)`, q.AssetID, q.QuoteIdx, f.UserSignature, at, q.FeePayer, signed.Nonce(), f.Wire, n.hash)
+	}
+	assertReserved()
 	actor := user.Actor{UserID: 1, AuthVersion: 1}
 	replayed, err := orders.Authorize(ctx, actor, q.QuoteIdx, f.UserSignature)
 	if err != nil || replayed.TxHash.String != n.hash {
@@ -155,7 +188,7 @@ func TestBaseUSDCDepositRecovery(t *testing.T) {
 		}
 	}
 	page, err = ledger.Entries(ctx, 1, accounts.KindUSD, 0, 2)
-	if err != nil || len(page.Entries) != 1 || page.Entries[0].DepositOrderIdx != q.QuoteIdx || page.Entries[0].Action != "credit_base_usdc" || page.Entries[0].BalanceAfter.StringFixed(2) != "0.01" {
+	if err != nil || len(page.Entries) != 1 || page.Entries[0].DepositOrderIdx != q.QuoteIdx || page.Entries[0].Action != action || page.Entries[0].BalanceAfter.StringFixed(2) != "0.01" {
 		t.Fatal("owner statement", err, page)
 	}
 	cmd := exec.Command("go", "run", "./tools/base_deposit_sepolia", "-quote", q.QuoteIdx, "-rpc", "http://127.0.0.1:1")
@@ -164,7 +197,7 @@ func TestBaseUSDCDepositRecovery(t *testing.T) {
 	if out, err := cmd.CombinedOutput(); err != nil || !strings.Contains(string(out), "credited_usd=0.01") {
 		t.Fatalf("keyless CLI %v: %s", err, out)
 	}
-	if err = m.Migrate(42); err == nil || !strings.Contains(err.Error(), "base_deposit_rollback_guard") {
+	if err = m.Migrate(downgrade); err == nil || !strings.Contains(err.Error(), guard) {
 		t.Fatal("downgrade dropped the order", err)
 	}
 }

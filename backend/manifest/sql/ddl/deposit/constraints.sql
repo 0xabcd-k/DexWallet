@@ -32,6 +32,7 @@ ALTER TABLE `sol_deposit_order`
    (`asset_id`<>'solana-devnet:sol' AND `execution_state`='finalized' AND `actual_funding_lamports`>0));
 
 ALTER TABLE `base_deposit_order`
+ ADD CONSTRAINT `ck_base_deposit_asset` CHECK (`asset_id` IN ('base-sepolia:usdc','base-sepolia:eth')),
  ADD CONSTRAINT `fk_base_deposit_quote` FOREIGN KEY (`quote_idx`) REFERENCES `deposit_quote_confirmation` (`quote_idx`),
  ADD CONSTRAINT `fk_base_deposit_voucher` FOREIGN KEY (`credit_voucher_id`) REFERENCES `ledger_voucher` (`id`),
  ADD CONSTRAINT `ck_base_deposit_wire` CHECK ((`tx_hash` IS NULL AND `sponsor_nonce` IS NULL AND `signed_wire`='' AND `state` IN ('accepted','review'))

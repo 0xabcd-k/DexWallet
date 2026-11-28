@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseeth"
 	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -19,7 +20,15 @@ import (
 
 // A signed order keeps the original wire across retries. Rising L1 fees or a
 // reverted simulation must prevent submission even when the approval fit earlier.
-func TestBaseUSDCBroadcastPreflight(t *testing.T) {
+func TestBaseBroadcastPreflight(t *testing.T) {
+	t.Run("USDC", func(t *testing.T) {
+		checkBaseBroadcastPreflight(t, baseusdc.AssetID, baseusdc.SepoliaContract, baseUSDCUnsignedSize)
+	})
+	t.Run("ETH", func(t *testing.T) {
+		checkBaseBroadcastPreflight(t, BaseSepoliaETH, baseeth.Manager, baseETHUnsignedSize)
+	})
+}
+func checkBaseBroadcastPreflight(t *testing.T, asset, contract string, unsignedSize int64) {
 	wallet, err := crypto.GenerateKey()
 	if err != nil {
 		t.Fatal(err)
@@ -29,7 +38,13 @@ func TestBaseUSDCBroadcastPreflight(t *testing.T) {
 		t.Fatal(err)
 	}
 	at := time.Now()
-	q := DepositPreview{QuoteIdx: strings.Repeat("a", 32), WalletFeePreview: true, WalletAddress: crypto.PubkeyToAddress(wallet.PublicKey).Hex(), FeePayer: crypto.PubkeyToAddress(sponsor.PublicKey).Hex(), Recipient: depositFeePayer, AssetID: baseusdc.AssetID, GasAssetID: BaseSepoliaETH, PayQuantity: "0.01", EstimatedGas: "0.000000001", MaxGas: "0.000000001", ExpiresAt: at.Add(30 * time.Second).UnixMilli(), BaseValidBefore: at.Add(2 * time.Minute).Unix()}
+	q := DepositPreview{QuoteIdx: strings.Repeat("a", 32), WalletFeePreview: true, WalletAddress: crypto.PubkeyToAddress(wallet.PublicKey).Hex(), FeePayer: crypto.PubkeyToAddress(sponsor.PublicKey).Hex(), Recipient: depositFeePayer, AssetID: asset, GasAssetID: BaseSepoliaETH, PayQuantity: "0.01", EstimatedGas: "0.000000001", MaxGas: "0.000000001", ExpiresAt: at.Add(30 * time.Second).UnixMilli(), BaseValidBefore: at.Add(2 * time.Minute).Unix()}
+	cases := []string{"budget fits", "higher L1 fee", "simulation rejected"}
+	if asset == BaseSepoliaETH {
+		q.Recipient = q.FeePayer
+		q.QuotedAt = at.UnixMilli()
+		cases = append(cases, "wallet implementation changed", "platform payee gained code")
+	}
 	a, err := q.BaseAuthorization()
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +54,7 @@ func TestBaseUSDCBroadcastPreflight(t *testing.T) {
 		t.Fatal(err)
 	}
 	sig[64] += 27
-	for _, tc := range []string{"budget fits", "higher L1 fee", "simulation rejected"} {
+	for _, tc := range cases {
 		t.Run(tc, func(t *testing.T) {
 			sent := make(chan string, 1)
 			node := service(t, BaseSepolia, func(w http.ResponseWriter, r *http.Request) {
@@ -56,11 +71,20 @@ func TestBaseUSDCBroadcastPreflight(t *testing.T) {
 					rpcResult(w, "0x14a34")
 				case "eth_getBlockByNumber":
 					rpcResult(w, map[string]any{"hash": "0x" + strings.Repeat("1", 64), "number": "0x1", "timestamp": fmt.Sprintf("0x%x", time.Now().Unix()), "baseFeePerGas": "0x64"})
+				case "eth_getCode":
+					code := "0x"
+					if req.Params[0] == q.WalletAddress && tc != "wallet implementation changed" {
+						code = baseeth.AccountCode
+					}
+					if req.Params[0] == q.FeePayer && tc == "platform payee gained code" {
+						code = "0x6000"
+					}
+					rpcResult(w, code)
 				case "eth_call":
 					call := req.Params[0].(map[string]any)
 					if call["to"] == BaseGasPriceOracle {
 						v := 0
-						if tc == "higher L1 fee" && call["data"] == baseOracleCall("getL1FeeUpperBound(uint256)", big.NewInt(baseUSDCUnsignedSize)) {
+						if tc == "higher L1 fee" && call["data"] == baseOracleCall("getL1FeeUpperBound(uint256)", big.NewInt(unsignedSize)) {
 							v = 1100000000
 						}
 						rpcResult(w, fmt.Sprintf("0x%064x", v))
@@ -82,7 +106,7 @@ func TestBaseUSDCBroadcastPreflight(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			to := common.HexToAddress(baseusdc.SepoliaContract)
+			to := common.HexToAddress(contract)
 			unsigned := types.NewTx(&types.DynamicFeeTx{ChainID: big.NewInt(BaseSepoliaChainID), To: &to, Gas: 100000, GasFeeCap: big.NewInt(200), GasTipCap: big.NewInt(10), Data: data})
 			tx, err := types.SignTx(unsigned, types.LatestSignerForChainID(unsigned.ChainId()), sponsor)
 			if err != nil {

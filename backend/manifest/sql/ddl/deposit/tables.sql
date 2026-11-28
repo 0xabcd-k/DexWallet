@@ -39,6 +39,7 @@ CREATE TABLE `sol_deposit_order` (
 CREATE TABLE `base_deposit_order` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `quote_idx` CHAR(32) NOT NULL,
+    `asset_id` VARCHAR(32) NOT NULL DEFAULT 'base-sepolia:usdc',
     `user_signature` CHAR(132) NOT NULL,
     `accepted_at` DATETIME(3) NOT NULL,
     `state` VARCHAR(16) NOT NULL DEFAULT 'accepted',

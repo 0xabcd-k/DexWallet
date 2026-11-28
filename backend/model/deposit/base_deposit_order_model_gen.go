@@ -45,6 +45,7 @@ type (
 	BaseDepositOrder struct {
 		Id              int64               `db:"id"`
 		QuoteIdx        string              `db:"quote_idx"`
+		AssetId         string              `db:"asset_id"`
 		UserSignature   string              `db:"user_signature"`
 		AcceptedAt      time.Time           `db:"accepted_at"`
 		State           string              `db:"state"`
@@ -143,14 +144,14 @@ func (m *defaultBaseDepositOrderModel) FindOneByTxHash(ctx context.Context, txHa
 }
 
 func (m *defaultBaseDepositOrderModel) Insert(ctx context.Context, data *BaseDepositOrder) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, baseDepositOrderRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.UserSignature, data.AcceptedAt, data.State, data.Sponsor, data.SponsorNonce, data.SignedWire, data.TxHash, data.ActualFeeWei, data.FinalizedHeight, data.CreditVoucherId, data.CreditedUsd)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, baseDepositOrderRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.AssetId, data.UserSignature, data.AcceptedAt, data.State, data.Sponsor, data.SponsorNonce, data.SignedWire, data.TxHash, data.ActualFeeWei, data.FinalizedHeight, data.CreditVoucherId, data.CreditedUsd)
 	return ret, err
 }
 
 func (m *defaultBaseDepositOrderModel) Update(ctx context.Context, newData *BaseDepositOrder) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, baseDepositOrderRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.UserSignature, newData.AcceptedAt, newData.State, newData.Sponsor, newData.SponsorNonce, newData.SignedWire, newData.TxHash, newData.ActualFeeWei, newData.FinalizedHeight, newData.CreditVoucherId, newData.CreditedUsd, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.AssetId, newData.UserSignature, newData.AcceptedAt, newData.State, newData.Sponsor, newData.SponsorNonce, newData.SignedWire, newData.TxHash, newData.ActualFeeWei, newData.FinalizedHeight, newData.CreditVoucherId, newData.CreditedUsd, newData.Id)
 	return err
 }
 

@@ -409,6 +409,23 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 			return empty, err
 		}
 	}
+	if k.Network == chainassets.BaseSepolia && k.Kind == EVMCall && ev.AssetId == chainassets.BaseSepoliaETH && strings.EqualFold(tx.FeePayer, ev.RecipientOwner) {
+		// The fixed ETH permission allows only the sponsor to redeem. Its exact hash
+		// is written before broadcast, including when the send response is lost.
+		var version int
+		if err := a.conn.QueryRowCtx(ctx, &version, "SELECT version FROM schema_migrations_business WHERE dirty=0"); err != nil {
+			return empty, err
+		}
+		if version >= 44 {
+			var reserved bool
+			if err := a.conn.QueryRowCtx(ctx, &reserved, "SELECT EXISTS(SELECT 1 FROM base_deposit_order WHERE tx_hash=? AND asset_id=?)", k.Signature, chainassets.BaseSepoliaETH); err != nil {
+				return empty, err
+			}
+			if reserved {
+				return empty, ErrReceiveConflict
+			}
+		}
+	}
 	if k.Network == chainassets.BaseSepolia && k.Kind == EVMLog && ev.AssetId == baseusdc.AssetID {
 		if err := a.checkBaseDepositReservation(ctx, tx.EvidenceJson, ev.SourceOwner, ev.RecipientOwner); err != nil {
 			return empty, err

@@ -1,7 +1,7 @@
 {
   "generated": {
     "backend/api/internal/handler/routes.go": "5e1b8d9b11e9527545630796183c25336c9fe1929e6494e222626bccbe8bf2b0",
-    "backend/api/internal/types/types.go": "662c231702602b9f90675a242e5dbf5a466f21b9f306d7297fd4a8a62fe67402",
+    "backend/api/internal/types/types.go": "04b55bd4c5223a78e0f4658b88dc6d3373ebb3fa31eead8b60c4c4793fb53eaf",
     "backend/apperror/codes_gen.go": "4b434f65456f36b4553c690a4b0d84c9ab33875cf049055d91703314dd10c76a",
     "backend/model/account/account_hold_model_gen.go": "655b47b540fb7dad9b6e587dcf64d61741bb6d66353f4ccf23ec531e4ebb4b04",
     "backend/model/account/ledger_entry_model_gen.go": "9d04c873851e71ec5a318a252a217e855ad2060bec1990715d1ac9cd71f20425",
@@ -27,7 +27,7 @@
     "backend/model/chainsend/chain_send_intent_model_gen.go": "b36663abfa057ac310b11452c2bc00cb9b3fe1c45bff7d11b35ae71fcef2de98",
     "backend/model/chainsend/solana_payout_model_gen.go": "3d3380a43fcb8ec22965849e30734378786ff5197434355d4400ee9191dec8fb",
     "backend/model/chainsend/tron_payout_model_gen.go": "c7f4ae26c9d39c1b833f893cbb90daecc452e39935364a3ab9f494ecaa7af3d1",
-    "backend/model/deposit/base_deposit_order_model_gen.go": "5b829b69c15f1186c51b6fa68989c6d3a4de5355bfb7e1680a08b2a31918f1ca",
+    "backend/model/deposit/base_deposit_order_model_gen.go": "bf612344515dba4339a5841bc16399f8ee170cbae108f59664dd94faec2119c0",
     "backend/model/deposit/deposit_quote_confirmation_model_gen.go": "fab1590524b76cebac0068bd9dbced02c327b8c927fb90840a94a41261090030",
     "backend/model/deposit/sol_deposit_order_model_gen.go": "0d3e5372aba6fb5a776aafc4899fe7ce7437cbac127bf23e32a686fb496b8321",
     "backend/model/draw/draw_control_model_gen.go": "74c5701f90ce50253e2ddb38b63d3de3022c9cf164c191264370c5cc1d3bf801",
@@ -49,7 +49,7 @@
     "backend/tests/codegen/example/internal/handler/routes.go": "61eb17ac3d83aa66d4135889ac4f2261396278e1d0429628fa597aa9a3f6971c",
     "backend/tests/codegen/example/internal/types/types.go": "7295e916b9d2fb70ad61c4111119d3312d621aef347de5ae57c30c5d55f2fd31",
     "frontend/packages/api-contract/src/example.ts": "873eef596ace3def729161e00d56f9d1cb3f908093f969caaa87fa4f8f4de29c",
-    "frontend/packages/api-contract/src/platform.ts": "24f33adffaea03b0b1d17d3d1afc3c1f640b82e0ce896a37e8f3c64c185debec"
+    "frontend/packages/api-contract/src/platform.ts": "bef47e886636636c4c0d0c3db6ae93a387ad1c0ee84e2361a2895cba5f8391a5"
   },
   "scaffold": [
     "backend/api/etc/platform.yaml",

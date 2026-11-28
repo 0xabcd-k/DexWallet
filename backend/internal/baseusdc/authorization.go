@@ -6,8 +6,8 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/0xabcd-k/DexWallet/backend/internal/evmsig"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -55,19 +55,11 @@ func (a Authorization) Digest() common.Hash {
 
 // Data accepts the canonical low-s wallet signature with Ethereum v=27/28.
 func (a Authorization) Data(signature string) ([]byte, error) {
-	sig, err := hexutil.Decode(signature)
-	if err != nil || len(sig) != 65 || (sig[64] != 27 && sig[64] != 28) {
-		return nil, errors.New("invalid EIP-3009 signature encoding")
+	sig, err := evmsig.Verify(a.Digest(), a.From, signature)
+	if err != nil {
+		return nil, err
 	}
 	v := sig[64]
-	sig[64] -= 27
-	if !crypto.ValidateSignatureValues(sig[64], new(big.Int).SetBytes(sig[:32]), new(big.Int).SetBytes(sig[32:64]), true) {
-		return nil, errors.New("invalid EIP-3009 signature")
-	}
-	pub, err := crypto.SigToPub(a.Digest().Bytes(), sig)
-	if err != nil || crypto.PubkeyToAddress(*pub) != a.From {
-		return nil, errors.New("USDC authorization signer differs from payer")
-	}
 	data := append(domainWord("transferWithAuthorization(address,address,uint256,uint256,uint256,bytes32,uint8,bytes32,bytes32)")[:4], a.words()...)
 	data = append(data, common.LeftPadBytes([]byte{v}, 32)...)
 	return append(data, sig[:64]...), nil

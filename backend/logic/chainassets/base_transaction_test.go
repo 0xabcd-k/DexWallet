@@ -25,6 +25,7 @@ func TestBaseEvidenceCanonicalHistoricalFeeQueries(t *testing.T) {
 	badNetwork := false
 	missing := false
 	traceError := false
+	pendingFinality := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Method string
@@ -51,6 +52,9 @@ func TestBaseEvidenceCanonicalHistoricalFeeQueries(t *testing.T) {
 			_ = json.Unmarshal(req.Params[0], &tag)
 			if tag == "finalized" {
 				result = f.Evidence.Finalized
+				if pendingFinality {
+					result = map[string]string{"number": "0x1"}
+				}
 			} else if tag == rcpt.BlockNumber {
 				result = f.Evidence.Block
 			} else {
@@ -103,6 +107,18 @@ func TestBaseEvidenceCanonicalHistoricalFeeQueries(t *testing.T) {
 	proof, err = source.ReadBaseCallEvidence(context.Background(), BaseSepolia, hash)
 	if err != nil || calls != 7 || len(proof.CallTrace) == 0 {
 		t.Fatal(err, calls)
+	}
+	pendingFinality = true
+	calls = 0
+	proof, err = source.ReadBaseDepositETHEvidence(context.Background(), BaseSepolia, hash)
+	if err != nil || len(proof.CallTrace) != 0 || len(proof.OperatorFee) != 0 || calls != 5 {
+		t.Fatal("premature trace or fee lookup", calls, err)
+	}
+	pendingFinality = false
+	calls = 0
+	proof, err = source.ReadBaseDepositETHEvidence(context.Background(), BaseSepolia, hash)
+	if err != nil || len(proof.CallTrace) == 0 || len(proof.OperatorFee) == 0 || calls != 7 {
+		t.Fatal("final ETH evidence", calls, err)
 	}
 	traceError = true
 	calls = 0

@@ -16,6 +16,7 @@ export function BaseDepositOrder({ idx, local, quote, expired }: {
   const { t } = useTranslation();
   const [order, setOrder] = useState<BaseDepositOrderData>(), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>();
   const active = useRef<AbortController>();
+  const asset = (quote?.assetId ?? order?.assetId) === 'base-sepolia:eth' ? 'ETH' : 'USDC';
   useEffect(() => () => active.current?.abort(), []);
   async function run(sign: boolean) {
     const request = new AbortController();
@@ -31,14 +32,14 @@ export function BaseDepositOrder({ idx, local, quote, expired }: {
     finally { if (!request.signal.aborted) setBusy(false); }
   }
   return <>
-    {quote && <dl><dt>{t('baseRecipient')}</dt><dd className="chain-address">{quote.baseRecipient}</dd>
+    {quote && <dl><dt>{t('baseRecipient', { asset })}</dt><dd className="chain-address">{quote.baseRecipient}</dd>
       <dt>{t('baseSponsor')}</dt><dd className="chain-address">{quote.baseFeePayer}</dd>
-      <dt>{t('baseValidBefore')}</dt><dd>{new Date(quote.baseValidBefore! * 1000).toLocaleString()}</dd></dl>}
-    {local && (!order || order.state === 'awaiting_signature') && <Button color="primary" block disabled={busy || expired} onClick={() => void run(true)}>{t('baseSign')}</Button>}
+      <dt>{t('baseValidBefore', { asset })}</dt><dd>{new Date(quote.baseValidBefore! * 1000).toLocaleString()}</dd></dl>}
+    {local && (!order || order.state === 'awaiting_signature') && <Button color="primary" block disabled={busy || expired} onClick={() => void run(true)}>{t('baseSign', { asset })}</Button>}
     <Button disabled={busy} onClick={() => void run(false)}>{t('baseLookup')}</Button>
     {error !== undefined && <Failure error={error}/>}
     {order && <p role="status">{t(labels[order.state as keyof typeof labels], { idx, amount: order.creditedUsd })}</p>}
-    {order?.txHash && <dl><dt>{t('baseTx')}</dt><dd className="chain-address">{order.txHash}</dd>
+    {order?.txHash && <dl><dt>{t('chainToken')}</dt><dd>{asset}</dd><dt>{t('baseTx')}</dt><dd className="chain-address">{order.txHash}</dd>
       {order.actualFeeWei !== undefined && <><dt>{t('solDepositActualFee')}</dt><dd>{order.actualFeeWei} wei</dd></>}</dl>}
     {order?.state === 'credited' && <Link to="/records?kind=usd_balance">{t('viewAccountEntries')}</Link>}
   </>;

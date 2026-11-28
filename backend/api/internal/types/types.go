@@ -198,6 +198,7 @@ type BaseDepositAuthorizeRequest struct {
 }
 
 type BaseDepositOrderData struct {
+	AssetId      string `json:"assetId"`
 	QuoteIdx     string `json:"quoteIdx"`
 	State        string `json:"state,options=awaiting_signature|expired|accepted|signed|review|credited"`
 	TxHash       string `json:"txHash,optional,omitempty"`

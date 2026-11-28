@@ -1,4 +1,4 @@
-// base_deposit_sepolia executes or recovers one accepted local Base Sepolia USDC order.
+// base_deposit_sepolia executes or recovers one accepted local Base Sepolia deposit order.
 package main
 
 import (
@@ -25,13 +25,23 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
+type depositRPC struct {
+	*chainassets.Service
+	history *chainassets.Service
+}
+
+func (r depositRPC) ReadBaseDepositETHEvidence(ctx context.Context, network, hash string) (chainassets.BaseEvidence, error) {
+	return r.history.ReadBaseDepositETHEvidence(ctx, network, hash)
+}
 func run() error {
-	idx := flag.String("quote", "", "accepted Base Sepolia USDC quote ID")
-	recipient := flag.String("recipient", "", "authorized Base USDC collection address")
+	idx := flag.String("quote", "", "accepted Base Sepolia deposit quote ID")
+	recipient := flag.String("recipient", "", "authorized Base collection address")
 	gross := flag.String("usdc-atoms", "", "exact gross USDC millionths")
+	eth := flag.String("eth-wei", "", "exact gross native ETH amount in wei")
 	fee := flag.String("max-fee-wei", "", "maximum total sponsor expenditure in wei")
 	keyFile := flag.String("sponsor-key-file", "", "dedicated Base Sepolia hex private key file (omit to recover original wire)")
 	rpc := flag.String("rpc", "https://sepolia.base.org", "trusted Base Sepolia RPC")
+	traceRPC := flag.String("trace-rpc", "https://base-testnet.api.pocket.network", "trusted Base Sepolia canonical receipts and full callTracer endpoint for native ETH")
 	flag.Parse()
 	if len(*idx) != 32 {
 		return errors.New("original quote ID required")
@@ -54,8 +64,8 @@ func run() error {
 	if err = db.QueryRowContext(ctx, "SELECT version FROM schema_migrations_business WHERE dirty=0").Scan(&version); err != nil {
 		return err
 	}
-	if version < 43 {
-		return errors.New("clean business schema >=43 required")
+	if version < 44 {
+		return errors.New("clean business schema >=44 required")
 	}
 	var key *ecdsa.PrivateKey
 	budget := deposit.BaseBudget{Recipient: *recipient}
@@ -69,6 +79,10 @@ func run() error {
 		if err != nil {
 			return errors.New("invalid dedicated test key")
 		}
+		if (*gross == "") == (*eth == "") {
+			return errors.New("provide exactly one asset quantity")
+		}
+		budget.ETHWei, _ = new(big.Int).SetString(*eth, 10)
 		budget.USDCAtoms, _ = new(big.Int).SetString(*gross, 10)
 		budget.MaxFeeWei, _ = new(big.Int).SetString(*fee, 10)
 	}
@@ -77,8 +91,13 @@ func run() error {
 		return err
 	}
 	defer node.Close()
+	history, err := chainassets.New(chainassets.Config{Timeout: 25 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: *traceRPC}}}, nil)
+	if err != nil {
+		return err
+	}
+	defer history.Close()
 	conn := sqlx.NewSqlConnFromDB(db)
-	w := deposit.NewBaseExecution(conn, transaction.New(db), account.New(accounts.NewUserAccountModel(conn)), node)
+	w := deposit.NewBaseExecution(conn, transaction.New(db), account.New(accounts.NewUserAccountModel(conn)), depositRPC{node, history})
 	for {
 		row, err := w.Step(ctx, *idx, budget, key)
 		if row != nil {

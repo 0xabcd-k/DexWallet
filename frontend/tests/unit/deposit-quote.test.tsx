@@ -324,10 +324,10 @@ it('looks up a finalized Base deposit without a wallet and opens the USD stateme
   expect(api).toHaveBeenCalledOnce();
 });
 
-it('offers Base USDC signing only after confirming the exact Circle wallet quote', async () => {
-  const native = network.assets[0]!, asset = { ...network.assets[1]!, contract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' };
-  const wallet = '0x' + '1'.repeat(40), recipient = '0x' + '2'.repeat(40), sponsor = '0x' + '3'.repeat(40);
-  const now = Date.now(), terms = { ...quote(now), quoteIdx: 'd'.repeat(32), walletAddress: wallet, walletFeePreview: true,
+it.each(['USDC','ETH'])('offers Base %s signing after confirming the exact wallet quote', async symbol => {
+  const native = network.assets[0]!, asset = symbol === 'ETH' ? native : { ...network.assets[1]!, contract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' };
+  const wallet = '0x' + '1'.repeat(40), sponsor = '0x' + '3'.repeat(40), recipient = symbol === 'ETH' ? sponsor : '0x' + '2'.repeat(40);
+  const now = Date.now(), terms = { ...quote(now), assetId: asset.id, quoteIdx: 'd'.repeat(32), walletAddress: wallet, walletFeePreview: true,
     feeBlockHash: '0x' + 'b'.repeat(64), maxGas: '0.0001', baseFeePayer: sponsor, baseRecipient: recipient, baseValidBefore: Math.floor(now / 1000) + 330 };
   vi.spyOn(client, 'userRequest').mockImplementation(async (path, decode) => decode({ data:
     path.endsWith('/confirm') ? { quote: terms, confirmedAt: now + 1 } : terms }));
@@ -336,10 +336,10 @@ it('offers Base USDC signing only after confirming the exact Circle wallet quote
     walletAddress={wallet} local={{ userIdx: 'testuser', walletId: 'base' }}/></I18nextProvider></MemoryRouter>);
   fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
   const confirm = await screen.findByRole('button', { name: 'Confirm quote' });
-  expect(screen.queryByRole('button', { name: 'Authorize Base USDC deposit' })).toBeNull();
+  expect(screen.queryByRole('button', { name: `Authorize Base ${symbol} deposit` })).toBeNull();
   fireEvent.click(confirm);
-  expect(await screen.findByRole('button', { name: 'Authorize Base USDC deposit' })).toBeEnabled();
-  expect(screen.getByText(sponsor)).toBeInTheDocument();
-  expect(screen.getByText(recipient)).toBeInTheDocument();
+  expect(await screen.findByRole('button', { name: `Authorize Base ${symbol} deposit` })).toBeEnabled();
+  expect(screen.getAllByText(sponsor).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(recipient).length).toBeGreaterThan(0);
   await expect(previewDeposit({ ...asset, contract: wallet }, native, '10', new AbortController().signal, wallet)).rejects.toThrow('Invalid test deposit estimate');
 });

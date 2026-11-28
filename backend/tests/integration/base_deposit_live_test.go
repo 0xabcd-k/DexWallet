@@ -47,6 +47,17 @@ func TestBaseSepoliaUSDCDepositLive(t *testing.T) {
 	if os.Getenv("DEXWALLET_TEST_BASE_DEPOSIT_EXECUTE") != "1" {
 		t.Skip("explicit dedicated Base Sepolia keys and one test transfer required")
 	}
+	runBaseDepositLive(t, baseusdc.AssetID)
+}
+
+func TestBaseSepoliaETHDepositLive(t *testing.T) {
+	if os.Getenv("DEXWALLET_TEST_BASE_ETH_DEPOSIT_EXECUTE") != "1" {
+		t.Skip("explicit Base Sepolia ETH deposit required")
+	}
+	runBaseDepositLive(t, chainassets.BaseSepoliaETH)
+}
+
+func runBaseDepositLive(t *testing.T, asset string) {
 	raw, err := os.ReadFile(os.Getenv("DEXWALLET_TEST_BASE_DEPOSIT_KEY_FILE"))
 	if err != nil {
 		t.Fatal(err)
@@ -76,7 +87,12 @@ func TestBaseSepoliaUSDCDepositLive(t *testing.T) {
 		rpc = "https://sepolia.base.org"
 	}
 	now := time.Now().Unix()
-	chain, err := chainassets.New(chainassets.Config{Timeout: 25 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: rpc}}, DepositQuotes: &chainassets.DepositQuoteConfig{Version: "base-usdc-test", AsOf: now - 10, ValidUntil: now + 3600, BaseUSDCExecutionWindow: 5 * time.Minute, BaseUSDC: &chainassets.BaseDepositFeeConfig{Recipient: payer, FeePayer: payer}, Assets: []chainassets.DepositQuoteRate{{AssetID: baseusdc.AssetID, USDPerCoin: "0.98", EstimatedGas: "0"}, {AssetID: chainassets.BaseSepoliaETH, USDPerCoin: "2000", EstimatedGas: "0"}}}}, chainassets.NewRedisLimiter(client, ns, 30))
+	cfg := chainassets.DepositQuoteConfig{Version: "base-test", AsOf: now - 10, ValidUntil: now + 3600, BaseUSDCExecutionWindow: 5 * time.Minute, BaseUSDC: &chainassets.BaseDepositFeeConfig{Recipient: payer, FeePayer: payer}, Assets: []chainassets.DepositQuoteRate{{AssetID: baseusdc.AssetID, USDPerCoin: "0.98", EstimatedGas: "0"}, {AssetID: chainassets.BaseSepoliaETH, USDPerCoin: "2000", EstimatedGas: "0"}}}
+	if asset == chainassets.BaseSepoliaETH {
+		cfg.BaseETH = cfg.BaseUSDC
+		cfg.BaseETHExecutionWindow = 5 * time.Minute
+	}
+	chain, err := chainassets.New(chainassets.Config{Timeout: 25 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: rpc}}, DepositQuotes: &cfg}, chainassets.NewRedisLimiter(client, ns, 30))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +103,7 @@ func TestBaseSepoliaUSDCDepositLive(t *testing.T) {
 	quotes := deposit.NewConfirmations(conn, client, ns)
 	orders := deposit.NewBaseOrders(conn, quotes, users, runner, chain)
 	actor := user.Actor{UserID: 1, AuthVersion: 1}
-	q, err := chain.PreviewWalletDeposit(ctx, 1, baseusdc.AssetID, "0.01", wallet)
+	q, err := chain.PreviewWalletDeposit(ctx, 1, asset, "0.01", wallet)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,8 +118,12 @@ func TestBaseSepoliaUSDCDepositLive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	maxGross := int64(120000)
+	if asset == chainassets.BaseSepoliaETH {
+		maxGross = 12000000000000
+	}
 	cap, err := q.BaseFeeLimitWei()
-	if err != nil || cap.Cmp(big.NewInt(50000000000000)) > 0 || auth.Amount.Cmp(big.NewInt(120000)) > 0 {
+	if err != nil || cap.Cmp(big.NewInt(50000000000000)) > 0 || auth.Amount.Cmp(big.NewInt(maxGross)) > 0 {
 		t.Fatal("outside dedicated test budget")
 	}
 	sig, err := crypto.Sign(auth.Digest().Bytes(), userKey)
@@ -119,6 +139,10 @@ func TestBaseSepoliaUSDCDepositLive(t *testing.T) {
 	node := &lostBaseDepositAck{Service: chain}
 	w := deposit.NewBaseExecution(conn, runner, ledger, node)
 	budget := deposit.BaseBudget{Recipient: payer, USDCAtoms: auth.Amount, MaxFeeWei: cap}
+	if asset == chainassets.BaseSepoliaETH {
+		budget.ETHWei = auth.Amount
+		budget.USDCAtoms = nil
+	}
 	o, err = w.Step(ctx, q.QuoteIdx, budget, sponsor)
 	if err != nil || !o.TxHash.Valid || node.sent != 0 {
 		t.Fatal("persist before broadcast", err)
@@ -129,7 +153,18 @@ func TestBaseSepoliaUSDCDepositLive(t *testing.T) {
 	if !errors.Is(err, errLostBaseDepositAck) {
 		t.Fatal("broadcast", err)
 	}
-	w = deposit.NewBaseExecution(conn, runner, ledger, chain)
+	history := chain
+	if asset == chainassets.BaseSepoliaETH {
+		traceRPC := os.Getenv("DEXWALLET_TEST_BASE_DEPOSIT_TRACE_RPC")
+		if traceRPC != "" {
+			history, err = chainassets.New(chainassets.Config{Timeout: 30 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.BaseSepolia, URL: traceRPC}}}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer history.Close()
+		}
+	}
+	w = deposit.NewBaseExecution(conn, runner, ledger, history)
 	until := time.Now().Add(35 * time.Minute)
 	for time.Now().Before(until) {
 		time.Sleep(12 * time.Second)

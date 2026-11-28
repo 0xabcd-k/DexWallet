@@ -90,6 +90,7 @@ func checkBaseDepositBudget(t *testing.T, assetID, fixture string) {
 	}
 	cases := []baseFeeCase{
 		{name: "observed budget"},
+		{name: "authorization enabled"},
 		{name: "other network", method: "eth_chainId", override: "0x2105", want: apperror.ServiceUnavailable},
 		{name: "unsupported wallet", method: "eth_getCode", address: evidence.Preview.WalletAddress, override: "0x6000", want: apperror.InvalidArgument},
 		{name: "old block", method: "eth_getBlockByNumber", want: apperror.ServiceUnavailable},
@@ -111,7 +112,7 @@ func checkBaseDepositBudget(t *testing.T, assetID, fixture string) {
 		)
 	} else {
 		cases = append(cases,
-			baseFeeCase{name: "authorization enabled"},
+
 			baseFeeCase{name: "plain EOA", method: "eth_getCode", override: "0x"},
 			baseFeeCase{name: "nonzero operator fee", method: "eth_call", prefix: "0x275aedd2", override: fmt.Sprintf("0x%064x", 1000)},
 			baseFeeCase{name: "insufficient USDC after fee", method: "eth_call", prefix: "0x70a08231", override: fmt.Sprintf("0x%064x", 11000), want: apperror.InsufficientBalance},
@@ -155,6 +156,9 @@ func checkBaseDepositBudget(t *testing.T, assetID, fixture string) {
 				route := &BaseDepositFeeConfig{depositFeePayer, depositFeePayer}
 				if assetID == BaseSepoliaETH {
 					c.DepositQuotes.BaseETH = route
+					if tc.name == "authorization enabled" {
+						c.DepositQuotes.BaseETHExecutionWindow = 5 * time.Minute
+					}
 				} else {
 					c.DepositQuotes.BaseUSDC = route
 					if tc.name == "authorization enabled" {

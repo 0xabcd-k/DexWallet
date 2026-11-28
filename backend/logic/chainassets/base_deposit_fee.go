@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
+	"github.com/0xabcd-k/DexWallet/backend/internal/baseeth"
 	"github.com/0xabcd-k/DexWallet/backend/internal/baseusdc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -26,7 +27,7 @@ const (
 	baseETHReferenceGas = 391673
 	baseETHUnsignedSize = 2362 // 2,244 bytes calldata plus the maximum unsigned envelope.
 	// Delegation designation observed in the finalized Rabby and OKX tests.
-	baseTestedDelegation = "0xef010063c0c19a282a1b52b07dd5a65b58948a07dae32b"
+	baseTestedDelegation = baseeth.AccountCode
 )
 
 type BaseDepositFeeConfig struct{ FeePayer, Recipient string }
@@ -45,12 +46,13 @@ func newBaseDepositRoute(assetID string, config BaseDepositFeeConfig) (*baseDepo
 	if err != nil || common.HexToAddress(recipient) == (common.Address{}) {
 		return nil, fmt.Errorf("invalid Base recipient for %s", assetID)
 	}
-	route := &baseDepositRoute{BaseDepositFeeConfig: BaseDepositFeeConfig{FeePayer: payer, Recipient: recipient}, referenceGas: baseUSDCReferenceGas, unsignedSize: baseUSDCUnsignedSize}
-	if assetID == BaseSepoliaETH {
-		if payer != recipient {
-			return nil, fmt.Errorf("Base ETH allowance estimate requires the platform EOA as both redeemer and payee")
-		}
-		route.referenceGas, route.unsignedSize = baseETHReferenceGas, baseETHUnsignedSize
+	terms, err := baseExecutionTerms(assetID)
+	if err != nil {
+		return nil, err
+	}
+	route := &baseDepositRoute{BaseDepositFeeConfig: BaseDepositFeeConfig{FeePayer: payer, Recipient: recipient}, referenceGas: int64(terms.gasLimit), unsignedSize: terms.unsignedSize}
+	if assetID == BaseSepoliaETH && payer != recipient {
+		return nil, fmt.Errorf("Base ETH allowance estimate requires the platform EOA as both redeemer and payee")
 	}
 	return route, nil
 }
@@ -140,8 +142,8 @@ func (s *Service) previewBaseDeposit(ctx context.Context, user int64, assetID, t
 	if gross.Shift(int32(entry.asset.Decimals)).BigInt().Cmp(budget.balance) > 0 {
 		return empty, apperror.New(apperror.InsufficientBalance, nil)
 	}
-	if assetID == baseusdc.AssetID && s.quotes.baseUSDCWindow > 0 {
-		q.BaseValidBefore = time.UnixMilli(q.ExpiresAt).Add(s.quotes.baseUSDCWindow).Unix()
+	if window := s.quotes.baseExecutionWindow(assetID); window > 0 {
+		q.BaseValidBefore = time.UnixMilli(q.ExpiresAt).Add(window).Unix()
 	}
 	q.Recipient, q.FeePayer = route.Recipient, route.FeePayer
 	q.WalletAddress, q.FeeBlockHash = address, budget.block.Hash.Hex()
@@ -226,4 +228,14 @@ func (s *Service) baseDepositEstimate(ctx context.Context, entry depositAsset, r
 
 func baseOracleCall(signature string, argument *big.Int) string {
 	return fmt.Sprintf("0x%x%064x", crypto.Keccak256([]byte(signature))[:4], argument)
+}
+
+func (b depositBook) baseExecutionWindow(asset string) time.Duration {
+	if asset == BaseSepoliaETH {
+		return b.baseETHWindow
+	}
+	if asset == baseusdc.AssetID {
+		return b.baseUSDCWindow
+	}
+	return 0
 }

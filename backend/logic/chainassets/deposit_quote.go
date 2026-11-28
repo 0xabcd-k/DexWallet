@@ -15,6 +15,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	BaseETHExecutionWindow    time.Duration         `json:",optional"`
 	BaseUSDCExecutionWindow   time.Duration         `json:",optional"`
 	SolanaTestUSDTReviewAfter time.Duration         `json:",optional"`
 	SolanaUSDCReviewAfter     time.Duration         `json:",optional"`
@@ -54,16 +55,16 @@ type depositAsset struct {
 }
 
 type depositBook struct {
-	baseUSDCWindow time.Duration
-	solReviewAfter map[string]time.Duration
-	ton            map[string]*tonDepositRoute
-	tron           map[string]*nileDepositRoute
-	base           map[string]*baseDepositRoute
-	market         *DepositMarketConfig
-	solana         map[string]*solanaDepositRoute
-	version        string
-	asOf, until    int64
-	assets         map[string]depositAsset
+	baseETHWindow, baseUSDCWindow time.Duration
+	solReviewAfter                map[string]time.Duration
+	ton                           map[string]*tonDepositRoute
+	tron                          map[string]*nileDepositRoute
+	base                          map[string]*baseDepositRoute
+	market                        *DepositMarketConfig
+	solana                        map[string]*solanaDepositRoute
+	version                       string
+	asOf, until                   int64
+	assets                        map[string]depositAsset
 }
 
 func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMaster string) (depositBook, error) {
@@ -93,7 +94,10 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	if c.BaseUSDCExecutionWindow != 0 && (c.BaseUSDC == nil || c.BaseUSDCExecutionWindow < time.Second) {
 		return book, fmt.Errorf("Base USDC execution requires a wallet route and a positive signing window")
 	}
-	book = depositBook{baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	if c.BaseETHExecutionWindow != 0 && (c.BaseETH == nil || c.BaseETHExecutionWindow < time.Second) {
+		return book, fmt.Errorf("Base ETH execution requires a wallet route and a positive signing window")
+	}
+	book = depositBook{baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {

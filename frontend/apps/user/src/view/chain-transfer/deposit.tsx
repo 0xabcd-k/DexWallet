@@ -145,7 +145,7 @@ export function DepositEstimate({ asset, native, target, walletAddress, local, o
       <dt>{t('depositValidUntil')}</dt><dd>{new Date(quote.deadline).toLocaleTimeString()}</dd>
     </dl>)}
     {quote?.quoteIdx && (confirmedAt !== undefined
-      ? <p role="status">{t(quote.solOrderIdx && local ? 'solQuoteConfirmed' : quote.baseValidBefore && local ? 'baseQuoteConfirmed' : 'depositQuoteSaved', { idx: quote.quoteIdx })}</p>
+      ? <p role="status">{t(quote.solOrderIdx && local ? 'solQuoteConfirmed' : quote.baseValidBefore && local ? 'baseQuoteConfirmed' : 'depositQuoteSaved', { idx: quote.quoteIdx, asset: asset.symbol })}</p>
       : (!expired || attempted) && <Button block disabled={busy} onClick={() => void confirm()}>
         {t(expired ? 'depositCheckConfirmation' : 'depositConfirmQuote')}</Button>)}
     {quote?.baseValidBefore && quote.quoteIdx && confirmedAt !== undefined && local &&
