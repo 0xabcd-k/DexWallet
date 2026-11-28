@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { useTranslation } from '@dexwallet/i18n';
 import type { TronDepositOrderData, DepositQuoteData } from '@dexwallet/api-contract/platform';
 import { nileTransferLifetime, authorizeTronDeposit, getTronOrder, lastTronQuoteKey } from '../../app/native/chain-transfer/tron-deposit';
+import { nileDepositUSDT, nileDepositUSDTContract, nileDepositEnergyLimitSun } from '../../app/native/chain-transfer/tron-deposit-asset';
 import { nativeCatalog } from '../../app/native/local-wallet/bridge';
 import { Failure } from '../../auth/context';
 
@@ -26,22 +27,27 @@ export function TronDepositOrder({ idx, local, quote, expired }: {
         await nativeCatalog.set({ key: lastTronQuoteKey(local.userIdx), value: idx });
         result = await authorizeTronDeposit(local.userIdx, local.walletId, quote, quote.deadline, request.signal);
       } else result = await getTronOrder(idx, request.signal);
-      if (quote && result.txId && result.txId !== quote.messageSha256) throw new TypeError('Unexpected Nile order transaction');
+      if (quote && (result.assetId !== quote.assetId || (result.txId && result.txId !== quote.messageSha256))) throw new TypeError('Unexpected Nile order transaction');
       if (!request.signal.aborted) setOrder(result);
     } catch (e) { if (!request.signal.aborted) setError(e); }
     finally { if (!request.signal.aborted) setBusy(false); }
   }
+  const token = (quote?.assetId ?? order?.assetId) === nileDepositUSDT;
+  const asset = token ? t('tronFixtureUSDT') : 'TRX';
   return <>
-    {quote && <dl><dt>{t('tronRecipient')}</dt><dd className="chain-address">{quote.tronRecipient}</dd>
+    {quote && <dl><dt>{t('tronRecipient', { asset })}</dt><dd className="chain-address">{quote.tronRecipient}</dd>
       <dt>{t('tronResourceOwner')}</dt><dd className="chain-address">{quote.tronResourceOwner}</dd>
       <dt>{t('tronExpiry')}</dt><dd>{new Date(quote.tronRefTime! + nileTransferLifetime).toLocaleString()}</dd></dl>}
-    {quote && <p>{t('tronResourceNotice')}</p>}
-    {local && (!order || order.state === 'awaiting_signature') && <Button color="primary" block disabled={busy || expired} onClick={() => void run(true)}>{t('tronSign')}</Button>}
-    <Button disabled={busy} onClick={() => void run(false)}>{t('tronLookup')}</Button>
+    {quote && token && <dl><dt>{t('tronTokenContract')}</dt><dd className="chain-address">{nileDepositUSDTContract}</dd>
+      <dt>{t('tronEnergyLimit')}</dt><dd>{nileDepositEnergyLimitSun / 1_000_000} TRX</dd></dl>}
+    {quote && <p>{t(token ? 'tronTokenResourceNotice' : 'tronResourceNotice')}</p>}
+    {local && (!order || order.state === 'awaiting_signature') && <Button color="primary" block disabled={busy || expired} onClick={() => void run(true)}>{t('tronSign', { asset })}</Button>}
+    <Button disabled={busy} onClick={() => void run(false)}>{t(quote || order ? 'tronLookupAsset' : 'tronLookup', { asset })}</Button>
     {error !== undefined && <Failure error={error}/>}
     {order && <p role="status">{t(labels[order.state as keyof typeof labels], { idx, amount: order.creditedUsd })}</p>}
-    {order?.txId && <dl><dt>{t('tronTx')}</dt><dd className="chain-address">{order.txId}</dd>
+    {order?.txId && <dl><dt>{t('tronDepositAsset')}</dt><dd>{asset}</dd><dt>{t('tronTx')}</dt><dd className="chain-address">{order.txId}</dd>
       {order.actualBandwidth !== undefined && <><dt>{t('tronActualBandwidth')}</dt><dd>{order.actualBandwidth}</dd></>}
+      {token && order.actualFeeSun !== undefined && <><dt>{t('tronActualEnergy')}</dt><dd>{order.actualEnergy ?? 0}</dd></>}
       {order.actualFeeSun !== undefined && <><dt>{t('tronActualFee')}</dt><dd>{order.actualFeeSun} sun</dd></>}</dl>}
     {order?.state === 'credited' && <Link to="/records?kind=usd_balance">{t('viewAccountEntries')}</Link>}
   </>;

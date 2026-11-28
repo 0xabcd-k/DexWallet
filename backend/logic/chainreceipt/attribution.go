@@ -432,12 +432,14 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 		}
 	}
 	var nileReservation bool
-	if k.Network == chainassets.TRONNile && k.Kind == TRONTransfer && ev.AssetId == chainassets.TRONNileTRX {
+	nativeNile := k.Kind == TRONTransfer && ev.AssetId == chainassets.TRONNileTRX
+	tokenNile := k.Kind == TRONLog && ev.AssetId == chainassets.NileUSDT(chainassets.NileDepositUSDTContract).ID
+	if k.Network == chainassets.TRONNile && (nativeNile || tokenNile) {
 		var version int
 		if err := a.conn.QueryRowCtx(ctx, &version, "SELECT version FROM schema_migrations_business WHERE dirty=0"); err != nil {
 			return empty, err
 		}
-		nileReservation = version >= 45
+		nileReservation = (nativeNile && version >= 45) || (tokenNile && version >= 46)
 	}
 	if !row.MatchedEventId.Valid {
 		// A request can accept one event and the unique index reserves each event globally.

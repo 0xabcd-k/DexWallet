@@ -19,12 +19,16 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
-const tronCreditAction account.Action = "credit_tron_trx"
+const (
+	tronCreditAction     account.Action = "credit_tron_trx"
+	tronUSDTCreditAction account.Action = "credit_tron_usdt"
+)
 
 type TronDepositNetwork interface {
 	ReadTRONEvidence(context.Context, string, string) (chainassets.TRONEvidence, error)
 	NileTransactionSeen(context.Context, string) (bool, error)
 	CheckNileDepositResources(context.Context, chainassets.DepositPreview) error
+	SubmitNileUSDT(context.Context, tronnative.Signed) error
 	SubmitNileTRX(context.Context, tronnative.Signed) error
 }
 type TronExecution struct {
@@ -55,7 +59,7 @@ func (s *TronExecution) Step(ctx context.Context, idx string) (*model.TronDeposi
 	if err = json.Unmarshal([]byte(record.SnapshotJson), &q); err != nil {
 		return o, err
 	}
-	if q.QuoteIdx != idx || q.MessageSHA256 != o.TxId || q.ExpiresAt != record.QuoteExpiresAt.UnixMilli() || o.AcceptedAt.Before(record.ConfirmedAt) || o.AcceptedAt.UnixMilli() >= q.ExpiresAt {
+	if q.AssetID != o.AssetId || q.QuoteIdx != idx || q.MessageSHA256 != o.TxId || q.ExpiresAt != record.QuoteExpiresAt.UnixMilli() || o.AcceptedAt.Before(record.ConfirmedAt) || o.AcceptedAt.UnixMilli() >= q.ExpiresAt {
 		return o, errors.New("inconsistent Nile deposit admission")
 	}
 	signed, err := q.BindNileDeposit(o.UserSignature, o.OrderSignature)
@@ -66,10 +70,10 @@ func (s *TronExecution) Step(ctx context.Context, idx string) (*model.TronDeposi
 	if err != nil {
 		return o, err
 	}
-	receipt, bandwidth, err := chainreceipt.VerifyNileDeposit(evidence, q, o.UserSignature)
+	receipt, usage, err := chainreceipt.VerifyNileDeposit(evidence, q, o.UserSignature)
 	switch {
 	case err == nil || errors.Is(err, chainreceipt.ErrExecutionFailed):
-		if err = s.settle(ctx, o, record.UserId, q, receipt, bandwidth, err == nil); err != nil {
+		if err = s.settle(ctx, o, record.UserId, q, receipt, usage, err == nil); err != nil {
 			return o, err
 		}
 		return rows.FindOne(ctx, o.Id)
@@ -91,6 +95,9 @@ func (s *TronExecution) Step(ctx context.Context, idx string) (*model.TronDeposi
 	if err = s.chain.CheckNileDepositResources(ctx, q); err != nil {
 		return o, err
 	}
+	if signed.TokenContract() != "" {
+		return o, s.chain.SubmitNileUSDT(ctx, signed)
+	}
 	return o, s.chain.SubmitNileTRX(ctx, signed)
 }
 func (s *TronExecution) review(ctx context.Context, o *model.TronDepositOrder) (*model.TronDepositOrder, error) {
@@ -99,7 +106,7 @@ func (s *TronExecution) review(ctx context.Context, o *model.TronDepositOrder) (
 	}
 	return model.NewTronDepositOrderModel(s.conn).FindOne(ctx, o.Id)
 }
-func (s *TronExecution) settle(ctx context.Context, o *model.TronDepositOrder, user int64, q chainassets.DepositPreview, r chainreceipt.Receipt, bandwidth int64, succeeded bool) error {
+func (s *TronExecution) settle(ctx context.Context, o *model.TronDepositOrder, user int64, q chainassets.DepositPreview, r chainreceipt.Receipt, usage chainreceipt.NileDepositUsage, succeeded bool) error {
 	fee, err := strconv.ParseInt(r.Transaction.FeeAtoms, 10, 64)
 	if err != nil {
 		return err
@@ -115,36 +122,40 @@ func (s *TronExecution) settle(ctx context.Context, o *model.TronDepositOrder, u
 		if current.State == TronCredited || (current.State == TronReview && current.Height.Valid) {
 			return nil
 		}
-		if !succeeded || fee != 0 || bandwidth != int64(q.DelegatedBandwidth) {
-			_, err := session.ExecCtx(ctx, "UPDATE tron_deposit_order SET state=?,actual_fee_sun=?,actual_bandwidth=?,finalized_height=? WHERE id=?", TronReview, fee, bandwidth, r.Transaction.Slot, o.Id)
+		if !succeeded || !usage.Covered || fee != 0 || usage.Bandwidth != int64(q.DelegatedBandwidth) || usage.Energy > q.DelegatedEnergy || (q.DelegatedEnergy > 0 && usage.Energy == 0) {
+			_, err := session.ExecCtx(ctx, "UPDATE tron_deposit_order SET state=?,actual_fee_sun=?,actual_bandwidth=?,actual_energy=?,finalized_height=? WHERE id=?", TronReview, fee, usage.Bandwidth, usage.Energy, r.Transaction.Slot, o.Id)
 			return err
 		}
 		var assigned bool
 		if err := session.QueryRowCtx(ctx, &assigned, `SELECT EXISTS(SELECT 1 FROM chain_observed_transaction t JOIN chain_transfer_event e ON e.transaction_id=t.id
-   JOIN chain_receive_request r ON r.matched_event_id=e.id WHERE t.network=? AND t.signature=? AND e.event_kind=? AND e.instruction_index=0)`, chainassets.TRONNile, o.TxId, chainreceipt.TRONTransfer); err != nil {
+   JOIN chain_receive_request r ON r.matched_event_id=e.id WHERE t.network=? AND t.signature=? AND e.event_kind=? AND e.instruction_index=?)`, chainassets.TRONNile, o.TxId, r.Event.Kind, r.Event.Instruction); err != nil {
 			return err
 		}
 		if assigned {
 			return chainreceipt.ErrReceiveConflict
 		}
 		rate, err := decimal.NewFromString(q.USDPerCoin)
-		if err != nil || !rate.IsPositive() || q.GasUSDPerCoin != q.USDPerCoin {
-			return errors.New("invalid locked TRX/USD rate")
+		if err != nil || !rate.IsPositive() || (q.AssetID == chainassets.TRONNileTRX && q.GasUSDPerCoin != q.USDPerCoin) {
+			return errors.New("invalid locked Nile deposit rate")
 		}
-		sun, err := strconv.ParseInt(r.Event.Atoms, 10, 64)
+		atoms, err := decimal.NewFromString(r.Event.Atoms)
 		if err != nil {
 			return err
 		}
 		usd, _ := accounts.Lookup(accounts.KindUSD)
-		net := decimal.New(sun, -6).Mul(rate).Truncate(usd.Scale)
+		net := atoms.Shift(-6).Mul(rate).Truncate(usd.Scale)
 		if !net.IsPositive() || net.StringFixed(usd.Scale) != q.NetUSD {
-			return errors.New("TRX proceeds differ from confirmed quote")
+			return errors.New("Nile deposit proceeds differ from confirmed quote")
 		}
-		voucher, err := s.ledger.Post(ctx, session, account.Posting{Source: account.Source{Type: account.BusinessDeposit, ID: o.Id, Action: tronCreditAction}, Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(user, accounts.KindUSD, net)}})
+		action := tronCreditAction
+		if q.AssetID != chainassets.TRONNileTRX {
+			action = tronUSDTCreditAction
+		}
+		voucher, err := s.ledger.Post(ctx, session, account.Posting{Source: account.Source{Type: account.BusinessDeposit, ID: o.Id, Action: action}, Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(user, accounts.KindUSD, net)}})
 		if err != nil {
 			return err
 		}
-		_, err = session.ExecCtx(ctx, "UPDATE tron_deposit_order SET state=?,actual_fee_sun=0,actual_bandwidth=?,finalized_height=?,credit_voucher_id=?,credited_usd=? WHERE id=?", TronCredited, bandwidth, r.Transaction.Slot, voucher, net, o.Id)
+		_, err = session.ExecCtx(ctx, "UPDATE tron_deposit_order SET state=?,actual_fee_sun=0,actual_bandwidth=?,actual_energy=?,finalized_height=?,credit_voucher_id=?,credited_usd=? WHERE id=?", TronCredited, usage.Bandwidth, usage.Energy, r.Transaction.Slot, voucher, net, o.Id)
 		return err
 	})
 }

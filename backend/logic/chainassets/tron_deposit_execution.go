@@ -17,20 +17,41 @@ func NileDepositOrderDigest(idx, txID string) [32]byte {
 	return sha256.Sum256([]byte("DexWallet/1/tron-nile/trx/self-deposit/" + idx + "/" + txID))
 }
 
+func (q DepositPreview) NileDepositOrderDigest() [32]byte {
+	if q.AssetID == TRONNileTRX {
+		return NileDepositOrderDigest(q.QuoteIdx, q.MessageSHA256)
+	}
+	return sha256.Sum256([]byte("DexWallet/1/" + q.AssetID + "/self-deposit/" + q.QuoteIdx + "/" + q.MessageSHA256))
+}
+
 func (q DepositPreview) NileDepositTransfer() (tronnative.Transfer, error) {
 	var t tronnative.Transfer
-	if q.AssetID != TRONNileTRX || q.GasAssetID != TRONNileTRX || !q.WalletFeePreview || q.TRONReference == nil || q.EstimatedGas != "0" || q.MaxGas != "0" || q.DelegatedEnergy != 0 || !rateSyntax.MatchString(q.PayQuantity) {
-		return t, errors.New("signed Nile TRX wallet quote required")
+	if q.PayDecimals != 6 || q.GasDecimals != 6 || q.GasAssetID != TRONNileTRX || !q.WalletFeePreview || q.TRONReference == nil || q.EstimatedGas != "0" || q.MaxGas != "0" || !rateSyntax.MatchString(q.PayQuantity) {
+		return t, errors.New("signed Nile wallet quote required")
 	}
 	if _, err := tronnative.AddressBytes(q.FeePayer); err != nil || q.FeePayer == q.WalletAddress {
 		return t, errors.New("invalid Nile resource owner")
 	}
 	amount, _ := decimal.NewFromString(q.PayQuantity)
-	sun := amount.Shift(6)
-	if !sun.IsInteger() || !sun.IsPositive() || !sun.BigInt().IsInt64() {
-		return t, errors.New("invalid TRX precision or amount")
+	atoms := amount.Shift(6)
+	if !atoms.IsInteger() || !atoms.IsPositive() {
+		return t, errors.New("invalid Nile deposit precision or amount")
 	}
-	t = tronnative.Transfer{Reference: *q.TRONReference, Expiration: q.TRONReference.Timestamp + tronnative.Lifetime.Milliseconds(), Sender: q.WalletAddress, Recipient: q.Recipient, Sun: sun.IntPart()}
+	t = tronnative.Transfer{Reference: *q.TRONReference, Expiration: q.TRONReference.Timestamp + tronnative.Lifetime.Milliseconds(), Sender: q.WalletAddress, Recipient: q.Recipient}
+	switch q.AssetID {
+	case TRONNileTRX:
+		if !atoms.BigInt().IsInt64() || q.DelegatedEnergy != 0 {
+			return t, errors.New("invalid TRX amount or Energy")
+		}
+		t.Sun = atoms.IntPart()
+	case nileDepositUSDTID:
+		if q.DelegatedEnergy <= 0 {
+			return t, errors.New("missing delegated Energy for USDT")
+		}
+		t.TokenContract, t.TokenAtoms, t.FeeLimitSun = NileDepositUSDTContract, atoms.BigInt().String(), nileUSDTFeeLimitSun
+	default:
+		return t, errors.New("unsupported Nile deposit asset")
+	}
 	raw, err := t.Raw()
 	if err != nil || tronnative.TxID(raw) != q.MessageSHA256 || tronnative.SingleSignatureBandwidth(raw) != q.DelegatedBandwidth || t.Expiration <= q.ExpiresAt {
 		return t, errors.New("Nile deposit differs from confirmed transfer or bandwidth")
@@ -43,7 +64,7 @@ func (q DepositPreview) BindNileDeposit(userSig, orderSig string) (tronnative.Si
 	if err != nil {
 		return tronnative.Signed{}, err
 	}
-	if _, err = tronnative.VerifyOwner(t.Sender, NileDepositOrderDigest(q.QuoteIdx, q.MessageSHA256), orderSig); err != nil {
+	if _, err = tronnative.VerifyOwner(t.Sender, q.NileDepositOrderDigest(), orderSig); err != nil {
 		return tronnative.Signed{}, err
 	}
 	raw, _ := t.Raw()
@@ -52,7 +73,7 @@ func (q DepositPreview) BindNileDeposit(userSig, orderSig string) (tronnative.Si
 
 func (s *Service) AdmitNileDeposit(ctx context.Context, user int64, q DepositPreview) error {
 	r := s.quotes.tron[q.AssetID]
-	if !s.quotes.tronTRXExecution || r == nil || r.resourceOwner != q.FeePayer || r.recipient != q.Recipient {
+	if !s.quotes.tronExecution[q.AssetID] || r == nil || r.resourceOwner != q.FeePayer || r.recipient != q.Recipient {
 		return apperror.New(apperror.Unprocessable, errors.New("Nile deposit route disabled or changed"))
 	}
 	if s.limiter == nil {
@@ -88,7 +109,13 @@ func (s *Service) CheckNileDepositResources(ctx context.Context, q DepositPrevie
 	if head.Height < t.Reference.Height || head.Timestamp < t.Reference.Timestamp || (head.Height == t.Reference.Height && head.ID != t.Reference.ID) {
 		return apperror.New(apperror.ServiceUnavailable, errors.New("Nile resource node behind or inconsistent with original reference"))
 	}
+	if t.TokenContract != "" && t.TokenContract != s.NileUSDTContract() {
+		return errors.New("configured Nile deposit token changed")
+	}
 	wallet, _ := tronnative.AddressBytes(t.Sender)
-	_, err = estimateNileResources(s.nileQuoteReader(ctx, n, e), hex.EncodeToString(wallet), route, t, q.DelegatedBandwidth)
+	energy, err := estimateNileResources(s.nileQuoteReader(ctx, n, e), hex.EncodeToString(wallet), route, t, q.DelegatedBandwidth)
+	if err == nil && energy > q.DelegatedEnergy {
+		return apperror.New(apperror.ServiceUnavailable, errors.New("current Energy exceeds confirmed budget"))
+	}
 	return err
 }

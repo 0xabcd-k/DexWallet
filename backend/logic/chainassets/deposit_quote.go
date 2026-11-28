@@ -16,6 +16,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	TRONTestUSDTExecution     bool                  `json:",optional"`
 	TRONTRXExecution          bool                  `json:",optional"`
 	BaseETHExecutionWindow    time.Duration         `json:",optional"`
 	BaseUSDCExecutionWindow   time.Duration         `json:",optional"`
@@ -57,7 +58,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
-	tronTRXExecution              bool
+	tronExecution                 map[string]bool
 	baseETHWindow, baseUSDCWindow time.Duration
 	solReviewAfter                map[string]time.Duration
 	ton                           map[string]*tonDepositRoute
@@ -103,7 +104,10 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	if c.TRONTRXExecution && c.TRONTRX == nil {
 		return book, fmt.Errorf("Nile TRX execution requires a delegated bandwidth route")
 	}
-	book = depositBook{tronTRXExecution: c.TRONTRXExecution, baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	if c.TRONTestUSDTExecution && c.TRONTestUSDT == nil {
+		return book, fmt.Errorf("Nile USDT execution requires a delegated resource route")
+	}
+	book = depositBook{tronExecution: map[string]bool{TRONNileTRX: c.TRONTRXExecution, nileDepositUSDTID: c.TRONTestUSDTExecution}, baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {

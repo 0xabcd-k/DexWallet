@@ -43,10 +43,25 @@ func (n nileLostAck) SubmitNileTRX(ctx context.Context, s tronnative.Signed) err
 	return errNileAckLost
 }
 
+func (n nileLostAck) SubmitNileUSDT(ctx context.Context, s tronnative.Signed) error {
+	if err := n.Service.SubmitNileUSDT(ctx, s); err != nil {
+		return err
+	}
+	return errNileAckLost
+}
+func TestNileUSDTSelfDepositLive(t *testing.T) {
+	if os.Getenv("DEXWALLET_TEST_NILE_USDT_DEPOSIT_EXECUTE") != "1" {
+		t.Skip("requires explicit Nile fixture transfer")
+	}
+	testNileDepositLive(t, true)
+}
 func TestNileTRXSelfDepositLive(t *testing.T) {
 	if os.Getenv("DEXWALLET_TEST_NILE_TRX_DEPOSIT_EXECUTE") != "1" {
 		t.Skip("requires explicit Nile test TRX transfer")
 	}
+	testNileDepositLive(t, false)
+}
+func testNileDepositLive(t *testing.T, token bool) {
 	const payer = "TDHZum2JgP2ZgfnveW9f3VM3UjaafdJXio"
 	const platform = "TPDBmTxJWYucGk5VjDsSi6jBdvVjpCnCsH"
 	raw, err := os.ReadFile(os.Getenv("DEXWALLET_TEST_NILE_DEPOSIT_KEY_FILE"))
@@ -62,15 +77,26 @@ func TestNileTRXSelfDepositLive(t *testing.T) {
 	if err != nil {
 		t.Fatal("invalid dedicated Nile test key")
 	}
-	db, users := userDatabase(t, "tron_deposit_live")
+	scope := "nile_trx_live"
+	if token {
+		scope = "nile_usdt_live"
+	}
+	db, users := userDatabase(t, scope)
 	mustExec(t, db, "INSERT INTO user(id,nickname) VALUES(1,'nile-dev')")
 	client := redis.NewClient(&redis.Options{Addr: testenv.RedisAddress, Password: os.Getenv("DEXWALLET_REDIS_PASSWORD")})
 	defer client.Close()
-	ns := testRun.Name("redis", "tron_deposit_live")
+	ns := testRun.Name("redis", scope)
 	now := time.Now().Unix()
 	route := &chainassets.TRONDepositFeeConfig{Recipient: platform, ResourceOwner: platform}
 	cfg := chainassets.DepositQuoteConfig{Version: "nile-self-test", AsOf: now - 10, ValidUntil: now + 3600, TRONTRXExecution: true, TRONTRX: route, Assets: []chainassets.DepositQuoteRate{{AssetID: chainassets.TRONNileTRX, USDPerCoin: "10", EstimatedGas: "0"}}}
-	chain, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TRONNile, URL: "https://nile.trongrid.io"}}, DepositQuotes: &cfg}, chainassets.NewRedisLimiter(client, ns, 30))
+	assetID := chainassets.TRONNileTRX
+	if token {
+		assetID = chainassets.NileUSDT(chainassets.NileDepositUSDTContract).ID
+		cfg.TRONTestUSDTExecution = true
+		cfg.TRONTestUSDT = route
+		cfg.Assets = append(cfg.Assets, chainassets.DepositQuoteRate{AssetID: assetID, USDPerCoin: "1", EstimatedGas: "0"})
+	}
+	chain, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TRONNile, URL: "https://nile.trongrid.io", TestUSDTContract: chainassets.NileDepositUSDTContract}}, DepositQuotes: &cfg}, chainassets.NewRedisLimiter(client, ns, 30))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +107,7 @@ func TestNileTRXSelfDepositLive(t *testing.T) {
 	quotes := deposit.NewConfirmations(conn, client, ns)
 	orders := deposit.NewTronOrders(conn, quotes, users, runner, chain)
 	ledger := account.New(accounts.NewUserAccountModel(conn))
-	q, err := chain.PreviewWalletDeposit(ctx, 1, chainassets.TRONNileTRX, "0.01", payer)
+	q, err := chain.PreviewWalletDeposit(ctx, 1, assetID, "0.01", payer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +119,7 @@ func TestNileTRXSelfDepositLive(t *testing.T) {
 		t.Fatal(err)
 	}
 	tx, err := q.NileDepositTransfer()
-	if err != nil || tx.Sun != 1000 || tx.Sender != payer || tx.Recipient != platform || q.FeePayer != platform || q.MaxGas != "0" {
+	if err != nil || (!token && tx.Sun != 1000) || (token && (tx.Sun != 0 || tx.TokenAtoms != "10000" || tx.TokenContract != chainassets.NileDepositUSDTContract || tx.FeeLimitSun != 15_000_000 || q.DelegatedEnergy <= 0)) || tx.Sender != payer || tx.Recipient != platform || q.FeePayer != platform || q.MaxGas != "0" {
 		t.Fatal("outside dedicated test budget", err)
 	}
 	hash, _ := hex.DecodeString(q.MessageSHA256)
@@ -101,7 +127,7 @@ func TestNileTRXSelfDepositLive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	digest := chainassets.NileDepositOrderDigest(q.QuoteIdx, q.MessageSHA256)
+	digest := q.NileDepositOrderDigest()
 	bound, err := crypto.Sign(digest[:], key)
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +158,7 @@ func TestNileTRXSelfDepositLive(t *testing.T) {
 			continue
 		}
 		again, err := worker.Step(ctx, q.QuoteIdx)
-		if err != nil || again.CreditVoucherId != o.CreditVoucherId || o.ActualFeeSun.Int64 != 0 || o.ActualBandwidth.Int64 != int64(q.DelegatedBandwidth) {
+		if err != nil || (token && (o.ActualEnergy.Int64 <= 0 || o.ActualEnergy.Int64 > q.DelegatedEnergy)) || again.CreditVoucherId != o.CreditVoucherId || o.ActualFeeSun.Int64 != 0 || o.ActualBandwidth.Int64 != int64(q.DelegatedBandwidth) {
 			t.Fatal("resource use or replay", err)
 		}
 		page, err := ledger.Entries(ctx, 1, accounts.KindUSD, 0, 2)
@@ -152,7 +178,7 @@ func TestNileTRXSelfDepositLive(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		t.Logf("solid order=%s tx=%s height=%d bandwidth=%d fee_sun=%d credited_usd=%s entries=1", o.QuoteIdx, o.TxId, o.FinalizedHeight.Int64, o.ActualBandwidth.Int64, o.ActualFeeSun.Int64, o.CreditedUsd.Decimal.StringFixed(2))
+		t.Logf("solid order=%s tx=%s height=%d bandwidth=%d energy=%d fee_sun=%d credited_usd=%s entries=1", o.QuoteIdx, o.TxId, o.FinalizedHeight.Int64, o.ActualBandwidth.Int64, o.ActualEnergy.Int64, o.ActualFeeSun.Int64, o.CreditedUsd.Decimal.StringFixed(2))
 		return
 	}
 	t.Fatal("Nile solidification timeout", q.MessageSHA256)

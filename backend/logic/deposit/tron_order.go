@@ -48,7 +48,7 @@ func (s *TronOrders) Get(ctx context.Context, owner int64, idx string) (*model.T
 		if time.Now().UnixMilli() >= record.Quote.ExpiresAt {
 			state = TronExpired
 		}
-		return &model.TronDepositOrder{QuoteIdx: idx, State: state}, nil
+		return &model.TronDepositOrder{QuoteIdx: idx, AssetId: record.Quote.AssetID, State: state}, nil
 	}
 	return o, err
 }
@@ -115,7 +115,7 @@ func (s *TronOrders) Authorize(ctx context.Context, actor user.Actor, idx, signa
 		if u.PaymentRestrictedUntil.Valid && now.Before(u.PaymentRestrictedUntil.Time) {
 			return apperror.New(apperror.PaymentRestricted, nil)
 		}
-		_, err = lockedRows.Insert(ctx, &model.TronDepositOrder{QuoteIdx: idx, TxId: q.MessageSHA256, UserSignature: signature, OrderSignature: orderSig, State: TronSigned, AcceptedAt: now})
+		_, err = lockedRows.Insert(ctx, &model.TronDepositOrder{QuoteIdx: idx, AssetId: q.AssetID, TxId: q.MessageSHA256, UserSignature: signature, OrderSignature: orderSig, State: TronSigned, AcceptedAt: now})
 		var duplicate *mysql.MySQLError
 		if errors.As(err, &duplicate) && duplicate.Number == 1062 {
 			return apperror.New(apperror.Conflict, errors.New("Nile transaction already belongs to a deposit"))

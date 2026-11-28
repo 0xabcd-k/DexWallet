@@ -54,6 +54,8 @@ type (
 		FinalizedHeight sql.NullInt64       `db:"finalized_height"`
 		CreditVoucherId sql.NullInt64       `db:"credit_voucher_id"`
 		CreditedUsd     decimal.NullDecimal `db:"credited_usd"`
+		AssetId         string              `db:"asset_id"`
+		ActualEnergy    sql.NullInt64       `db:"actual_energy"`
 	}
 )
 
@@ -127,14 +129,14 @@ func (m *defaultTronDepositOrderModel) FindOneByTxId(ctx context.Context, txId s
 }
 
 func (m *defaultTronDepositOrderModel) Insert(ctx context.Context, data *TronDepositOrder) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, tronDepositOrderRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.TxId, data.UserSignature, data.OrderSignature, data.AcceptedAt, data.State, data.ActualFeeSun, data.ActualBandwidth, data.FinalizedHeight, data.CreditVoucherId, data.CreditedUsd)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, tronDepositOrderRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.TxId, data.UserSignature, data.OrderSignature, data.AcceptedAt, data.State, data.ActualFeeSun, data.ActualBandwidth, data.FinalizedHeight, data.CreditVoucherId, data.CreditedUsd, data.AssetId, data.ActualEnergy)
 	return ret, err
 }
 
 func (m *defaultTronDepositOrderModel) Update(ctx context.Context, newData *TronDepositOrder) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, tronDepositOrderRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.TxId, newData.UserSignature, newData.OrderSignature, newData.AcceptedAt, newData.State, newData.ActualFeeSun, newData.ActualBandwidth, newData.FinalizedHeight, newData.CreditVoucherId, newData.CreditedUsd, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.TxId, newData.UserSignature, newData.OrderSignature, newData.AcceptedAt, newData.State, newData.ActualFeeSun, newData.ActualBandwidth, newData.FinalizedHeight, newData.CreditVoucherId, newData.CreditedUsd, newData.AssetId, newData.ActualEnergy, newData.Id)
 	return err
 }
 

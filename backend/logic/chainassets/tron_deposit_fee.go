@@ -139,7 +139,7 @@ func (s *Service) previewNileDeposit(ctx context.Context, user int64, assetID, t
 	if time.Now().UnixMilli() >= q.ExpiresAt {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("Nile deposit estimate expired"))
 	}
-	if assetID == TRONNileTRX && s.quotes.tronTRXExecution {
+	if s.quotes.tronExecution[assetID] {
 		q.TRONReference = &head
 	}
 	q.Recipient, q.FeePayer = route.recipient, route.resourceOwner

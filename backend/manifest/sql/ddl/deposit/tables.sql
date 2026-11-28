@@ -71,6 +71,8 @@ CREATE TABLE `tron_deposit_order` (
     `finalized_height` BIGINT NULL,
     `credit_voucher_id` BIGINT NULL,
     `credited_usd` DECIMAL(36,18) NULL,
+    `asset_id` VARCHAR(96) NOT NULL DEFAULT 'tron-nile:trx',
+    `actual_energy` BIGINT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_tron_deposit_quote` (`quote_idx`),
     UNIQUE KEY `uk_tron_deposit_tx` (`tx_id`),

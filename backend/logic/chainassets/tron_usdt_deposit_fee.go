@@ -12,13 +12,13 @@ import (
 )
 
 const (
-	nileDepositTestUSDT   = "TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn"
-	nileUSDTRuntimeSHA256 = "7ae2015d27ec7aec7c057f4a3dd026dfc224a0b9ee4017eccfa569ae167cbb2b"
-	nileUSDTFeeLimitSun   = 15_000_000 // Cap used by the verified single-signature test payment.
-	trc20TransferTopic    = "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+	NileDepositUSDTContract = "TYGk3YPGFa7ZLhXfDBd5QzN9Ms9DmPC9tn"
+	nileUSDTRuntimeSHA256   = "7ae2015d27ec7aec7c057f4a3dd026dfc224a0b9ee4017eccfa569ae167cbb2b"
+	nileUSDTFeeLimitSun     = 15_000_000 // Cap used by the verified single-signature test payment.
+	trc20TransferTopic      = "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 )
 
-var nileDepositUSDTID = NileUSDT(nileDepositTestUSDT).ID
+var nileDepositUSDTID = NileUSDT(NileDepositUSDTContract).ID
 
 func nileEstimateUnavailable(reason string) error {
 	return apperror.New(apperror.ServiceUnavailable, invalid(reason))

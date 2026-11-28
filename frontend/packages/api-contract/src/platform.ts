@@ -1234,6 +1234,8 @@ export interface TronDepositAuthorizeRequest {
 }
 
 export interface TronDepositOrderData {
+	assetId: string
+	actualEnergy?: number
 	quoteIdx: string
 	state: 'awaiting_signature' | 'expired' | 'signed' | 'review' | 'credited'
 	txId?: string

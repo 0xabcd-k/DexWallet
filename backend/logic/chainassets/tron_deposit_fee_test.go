@@ -211,7 +211,8 @@ func testNileQuotes(t *testing.T, path, assetID string, cases []nileQuoteCase) {
 			}, func(c *Config) {
 				c.DepositQuotes = &DepositQuoteConfig{Version: "trx-test", AsOf: now.Unix() - 30, ValidUntil: now.Unix() + 120, TRONTRX: &TRONDepositFeeConfig{nileResourceOwner, nileResourceOwner}, Assets: []DepositQuoteRate{{TRONNileTRX, "10", "0.1"}}}
 				if assetID == nileDepositUSDTID {
-					c.Networks[0].TestUSDTContract = nileDepositTestUSDT
+					c.Networks[0].TestUSDTContract = NileDepositUSDTContract
+					c.DepositQuotes.TRONTestUSDTExecution = tc.name == "observed payment"
 					c.DepositQuotes.TRONTestUSDT = c.DepositQuotes.TRONTRX
 					c.DepositQuotes.TRONTRX = nil
 					c.DepositQuotes.Assets = append(c.DepositQuotes.Assets, DepositQuoteRate{assetID, "1", "0.1"})
@@ -228,13 +229,26 @@ func testNileQuotes(t *testing.T, path, assetID string, cases []nileQuoteCase) {
 			tx := tronnative.Transfer{Sender: tronOwner, Recipient: nileResourceOwner, Sun: 1000, Reference: head, Expiration: head.Timestamp + tronnative.Lifetime.Milliseconds()}
 			if assetID == nileDepositUSDTID {
 				tx.Sun = 0
-				tx.TokenContract = nileDepositTestUSDT
+				tx.TokenContract = NileDepositUSDTContract
 				tx.TokenAtoms = "10000"
 				tx.FeeLimitSun = nileUSDTFeeLimitSun
 			}
 			raw, buildErr := tx.Raw()
 			if err != nil || buildErr != nil || q.MessageSHA256 != tronnative.TxID(raw) || q.DelegatedBandwidth != fixture.Preview.DelegatedBandwidth || q.WalletAddress != tronOwner || q.PayQuantity != fixture.Preview.PayQuantity || q.DelegatedEnergy != fixture.Preview.DelegatedEnergy || q.EstimatedGas != "0" || q.GasUSD != "0" || q.NetUSD != "0.01" || q.ExpiresAt != head.Timestamp+depositPreviewTTL.Milliseconds() {
 				t.Fatal(q, err, buildErr)
+			}
+			if tc.name == "observed payment" && assetID == nileDepositUSDTID {
+				q.MaxGas = q.EstimatedGas
+				if q.TRONReference == nil {
+					t.Fatal("missing USDT execution terms")
+				}
+				if e := s.CheckNileDepositResources(context.Background(), q); e != nil {
+					t.Fatal("funded USDT preflight", e)
+				}
+				q.DelegatedEnergy--
+				if e := s.CheckNileDepositResources(context.Background(), q); e == nil {
+					t.Fatal("accepted simulation above confirmed Energy")
+				}
 			}
 			if tc.name == "covered" && assetID == TRONNileTRX {
 				q.TRONReference = &head

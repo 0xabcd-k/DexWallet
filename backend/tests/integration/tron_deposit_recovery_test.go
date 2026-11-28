@@ -36,11 +36,14 @@ func (n *nileHistory) ReadTRONEvidence(_ context.Context, network, hash string) 
 	return n.e, nil
 }
 func (n *nileHistory) Catalog() []chainassets.Network {
-	return []chainassets.Network{{ID: chainassets.TRONNile, Family: chainassets.TRON, Assets: []chainassets.Asset{{ID: chainassets.TRONNileTRX, Origin: chainassets.Native, Decimals: 6}}}}
+	return []chainassets.Network{{ID: chainassets.TRONNile, Family: chainassets.TRON, Assets: []chainassets.Asset{{ID: chainassets.TRONNileTRX, Origin: chainassets.Native, Decimals: 6}, chainassets.NileUSDT(chainassets.NileDepositUSDTContract)}}}
 }
 func (n *nileHistory) NileTransactionSeen(context.Context, string) (bool, error) { return true, nil }
 func (n *nileHistory) CheckNileDepositResources(context.Context, chainassets.DepositPreview) error {
 	return errors.New("unexpected resource preflight during historical recovery")
+}
+func (n *nileHistory) SubmitNileUSDT(ctx context.Context, s tronnative.Signed) error {
+	return n.SubmitNileTRX(ctx, s)
 }
 func (n *nileHistory) SubmitNileTRX(context.Context, tronnative.Signed) error {
 	return errors.New("unexpected broadcast during historical recovery")
@@ -62,9 +65,11 @@ func (n *delayedNileReceipt) ReadTRONEvidence(ctx context.Context, network, hash
 		return e, ctx.Err()
 	}
 }
-func TestNileTRXDepositRecovery(t *testing.T) {
+func TestNileTRXDepositRecovery(t *testing.T)  { testNileDepositRecovery(t, "trx") }
+func TestNileUSDTDepositRecovery(t *testing.T) { testNileDepositRecovery(t, "usdt") }
+func testNileDepositRecovery(t *testing.T, asset string) {
 	ctx := context.Background()
-	raw, err := os.ReadFile("../../logic/chainreceipt/testdata/tron-trx-self-deposit.json")
+	raw, err := os.ReadFile("../../logic/chainreceipt/testdata/tron-" + asset + "-self-deposit.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +79,7 @@ func TestNileTRXDepositRecovery(t *testing.T) {
 	}
 	q := f.Quote
 	n := &nileHistory{e: f.Evidence, hash: q.MessageSHA256}
-	name, dsn, db, err := testRun.NewDatabase(ctx, "nile_deposit_recovery")
+	name, dsn, db, err := testRun.NewDatabase(ctx, "nile_history_"+asset)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +106,7 @@ func TestNileTRXDepositRecovery(t *testing.T) {
 	if o, e := orders.Get(ctx, 1, q.QuoteIdx); e != nil || o.State != deposit.TronExpired {
 		t.Fatal("unsigned expiry", e)
 	}
-	mustExec(t, db, "INSERT INTO tron_deposit_order(quote_idx,tx_id,user_signature,order_signature,accepted_at,state) VALUES(?,?,?,?,?,'signed')", q.QuoteIdx, q.MessageSHA256, f.UserSignature, f.OrderSignature, at)
+	mustExec(t, db, "INSERT INTO tron_deposit_order(asset_id,quote_idx,tx_id,user_signature,order_signature,accepted_at,state) VALUES(?,?,?,?,?,?,'signed')", q.AssetID, q.QuoteIdx, q.MessageSHA256, f.UserSignature, f.OrderSignature, at)
 	actor := user.Actor{UserID: 1, AuthVersion: 1}
 	if _, e := orders.Authorize(ctx, actor, q.QuoteIdx, f.UserSignature, f.OrderSignature); e != nil {
 		t.Fatal("signed replay", e)
@@ -118,12 +123,17 @@ func TestNileTRXDepositRecovery(t *testing.T) {
 		t.Fatal("chain signature substituted for order proof")
 	}
 	trx := chainreceipt.TRONRequest{Network: chainassets.TRONNile, Hash: n.hash, AssetID: q.AssetID, Recipient: q.Recipient, Atoms: "1000"}
+	k := chainreceipt.EventKey{Network: chainassets.TRONNile, Signature: n.hash, Kind: chainreceipt.TRONTransfer}
+	if asset == "usdt" {
+		k.Kind = chainreceipt.TRONLog
+		trx.Atoms = "10000"
+		trx.LogIndex = &k.Index
+	}
 	if _, err = chainreceipt.NewTRON(conn, runner, n).Record(ctx, trx); err != nil {
 		t.Fatal(err)
 	}
 	mustExec(t, db, "INSERT INTO chain_receive_address(id,network,owner,route) VALUES(1,?,?,'single_use')", chainassets.TRONNile, q.Recipient)
-	mustExec(t, db, `INSERT INTO chain_receive_request(request_key,address_id,payment_reference,purpose,beneficiary_id,payer_owner,asset_id,amount_atoms,opens_at,expires_at) VALUES('merchant',1,'','merchant_payment',2,?,?,1000,1,4102444800)`, q.WalletAddress, q.AssetID)
-	k := chainreceipt.EventKey{Network: chainassets.TRONNile, Signature: n.hash, Kind: chainreceipt.TRONTransfer}
+	mustExec(t, db, `INSERT INTO chain_receive_request(request_key,address_id,payment_reference,purpose,beneficiary_id,payer_owner,asset_id,amount_atoms,opens_at,expires_at) VALUES('merchant',1,'','merchant_payment',2,?,?,?,1,4102444800)`, q.WalletAddress, q.AssetID, trx.Atoms)
 	if _, err = chainreceipt.NewAttribution(conn, nil).Match(ctx, k); !errors.Is(err, chainreceipt.ErrReceiveConflict) {
 		t.Fatal("merchant claimed self deposit", err)
 	}
@@ -142,21 +152,36 @@ func TestNileTRXDepositRecovery(t *testing.T) {
 	}
 	// A delayed solid receipt can still settle an order flagged after expiry.
 	mustExec(t, db, "UPDATE tron_deposit_order SET state='review'")
-	for _, burn := range []bool{true, false} {
+	scenarios := []string{"burn", "short bandwidth"}
+	if asset == "usdt" {
+		scenarios = append(scenarios, "origin paid", "over estimate", "missing Energy")
+	}
+	for _, scenario := range scenarios {
 		n.e = f.Evidence
 		var info map[string]any
 		_ = json.Unmarshal(n.e.Info, &info)
-		if burn {
-			info["fee"] = int64(100)
-			info["receipt"] = map[string]any{"net_fee": 100}
-		} else {
-			info["receipt"] = map[string]any{"net_usage": q.DelegatedBandwidth - 1}
+		res := info["receipt"].(map[string]any)
+		switch scenario {
+		case "burn":
+			info["fee"] = 100
+			res["net_fee"] = 100
+		case "short bandwidth":
+			res["net_usage"] = q.DelegatedBandwidth - 1
+		case "origin paid":
+			res["origin_energy_usage"] = 1
+			res["energy_usage"] = q.DelegatedEnergy - 1
+		case "over estimate":
+			res["energy_usage"] = q.DelegatedEnergy + 1
+			res["energy_usage_total"] = q.DelegatedEnergy + 1
+		case "missing Energy":
+			delete(res, "energy_usage")
+			delete(res, "energy_usage_total")
 		}
 		n.e.Info, _ = json.Marshal(info)
 		if o, e := worker.Step(ctx, q.QuoteIdx); e != nil || o.State != deposit.TronReview || !o.FinalizedHeight.Valid || !o.ActualFeeSun.Valid || o.CreditVoucherId.Valid {
-			t.Fatal("unexpected resources auto-credited", e)
+			t.Fatal(scenario, "unexpected resources auto-credited", e)
 		}
-		mustExec(t, db, "UPDATE tron_deposit_order SET state='review',finalized_height=NULL,actual_fee_sun=NULL,actual_bandwidth=NULL")
+		mustExec(t, db, "UPDATE tron_deposit_order SET state='review',finalized_height=NULL,actual_fee_sun=NULL,actual_bandwidth=NULL,actual_energy=NULL")
 	}
 	n.e = f.Evidence
 	delayed := &delayedNileReceipt{nileHistory: n, entered: make(chan struct{}), release: make(chan struct{})}
@@ -184,7 +209,7 @@ func TestNileTRXDepositRecovery(t *testing.T) {
 	if e = <-done; e != nil {
 		t.Fatal("stale worker", e)
 	}
-	mustExec(t, db, "UPDATE tron_deposit_order SET state='review',finalized_height=NULL,actual_fee_sun=NULL,actual_bandwidth=NULL")
+	mustExec(t, db, "UPDATE tron_deposit_order SET state='review',finalized_height=NULL,actual_fee_sun=NULL,actual_bandwidth=NULL,actual_energy=NULL")
 	page, err := ledger.Entries(ctx, 1, accounts.KindUSD, 0, 2)
 	if err != nil || len(page.Entries) != 0 {
 		t.Fatal("unverified funds posted", err)
@@ -200,7 +225,7 @@ func TestNileTRXDepositRecovery(t *testing.T) {
 		}
 	}
 	page, err = ledger.Entries(ctx, 1, accounts.KindUSD, 0, 2)
-	if err != nil || len(page.Entries) != 1 || page.Entries[0].DepositOrderIdx != q.QuoteIdx || page.Entries[0].Action != "credit_tron_trx" || page.Entries[0].BalanceAfter.StringFixed(2) != "0.01" {
+	if err != nil || len(page.Entries) != 1 || page.Entries[0].DepositOrderIdx != q.QuoteIdx || page.Entries[0].Action != "credit_tron_"+asset || page.Entries[0].BalanceAfter.StringFixed(2) != "0.01" {
 		t.Fatal("original statement", err)
 	}
 	cmd := exec.Command("go", "run", "./tools/tron_deposit_nile", "-quote", q.QuoteIdx, "-rpc", "http://127.0.0.1:1")
@@ -209,7 +234,23 @@ func TestNileTRXDepositRecovery(t *testing.T) {
 	if out, e := cmd.CombinedOutput(); e != nil || !strings.Contains(string(out), "credited_usd=0.01") {
 		t.Fatalf("keyless CLI %v %s", e, out)
 	}
-	if err = m.Migrate(44); err == nil || !strings.Contains(err.Error(), "tron_deposit_rollback_guard") {
+	if asset == "trx" {
+		if err = m.Migrate(45); err != nil {
+			t.Fatal(err)
+		}
+		if err = m.Migrate(46); err != nil {
+			t.Fatal(err)
+		}
+		o, err := orders.Get(ctx, 1, q.QuoteIdx)
+		if err != nil || o.AssetId != chainassets.TRONNileTRX || o.State != deposit.TronCredited || !o.CreditVoucherId.Valid || o.ActualEnergy.Valid {
+			t.Fatal("previously credited business 45 TRX order", err)
+		}
+	}
+	guard := "tron_deposit_rollback_guard"
+	if asset == "usdt" {
+		guard = "tron_usdt_deposit_rollback_guard"
+	}
+	if err = m.Migrate(44); err == nil || !strings.Contains(err.Error(), guard) {
 		t.Fatal("rollback discarded deposit", err)
 	}
 }

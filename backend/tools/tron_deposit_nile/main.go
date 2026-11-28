@@ -21,7 +21,7 @@ import (
 )
 
 func run() error {
-	idx := flag.String("quote", "", "original Nile TRX deposit quote ID")
+	idx := flag.String("quote", "", "original Nile deposit quote ID")
 	rpc := flag.String("rpc", "https://nile.trongrid.io", "trusted Nile FullNode and Solidity API")
 	flag.Parse()
 	if len(*idx) != 32 {
@@ -45,10 +45,10 @@ func run() error {
 	if err = db.QueryRowContext(ctx, "SELECT version FROM schema_migrations_business WHERE dirty=0").Scan(&v); err != nil {
 		return err
 	}
-	if v < 45 {
-		return errors.New("Nile deposits require clean business schema >=45")
+	if v < 46 {
+		return errors.New("Nile deposits require clean business schema >=46")
 	}
-	node, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TRONNile, URL: *rpc}}}, nil)
+	node, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TRONNile, URL: *rpc, TestUSDTContract: chainassets.NileDepositUSDTContract}}}, nil)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func run() error {
 		if o != nil {
 			fmt.Printf("order=%s state=%s tx=%s", o.QuoteIdx, o.State, o.TxId)
 			if o.ActualFeeSun.Valid {
-				fmt.Printf(" fee_sun=%d bandwidth=%d", o.ActualFeeSun.Int64, o.ActualBandwidth.Int64)
+				fmt.Printf(" asset=%s fee_sun=%d bandwidth=%d energy=%d", o.AssetId, o.ActualFeeSun.Int64, o.ActualBandwidth.Int64, o.ActualEnergy.Int64)
 			}
 			if o.CreditedUsd.Valid {
 				fmt.Printf(" credited_usd=%s", o.CreditedUsd.Decimal.StringFixed(2))

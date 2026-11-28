@@ -46,6 +46,7 @@ func checkMarketRatesHTTP(t *testing.T, s *shared.ServiceContext, token, rpcURL 
 	q.TRONTRX = &chainassets.TRONDepositFeeConfig{ResourceOwner: nileOwner, Recipient: nileOwner}
 	q.TRONTestUSDT = q.TRONTRX
 	q.TRONTRXExecution = true
+	q.TRONTestUSDTExecution = true
 	q.Assets = append(q.Assets, chainassets.DepositQuoteRate{AssetID: chainassets.TRONNileTRX, EstimatedGas: "0.1"}, chainassets.DepositQuoteRate{AssetID: chainassets.NileUSDT(nileToken).ID, EstimatedGas: "0.1"})
 	networks = append(networks, chainassets.Endpoint{Network: chainassets.TRONNile, URL: nileDepositTestEndpoint(t), TestUSDTContract: nileToken})
 	service, err := chainassets.NewWithMarketRates(chainassets.Config{DepositQuotes: &q, Networks: networks}, chainassets.NewRedisLimiter(s.Redis, s.Namespace+":market", 1), store)
@@ -133,8 +134,13 @@ func checkMarketRatesHTTP(t *testing.T, s *shared.ServiceContext, token, rpcURL 
 	usdt.AssetId = chainassets.NileUSDT(nileToken).ID
 	_, usdtRaw := call("POST", path, token, usdt, 200, "OK")
 	var estimate types.DepositQuoteData
-	if err := json.Unmarshal(usdtRaw, &estimate); err != nil || estimate.AssetId != usdt.AssetId || estimate.WalletAddress != usdt.WalletAddress || estimate.DelegatedEnergy != 14650 || estimate.DelegatedBandwidth != 345 || estimate.EstimatedGas != "0" || estimate.GasUsd != "0" || estimate.PayQuantity != "0.01" || estimate.NetUsd != "0.01" || estimate.CanSubmit || len(estimate.MessageSha256) != 64 || estimate.RateSource != marketdata.Kraken {
+	if err := json.Unmarshal(usdtRaw, &estimate); err != nil || estimate.TronRefBlock == "" || estimate.TronRecipient != nileOwner || estimate.AssetId != usdt.AssetId || estimate.WalletAddress != usdt.WalletAddress || estimate.DelegatedEnergy != 14650 || estimate.DelegatedBandwidth != 345 || estimate.EstimatedGas != "0" || estimate.GasUsd != "0" || estimate.PayQuantity != "0.01" || estimate.NetUsd != "0.01" || estimate.CanSubmit || len(estimate.MessageSha256) != 64 || estimate.RateSource != marketdata.Kraken {
 		t.Fatal(estimate, err)
+	}
+	call("POST", "/v1/user/deposit-quotes/confirm", token, types.DepositQuoteConfirmRequest{QuoteIdx: estimate.QuoteIdx}, 200, "OK")
+	_, pending = call("GET", "/v1/user/tron-deposit-orders/"+estimate.QuoteIdx, token, nil, 200, "OK")
+	if err := json.Unmarshal(pending, &order); err != nil || order.AssetId != usdt.AssetId || order.State != deposit.AwaitingSignature {
+		t.Fatal("unsigned USDT order", order, err)
 	}
 	_, raw := call("GET", "/v1/user/chain-assets", token, nil, 200, "OK")
 	var catalog types.ChainAssetCatalogData

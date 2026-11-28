@@ -1195,6 +1195,8 @@ type TronDepositAuthorizeRequest struct {
 }
 
 type TronDepositOrderData struct {
+	AssetId         string `json:"assetId"`
+	ActualEnergy    int64  `json:"actualEnergy,optional,omitempty"`
 	QuoteIdx        string `json:"quoteIdx"`
 	State           string `json:"state,options=awaiting_signature|expired|signed|review|credited"`
 	TxId            string `json:"txId,optional,omitempty"`

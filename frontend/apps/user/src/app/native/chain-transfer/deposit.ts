@@ -2,6 +2,7 @@ import { decodeData } from '@dexwallet/api-client';
 import type { ChainAsset, ConfirmedDepositQuoteData, DepositQuoteData } from '@dexwallet/api-contract/platform';
 import { userRequest } from '../../../api/account';
 import { depositTokenMint, solanaDepositSOL, solanaDepositUSDC, solanaTestUSDTPrefix } from './sol-deposit-asset';
+import { nileDepositUSDT } from './tron-deposit-asset';
 import { atomicAmount } from './api';
 
 const depositQuoteTTLms = 30_000;
@@ -57,7 +58,7 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validBase = !hasBaseTerms || (baseAssetMatches && !!walletAddress && !!q.quoteIdx && Number.isSafeInteger(q.baseValidBefore) && q.baseValidBefore! > Math.floor(q.expiresAt / 1000) &&
       [q.baseRecipient, q.baseFeePayer].every(a => typeof a === 'string' && /^0x[a-fA-F0-9]{40}$/.test(a) && !/^0x0{40}$/.test(a) && a.toLowerCase() !== walletAddress.toLowerCase()));
     const hasTron = [q.tronRefBlock, q.tronRefTime, q.tronRecipient, q.tronResourceOwner].some(v => v !== undefined);
-    const validTron = !hasTron || (tronTRX && !!walletAddress && !!q.quoteIdx && q.maxGas === '0' &&
+    const validTron = !hasTron || ((tronTRX || (tronToken && asset.decimals === 6 && asset.id === nileDepositUSDT)) && !!walletAddress && !!q.quoteIdx && q.maxGas === '0' &&
       typeof q.tronRefBlock === 'string' && /^[a-f0-9]{64}$/.test(q.tronRefBlock) && Number.isSafeInteger(q.tronRefTime) && q.tronRefTime! > 0 &&
       [q.tronRecipient, q.tronResourceOwner].every(a => typeof a === 'string' && /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a) && a !== walletAddress));
     if (!validTron || !validBase || !solTerms || !validOffer || !validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||

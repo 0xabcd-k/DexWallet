@@ -1274,6 +1274,8 @@ type TronDepositAuthorizeRequest {
     OrderSignature string `json:"orderSignature"`
 }
 type TronDepositOrderData {
+    AssetId string `json:"assetId"`
+    ActualEnergy int64 `json:"actualEnergy,optional,omitempty"`
     QuoteIdx string `json:"quoteIdx"`
     State string `json:"state,options=awaiting_signature|expired|signed|review|credited"`
     TxId string `json:"txId,optional,omitempty"`

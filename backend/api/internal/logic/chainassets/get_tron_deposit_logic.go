@@ -45,7 +45,7 @@ func (l *GetTronDepositLogic) GetTronDeposit(req *types.DepositQuoteLookupReques
 }
 
 func tronOrderResponse(ctx context.Context, o *model.TronDepositOrder) *types.TronDepositOrderResponse {
-	data := types.TronDepositOrderData{QuoteIdx: o.QuoteIdx, State: o.State, TxId: o.TxId, ActualBandwidth: o.ActualBandwidth.Int64}
+	data := types.TronDepositOrderData{QuoteIdx: o.QuoteIdx, AssetId: o.AssetId, ActualEnergy: o.ActualEnergy.Int64, State: o.State, TxId: o.TxId, ActualBandwidth: o.ActualBandwidth.Int64}
 	if o.ActualFeeSun.Valid {
 		data.ActualFeeSun = strconv.FormatInt(o.ActualFeeSun.Int64, 10)
 	}
