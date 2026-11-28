@@ -6,6 +6,7 @@ import { Failure } from '../../auth/context';
 import { confirmDepositQuote, previewDeposit, validDepositTarget } from '../../app/native/chain-transfer/deposit';
 import { addressFor } from '../../app/native/chain-assets/wallets';
 import { useViewingWallets } from '../../app/native/chain-assets/use-wallets';
+import { TonDepositOrder, LastTonDeposit } from './ton-deposit';
 import { TronDepositOrder, LastTronDeposit } from './tron-deposit';
 import { BaseDepositOrder, LastBaseDeposit } from './base-deposit';
 import { SolDepositAuthorization, LastSolDeposit } from './sol-deposit';
@@ -22,6 +23,7 @@ export default function DepositButton({ userIdx }: { userIdx: string }) {
         <h2>{t('depositQuoteTitle')}</h2><p>{t('depositBeneficiary', { idx: userIdx })}</p>
         <p>{t('depositTestNote')}</p>
         <LastSolDeposit key={'sol-' + userIdx} userIdx={userIdx}/>
+        <LastTonDeposit key={'ton-' + userIdx} userIdx={userIdx}/>
         <LastTronDeposit key={'tron-' + userIdx} userIdx={userIdx}/>
         <LastBaseDeposit key={'base-' + userIdx} userIdx={userIdx}/>
         <DepositFields key={userIdx} userIdx={userIdx} assetID={assetID} setAssetID={setAssetID} target={target} setTarget={setTarget}/>
@@ -137,8 +139,9 @@ export function DepositEstimate({ asset, native, target, walletAddress, local, o
       <dt>{t('depositPay')}</dt><dd>{quote.payQuantity} {asset.symbol}</dd>
       {quote.delegatedEnergy !== undefined && <><dt>{t('depositPlatformEnergy')}</dt><dd>{quote.delegatedEnergy}</dd></>}
       {quote.delegatedBandwidth !== undefined && <><dt>{t('depositPlatformBandwidth')}</dt><dd>{quote.delegatedBandwidth}</dd></>}
-      <dt>{t(quote.delegatedBandwidth !== undefined ? 'depositTrxBurn' : quote.feeBlockHash || quote.emulatedMessageHash ? 'depositPreSignGas' : walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
-      {quote.maxGas !== undefined && <><dt>{t('depositMaxGas')}</dt><dd>{quote.maxGas} {native.symbol}</dd></>}
+      <dt>{t(quote.delegatedBandwidth !== undefined ? 'depositTrxBurn' : quote.tonSimulatedGas ? 'tonBudgetWithStorage' : quote.feeBlockHash || quote.emulatedMessageHash ? 'depositPreSignGas' : walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
+      {quote.tonSimulatedGas && <><dt>{t('tonSimulatedFee')}</dt><dd>{quote.tonSimulatedGas} TON</dd></>}
+      {quote.maxGas !== undefined && !quote.tonSimulatedGas && <><dt>{t('depositMaxGas')}</dt><dd>{quote.maxGas} {native.symbol}</dd></>}
       {quote.relayAttached && <><dt>{t('depositRelayAttached')}</dt><dd>{quote.relayAttached} {native.symbol}</dd>
         <dt>{t('depositRelaySurplus')}</dt><dd>{quote.relaySurplus} {native.symbol}</dd></>}
       {quote.jettonExcess && <><dt>{t('depositJettonExcess')}</dt><dd>{quote.jettonExcess} {native.symbol}</dd></>}
@@ -150,6 +153,8 @@ export function DepositEstimate({ asset, native, target, walletAddress, local, o
       ? <p role="status">{t(quote.solOrderIdx && local ? 'solQuoteConfirmed' : quote.baseValidBefore && local ? 'baseQuoteConfirmed' : 'depositQuoteSaved', { idx: quote.quoteIdx, asset: asset.symbol })}</p>
       : (!expired || attempted) && <Button block disabled={busy} onClick={() => void confirm()}>
         {t(expired ? 'depositCheckConfirmation' : 'depositConfirmQuote')}</Button>)}
+    {quote?.tonValidUntil && quote.quoteIdx && confirmedAt !== undefined && local &&
+      <TonDepositOrder key={quote.quoteIdx} idx={quote.quoteIdx} quote={quote} local={local} expired={expired}/>}
     {quote?.tronRefBlock && quote.quoteIdx && confirmedAt !== undefined && local &&
       <TronDepositOrder key={quote.quoteIdx} idx={quote.quoteIdx} quote={quote} local={local} expired={expired}/>}
     {quote?.baseValidBefore && quote.quoteIdx && confirmedAt !== undefined && local &&

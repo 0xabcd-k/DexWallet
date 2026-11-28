@@ -375,3 +375,37 @@ it.each([false,true])('shows Nile signing terms and credited resources (token %s
   expect(screen.getByText('0 sun')).toBeInTheDocument();
   expect(screen.getByRole('link')).toHaveAttribute('href', '/records?kind=usd_balance');
 });
+
+it('shows the W5 fee limit before confirmation and the final trace fee on the credited order', async () => {
+  const asset = { id: 'ton-testnet:ton', symbol: 'TON', origin: 'native' as const, contract: '', decimals: 9 };
+  const wallet = '0:' + '1'.repeat(64), receiveTxHash = 'f'.repeat(64);
+  const now = Date.now();
+  const terms = { ...quote(now), assetId: asset.id, gasAssetId: asset.id, quoteIdx: 'a'.repeat(32), targetUsd: '0.01', netUsd: '0.01',
+    usdPerCoin: '1', payQuantity: '0.011163323', estimatedGas: '0.001163323', maxGas: '0.001163323', gasUsd: '0.001163323',
+    walletAddress: wallet, walletFeePreview: true, emulatedMessageHash: 'b'.repeat(64), tonRecipient: '0:' + '2'.repeat(64),
+    tonAuthorizationHash: 'c'.repeat(64), tonUserSeqno: 2, tonValidUntil: Math.floor(now / 1000) + 300, tonSimulatedGas: '0.001163294',
+    relayAttached: '0.003', relaySurplus: '0.002577588' };
+  vi.spyOn(client, 'userRequest').mockImplementation(async (path, decode) => {
+    if (path.endsWith('/preview')) return decode({ data: terms });
+    if (path.endsWith('/confirm')) return decode({ data: { quote: terms, confirmedAt: now + 1 } });
+    expect(path).toBe('/v1/user/ton-deposit-orders/' + terms.quoteIdx);
+    return decode({ data: { quoteIdx: terms.quoteIdx, state: 'credited', dispatchBodyHash: 'd'.repeat(64), receiveTxHash,
+      actualFeeNano: '1163296', creditedUsd: '0.01' } });
+  });
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<MemoryRouter><I18nextProvider i18n={i18n}><DepositEstimate asset={asset} native={asset} target="0.01"
+    walletAddress={wallet} local={{ userIdx: 'self', walletId: 'w5' }}/></I18nextProvider></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(await screen.findByText('Maximum network fee including storage until expiry')).toBeInTheDocument();
+  expect(screen.getByText('0.001163323 TON · $0.001163323')).toBeInTheDocument();
+  expect(screen.getByText('0.001163294 TON')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Authorize TON deposit' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm quote' }));
+  expect(await screen.findByRole('button', { name: 'Authorize TON deposit' })).toBeEnabled();
+  expect(screen.getByText(terms.tonRecipient)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Check TON deposit' }));
+  expect(await screen.findByText(receiveTxHash)).toBeInTheDocument();
+  expect(screen.getByText('1163296 nanoTON')).toBeInTheDocument();
+  expect(screen.getByRole('link')).toHaveAttribute('href', '/records?kind=usd_balance');
+  expect(screen.queryByRole('button', { name: 'Authorize TON deposit' })).toBeNull();
+});

@@ -75,7 +75,13 @@ func depositQuoteData(q assets.DepositPreview) types.DepositQuoteData {
 	if q.TRONReference != nil {
 		ref, refTime, tronRecipient, owner = q.TRONReference.ID, q.TRONReference.Timestamp, q.Recipient, q.FeePayer
 	}
-	return types.DepositQuoteData{TronRefBlock: ref, TronRefTime: refTime, TronRecipient: tronRecipient, TronResourceOwner: owner, BaseValidBefore: q.BaseValidBefore, BaseRecipient: baseRecipient, BaseFeePayer: basePayer, SolOrderIdx: q.SolOrderIdx, SolRecipient: recipient, SolFeePayer: payer, QuoteIdx: q.QuoteIdx, MaxGas: q.MaxGas, AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
+	var tonUntil, tonSeq int64
+	var tonRecipient, tonAuth, tonSimulated string
+	if q.TON != nil {
+		tonSimulated = q.TON.SimulatedGas
+		tonUntil, tonSeq, tonRecipient, tonAuth = int64(q.TON.ValidUntil), int64(q.TON.UserSeqno), q.Recipient, q.TON.AuthorizationHash
+	}
+	return types.DepositQuoteData{TonSimulatedGas: tonSimulated, TonValidUntil: tonUntil, TonUserSeqno: tonSeq, TonRecipient: tonRecipient, TonAuthorizationHash: tonAuth, TronRefBlock: ref, TronRefTime: refTime, TronRecipient: tronRecipient, TronResourceOwner: owner, BaseValidBefore: q.BaseValidBefore, BaseRecipient: baseRecipient, BaseFeePayer: basePayer, SolOrderIdx: q.SolOrderIdx, SolRecipient: recipient, SolFeePayer: payer, QuoteIdx: q.QuoteIdx, MaxGas: q.MaxGas, AssetId: q.AssetID, TargetUsd: q.TargetUSD, UsdPerCoin: q.USDPerCoin,
 		PayQuantity: q.PayQuantity, GasAssetId: q.GasAssetID, EstimatedGas: q.EstimatedGas, GasUsd: q.GasUSD,
 		NetUsd: q.NetUSD, RateVersion: q.Version, RateSource: q.RateSource, AsOf: q.AsOf, QuotedAt: q.QuotedAt, ExpiresAt: q.ExpiresAt,
 		EmulatedMessageHash: q.EmulatedMessageHash, RelayAttached: q.RelayAttached, RelaySurplus: q.RelaySurplus, JettonExcess: q.JettonExcess,

@@ -130,7 +130,7 @@ func (t tonDepositTrace) budget(m tonDepositMessage, user, platform tonW5Account
 	if err != nil {
 		return b, err
 	}
-	attachmentNano := int64(tonRelayNano)
+	attachmentNano := int64(TONDepositAttachmentNano)
 	if token != nil {
 		attachmentNano += tonJettonActionNano
 	}

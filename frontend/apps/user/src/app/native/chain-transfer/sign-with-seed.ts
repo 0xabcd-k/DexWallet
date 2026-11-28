@@ -1,8 +1,20 @@
 import { mnemonicToSeed } from '@scure/bip39';
 import { nativeVault } from '../local-wallet/bridge';
-import { parseMaterial, WalletError } from '../local-wallet/crypto';
+import { parseMaterial, WalletError, type WalletMaterial } from '../local-wallet/crypto';
 
 export async function signWithSeed<T>(userIdx: string, walletId: string, signal: AbortSignal, sign: (seed: Uint8Array) => T) {
+  return signWithMaterial(userIdx, walletId, signal, async material => {
+    if (material.scheme !== 'bip39') throw new WalletError('LOCAL_INVALID_SECRET');
+    const seed = await mnemonicToSeed(material.words, '');
+    try {
+      signal.throwIfAborted();
+      if (document.visibilityState === 'hidden') throw new WalletError('LOCAL_VIEW_CLOSED');
+      return sign(seed);
+    } finally { seed.fill(0); }
+  });
+}
+
+export async function signWithMaterial<T>(userIdx: string, walletId: string, signal: AbortSignal, sign: (material: WalletMaterial) => Promise<T>) {
   const token = crypto.randomUUID();
   const close = () => { void nativeVault.unprotect({ token }).catch(() => {}); };
   signal.throwIfAborted();
@@ -18,13 +30,9 @@ export async function signWithSeed<T>(userIdx: string, walletId: string, signal:
     signal.throwIfAborted();
     const { secret } = await nativeVault.get({ userIdx, walletId, viewToken: token });
     const material = await parseMaterial(secret);
-    if (material.scheme !== 'bip39') throw new WalletError('LOCAL_INVALID_SECRET');
-    const seed = await mnemonicToSeed(material.words, '');
-    try {
-      signal.throwIfAborted();
-      if (document.visibilityState === 'hidden') throw new WalletError('LOCAL_VIEW_CLOSED');
-      return sign(seed);
-    } finally { seed.fill(0); }
+    signal.throwIfAborted();
+    if (document.visibilityState === 'hidden') throw new WalletError('LOCAL_VIEW_CLOSED');
+    return await sign(material);
   } finally {
     signal.removeEventListener('abort', close);
     try { await nativeVault.unprotect({ token }); } finally { await listener.remove(); }

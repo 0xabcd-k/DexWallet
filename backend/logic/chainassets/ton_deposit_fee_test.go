@@ -42,7 +42,7 @@ func TestTONNativeDeposit(t *testing.T) {
 	cases := []tonDepositCase{
 		{"captured funded W5", nil, ""},
 		{"user cannot pay gross", func(c *tonCapture) { c.Accounts[tonDepositUser]["balance"] = 10000000 }, apperror.InsufficientBalance},
-		{"platform cannot dispatch", func(c *tonCapture) { c.Accounts[tonDepositPlatform]["balance"] = tonRelayNano }, unavailable},
+		{"platform cannot dispatch", func(c *tonCapture) { c.Accounts[tonDepositPlatform]["balance"] = TONDepositAttachmentNano }, unavailable},
 		{"wrong network", func(c *tonCapture) { c.Head["global_id"] = -239 }, unavailable},
 		{"stale testnet head", func(c *tonCapture) { c.Head["gen_utime"] = 1 }, unavailable},
 		{"inactive source", func(c *tonCapture) { c.Accounts[tonDepositUser]["status"] = "uninit" }, apperror.InvalidArgument},
@@ -92,7 +92,9 @@ func TestTONJettonDeposit(t *testing.T) {
 		{"missing source tokens", func(c *tonCapture) { c.Accounts[sender]["status"] = "nonexist" }, apperror.InsufficientBalance},
 		{"wrong master code", func(c *tonCapture) { c.Accounts[tonDepositMaster]["code"] = c.Accounts[sender]["code"] }, unavailable},
 		{"wrong token wallet owner", func(c *tonCapture) { c.Accounts[sender]["data"] = c.Accounts[receiver]["data"] }, unavailable},
-		{"platform missing dispatch cost", func(c *tonCapture) { c.Accounts[tonDepositPlatform]["balance"] = tonJettonActionNano + tonRelayNano }, unavailable},
+		{"platform missing dispatch cost", func(c *tonCapture) {
+			c.Accounts[tonDepositPlatform]["balance"] = tonJettonActionNano + TONDepositAttachmentNano
+		}, unavailable},
 		{"receipt state has changed", func(c *tonCapture) { c.Accounts[receiver]["status"] = "uninit" }, unavailable},
 		{"missing refund", func(c *tonCapture) {
 			r := &c.Attempts[0].Trace.Children[0].Children[0].Children[0]

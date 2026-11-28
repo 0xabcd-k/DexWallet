@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	tonDepositAsset      = TONTestnet + ":ton"
-	tonTestnetGlobalID   = -3
-	tonRelayNano         = 3_000_000 // Platform attachment used by the verified W5 native relay.
-	tonRelayValidity     = 5 * time.Minute
-	maxTONFeeSimulations = 3
+	tonDepositAsset          = TONTestnet + ":ton"
+	tonTestnetGlobalID       = -3
+	TONDepositAttachmentNano = 3_000_000 // Platform attachment used by the verified W5 native relay.
+	tonRelayValidity         = 5 * time.Minute
+	maxTONFeeSimulations     = 3
 )
 
 // PlatformWallet is both the dispatcher and the final recipient of the native payment.
@@ -69,19 +69,9 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 	}
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
-	var head struct {
-		GlobalID  int   `json:"global_id"`
-		Workchain *int  `json:"workchain_id"`
-		Time      int64 `json:"gen_utime"`
-		Seqno     int64
-	}
-	if err = s.request(ctx, n, route.emulator, "/v2/blockchain/masterchain-head", nil, nil, &head); err != nil {
-		return empty, apperror.New(apperror.ServiceUnavailable, err)
-	}
-	at := time.Unix(head.Time, 0)
-	age := now().Sub(at)
-	if head.GlobalID != tonTestnetGlobalID || head.Workchain == nil || *head.Workchain != -1 || head.Seqno <= 0 || age < 0 || age >= depositPreviewTTL {
-		return empty, apperror.New(apperror.ServiceUnavailable, invalid("incorrect or stale TON testnet head"))
+	at, err := s.tonDepositHead(ctx, n, route.emulator, now)
+	if err != nil {
+		return empty, err
 	}
 	source, err := s.tonDepositWallet(ctx, n, route.emulator, wallet)
 	if err != nil {
@@ -91,9 +81,16 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 	if err != nil {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("TON deposit platform wallet: %w", err))
 	}
+	var storageAllowance decimal.Decimal
+	if assetID == tonDepositAsset && s.quotes.tonNativeExecution {
+		storageAllowance, err = s.tonStorageAllowance(ctx, n, route.emulator, source, platform, at)
+		if err != nil {
+			return empty, apperror.New(apperror.ServiceUnavailable, err)
+		}
+	}
 	var token *tonDepositJetton
 	balance := source.balance
-	attachmentNano := int64(tonRelayNano)
+	attachmentNano := int64(TONDepositAttachmentNano)
 	if assetID != tonDepositAsset {
 		token, err = s.tonDepositJetton(ctx, n, route.emulator, source, platform)
 		if err != nil {
@@ -129,7 +126,7 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 		if platform.balance.LessThan(attached.Add(budget.dispatch)) {
 			return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("platform TON balance cannot cover dispatch and relay attachment"))
 		}
-		next, err := s.depositQuote(assetID, target, budget.network, start, prices)
+		next, err := s.depositQuote(assetID, target, budget.network.Add(storageAllowance), start, prices)
 		if err != nil {
 			return empty, err
 		}
@@ -138,10 +135,13 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 			if now().UnixMilli() >= next.ExpiresAt {
 				return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("TON estimate expired"))
 			}
+			if token == nil && s.quotes.tonNativeExecution {
+				next.TON = &TONDepositTerms{SimulatedGas: budget.network.String(), UserKey: hex.EncodeToString(source.key), PlatformKey: hex.EncodeToString(platform.key), UserSeqno: uint32(source.seqno), PlatformSeqno: uint32(platform.seqno), ValidUntil: uint32(at.Add(tonRelayValidity).Unix()), AuthorizationHash: hex.EncodeToString(message.userPayload.Hash())}
+			}
 			next.Recipient, next.FeePayer = route.platform, route.platform
 			next.WalletAddress = walletAddress
 			next.EmulatedMessageHash = hex.EncodeToString(message.external.Hash())
-			next.RelayAttached, next.RelaySurplus = attached.String(), decimal.New(tonRelayNano, -9).Sub(budget.execution).String()
+			next.RelayAttached, next.RelaySurplus = attached.String(), decimal.New(TONDepositAttachmentNano, -9).Sub(budget.execution).String()
 			if token != nil {
 				next.JettonExcess = budget.excess.String()
 				next.AccountFunding = budget.reserve.String()
@@ -152,4 +152,22 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 		q = next
 	}
 	return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("TON fee changed during deposit estimate"))
+}
+
+func (s *Service) tonDepositHead(ctx context.Context, n Network, endpoint Endpoint, now func() time.Time) (time.Time, error) {
+	var head struct {
+		GlobalID  int   `json:"global_id"`
+		Workchain *int  `json:"workchain_id"`
+		Time      int64 `json:"gen_utime"`
+		Seqno     int64
+	}
+	if err := s.request(ctx, n, endpoint, "/v2/blockchain/masterchain-head", nil, nil, &head); err != nil {
+		return time.Time{}, apperror.New(apperror.ServiceUnavailable, err)
+	}
+	at := time.Unix(head.Time, 0)
+	age := now().Sub(at)
+	if head.GlobalID != tonTestnetGlobalID || head.Workchain == nil || *head.Workchain != -1 || head.Seqno <= 0 || age < 0 || age >= depositPreviewTTL {
+		return time.Time{}, apperror.New(apperror.ServiceUnavailable, invalid("incorrect or stale TON testnet head"))
+	}
+	return at, nil
 }

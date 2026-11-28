@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { createMaterial, deriveAccounts, importMaterial, parseMaterial } from '../../apps/user/src/app/native/local-wallet/crypto';
 import { createWalletRepository } from '../../apps/user/src/app/native/local-wallet/repository';
-import { boundaries, mnemonic } from './local-wallet-fixture';
+import { boundaries, mnemonic, tonMnemonic } from './local-wallet-fixture';
 
 async function fixture() { const material = await importMaterial(mnemonic, 'bip39', 'v5r1'); return { material, accounts: await deriveAccounts(material) }; }
 describe('local wallet derivation', () => {
@@ -34,16 +34,13 @@ describe('local wallet derivation', () => {
     expect(v4.slice(2)).toEqual(accounts.slice(2));
   });
   it('restores the public TON-native vector using its explicit scheme and contract version', async () => {
-    // TON Crypto MIT-licensed vector #0: https://github.com/ton-org/ton-crypto/blob/master/src/mnemonic/mnemonic.spec.ts
-    // Public fixture only; never fund it. Expected addresses use the vector's published public key.
-    const words = 'hospital stove relief fringe tongue always charge angry urge sentence again match nerve inquiry senior coconut label tumble carry category beauty bean road solution';
-    const v5 = await importMaterial(words, 'ton', 'v5r1');
+    const v5 = await importMaterial(tonMnemonic, 'ton', 'v5r1');
     const accounts = await deriveAccounts(v5);
     expect(accounts).toHaveLength(2);
     expect(accounts[0]?.address).toBe('UQDSLOFVamNZzdy4LulclcCBEFkRReZ7WscBCLAw3Pg53h3h');
     expect((await deriveAccounts(await parseMaterial(JSON.stringify(v5))))).toEqual(accounts);
-    expect((await deriveAccounts(await importMaterial(words, 'ton', 'v4r2')))[0]?.address).toBe('UQAYZ-rchbaHK4IUkCvcyl3V8spcAnO8IBRCNvS3are-CbyQ');
-    await expect(importMaterial(words, 'bip39', 'v5r1')).rejects.toMatchObject({ code: 'LOCAL_INVALID_MNEMONIC' });
+    expect((await deriveAccounts(await importMaterial(tonMnemonic, 'ton', 'v4r2')))[0]?.address).toBe('UQAYZ-rchbaHK4IUkCvcyl3V8spcAnO8IBRCNvS3are-CbyQ');
+    await expect(importMaterial(tonMnemonic, 'bip39', 'v5r1')).rejects.toMatchObject({ code: 'LOCAL_INVALID_MNEMONIC' });
   });
 });
 describe('local wallet persistence and recovery', () => {

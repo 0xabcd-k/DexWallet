@@ -395,44 +395,49 @@ type DepositQuoteConfirmRequest struct {
 }
 
 type DepositQuoteData struct {
-	TronRefBlock        string `json:"tronRefBlock,optional,omitempty"`
-	TronRefTime         int64  `json:"tronRefTime,optional,omitempty"`
-	TronRecipient       string `json:"tronRecipient,optional,omitempty"`
-	TronResourceOwner   string `json:"tronResourceOwner,optional,omitempty"`
-	BaseRecipient       string `json:"baseRecipient,optional,omitempty"`
-	BaseFeePayer        string `json:"baseFeePayer,optional,omitempty"`
-	BaseValidBefore     int64  `json:"baseValidBefore,optional,omitempty"`
-	SolOrderIdx         string `json:"solOrderIdx,optional,omitempty"`
-	SolRecipient        string `json:"solRecipient,optional,omitempty"`
-	SolFeePayer         string `json:"solFeePayer,optional,omitempty"`
-	QuoteIdx            string `json:"quoteIdx,optional,omitempty"`
-	MaxGas              string `json:"maxGas,optional,omitempty"`
-	AssetId             string `json:"assetId"`
-	TargetUsd           string `json:"targetUsd"`
-	UsdPerCoin          string `json:"usdPerCoin"`
-	PayQuantity         string `json:"payQuantity"`
-	GasAssetId          string `json:"gasAssetId"`
-	EstimatedGas        string `json:"estimatedGas"`
-	GasUsd              string `json:"gasUsd"`
-	NetUsd              string `json:"netUsd"`
-	RateVersion         string `json:"rateVersion"`
-	RateSource          string `json:"rateSource,optional,options=test_sheet|kraken"`
-	AsOf                int64  `json:"asOf"`
-	QuotedAt            int64  `json:"quotedAt"`
-	ExpiresAt           int64  `json:"expiresAt"`
-	WalletFeePreview    bool   `json:"walletFeePreview,optional"`
-	WalletAddress       string `json:"walletAddress,optional"`
-	MessageSha256       string `json:"messageSha256,optional"`
-	FeeBlockHash        string `json:"feeBlockHash,optional"`
-	EmulatedMessageHash string `json:"emulatedMessageHash,optional,omitempty"`
-	RelayAttached       string `json:"relayAttached,optional,omitempty"`
-	JettonExcess        string `json:"jettonExcess,optional,omitempty"`
-	RelaySurplus        string `json:"relaySurplus,optional,omitempty"`
-	DelegatedEnergy     int64  `json:"delegatedEnergy,optional,omitempty"`
-	DelegatedBandwidth  int    `json:"delegatedBandwidth,optional,omitempty"`
-	AccountFunding      string `json:"accountFunding,optional"`
-	AccountFundingUsd   string `json:"accountFundingUsd,optional"`
-	CanSubmit           bool   `json:"canSubmit"`
+	TonSimulatedGas      string `json:"tonSimulatedGas,optional,omitempty"`
+	TonValidUntil        int64  `json:"tonValidUntil,optional,omitempty"`
+	TonUserSeqno         int64  `json:"tonUserSeqno,optional,omitempty"`
+	TonRecipient         string `json:"tonRecipient,optional,omitempty"`
+	TonAuthorizationHash string `json:"tonAuthorizationHash,optional,omitempty"`
+	TronRefBlock         string `json:"tronRefBlock,optional,omitempty"`
+	TronRefTime          int64  `json:"tronRefTime,optional,omitempty"`
+	TronRecipient        string `json:"tronRecipient,optional,omitempty"`
+	TronResourceOwner    string `json:"tronResourceOwner,optional,omitempty"`
+	BaseRecipient        string `json:"baseRecipient,optional,omitempty"`
+	BaseFeePayer         string `json:"baseFeePayer,optional,omitempty"`
+	BaseValidBefore      int64  `json:"baseValidBefore,optional,omitempty"`
+	SolOrderIdx          string `json:"solOrderIdx,optional,omitempty"`
+	SolRecipient         string `json:"solRecipient,optional,omitempty"`
+	SolFeePayer          string `json:"solFeePayer,optional,omitempty"`
+	QuoteIdx             string `json:"quoteIdx,optional,omitempty"`
+	MaxGas               string `json:"maxGas,optional,omitempty"`
+	AssetId              string `json:"assetId"`
+	TargetUsd            string `json:"targetUsd"`
+	UsdPerCoin           string `json:"usdPerCoin"`
+	PayQuantity          string `json:"payQuantity"`
+	GasAssetId           string `json:"gasAssetId"`
+	EstimatedGas         string `json:"estimatedGas"`
+	GasUsd               string `json:"gasUsd"`
+	NetUsd               string `json:"netUsd"`
+	RateVersion          string `json:"rateVersion"`
+	RateSource           string `json:"rateSource,optional,options=test_sheet|kraken"`
+	AsOf                 int64  `json:"asOf"`
+	QuotedAt             int64  `json:"quotedAt"`
+	ExpiresAt            int64  `json:"expiresAt"`
+	WalletFeePreview     bool   `json:"walletFeePreview,optional"`
+	WalletAddress        string `json:"walletAddress,optional"`
+	MessageSha256        string `json:"messageSha256,optional"`
+	FeeBlockHash         string `json:"feeBlockHash,optional"`
+	EmulatedMessageHash  string `json:"emulatedMessageHash,optional,omitempty"`
+	RelayAttached        string `json:"relayAttached,optional,omitempty"`
+	JettonExcess         string `json:"jettonExcess,optional,omitempty"`
+	RelaySurplus         string `json:"relaySurplus,optional,omitempty"`
+	DelegatedEnergy      int64  `json:"delegatedEnergy,optional,omitempty"`
+	DelegatedBandwidth   int    `json:"delegatedBandwidth,optional,omitempty"`
+	AccountFunding       string `json:"accountFunding,optional"`
+	AccountFundingUsd    string `json:"accountFundingUsd,optional"`
+	CanSubmit            bool   `json:"canSubmit"`
 }
 
 type DepositQuoteLookupRequest struct {
@@ -1125,6 +1130,28 @@ type TokenResponse struct {
 	Message string    `json:"message"`
 	Data    TokenData `json:"data"`
 	TraceId string    `json:"traceId"`
+}
+
+type TonDepositAuthorizeRequest struct {
+	QuoteIdx       string `json:"quoteIdx"`
+	UserSignature  string `json:"userSignature"`
+	OrderSignature string `json:"orderSignature"`
+}
+
+type TonDepositOrderData struct {
+	QuoteIdx         string `json:"quoteIdx"`
+	State            string `json:"state,options=awaiting_signature|expired|accepted|signed|review|credited"`
+	DispatchBodyHash string `json:"dispatchBodyHash,optional,omitempty"`
+	ReceiveTxHash    string `json:"receiveTxHash,optional,omitempty"`
+	ActualFeeNano    string `json:"actualFeeNano,optional,omitempty"`
+	CreditedUsd      string `json:"creditedUsd,optional,omitempty"`
+}
+
+type TonDepositOrderResponse struct {
+	Code    string              `json:"code,options=OK"`
+	Message string              `json:"message"`
+	TraceId string              `json:"traceId"`
+	Data    TonDepositOrderData `json:"data"`
 }
 
 type TransferByRequestRequest struct {

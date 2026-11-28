@@ -26,7 +26,7 @@ func (t *tonDepositJetton) budget(b tonDepositBudget, tr tonDepositTrace, w5 tlb
 		return b, err
 	}
 	b.execution = decimal.NewFromBigInt(w5.TotalFees.Coins.Nano(), -9).Add(fw)
-	if b.execution.GreaterThan(decimal.New(tonRelayNano, -9)) {
+	if b.execution.GreaterThan(decimal.New(TONDepositAttachmentNano, -9)) {
 		return b, invalid("Jetton W5 execution exceeds platform advance")
 	}
 	recvTrace := tr.Children[0]

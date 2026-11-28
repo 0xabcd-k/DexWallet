@@ -397,6 +397,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				},
 				{
 					Method:  http.MethodGet,
+					Path:    "/v1/user/ton-deposit-orders/:quoteIdx",
+					Handler: chainassets.GetTonDepositHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/v1/user/ton-deposit-orders/authorize",
+					Handler: chainassets.AuthorizeTonDepositHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
 					Path:    "/v1/user/tron-deposit-orders/:quoteIdx",
 					Handler: chainassets.GetTronDepositHandler(serverCtx),
 				},

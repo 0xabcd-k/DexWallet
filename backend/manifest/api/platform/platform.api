@@ -1193,6 +1193,11 @@ type DepositQuoteRequest {
     WalletAddress string `json:"walletAddress,optional"`
 }
 type DepositQuoteData {
+    TonSimulatedGas string `json:"tonSimulatedGas,optional,omitempty"`
+    TonValidUntil int64 `json:"tonValidUntil,optional,omitempty"`
+    TonUserSeqno int64 `json:"tonUserSeqno,optional,omitempty"`
+    TonRecipient string `json:"tonRecipient,optional,omitempty"`
+    TonAuthorizationHash string `json:"tonAuthorizationHash,optional,omitempty"`
     TronRefBlock string `json:"tronRefBlock,optional,omitempty"`
     TronRefTime int64 `json:"tronRefTime,optional,omitempty"`
     TronRecipient string `json:"tronRecipient,optional,omitempty"`
@@ -1268,6 +1273,25 @@ service platform {
     get /v1/user/deposit-quotes/:quoteIdx (DepositQuoteLookupRequest) returns (ConfirmedDepositQuoteResponse)
 }
 
+type TonDepositAuthorizeRequest {
+    QuoteIdx string `json:"quoteIdx"`
+    UserSignature string `json:"userSignature"`
+    OrderSignature string `json:"orderSignature"`
+}
+type TonDepositOrderData {
+    QuoteIdx string `json:"quoteIdx"`
+    State string `json:"state,options=awaiting_signature|expired|accepted|signed|review|credited"`
+    DispatchBodyHash string `json:"dispatchBodyHash,optional,omitempty"`
+    ReceiveTxHash string `json:"receiveTxHash,optional,omitempty"`
+    ActualFeeNano string `json:"actualFeeNano,optional,omitempty"`
+    CreditedUsd string `json:"creditedUsd,optional,omitempty"`
+}
+type TonDepositOrderResponse {
+    Code string `json:"code,options=OK"`
+    Message string `json:"message"`
+    TraceId string `json:"traceId"`
+    Data TonDepositOrderData `json:"data"`
+}
 type TronDepositAuthorizeRequest {
     QuoteIdx string `json:"quoteIdx"`
     UserSignature string `json:"userSignature"`
@@ -1341,6 +1365,10 @@ type SolDepositOrderResponse {
     middleware: AuthTransport,UserAuth
 )
 service platform {
+    @handler authorizeTonDeposit
+    post /v1/user/ton-deposit-orders/authorize (TonDepositAuthorizeRequest) returns (TonDepositOrderResponse)
+    @handler getTonDeposit
+    get /v1/user/ton-deposit-orders/:quoteIdx (DepositQuoteLookupRequest) returns (TonDepositOrderResponse)
     @handler authorizeTronDeposit
     post /v1/user/tron-deposit-orders/authorize (TronDepositAuthorizeRequest) returns (TronDepositOrderResponse)
     @handler getTronDeposit

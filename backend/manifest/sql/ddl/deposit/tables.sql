@@ -78,3 +78,26 @@ CREATE TABLE `tron_deposit_order` (
     UNIQUE KEY `uk_tron_deposit_tx` (`tx_id`),
     UNIQUE KEY `uk_tron_deposit_voucher` (`credit_voucher_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;
+
+CREATE TABLE `ton_deposit_order` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `quote_idx` CHAR(32) NOT NULL,
+    `auth_hash` CHAR(64) NOT NULL,
+    `user_signature` CHAR(128) NOT NULL,
+    `order_signature` CHAR(128) NOT NULL,
+    `accepted_at` DATETIME(3) NOT NULL,
+    `state` VARCHAR(16) NOT NULL,
+    `platform_signature` CHAR(128) NULL,
+    `dispatch_hash` CHAR(64) NULL,
+    `receive_hash` CHAR(64) NULL,
+    `execution_failed` TINYINT NOT NULL DEFAULT 0,
+    `actual_fee_nano` BIGINT NULL,
+    `credit_voucher_id` BIGINT NULL,
+    `credited_usd` DECIMAL(36,18) NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_ton_deposit_quote` (`quote_idx`),
+    UNIQUE KEY `uk_ton_deposit_auth` (`auth_hash`),
+    UNIQUE KEY `uk_ton_deposit_dispatch` (`dispatch_hash`),
+    UNIQUE KEY `uk_ton_deposit_receive` (`receive_hash`),
+    UNIQUE KEY `uk_ton_deposit_voucher` (`credit_voucher_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii COLLATE=ascii_bin;

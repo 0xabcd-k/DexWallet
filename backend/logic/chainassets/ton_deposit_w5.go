@@ -18,8 +18,10 @@ import (
 )
 
 type tonW5Account struct {
+	storage *tonStorageUsed
 	addr    *address.Address
 	seqno   uint64
+	key     []byte
 	balance decimal.Decimal
 }
 
@@ -38,6 +40,7 @@ func tonDepositCell(raw string) (*cell.Cell, error) {
 }
 
 type tonQuoteAccount struct {
+	Storage                     *tonStorageUsed
 	Address, Code, Data, Status string
 	Balance                     *int64
 }
@@ -95,30 +98,39 @@ func (s *Service) tonDepositWallet(ctx context.Context, n Network, e Endpoint, o
 	if !bytes.Equal(code.Hash(), init.Code.Hash()) || addr.StringRaw() != owner {
 		return empty, badTarget("expected the default testnet W5R1 wallet")
 	}
-	return tonW5Account{addr, seqno, decimal.New(*state.Balance, -9)}, nil
+	return tonW5Account{storage: state.Storage, addr: addr, seqno: seqno, key: key, balance: decimal.New(*state.Balance, -9)}, nil
 }
 
 const tonW5SignedInternal = 0x73696e74
 const tonW5SignedExternal = 0x7369676e
 
 type tonDepositMessage struct {
-	external, authorization, paymentBody *cell.Cell
-	queryID                              uint64
+	external, authorization, paymentBody   *cell.Cell
+	queryID                                uint64
+	userPayload, platformPayload, dispatch *cell.Cell
 }
 
-func tonEmulatedW5Body(seqno, op uint64, deadline uint32, transfer *tlb.InternalMessage) (*cell.Cell, error) {
+func tonW5Payload(seqno, op uint64, deadline uint32, transfer *tlb.InternalMessage) (*cell.Cell, error) {
 	actions, err := wallet.PackV5OutActions([]*wallet.Message{{Mode: wallet.PayGasSeparately | wallet.IgnoreErrors, InternalMessage: transfer}})
 	if err != nil {
 		return nil, err
 	}
-	// Both signature slots are zero solely for TonAPI's read-only emulator.
-	return cell.BeginCell().MustStoreUInt(op, 32).MustStoreUInt(tonW5ID, 32).MustStoreUInt(uint64(deadline), 32).MustStoreUInt(seqno, 32).MustStoreBuilder(actions).MustStoreSlice(make([]byte, 64), 512).EndCell(), nil
+
+	return cell.BeginCell().MustStoreUInt(op, 32).MustStoreUInt(tonW5ID, 32).MustStoreUInt(uint64(deadline), 32).MustStoreUInt(seqno, 32).MustStoreBuilder(actions).EndCell(), nil
+}
+
+func tonSignedBody(payload *cell.Cell, signature []byte) *cell.Cell {
+	return cell.BeginCell().MustStoreBuilder(payload.ToBuilder()).MustStoreSlice(signature, 512).EndCell()
 }
 
 func buildTONDepositMessage(user, platform tonW5Account, token *tonDepositJetton, atoms *big.Int, deadline uint32) (tonDepositMessage, error) {
+	return buildTONRelay(user, platform, token, atoms, deadline, make([]byte, 64), make([]byte, 64))
+}
+
+func buildTONRelay(user, platform tonW5Account, token *tonDepositJetton, atoms *big.Int, deadline uint32, userSig, platformSig []byte) (tonDepositMessage, error) {
 	var m tonDepositMessage
 	pay := &tlb.InternalMessage{IHRDisabled: true, DstAddr: platform.addr, Amount: tlb.FromNanoTON(atoms), Body: cell.BeginCell().EndCell()}
-	relayNano := uint64(tonRelayNano)
+	relayNano := uint64(TONDepositAttachmentNano)
 	if token != nil {
 		body, err := tlb.ToCell(jetton.TransferPayload{QueryID: uint64(deadline), Amount: tlb.FromNanoTON(atoms), Destination: platform.addr, ResponseDestination: platform.addr, ForwardTONAmount: tlb.FromNanoTONU(tonJettonForwardNano), ForwardPayload: cell.BeginCell().EndCell()})
 		if err != nil {
@@ -127,15 +139,17 @@ func buildTONDepositMessage(user, platform tonW5Account, token *tonDepositJetton
 		pay = &tlb.InternalMessage{IHRDisabled: true, Bounce: true, DstAddr: token.sender, Amount: tlb.FromNanoTONU(tonJettonActionNano), Body: body}
 		relayNano += tonJettonActionNano
 	}
-	auth, err := tonEmulatedW5Body(user.seqno, tonW5SignedInternal, deadline, pay)
+	userPayload, err := tonW5Payload(user.seqno, tonW5SignedInternal, deadline, pay)
 	if err != nil {
 		return m, err
 	}
+	auth := tonSignedBody(userPayload, userSig)
 	relay := &tlb.InternalMessage{IHRDisabled: true, Bounce: true, DstAddr: user.addr, Amount: tlb.FromNanoTONU(relayNano), Body: auth}
-	dispatch, err := tonEmulatedW5Body(platform.seqno, tonW5SignedExternal, deadline, relay)
+	platformPayload, err := tonW5Payload(platform.seqno, tonW5SignedExternal, deadline, relay)
 	if err != nil {
 		return m, err
 	}
+	dispatch := tonSignedBody(platformPayload, platformSig)
 	ext, err := tlb.ToCell(&tlb.ExternalMessage{DstAddr: platform.addr, Body: dispatch})
-	return tonDepositMessage{ext, auth, pay.Body, uint64(deadline)}, err
+	return tonDepositMessage{external: ext, authorization: auth, paymentBody: pay.Body, queryID: uint64(deadline), userPayload: userPayload, platformPayload: platformPayload, dispatch: dispatch}, err
 }

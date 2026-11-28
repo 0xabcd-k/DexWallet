@@ -431,6 +431,19 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 			return empty, err
 		}
 	}
+	var tonAuth string
+	if k.Network == chainassets.TONTestnet && k.Kind == TONIncoming && addr.Route != TONMemo {
+		var version int
+		if err := a.conn.QueryRowCtx(ctx, &version, "SELECT version FROM schema_migrations_business WHERE dirty=0"); err != nil {
+			return empty, err
+		}
+		if version >= 47 {
+			tonAuth, err = tonDepositParentHash(tx.EvidenceJson)
+			if err != nil {
+				return empty, err
+			}
+		}
+	}
 	var nileReservation bool
 	nativeNile := k.Kind == TRONTransfer && ev.AssetId == chainassets.TRONNileTRX
 	tokenNile := k.Kind == TRONLog && ev.AssetId == chainassets.NileUSDT(chainassets.NileDepositUSDTContract).ID
@@ -447,6 +460,10 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
             WHERE id=? AND matched_event_id IS NULL AND NOT EXISTS (
                 SELECT 1 FROM chain_receive_address WHERE network=? AND owner=?)`
 		args := []any{ev.Id, row.Id, k.Network, ev.SourceOwner}
+		if tonAuth != "" {
+			query += " AND NOT EXISTS (SELECT 1 FROM ton_deposit_order WHERE auth_hash=?)"
+			args = append(args, tonAuth)
+		}
 		if nileReservation {
 			query += " AND NOT EXISTS (SELECT 1 FROM tron_deposit_order WHERE tx_id=?)"
 			args = append(args, k.Signature)
@@ -462,6 +479,15 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 	found, err := a.Find(ctx, row.RequestKey)
 	if err != nil {
 		return empty, err
+	}
+	if tonAuth != "" && found.Event == nil {
+		var reserved bool
+		if err := a.conn.QueryRowCtx(ctx, &reserved, "SELECT EXISTS(SELECT 1 FROM ton_deposit_order WHERE auth_hash=?)", tonAuth); err != nil {
+			return empty, err
+		}
+		if reserved {
+			return empty, ErrReceiveConflict
+		}
 	}
 	if nileReservation && found.Event == nil {
 		var reserved bool

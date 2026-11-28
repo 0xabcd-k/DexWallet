@@ -16,6 +16,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	TONNativeExecution        bool                  `json:",optional"`
 	TRONTestUSDTExecution     bool                  `json:",optional"`
 	TRONTRXExecution          bool                  `json:",optional"`
 	BaseETHExecutionWindow    time.Duration         `json:",optional"`
@@ -58,6 +59,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
+	tonNativeExecution            bool
 	tronExecution                 map[string]bool
 	baseETHWindow, baseUSDCWindow time.Duration
 	solReviewAfter                map[string]time.Duration
@@ -107,7 +109,10 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	if c.TRONTestUSDTExecution && c.TRONTestUSDT == nil {
 		return book, fmt.Errorf("Nile USDT execution requires a delegated resource route")
 	}
-	book = depositBook{tronExecution: map[string]bool{TRONNileTRX: c.TRONTRXExecution, nileDepositUSDTID: c.TRONTestUSDTExecution}, baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	if c.TONNativeExecution && c.TONNative == nil {
+		return book, fmt.Errorf("TON execution requires a native testnet relay route")
+	}
+	book = depositBook{tonNativeExecution: c.TONNativeExecution, tronExecution: map[string]bool{TRONNileTRX: c.TRONTRXExecution, nileDepositUSDTID: c.TRONTestUSDTExecution}, baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {
@@ -223,6 +228,7 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 }
 
 type DepositPreview struct {
+	TON                             *TONDepositTerms `json:",omitempty"`
 	TRONReference                   *tronnative.Head `json:",omitempty"`
 	BaseValidBefore                 int64
 	SolOrderIdx, SolMessage         string

@@ -43,10 +43,10 @@ type StatementEntry struct {
 }
 
 func (m *customUserAccountModel) ListEntries(ctx context.Context, userID int64, kind string, before int64, limit int) ([]StatementEntry, error) {
-	query := `SELECT e.id,e.voucher_id,v.business_type,v.business_id,COALESCE(d.order_idx,b.quote_idx,t.quote_idx,'') AS deposit_order_idx,v.action,a.kind,e.unit,e.side,e.amount,e.balance_after,e.balance_part,v.created_at
+	query := `SELECT e.id,e.voucher_id,v.business_type,v.business_id,COALESCE(d.order_idx,b.quote_idx,t.quote_idx,w.quote_idx,'') AS deposit_order_idx,v.action,a.kind,e.unit,e.side,e.amount,e.balance_after,e.balance_part,v.created_at
 		FROM user_account a JOIN ledger_entry e ON e.account_id=a.id JOIN ledger_voucher v ON v.id=e.voucher_id
         LEFT JOIN sol_deposit_order d ON d.credit_voucher_id=v.id LEFT JOIN base_deposit_order b ON b.credit_voucher_id=v.id
-        LEFT JOIN tron_deposit_order t ON t.credit_voucher_id=v.id WHERE a.user_id=? AND NOT(e.balance_part='held' AND v.action IN ('hold','release'))`
+        LEFT JOIN tron_deposit_order t ON t.credit_voucher_id=v.id LEFT JOIN ton_deposit_order w ON w.credit_voucher_id=v.id WHERE a.user_id=? AND NOT(e.balance_part='held' AND v.action IN ('hold','release'))`
 	args := []any{userID}
 	if kind != "" {
 		query += " AND a.kind=?"

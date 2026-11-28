@@ -91,15 +91,18 @@ func (s *Service) SubmitTON(ctx context.Context, network string, boc []byte) err
 // envelope hash. It returns raw sender/recipient evidence; the receipt verifier
 // independently binds that body, addresses, amounts and finalized block facts.
 func (s *Service) ReadTONSendEvidence(ctx context.Context, network, bodyHash string) (TONEvidence, error) {
-	return s.readTONSendEvidence(ctx, network, bodyHash, "", "")
+	return s.readTONSendEvidence(ctx, network, bodyHash, "", "", false)
 }
 func (s *Service) ReadTONJettonSendEvidence(ctx context.Context, network, bodyHash, master, recipient string) (TONEvidence, error) {
 	if master == "" {
 		return TONEvidence{}, invalid("missing Jetton master")
 	}
-	return s.readTONSendEvidence(ctx, network, bodyHash, master, recipient)
+	return s.readTONSendEvidence(ctx, network, bodyHash, master, recipient, false)
 }
-func (s *Service) readTONSendEvidence(ctx context.Context, network, bodyHash, master, recipient string) (TONEvidence, error) {
+func (s *Service) ReadTONDepositEvidence(ctx context.Context, bodyHash string) (TONEvidence, error) {
+	return s.readTONSendEvidence(ctx, TONTestnet, bodyHash, "", "", true)
+}
+func (s *Service) readTONSendEvidence(ctx context.Context, network, bodyHash, master, recipient string, relay bool) (TONEvidence, error) {
 	var out TONEvidence
 	if network != TONTestnet || len(bodyHash) != 64 {
 		return out, fmt.Errorf("invalid TON send lookup")
@@ -139,6 +142,9 @@ func (s *Service) readTONSendEvidence(ctx context.Context, network, bodyHash, ma
 		return out, invalid("ambiguous TON send transactions")
 	}
 	if len(*sending.Transactions) == 0 {
+		if relay {
+			out.Dispatch, out.Parent = out.Parent, nil
+		}
 		return out, nil
 	}
 	// The transaction hash is used only as an indexer lookup hint.
@@ -146,23 +152,25 @@ func (s *Service) readTONSendEvidence(ctx context.Context, network, bodyHash, ma
 	if err = read("/api/v3/adjacentTransactions", url.Values{"hash": {hash}, "direction": {"out"}}, nil, &out.Transaction); err != nil {
 		return out, err
 	}
-	if master != "" {
+	if master != "" || relay {
 		out.Dispatch, out.Parent = out.Parent, out.Transaction
-		var tokenSender struct {
+		var intermediate struct {
 			Transactions *[]struct {
 				Hash string `json:"hash"`
 			} `json:"transactions"`
 		}
-		if json.Unmarshal(out.Parent, &tokenSender) != nil || tokenSender.Transactions == nil || len(*tokenSender.Transactions) > 1 {
-			return out, invalid("ambiguous Jetton sender")
+		if json.Unmarshal(out.Parent, &intermediate) != nil || intermediate.Transactions == nil || len(*intermediate.Transactions) > 1 {
+			return out, invalid("ambiguous TON intermediate transaction")
 		}
 		out.Transaction = nil
-		if len(*tokenSender.Transactions) == 0 {
+		if len(*intermediate.Transactions) == 0 {
 			return out, nil
 		}
-		if err = read("/api/v3/adjacentTransactions", url.Values{"hash": {(*tokenSender.Transactions)[0].Hash}, "direction": {"out"}}, nil, &out.Transaction); err != nil {
+		if err = read("/api/v3/adjacentTransactions", url.Values{"hash": {(*intermediate.Transactions)[0].Hash}, "direction": {"out"}}, nil, &out.Transaction); err != nil {
 			return out, err
 		}
+	}
+	if master != "" {
 		sender, normalizeErr := normalizeAddress(n, (*sending.Transactions)[0].Account)
 		if normalizeErr != nil {
 			return out, normalizeErr

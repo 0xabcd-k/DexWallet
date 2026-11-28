@@ -408,6 +408,11 @@ export interface DepositQuoteConfirmRequest {
 }
 
 export interface DepositQuoteData {
+	tonSimulatedGas?: string
+	tonValidUntil?: number
+	tonUserSeqno?: number
+	tonRecipient?: string
+	tonAuthorizationHash?: string
 	tronRefBlock?: string
 	tronRefTime?: number
 	tronRecipient?: string
@@ -1162,6 +1167,28 @@ export interface TokenResponse {
 	message: string
 	data: TokenData
 	traceId: string
+}
+
+export interface TonDepositAuthorizeRequest {
+	quoteIdx: string
+	userSignature: string
+	orderSignature: string
+}
+
+export interface TonDepositOrderData {
+	quoteIdx: string
+	state: 'awaiting_signature' | 'expired' | 'accepted' | 'signed' | 'review' | 'credited'
+	dispatchBodyHash?: string
+	receiveTxHash?: string
+	actualFeeNano?: string
+	creditedUsd?: string
+}
+
+export interface TonDepositOrderResponse {
+	code: 'OK'
+	message: string
+	traceId: string
+	data: TonDepositOrderData
 }
 
 export interface TransferByRequestRequest {

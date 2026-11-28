@@ -2,6 +2,8 @@ import type { CatalogPort, VaultPort, VaultIdentity, VaultRequest } from '../../
 import { WalletError } from '../../apps/user/src/app/native/local-wallet/crypto';
 // Public BIP39 test vector; never fund these addresses.
 export const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+// Public TON Crypto vector #0 from https://github.com/ton-org/ton-crypto/blob/master/src/mnemonic/mnemonic.spec.ts
+export const tonMnemonic = 'hospital stove relief fringe tongue always charge angry urge sentence again match nerve inquiry senior coconut label tumble carry category beauty bean road solution';
 export function boundaries() {
   const metadata = new Map<string, string>(), secrets = new Map<string, string>();
   const id = (v: VaultIdentity) => `${v.userIdx}:${v.walletId}`;
