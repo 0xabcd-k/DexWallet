@@ -141,6 +141,7 @@ export function DepositEstimate({ asset, native, target, walletAddress, local, o
       {quote.delegatedBandwidth !== undefined && <><dt>{t('depositPlatformBandwidth')}</dt><dd>{quote.delegatedBandwidth}</dd></>}
       <dt>{t(quote.delegatedBandwidth !== undefined ? 'depositTrxBurn' : quote.tonSimulatedGas ? 'tonBudgetWithStorage' : quote.feeBlockHash || quote.emulatedMessageHash ? 'depositPreSignGas' : walletAddress ? 'depositNetworkGas' : 'depositGas')}</dt><dd>{quote.estimatedGas} {native.symbol} · ${quote.gasUsd}</dd>
       {quote.tonSimulatedGas && <><dt>{t('tonSimulatedFee')}</dt><dd>{quote.tonSimulatedGas} TON</dd></>}
+      {quote.tonSenderPaidGas !== undefined && <><dt>{t('tonEstimatedSenderCost')}</dt><dd>{quote.tonSenderPaidGas} TON</dd></>}
       {quote.maxGas !== undefined && !quote.tonSimulatedGas && <><dt>{t('depositMaxGas')}</dt><dd>{quote.maxGas} {native.symbol}</dd></>}
       {quote.relayAttached && <><dt>{t('depositRelayAttached')}</dt><dd>{quote.relayAttached} {native.symbol}</dd>
         <dt>{t('depositRelaySurplus')}</dt><dd>{quote.relaySurplus} {native.symbol}</dd></>}

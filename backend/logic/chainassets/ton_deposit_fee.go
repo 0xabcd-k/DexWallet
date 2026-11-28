@@ -81,13 +81,6 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 	if err != nil {
 		return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("TON deposit platform wallet: %w", err))
 	}
-	var storageAllowance decimal.Decimal
-	if assetID == tonDepositAsset && s.quotes.tonNativeExecution {
-		storageAllowance, err = s.tonStorageAllowance(ctx, n, route.emulator, source, platform, at)
-		if err != nil {
-			return empty, apperror.New(apperror.ServiceUnavailable, err)
-		}
-	}
 	var token *tonDepositJetton
 	balance := source.balance
 	attachmentNano := int64(TONDepositAttachmentNano)
@@ -98,6 +91,17 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 		}
 		balance = token.balance
 		attachmentNano += tonJettonActionNano
+	}
+	var storageAllowance decimal.Decimal
+	if s.quotes.tonExecution[assetID] {
+		var extra []*tonStorageUsed
+		if token != nil {
+			extra = token.storage
+		}
+		storageAllowance, err = s.tonStorageAllowance(ctx, n, route.emulator, source, platform, at, extra...)
+		if err != nil {
+			return empty, apperror.New(apperror.ServiceUnavailable, err)
+		}
 	}
 	attached := decimal.New(attachmentNano, -9)
 	if platform.balance.LessThan(attached) {
@@ -135,8 +139,12 @@ func (s *Service) previewTONDeposit(ctx context.Context, user int64, assetID, ta
 			if now().UnixMilli() >= next.ExpiresAt {
 				return empty, apperror.New(apperror.ServiceUnavailable, fmt.Errorf("TON estimate expired"))
 			}
-			if token == nil && s.quotes.tonNativeExecution {
+			if s.quotes.tonExecution[assetID] {
 				next.TON = &TONDepositTerms{SimulatedGas: budget.network.String(), UserKey: hex.EncodeToString(source.key), PlatformKey: hex.EncodeToString(platform.key), UserSeqno: uint32(source.seqno), PlatformSeqno: uint32(platform.seqno), ValidUntil: uint32(at.Add(tonRelayValidity).Unix()), AuthorizationHash: hex.EncodeToString(message.userPayload.Hash())}
+			}
+			if next.TON != nil && token != nil {
+				next.TON.SenderPaidGas = budget.senderPaid.String()
+				next.TON.JettonWalletCode = hex.EncodeToString(token.code.ToBOC())
 			}
 			next.Recipient, next.FeePayer = route.platform, route.platform
 			next.WalletAddress = walletAddress

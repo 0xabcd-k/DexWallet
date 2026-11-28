@@ -32,14 +32,21 @@ export function TonDepositOrder({ idx, local, quote, expired }: {
     {quote && <dl><dt>{t('tonRelayRecipient')}</dt><dd className="chain-address">{quote.tonRecipient}</dd>
       <dt>{t('tonSigningUntil')}</dt><dd>{new Date(quote.tonValidUntil! * 1000).toLocaleString()}</dd></dl>}
     {quote && local && (!order || order.state === 'awaiting_signature') &&
-      <Button color="primary" block disabled={busy || expired} onClick={() => void run(true)}>{t('tonSignDeposit')}</Button>}
+      <Button color="primary" block disabled={busy || expired} onClick={() => void run(true)}>{t(quote.tonJettonWalletCode ? 'tonSignJettonDeposit' : 'tonSignDeposit')}</Button>}
     <Button disabled={busy} onClick={() => void run(false)}>{t('tonOrderLookup')}</Button>
     {error !== undefined && <Failure error={error}/>}
     {order && <p role="status">{t(states[order.state as keyof typeof states], { idx, amount: order.creditedUsd })}</p>}
     {order?.dispatchBodyHash && <dl><dt>{t('tonDispatchBody')}</dt><dd className="chain-address">{order.dispatchBodyHash}</dd>
       {order.receiveTxHash && <><dt>{t('tonReceiveHash')}</dt><dd className="chain-address">{order.receiveTxHash}</dd></>}
       {order.actualFeeNano && <><dt>{t('tonActualTraceFee')}</dt><dd>{order.actualFeeNano} nanoTON</dd></>}</dl>}
-    {order?.state === 'credited' && <Link to="/records?kind=usd_balance">{t('viewAccountEntries')}</Link>}
+    {order?.jettonExcessNano && <dl>
+      <dt>{t('tonActualSenderCost')}</dt><dd>{order.jettonSenderFeeNano} nanoTON</dd>
+      <dt>{t('tonRecoverableCost')}</dt><dd>{order.recoverableFeeNano} nanoTON</dd>
+      <dt>{t('tonActualExcess')}</dt><dd>{order.jettonExcessNano} nanoTON</dd>
+      <dt>{t('tonActualReserve')}</dt><dd>{order.jettonReserveNano} nanoTON</dd>
+      <dt>{t('tonActualSurplus')}</dt><dd>{order.relaySurplusNano} nanoTON</dd>
+    </dl>}
+    {order?.state === 'credited'  && <Link to="/records?kind=usd_balance">{t('viewAccountEntries')}</Link>}
   </>;
 }
 export function LastTonDeposit({ userIdx }: { userIdx: string }) {

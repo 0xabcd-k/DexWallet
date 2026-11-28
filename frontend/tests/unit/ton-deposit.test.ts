@@ -3,6 +3,7 @@ import { createPublicKey, verify } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { DepositQuoteData } from '../../packages/api-contract/src/platform';
 import proof from '../../../backend/logic/chainreceipt/testdata/ton-self-deposit-credit.json';
+import jetton from '../../../backend/logic/chainreceipt/testdata/ton-self-deposit-jetton-repeat.json';
 import { authorizeTonDeposit, tonDepositDigests } from '../../apps/user/src/app/native/chain-transfer/ton-deposit';
 import { deriveAccounts, importMaterial } from '../../apps/user/src/app/native/local-wallet/crypto';
 import * as client from '../../apps/user/src/api/account';
@@ -54,4 +55,20 @@ it.each(['bip39', 'ton'] as const)('authorizes only the selected %s W5 and resum
   credited = true;
   expect((await authorizeTonDeposit('user','local',chosen,0,signal)).state).toBe('credited');
   expect(vault.get).toHaveBeenCalledTimes(2);
+});
+
+it('rebuilds the signed test USDT transfer, the refund destination and the independently bound order', () => {
+  const quote = jetton.Quote;
+  const input: DepositQuoteData = { ...terms, assetId: quote.AssetID, quoteIdx: quote.QuoteIdx, walletAddress: quote.WalletAddress,
+    tonRecipient: quote.Recipient, payQuantity: quote.PayQuantity, estimatedGas: quote.EstimatedGas, maxGas: quote.MaxGas,
+    tonValidUntil: quote.TON.ValidUntil, tonUserSeqno: quote.TON.UserSeqno, tonJettonWalletCode: quote.TON.JettonWalletCode,
+    tonAuthorizationHash: quote.TON.AuthorizationHash, relayAttached: quote.RelayAttached, expiresAt: quote.ExpiresAt };
+  const pub = createPublicKey({ key: Buffer.from('302a300506032b6570032100' + quote.TON.UserKey, 'hex'), type: 'spki', format: 'der' });
+  const d = tonDepositDigests(input);
+  expect(verify(null, d.user, pub, Buffer.from(jetton.UserSignature, 'hex'))).toBe(true);
+  expect(verify(null, d.order, pub, Buffer.from(jetton.OrderSignature, 'hex'))).toBe(true);
+  for (const change of [{ payQuantity: '0.017444' }, { tonRecipient: '0:' + 'a'.repeat(64) }, { relayAttached: '0.003' },
+    { tonJettonWalletCode: '00' }, { assetId: 'ton-testnet:usdt:' + '0'.repeat(64) }]) {
+    expect(() => tonDepositDigests({ ...input, ...change })).toThrow();
+  }
 });

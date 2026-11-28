@@ -1,5 +1,12 @@
 export const appResources = {
   "en": {
+    "tonSignJettonDeposit": "Authorize test USDT deposit",
+    "tonEstimatedSenderCost": "Estimated fee paid from the sending token wallet’s existing TON",
+    "tonActualSenderCost": "Network fee paid from the sending token wallet’s existing TON",
+    "tonRecoverableCost": "Network fee recoverable by the platform",
+    "tonActualExcess": "TON returned to the platform before the receiving fee",
+    "tonActualReserve": "TON added to the receiving token wallet reserve",
+    "tonActualSurplus": "Relay funds remaining in the paying wallet",
     "tonSignDeposit": "Authorize TON deposit",
     "tonOrderLookup": "Check TON deposit",
     "tonAccepted": "Order {{idx}} is authorized for the platform relay.",
@@ -468,6 +475,13 @@ export const appResources = {
   },
   "zh-CN": {
     "tonSignDeposit": "授权 TON 本人充值",
+    "tonSignJettonDeposit": "授权测试 USDT 本人充值",
+    "tonEstimatedSenderCost": "预计由付款代币钱包原有 TON 承担的网络费",
+    "tonActualSenderCost": "付款代币钱包原有 TON 已付网络费",
+    "tonRecoverableCost": "平台可扣回的网络费",
+    "tonActualExcess": "退回平台的 TON（扣收款处理费前）",
+    "tonActualReserve": "收款代币钱包新增的 TON 储备",
+    "tonActualSurplus": "留在付款钱包的中继余款",
     "tonOrderLookup": "查询 TON 充值进度",
     "tonAccepted": "订单 {{idx}} 已授权，等待平台中继。",
     "tonSigned": "订单 {{idx}} 已补签，等待 TON 最终收款回执。",

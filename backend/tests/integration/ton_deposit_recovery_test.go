@@ -35,6 +35,9 @@ func (n *tonDepositHistory) ReadTONDepositEvidence(_ context.Context, h string) 
 	}
 	return n.evidence, nil
 }
+func (n *tonDepositHistory) ReadTONJettonDepositEvidence(ctx context.Context, r chainassets.TONDepositRelay) (chainassets.TONEvidence, error) {
+	return n.ReadTONDepositEvidence(ctx, r.DispatchHash)
+}
 func (n *tonDepositHistory) CheckTONDeposit(context.Context, chainassets.DepositPreview, []byte, []byte) error {
 	return errors.New("unexpected preflight during recovery")
 }
@@ -42,7 +45,7 @@ func (n *tonDepositHistory) SubmitTON(context.Context, string, []byte) error {
 	return errors.New("unexpected recovery broadcast")
 }
 func (n *tonDepositHistory) Catalog() []chainassets.Network {
-	return []chainassets.Network{{ID: chainassets.TONTestnet, Family: chainassets.TON, Assets: []chainassets.Asset{{ID: "ton-testnet:ton", Origin: chainassets.Native, Decimals: 9}}}}
+	return []chainassets.Network{{ID: chainassets.TONTestnet, Family: chainassets.TON, Assets: []chainassets.Asset{{ID: "ton-testnet:ton", Origin: chainassets.Native, Decimals: 9}, {ID: chainassets.TONDepositTestUSDT, Contract: chainassets.TONDepositTestMaster, Origin: chainassets.TestFixture, Decimals: 6}}}}
 }
 func (n *tonDepositHistory) ReadTONEvidence(context.Context, string, string, string, string) (chainassets.TONEvidence, error) {
 	return n.evidence, nil

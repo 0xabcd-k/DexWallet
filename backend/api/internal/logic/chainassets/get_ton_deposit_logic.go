@@ -49,6 +49,13 @@ func tonOrderResponse(ctx context.Context, o *model.TonDepositOrder) *types.TonD
 	if o.ActualFeeNano.Valid {
 		data.ActualFeeNano = strconv.FormatInt(o.ActualFeeNano.Int64, 10)
 	}
+	if o.JettonExcessNano.Valid {
+		data.JettonSenderFeeNano = strconv.FormatInt(o.JettonSenderFeeNano.Int64, 10)
+		data.RecoverableFeeNano = strconv.FormatInt(o.ActualFeeNano.Int64-o.JettonSenderFeeNano.Int64, 10)
+		data.JettonExcessNano = strconv.FormatInt(o.JettonExcessNano.Int64, 10)
+		data.JettonReserveNano = strconv.FormatInt(o.JettonReserveNano.Int64, 10)
+		data.RelaySurplusNano = strconv.FormatInt(o.RelaySurplusNano.Int64, 10)
+	}
 	if o.CreditedUsd.Valid {
 		data.CreditedUsd = o.CreditedUsd.Decimal.StringFixed(2)
 	}

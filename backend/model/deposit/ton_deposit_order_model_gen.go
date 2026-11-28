@@ -32,6 +32,7 @@ type (
 		FindOneByAuthHash(ctx context.Context, authHash string) (*TonDepositOrder, error)
 		FindOneByCreditVoucherId(ctx context.Context, creditVoucherId sql.NullInt64) (*TonDepositOrder, error)
 		FindOneByDispatchHash(ctx context.Context, dispatchHash sql.NullString) (*TonDepositOrder, error)
+		FindOneByJettonPaymentKey(ctx context.Context, jettonPaymentKey sql.NullString) (*TonDepositOrder, error)
 		FindOneByQuoteIdx(ctx context.Context, quoteIdx string) (*TonDepositOrder, error)
 		FindOneByReceiveHash(ctx context.Context, receiveHash sql.NullString) (*TonDepositOrder, error)
 		Update(ctx context.Context, data *TonDepositOrder) error
@@ -44,20 +45,25 @@ type (
 	}
 
 	TonDepositOrder struct {
-		Id                int64               `db:"id"`
-		QuoteIdx          string              `db:"quote_idx"`
-		AuthHash          string              `db:"auth_hash"`
-		UserSignature     string              `db:"user_signature"`
-		OrderSignature    string              `db:"order_signature"`
-		AcceptedAt        time.Time           `db:"accepted_at"`
-		State             string              `db:"state"`
-		PlatformSignature sql.NullString      `db:"platform_signature"`
-		DispatchHash      sql.NullString      `db:"dispatch_hash"`
-		ReceiveHash       sql.NullString      `db:"receive_hash"`
-		ExecutionFailed   int64               `db:"execution_failed"`
-		ActualFeeNano     sql.NullInt64       `db:"actual_fee_nano"`
-		CreditVoucherId   sql.NullInt64       `db:"credit_voucher_id"`
-		CreditedUsd       decimal.NullDecimal `db:"credited_usd"`
+		Id                  int64               `db:"id"`
+		QuoteIdx            string              `db:"quote_idx"`
+		AuthHash            string              `db:"auth_hash"`
+		UserSignature       string              `db:"user_signature"`
+		OrderSignature      string              `db:"order_signature"`
+		AcceptedAt          time.Time           `db:"accepted_at"`
+		State               string              `db:"state"`
+		PlatformSignature   sql.NullString      `db:"platform_signature"`
+		DispatchHash        sql.NullString      `db:"dispatch_hash"`
+		ReceiveHash         sql.NullString      `db:"receive_hash"`
+		ExecutionFailed     int64               `db:"execution_failed"`
+		ActualFeeNano       sql.NullInt64       `db:"actual_fee_nano"`
+		CreditVoucherId     sql.NullInt64       `db:"credit_voucher_id"`
+		CreditedUsd         decimal.NullDecimal `db:"credited_usd"`
+		JettonPaymentKey    sql.NullString      `db:"jetton_payment_key"`
+		JettonSenderFeeNano sql.NullInt64       `db:"jetton_sender_fee_nano"`
+		JettonExcessNano    sql.NullInt64       `db:"jetton_excess_nano"`
+		JettonReserveNano   sql.NullInt64       `db:"jetton_reserve_nano"`
+		RelaySurplusNano    sql.NullInt64       `db:"relay_surplus_nano"`
 	}
 )
 
@@ -130,6 +136,20 @@ func (m *defaultTonDepositOrderModel) FindOneByDispatchHash(ctx context.Context,
 	}
 }
 
+func (m *defaultTonDepositOrderModel) FindOneByJettonPaymentKey(ctx context.Context, jettonPaymentKey sql.NullString) (*TonDepositOrder, error) {
+	var resp TonDepositOrder
+	query := fmt.Sprintf("select %s from %s where `jetton_payment_key` = ? limit 1", tonDepositOrderRows, m.table)
+	err := m.conn.QueryRowCtx(ctx, &resp, query, jettonPaymentKey)
+	switch err {
+	case nil:
+		return &resp, nil
+	case sqlx.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
 func (m *defaultTonDepositOrderModel) FindOneByQuoteIdx(ctx context.Context, quoteIdx string) (*TonDepositOrder, error) {
 	var resp TonDepositOrder
 	query := fmt.Sprintf("select %s from %s where `quote_idx` = ? limit 1", tonDepositOrderRows, m.table)
@@ -159,14 +179,14 @@ func (m *defaultTonDepositOrderModel) FindOneByReceiveHash(ctx context.Context, 
 }
 
 func (m *defaultTonDepositOrderModel) Insert(ctx context.Context, data *TonDepositOrder) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, tonDepositOrderRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.AuthHash, data.UserSignature, data.OrderSignature, data.AcceptedAt, data.State, data.PlatformSignature, data.DispatchHash, data.ReceiveHash, data.ExecutionFailed, data.ActualFeeNano, data.CreditVoucherId, data.CreditedUsd)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, tonDepositOrderRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.QuoteIdx, data.AuthHash, data.UserSignature, data.OrderSignature, data.AcceptedAt, data.State, data.PlatformSignature, data.DispatchHash, data.ReceiveHash, data.ExecutionFailed, data.ActualFeeNano, data.CreditVoucherId, data.CreditedUsd, data.JettonPaymentKey, data.JettonSenderFeeNano, data.JettonExcessNano, data.JettonReserveNano, data.RelaySurplusNano)
 	return ret, err
 }
 
 func (m *defaultTonDepositOrderModel) Update(ctx context.Context, newData *TonDepositOrder) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, tonDepositOrderRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.AuthHash, newData.UserSignature, newData.OrderSignature, newData.AcceptedAt, newData.State, newData.PlatformSignature, newData.DispatchHash, newData.ReceiveHash, newData.ExecutionFailed, newData.ActualFeeNano, newData.CreditVoucherId, newData.CreditedUsd, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.QuoteIdx, newData.AuthHash, newData.UserSignature, newData.OrderSignature, newData.AcceptedAt, newData.State, newData.PlatformSignature, newData.DispatchHash, newData.ReceiveHash, newData.ExecutionFailed, newData.ActualFeeNano, newData.CreditVoucherId, newData.CreditedUsd, newData.JettonPaymentKey, newData.JettonSenderFeeNano, newData.JettonExcessNano, newData.JettonReserveNano, newData.RelaySurplusNano, newData.Id)
 	return err
 }
 

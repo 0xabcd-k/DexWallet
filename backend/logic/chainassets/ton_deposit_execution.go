@@ -13,16 +13,29 @@ import (
 
 	"github.com/0xabcd-k/DexWallet/backend/apperror"
 	"github.com/shopspring/decimal"
+	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton/wallet"
 )
 
 type TONDepositTerms struct {
+	SenderPaidGas                           string `json:",omitempty"`
+	JettonWalletCode                        string `json:",omitempty"`
 	SimulatedGas                            string
 	UserKey, PlatformKey, AuthorizationHash string
 	UserSeqno, PlatformSeqno, ValidUntil    uint32
 }
 
+type TONJettonRelay struct {
+	SenderWallet, ReceiverWallet, PaymentHash, InternalHash, NotificationHash, ExcessHash string
+}
+
+func TONJettonPaymentKey(sender, body string) string {
+	sum := sha256.Sum256([]byte(sender + "/" + body))
+	return hex.EncodeToString(sum[:])
+}
+
 type TONDepositRelay struct {
+	Jetton                                    *TONJettonRelay
 	Wire                                      []byte
 	UserDigest, PlatformDigest                []byte
 	AuthHash, DispatchHash, Sender, Recipient string
@@ -30,7 +43,11 @@ type TONDepositRelay struct {
 }
 
 func (q DepositPreview) TONOrderDigest() [32]byte {
-	return sha256.Sum256([]byte("DexWallet/1/ton-testnet/ton/self-deposit/" + q.QuoteIdx + "/" + q.TON.AuthorizationHash))
+	domain := "DexWallet/1/ton-testnet/ton/self-deposit/"
+	if q.AssetID == TONDepositTestUSDT {
+		domain = "DexWallet/1/" + q.AssetID + "/self-deposit/"
+	}
+	return sha256.Sum256([]byte(domain + q.QuoteIdx + "/" + q.TON.AuthorizationHash))
 }
 
 func tonQuotedWallet(raw, key string, seq uint32) (tonW5Account, error) {
@@ -56,7 +73,13 @@ func tonQuotedWallet(raw, key string, seq uint32) (tonW5Account, error) {
 func (q DepositPreview) TONRelay(userSig, platformSig []byte) (TONDepositRelay, error) {
 	var r TONDepositRelay
 	t := q.TON
-	if t == nil || q.AssetID != tonDepositAsset || q.GasAssetID != tonDepositAsset || q.PayDecimals != 9 || q.GasDecimals != 9 || !q.WalletFeePreview || q.Recipient != q.FeePayer || q.MaxGas != q.EstimatedGas || q.RelayAttached != decimal.New(TONDepositAttachmentNano, -9).String() || int64(t.ValidUntil)*1000 <= q.ExpiresAt || !rateSyntax.MatchString(q.PayQuantity) {
+	scale, attached := 9, int64(TONDepositAttachmentNano)
+	isToken := q.AssetID == TONDepositTestUSDT
+	if isToken {
+		scale = tonJettonDecimals
+		attached += tonJettonActionNano
+	}
+	if t == nil || (!isToken && q.AssetID != tonDepositAsset) || q.GasAssetID != tonDepositAsset || q.PayDecimals != scale || q.GasDecimals != 9 || !q.WalletFeePreview || q.Recipient != q.FeePayer || q.MaxGas != q.EstimatedGas || q.RelayAttached != decimal.New(attached, -9).String() || int64(t.ValidUntil)*1000 <= q.ExpiresAt || !rateSyntax.MatchString(q.PayQuantity) {
 		return r, errors.New("confirmed native TON relay quote required")
 	}
 	user, err := tonQuotedWallet(q.WalletAddress, t.UserKey, t.UserSeqno)
@@ -68,7 +91,18 @@ func (q DepositPreview) TONRelay(userSig, platformSig []byte) (TONDepositRelay, 
 		return r, err
 	}
 	amount, _ := decimal.NewFromString(q.PayQuantity)
-	nanos := amount.Shift(9)
+	var token *tonDepositJetton
+	if isToken {
+		code, err := tonDepositCell(t.JettonWalletCode)
+		if err != nil || base64.StdEncoding.EncodeToString(code.Hash()) != tonJettonWalletCode {
+			return r, errors.New("invalid quoted test Jetton code")
+		}
+		master := address.MustParseRawAddr(TONDepositTestMaster)
+		token = &tonDepositJetton{sender: jettonDepositAddress(user.addr, master, code), receiver: jettonDepositAddress(sponsor.addr, master, code)}
+	} else if t.JettonWalletCode != "" {
+		return r, errors.New("unexpected Jetton code")
+	}
+	nanos := amount.Shift(int32(scale))
 	if !nanos.IsInteger() || !nanos.IsPositive() || nanos.BigInt().BitLen() > 120 || user.addr.Equals(sponsor.addr) {
 		return r, errors.New("invalid TON deposit amount or payer")
 	}
@@ -76,7 +110,7 @@ func (q DepositPreview) TONRelay(userSig, platformSig []byte) (TONDepositRelay, 
 		return r, errors.New("invalid W5 signature length")
 	}
 	blank := make([]byte, 64)
-	unsigned, err := buildTONRelay(user, sponsor, nil, nanos.BigInt(), t.ValidUntil, blank, blank)
+	unsigned, err := buildTONRelay(user, sponsor, token, nanos.BigInt(), t.ValidUntil, blank, blank)
 	if err != nil {
 		return r, err
 	}
@@ -92,19 +126,24 @@ func (q DepositPreview) TONRelay(userSig, platformSig []byte) (TONDepositRelay, 
 	if len(ps) == 0 {
 		ps = blank
 	}
-	m, err := buildTONRelay(user, sponsor, nil, nanos.BigInt(), t.ValidUntil, us, ps)
+	m, err := buildTONRelay(user, sponsor, token, nanos.BigInt(), t.ValidUntil, us, ps)
 	if err != nil {
 		return r, err
 	}
 	if len(platformSig) > 0 && (len(userSig) == 0 || !ed25519.Verify(sponsor.key, m.platformPayload.Hash(), ps)) {
 		return r, errors.New("invalid TON platform signature")
 	}
-	return TONDepositRelay{Wire: m.external.ToBOC(), UserDigest: m.userPayload.Hash(), PlatformDigest: m.platformPayload.Hash(), AuthHash: hex.EncodeToString(m.authorization.Hash()), DispatchHash: hex.EncodeToString(m.dispatch.Hash()), Sender: user.addr.StringRaw(), Recipient: sponsor.addr.StringRaw(), Atoms: nanos.BigInt()}, nil
+	var jr *TONJettonRelay
+	if token != nil {
+		internal, notice, excess := tonJettonReceiptBodies(m.queryID, nanos.BigInt(), user, sponsor)
+		jr = &TONJettonRelay{token.sender.StringRaw(), token.receiver.StringRaw(), hex.EncodeToString(m.paymentBody.Hash()), hex.EncodeToString(internal.Hash()), hex.EncodeToString(notice.Hash()), hex.EncodeToString(excess.Hash())}
+	}
+	return TONDepositRelay{Jetton: jr, Wire: m.external.ToBOC(), UserDigest: m.userPayload.Hash(), PlatformDigest: m.platformPayload.Hash(), AuthHash: hex.EncodeToString(m.authorization.Hash()), DispatchHash: hex.EncodeToString(m.dispatch.Hash()), Sender: user.addr.StringRaw(), Recipient: sponsor.addr.StringRaw(), Atoms: nanos.BigInt()}, nil
 }
 
 func (s *Service) CheckTONDeposit(ctx context.Context, q DepositPreview, userSig, platformSig []byte) error {
-	route := s.quotes.ton[tonDepositAsset]
-	if !s.quotes.tonNativeExecution || route == nil || route.platform != q.FeePayer {
+	route := s.quotes.ton[q.AssetID]
+	if !s.quotes.tonExecution[q.AssetID] || route == nil || route.platform != q.FeePayer {
 		return apperror.New(apperror.Unprocessable, errors.New("TON testnet deposit route disabled or changed"))
 	}
 	return s.checkTONRelay(ctx, q, userSig, platformSig, route)
@@ -149,11 +188,23 @@ func (s *Service) checkTONRelay(ctx context.Context, q DepositPreview, userSig, 
 	if err != nil {
 		return err
 	}
-	pay := decimal.NewFromBigInt(r.Atoms, -9)
+	pay := decimal.NewFromBigInt(r.Atoms, -int32(q.PayDecimals))
+	balance := user.balance
+	var token *tonDepositJetton
+	if r.Jetton != nil {
+		token, err = s.tonDepositJetton(ctx, n, route.emulator, user, sponsor)
+		if err != nil {
+			return err
+		}
+		if token.sender.StringRaw() != r.Jetton.SenderWallet || token.receiver.StringRaw() != r.Jetton.ReceiverWallet {
+			return errors.New("quoted Jetton wallets changed")
+		}
+		balance = token.balance
+	}
 	if user.seqno != uint64(q.TON.UserSeqno) || sponsor.seqno != uint64(q.TON.PlatformSeqno) {
 		return apperror.New(apperror.Conflict, errors.New("TON W5 sequence changed"))
 	}
-	if user.balance.LessThan(pay) {
+	if balance.LessThan(pay) {
 		return apperror.New(apperror.InsufficientBalance, nil)
 	}
 	if len(platformSig) == 0 {
@@ -164,7 +215,7 @@ func (s *Service) checkTONRelay(ctx context.Context, q DepositPreview, userSig, 
 		return err
 	}
 	// Signatures have been checked locally. An emulator must never receive a spendable authorization.
-	m, err := buildTONDepositMessage(user, sponsor, nil, r.Atoms, q.TON.ValidUntil)
+	m, err := buildTONDepositMessage(user, sponsor, token, r.Atoms, q.TON.ValidUntil)
 	if err != nil {
 		return err
 	}
@@ -172,12 +223,13 @@ func (s *Service) checkTONRelay(ctx context.Context, q DepositPreview, userSig, 
 	if err = s.request(ctx, n, route.emulator, "/v2/traces/emulate", url.Values{"ignore_signature_check": {"true"}}, map[string]string{"boc": base64.StdEncoding.EncodeToString(m.external.ToBOC())}, &trace); err != nil {
 		return err
 	}
-	b, err := trace.budget(m, user, sponsor, nil, pay, at)
+	b, err := trace.budget(m, user, sponsor, token, pay, at)
 	if err != nil {
 		return err
 	}
 	cap, err := decimal.NewFromString(q.MaxGas)
-	if err != nil || b.network.GreaterThan(cap) || sponsor.balance.LessThan(decimal.New(TONDepositAttachmentNano, -9).Add(b.dispatch)) {
+	attached, _ := decimal.NewFromString(q.RelayAttached)
+	if err != nil || b.network.GreaterThan(cap) || sponsor.balance.LessThan(attached.Add(b.dispatch)) {
 		return errors.New("signed TON execution exceeds confirmed fee or platform balance")
 	}
 	return nil

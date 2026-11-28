@@ -5,6 +5,8 @@ import { depositTokenMint, solanaDepositSOL, solanaDepositUSDC, solanaTestUSDTPr
 import { nileDepositUSDT } from './tron-deposit-asset';
 import { atomicAmount } from './api';
 
+import { testJettonAsset } from './ton-deposit-asset';
+
 const depositQuoteTTLms = 30_000;
 
 export const validDepositTarget = (value: string) => /^(0|[1-9]\d{0,17})(\.\d{1,2})?$/.test(value) && (atomicAmount(value, 2) ?? 0n) > 0n;
@@ -61,13 +63,17 @@ export function previewDeposit(asset: ChainAsset, native: ChainAsset, target: st
     const validTron = !hasTron || ((tronTRX || (tronToken && asset.decimals === 6 && asset.id === nileDepositUSDT)) && !!walletAddress && !!q.quoteIdx && q.maxGas === '0' &&
       typeof q.tronRefBlock === 'string' && /^[a-f0-9]{64}$/.test(q.tronRefBlock) && Number.isSafeInteger(q.tronRefTime) && q.tronRefTime! > 0 &&
       [q.tronRecipient, q.tronResourceOwner].every(a => typeof a === 'string' && /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a) && a !== walletAddress));
-    const hasTonTerms = [q.tonValidUntil, q.tonUserSeqno, q.tonRecipient, q.tonAuthorizationHash, q.tonSimulatedGas].some(v => v !== undefined);
-    const validTon = !hasTonTerms || (tonRelay && asset.id === native.id && asset.decimals === 9 && !!q.quoteIdx &&
+    const hasTonTerms = [q.tonValidUntil, q.tonUserSeqno, q.tonRecipient, q.tonAuthorizationHash, q.tonSimulatedGas, q.tonJettonWalletCode, q.tonSenderPaidGas].some(v => v !== undefined);
+    const senderPaid = units(q.tonSenderPaidGas, 9);
+    const tonSigningAsset = tonJetton ? senderPaid !== undefined && senderPaid <= (units(q.tonSimulatedGas, 9) ?? 0n) && asset.id === testJettonAsset && asset.decimals === 6 && q.relayAttached === '0.053' &&
+      typeof q.tonJettonWalletCode === 'string' && /^[0-9a-f]{2,8192}$/.test(q.tonJettonWalletCode) :
+      asset.id === native.id && asset.decimals === 9 && q.tonJettonWalletCode === undefined && q.tonSenderPaidGas === undefined && q.relayAttached === '0.003';
+    const validTon = !hasTonTerms || (tonRelay && tonSigningAsset && !!q.quoteIdx &&
       Number.isSafeInteger(q.tonUserSeqno) && q.tonUserSeqno! > 0 && q.tonUserSeqno! <= 0xffffffff &&
       Number.isSafeInteger(q.tonValidUntil) && q.tonValidUntil! > q.expiresAt / 1000 && q.tonValidUntil! <= 0xffffffff &&
       typeof q.tonRecipient === 'string' && /^0:[a-f0-9]{64}$/.test(q.tonRecipient) &&
       typeof q.tonAuthorizationHash === 'string' && /^[a-f0-9]{64}$/.test(q.tonAuthorizationHash) &&
-      (units(q.tonSimulatedGas, 9) ?? 0n) > 0n && units(q.tonSimulatedGas, 9)! <= (units(q.maxGas, 9) ?? 0n) && q.relayAttached === '0.003');
+      (units(q.tonSimulatedGas, 9) ?? 0n) > 0n && units(q.tonSimulatedGas, 9)! <= (units(q.maxGas, 9) ?? 0n));
     if (!validTon || !validTron || !validBase || !solTerms || !validOffer || !validExcess || !validRelay || !validEnergy || !validBandwidth || !validFunding || !validSource || q.assetId !== asset.id || q.gasAssetId !== native.id || !targetCents || units(q.targetUsd, 2) !== targetCents ||
       net === undefined || net < targetCents || (units(q.payQuantity, asset.decimals) ?? 0n) <= 0n || (units(q.usdPerCoin, 18) ?? 0n) <= 0n ||
       units(q.estimatedGas, native.decimals) === undefined || units(q.gasUsd, native.decimals + 18) === undefined ||

@@ -16,6 +16,7 @@ import (
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/logx"
+	"golang.org/x/time/rate"
 )
 
 const queryRateKey = "chain_assets:query:user:"
@@ -107,13 +108,14 @@ func (l *RedisLimiter) Allow(ctx context.Context, user int64) error {
 }
 
 type Service struct {
-	marketRates MarketRateReader
-	quotes      depositBook
-	networks    []Network
-	endpoints   map[string]Endpoint
-	client      *http.Client
-	timeout     time.Duration
-	limiter     Limiter
+	publicTonAPI *rate.Limiter
+	marketRates  MarketRateReader
+	quotes       depositBook
+	networks     []Network
+	endpoints    map[string]Endpoint
+	client       *http.Client
+	timeout      time.Duration
+	limiter      Limiter
 }
 
 func New(c Config, limiter Limiter) (*Service, error) { return NewWithMarketRates(c, limiter, nil) }
@@ -132,7 +134,7 @@ func NewWithMarketRates(c Config, limiter Limiter, rates MarketRateReader) (*Ser
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = 4
 	transport.MaxConnsPerHost = 16
-	s := &Service{marketRates: rates, networks: catalog(), endpoints: map[string]Endpoint{}, timeout: timeout, limiter: limiter,
+	s := &Service{publicTonAPI: rate.NewLimiter(rate.Every(tonPublicRequestInterval), 1), marketRates: rates, networks: catalog(), endpoints: map[string]Endpoint{}, timeout: timeout, limiter: limiter,
 		client: &http.Client{Transport: transport, Timeout: timeout, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}}
 	for _, e := range c.Networks {
 		s.endpoints[e.Network] = e

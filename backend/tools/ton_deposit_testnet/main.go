@@ -38,6 +38,7 @@ func run() error {
 	emulator := flag.String("tonapi", "https://testnet.tonapi.io", "TonAPI testnet for pre-broadcast emulation with placeholder signatures")
 	keyFile := flag.String("platform-phrase-file", "", "dedicated test W5 mnemonic file (first signature only)")
 	gross := flag.Int64("max-gross-nano", 0, "maximum user transfer in nanoTON")
+	jetton := flag.Int64("max-jetton-atoms", 0, "maximum test USDT in six-decimal units (Jetton orders only)")
 	fee := flag.Int64("max-fee-nano", 0, "maximum authorized network fee in nanoTON")
 	idx := flag.String("quote", "", "original TON Testnet deposit quote ID")
 	rpc := flag.String("rpc", "https://testnet.toncenter.com", "trusted TON Center testnet")
@@ -63,10 +64,10 @@ func run() error {
 	if err = db.QueryRowContext(ctx, "SELECT version FROM schema_migrations_business WHERE dirty=0").Scan(&v); err != nil {
 		return err
 	}
-	if v < 47 {
-		return errors.New("TON deposits require clean business schema >=47")
+	if v < 48 {
+		return errors.New("TON deposits require clean business schema >=48")
 	}
-	node, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TONTestnet, URL: *rpc}}}, nil)
+	node, err := chainassets.New(chainassets.Config{Timeout: 20 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TONTestnet, TestUSDTContract: chainassets.TONDepositTestMaster, URL: *rpc}}}, nil)
 	if err != nil {
 		return err
 	}
@@ -85,7 +86,7 @@ func run() error {
 		}
 		defer clear(key)
 	}
-	b := deposit.TonBudget{Sender: *payer, Recipient: *platform, MaxGrossNano: *gross, MaxFeeNano: *fee}
+	b := deposit.TonBudget{Sender: *payer, Recipient: *platform, MaxGrossNano: *gross, MaxJettonAtoms: *jetton, MaxFeeNano: *fee}
 	exec := deposit.NewTonExecution(conn, transaction.New(db), account.New(accounts.NewUserAccountModel(conn)), operator{node, chainassets.TONDepositFeeConfig{PlatformWallet: *platform, TonAPIURL: *emulator}})
 	for {
 		o, err := exec.Step(ctx, *idx, b, key)

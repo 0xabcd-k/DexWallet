@@ -22,7 +22,10 @@ import (
 
 const tonCreditAction account.Action = "credit_ton_native"
 
+const tonJettonCreditAction account.Action = "credit_ton_test_usdt"
+
 type TonDepositNetwork interface {
+	ReadTONJettonDepositEvidence(context.Context, chainassets.TONDepositRelay) (chainassets.TONEvidence, error)
 	CheckTONDeposit(context.Context, chainassets.DepositPreview, []byte, []byte) error
 	ReadTONDepositEvidence(context.Context, string) (chainassets.TONEvidence, error)
 	SubmitTON(context.Context, string, []byte) error
@@ -39,8 +42,8 @@ func NewTonExecution(conn sqlx.SqlConn, db *transaction.Runner, ledger *account.
 }
 
 type TonBudget struct {
-	Sender, Recipient        string
-	MaxGrossNano, MaxFeeNano int64
+	Sender, Recipient                        string
+	MaxGrossNano, MaxJettonAtoms, MaxFeeNano int64
 }
 
 func (s *TonExecution) Step(ctx context.Context, idx string, b TonBudget, key ed25519.PrivateKey) (*model.TonDepositOrder, error) {
@@ -67,7 +70,11 @@ func (s *TonExecution) Step(ctx context.Context, idx string, b TonBudget, key ed
 	if err != nil {
 		return o, err
 	}
-	if r.AuthHash != o.AuthHash {
+	var paymentKey sql.NullString
+	if r.Jetton != nil {
+		paymentKey = sql.NullString{String: chainassets.TONJettonPaymentKey(r.Sender, r.Jetton.PaymentHash), Valid: true}
+	}
+	if paymentKey != o.JettonPaymentKey || r.AuthHash != o.AuthHash {
 		return o, errors.New("incorrect persisted TON authorization hash")
 	}
 	userSig, _ := hex.DecodeString(o.UserSignature)
@@ -87,7 +94,11 @@ func (s *TonExecution) Step(ctx context.Context, idx string, b TonBudget, key ed
 		if time.Now().Unix() >= int64(q.TON.ValidUntil) {
 			return review()
 		}
-		if o.State != Accepted || len(key) != ed25519.PrivateKeySize || b.Sender != r.Sender || b.Recipient != r.Recipient || b.MaxGrossNano <= 0 || r.Atoms.Cmp(big.NewInt(b.MaxGrossNano)) > 0 || cap.GreaterThan(decimal.New(b.MaxFeeNano, -9)) {
+		limit := b.MaxGrossNano
+		if r.Jetton != nil {
+			limit = b.MaxJettonAtoms
+		}
+		if o.State != Accepted || len(key) != ed25519.PrivateKeySize || b.Sender != r.Sender || b.Recipient != r.Recipient || limit <= 0 || r.Atoms.Cmp(big.NewInt(limit)) > 0 || cap.GreaterThan(decimal.New(b.MaxFeeNano, -9)) {
 			return o, errors.New("matching test sponsor, payer, recipient and explicit TON budgets required")
 		}
 		sig := ed25519.Sign(key, r.PlatformDigest)
@@ -110,14 +121,25 @@ func (s *TonExecution) Step(ctx context.Context, idx string, b TonBudget, key ed
 	if err != nil || r.DispatchHash != o.DispatchHash.String {
 		return o, errors.New("signed TON dispatch differs from stored hash")
 	}
-	e, err := s.chain.ReadTONDepositEvidence(ctx, r.DispatchHash)
-	if err != nil {
-		return o, err
+	var received chainreceipt.Receipt
+	var fee *big.Int
+	var costs *chainreceipt.TONJettonCosts
+	if r.Jetton != nil {
+		e, readErr := s.chain.ReadTONJettonDepositEvidence(ctx, r)
+		if readErr != nil {
+			return o, readErr
+		}
+		received, fee, costs, err = chainreceipt.VerifyTONJettonDeposit(e, r)
+	} else {
+		e, readErr := s.chain.ReadTONDepositEvidence(ctx, r.DispatchHash)
+		if readErr != nil {
+			return o, readErr
+		}
+		received, fee, err = chainreceipt.VerifyTONDeposit(e, r)
 	}
-	received, fee, err := chainreceipt.VerifyTONDeposit(e, r)
 	switch {
 	case err == nil || (errors.Is(err, chainreceipt.ErrExecutionFailed) && fee != nil):
-		if err = s.settle(ctx, o, record.UserId, q, received, fee, cap, err == nil); err != nil {
+		if err = s.settle(ctx, o, record.UserId, q, received, fee, costs, cap, err == nil); err != nil {
 			return o, err
 		}
 		return rows.FindOne(ctx, o.Id)
@@ -147,7 +169,7 @@ func (s *TonExecution) Step(ctx context.Context, idx string, b TonBudget, key ed
 	return o, s.chain.SubmitTON(ctx, chainassets.TONTestnet, r.Wire)
 }
 
-func (s *TonExecution) settle(ctx context.Context, o *model.TonDepositOrder, user int64, q chainassets.DepositPreview, r chainreceipt.Receipt, fee *big.Int, cap decimal.Decimal, success bool) error {
+func (s *TonExecution) settle(ctx context.Context, o *model.TonDepositOrder, user int64, q chainassets.DepositPreview, r chainreceipt.Receipt, fee *big.Int, costs *chainreceipt.TONJettonCosts, cap decimal.Decimal, success bool) error {
 	if fee == nil || fee.Sign() <= 0 || !fee.IsInt64() {
 		return errors.New("invalid TON trace fee")
 	}
@@ -164,36 +186,55 @@ func (s *TonExecution) settle(ctx context.Context, o *model.TonDepositOrder, use
 		if cur.Failed != 0 || cur.State == TonCredited || cur.Receive.Valid {
 			return nil
 		}
+		var excess, reserve, surplus, senderPaid sql.NullInt64
+		action := tonCreditAction
+		if costs != nil {
+			excess = sql.NullInt64{Int64: costs.Excess, Valid: true}
+			reserve = sql.NullInt64{Int64: costs.Reserve, Valid: true}
+			surplus = sql.NullInt64{Int64: costs.Surplus, Valid: true}
+			senderPaid = sql.NullInt64{Int64: costs.SenderPaid, Valid: true}
+			action = tonJettonCreditAction
+		}
 		if !success || cost.GreaterThan(cap) {
-			_, err := tx.ExecCtx(ctx, "UPDATE ton_deposit_order SET state=?,receive_hash=?,actual_fee_nano=? WHERE id=?", TonReview, r.Transaction.Signature, fee.Int64(), o.Id)
+			_, err := tx.ExecCtx(ctx, "UPDATE ton_deposit_order SET state=?,receive_hash=?,actual_fee_nano=?,jetton_excess_nano=?,jetton_reserve_nano=?,jetton_sender_fee_nano=?,relay_surplus_nano=? WHERE id=?", TonReview, r.Transaction.Signature, fee.Int64(), excess, reserve, senderPaid, surplus, o.Id)
 			return err
 		}
 		var assigned bool
-		if err := tx.QueryRowCtx(ctx, &assigned, `SELECT EXISTS(SELECT 1 FROM chain_observed_transaction t JOIN chain_transfer_event e ON e.transaction_id=t.id JOIN chain_receive_request c ON c.matched_event_id=e.id WHERE t.network=? AND t.signature=? AND e.event_kind=?)`, chainassets.TONTestnet, r.Transaction.Signature, chainreceipt.TONIncoming); err != nil {
+		if err := tx.QueryRowCtx(ctx, &assigned, `SELECT EXISTS(SELECT 1 FROM chain_observed_transaction t JOIN chain_transfer_event e ON e.transaction_id=t.id JOIN chain_receive_request c ON c.matched_event_id=e.id WHERE t.network=? AND t.signature=? AND e.event_kind=?)`, chainassets.TONTestnet, r.Transaction.Signature, r.Event.Kind); err != nil {
 			return err
 		}
 		if assigned {
 			return chainreceipt.ErrReceiveConflict
 		}
-		rate, err := decimal.NewFromString(q.USDPerCoin)
-		if err != nil || !rate.IsPositive() || q.GasUSDPerCoin != q.USDPerCoin {
-			return errors.New("invalid locked TON/USD rate")
-		}
-		gross, err := decimal.NewFromString(r.Event.Atoms)
+		net, err := tonDepositProceeds(q, r.Event.Atoms, cost, senderPaid.Int64)
 		if err != nil {
 			return err
 		}
-		usd, _ := accounts.Lookup(accounts.KindUSD)
-		net := gross.Shift(-9).Sub(cost).Mul(rate).Truncate(usd.Scale)
-		minimum, err := decimal.NewFromString(q.NetUSD)
-		if err != nil || !minimum.IsPositive() || net.LessThan(minimum) {
-			return errors.New("TON proceeds below confirmed quote")
-		}
-		voucher, err := s.ledger.Post(ctx, tx, account.Posting{Source: account.Source{Type: account.BusinessDeposit, ID: o.Id, Action: tonCreditAction}, Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(user, accounts.KindUSD, net)}})
+		voucher, err := s.ledger.Post(ctx, tx, account.Posting{Source: account.Source{Type: account.BusinessDeposit, ID: o.Id, Action: action}, Entries: []account.Entry{{System: account.SystemUSDClearing, Side: account.SideDebit, Amount: net}, account.Credit(user, accounts.KindUSD, net)}})
 		if err != nil {
 			return err
 		}
-		_, err = tx.ExecCtx(ctx, "UPDATE ton_deposit_order SET state=?,receive_hash=?,actual_fee_nano=?,credit_voucher_id=?,credited_usd=? WHERE id=?", TonCredited, r.Transaction.Signature, fee.Int64(), voucher, net, o.Id)
+		_, err = tx.ExecCtx(ctx, "UPDATE ton_deposit_order SET state=?,receive_hash=?,actual_fee_nano=?,jetton_excess_nano=?,jetton_reserve_nano=?,jetton_sender_fee_nano=?,relay_surplus_nano=?,credit_voucher_id=?,credited_usd=? WHERE id=?", TonCredited, r.Transaction.Signature, fee.Int64(), excess, reserve, senderPaid, surplus, voucher, net, o.Id)
 		return err
 	})
+}
+
+func tonDepositProceeds(q chainassets.DepositPreview, atoms string, total decimal.Decimal, senderPaidNano int64) (decimal.Decimal, error) {
+	recoverable := total.Sub(decimal.New(senderPaidNano, -9))
+	rate, err := decimal.NewFromString(q.USDPerCoin)
+	gasRate, gasErr := decimal.NewFromString(q.GasUSDPerCoin)
+	if err != nil || gasErr != nil || !gasRate.IsPositive() || !rate.IsPositive() || (q.AssetID != chainassets.TONDepositTestUSDT && q.GasUSDPerCoin != q.USDPerCoin) {
+		return decimal.Zero, errors.New("invalid locked TON/USD rate")
+	}
+	gross, err := decimal.NewFromString(atoms)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	usd, _ := accounts.Lookup(accounts.KindUSD)
+	net := gross.Shift(-int32(q.PayDecimals)).Mul(rate).Sub(recoverable.Mul(gasRate)).Truncate(usd.Scale)
+	minimum, err := decimal.NewFromString(q.NetUSD)
+	if err != nil || !minimum.IsPositive() || net.LessThan(minimum) {
+		return decimal.Zero, errors.New("TON proceeds below confirmed quote")
+	}
+	return net, nil
 }

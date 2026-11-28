@@ -408,6 +408,8 @@ export interface DepositQuoteConfirmRequest {
 }
 
 export interface DepositQuoteData {
+	tonSenderPaidGas?: string
+	tonJettonWalletCode?: string
 	tonSimulatedGas?: string
 	tonValidUntil?: number
 	tonUserSeqno?: number
@@ -1180,6 +1182,11 @@ export interface TonDepositOrderData {
 	state: 'awaiting_signature' | 'expired' | 'accepted' | 'signed' | 'review' | 'credited'
 	dispatchBodyHash?: string
 	receiveTxHash?: string
+	jettonSenderFeeNano?: string
+	recoverableFeeNano?: string
+	jettonExcessNano?: string
+	jettonReserveNano?: string
+	relaySurplusNano?: string
 	actualFeeNano?: string
 	creditedUsd?: string
 }

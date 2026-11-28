@@ -432,13 +432,18 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 		}
 	}
 	var tonAuth string
-	if k.Network == chainassets.TONTestnet && k.Kind == TONIncoming && addr.Route != TONMemo {
+	tonColumn := "auth_hash"
+	if k.Network == chainassets.TONTestnet && (k.Kind == TONIncoming || (k.Kind == TONJetton && ev.AssetId == chainassets.TONDepositTestUSDT)) && addr.Route != TONMemo {
 		var version int
 		if err := a.conn.QueryRowCtx(ctx, &version, "SELECT version FROM schema_migrations_business WHERE dirty=0"); err != nil {
 			return empty, err
 		}
-		if version >= 47 {
+		if (version >= 47 && k.Kind == TONIncoming) || (version >= 48 && k.Kind == TONJetton) {
 			tonAuth, err = tonDepositParentHash(tx.EvidenceJson)
+			if k.Kind == TONJetton && tonAuth != "" {
+				tonColumn = "jetton_payment_key"
+				tonAuth = chainassets.TONJettonPaymentKey(ev.SourceOwner, tonAuth)
+			}
 			if err != nil {
 				return empty, err
 			}
@@ -461,7 +466,7 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
                 SELECT 1 FROM chain_receive_address WHERE network=? AND owner=?)`
 		args := []any{ev.Id, row.Id, k.Network, ev.SourceOwner}
 		if tonAuth != "" {
-			query += " AND NOT EXISTS (SELECT 1 FROM ton_deposit_order WHERE auth_hash=?)"
+			query += " AND NOT EXISTS (SELECT 1 FROM ton_deposit_order WHERE " + tonColumn + "=?)"
 			args = append(args, tonAuth)
 		}
 		if nileReservation {
@@ -482,7 +487,7 @@ func (a *Attribution) Match(ctx context.Context, hint EventKey) (ReceiveRequest,
 	}
 	if tonAuth != "" && found.Event == nil {
 		var reserved bool
-		if err := a.conn.QueryRowCtx(ctx, &reserved, "SELECT EXISTS(SELECT 1 FROM ton_deposit_order WHERE auth_hash=?)", tonAuth); err != nil {
+		if err := a.conn.QueryRowCtx(ctx, &reserved, "SELECT EXISTS(SELECT 1 FROM ton_deposit_order WHERE "+tonColumn+"=?)", tonAuth); err != nil {
 			return empty, err
 		}
 		if reserved {

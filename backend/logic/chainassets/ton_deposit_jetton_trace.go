@@ -38,7 +38,7 @@ func (t *tonDepositJetton) budget(b tonDepositBudget, tr tonDepositTrace, w5 tlb
 		return b, invalid("Jetton receiver state changed during estimate")
 	}
 	atoms := pay.Shift(tonJettonDecimals).BigInt()
-	internal := cell.BeginCell().MustStoreUInt(tonJettonInternalTransfer, 32).MustStoreUInt(m.queryID, 64).MustStoreBigCoins(atoms).MustStoreAddr(user.addr).MustStoreAddr(platform.addr).MustStoreCoins(tonJettonForwardNano).MustStoreBoolBit(false).EndCell()
+	internal, notify, excess := tonJettonReceiptBodies(m.queryID, atoms, user, platform)
 	in, err := linkedTONMessage(sender, receiver, t.sender, t.receiver, true, internal)
 	if err != nil {
 		return b, err
@@ -51,10 +51,14 @@ func (t *tonDepositJetton) budget(b tonDepositBudget, tr tonDepositTrace, w5 tlb
 		return b, invalid("unexpected Jetton recipient StateInit")
 	}
 	funding := decimal.NewFromBigInt(in.Amount.Nano(), -9)
-	b.network = b.dispatch.Add(b.execution).Add(decimal.NewFromBigInt(sender.TotalFees.Coins.Nano(), -9)).Add(decimal.NewFromBigInt(in.FwdFee.Nano(), -9))
+	senderCost := decimal.NewFromBigInt(sender.TotalFees.Coins.Nano(), -9).Add(decimal.NewFromBigInt(in.FwdFee.Nano(), -9))
+	// The sending Jetton contract may use existing TON for accumulated rent.
+	b.senderPaid = decimal.Max(decimal.Zero, senderCost.Add(funding).Sub(decimal.New(tonJettonActionNano, -9)))
+	if b.senderPaid.GreaterThan(senderCost) {
+		return b, invalid("unexpected redistribution from sender Jetton reserve")
+	}
+	b.network = b.dispatch.Add(b.execution).Add(senderCost)
 	receiverCost := decimal.NewFromBigInt(receiver.TotalFees.Coins.Nano(), -9)
-	notify := cell.BeginCell().MustStoreUInt(tonJettonNotification, 32).MustStoreUInt(m.queryID, 64).MustStoreBigCoins(atoms).MustStoreAddr(user.addr).MustStoreBoolBit(false).EndCell()
-	excess := cell.BeginCell().MustStoreUInt(tonJettonExcess, 32).MustStoreUInt(m.queryID, 64).EndCell()
 	var notified bool
 	for _, leaf := range recvTrace.Children {
 		tx, err := leaf.transaction(platform.addr, 0, head, tonNotifyOwner)
@@ -96,4 +100,11 @@ func (t *tonDepositJetton) budget(b tonDepositBudget, tr tonDepositTrace, w5 tlb
 	// pre-existing storage consumed. Only a positive addition is shown as funding.
 	b.reserve = decimal.Max(decimal.Zero, funding.Sub(receiverCost).Sub(b.excess).Sub(decimal.New(tonJettonForwardNano, -9)))
 	return b, nil
+}
+
+func tonJettonReceiptBodies(query uint64, atoms *big.Int, user, platform tonW5Account) (*cell.Cell, *cell.Cell, *cell.Cell) {
+	internal := cell.BeginCell().MustStoreUInt(tonJettonInternalTransfer, 32).MustStoreUInt(query, 64).MustStoreBigCoins(atoms).MustStoreAddr(user.addr).MustStoreAddr(platform.addr).MustStoreCoins(tonJettonForwardNano).MustStoreBoolBit(false).EndCell()
+	notify := cell.BeginCell().MustStoreUInt(tonJettonNotification, 32).MustStoreUInt(query, 64).MustStoreBigCoins(atoms).MustStoreAddr(user.addr).MustStoreBoolBit(false).EndCell()
+	excess := cell.BeginCell().MustStoreUInt(tonJettonExcess, 32).MustStoreUInt(query, 64).EndCell()
+	return internal, notify, excess
 }

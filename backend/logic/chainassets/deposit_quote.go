@@ -16,6 +16,7 @@ import (
 // Gas estimates are in the network's native coin. Rate inputs come either
 // from the static test sheet (Unix seconds) or from the shared market table.
 type DepositQuoteConfig struct {
+	TONTestUSDTExecution      bool                  `json:",optional"`
 	TONNativeExecution        bool                  `json:",optional"`
 	TRONTestUSDTExecution     bool                  `json:",optional"`
 	TRONTRXExecution          bool                  `json:",optional"`
@@ -59,7 +60,7 @@ type depositAsset struct {
 }
 
 type depositBook struct {
-	tonNativeExecution            bool
+	tonExecution                  map[string]bool
 	tronExecution                 map[string]bool
 	baseETHWindow, baseUSDCWindow time.Duration
 	solReviewAfter                map[string]time.Duration
@@ -112,7 +113,10 @@ func newDepositBook(c *DepositQuoteConfig, networks []Network, testMint, tonMast
 	if c.TONNativeExecution && c.TONNative == nil {
 		return book, fmt.Errorf("TON execution requires a native testnet relay route")
 	}
-	book = depositBook{tonNativeExecution: c.TONNativeExecution, tronExecution: map[string]bool{TRONNileTRX: c.TRONTRXExecution, nileDepositUSDTID: c.TRONTestUSDTExecution}, baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
+	if c.TONTestUSDTExecution && (c.TONTestUSDT == nil || tonMaster != TONDepositTestMaster) {
+		return book, fmt.Errorf("Jetton execution requires the canonical test USDT relay route")
+	}
+	book = depositBook{tonExecution: map[string]bool{tonDepositAsset: c.TONNativeExecution, TONDepositTestUSDT: c.TONTestUSDTExecution}, tronExecution: map[string]bool{TRONNileTRX: c.TRONTRXExecution, nileDepositUSDTID: c.TRONTestUSDTExecution}, baseETHWindow: c.BaseETHExecutionWindow, baseUSDCWindow: c.BaseUSDCExecutionWindow, solReviewAfter: map[string]time.Duration{solanaDepositAsset: c.SolanaSOLReviewAfter, SolanaDevnetUSDC: c.SolanaUSDCReviewAfter}, market: c.Market, version: c.Version, asOf: c.AsOf, until: c.ValidUntil, assets: make(map[string]depositAsset)}
 	catalog := make(map[string]depositAsset)
 	for _, n := range networks {
 		if n.Testnet {

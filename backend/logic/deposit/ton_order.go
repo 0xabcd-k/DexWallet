@@ -115,7 +115,11 @@ func (s *TonOrders) Authorize(ctx context.Context, actor user.Actor, idx, signat
 		if u.PaymentRestrictedUntil.Valid && now.Before(u.PaymentRestrictedUntil.Time) {
 			return apperror.New(apperror.PaymentRestricted, nil)
 		}
-		_, err = lockedRows.Insert(ctx, &model.TonDepositOrder{QuoteIdx: idx, AuthHash: relay.AuthHash, UserSignature: signature, OrderSignature: orderSig, State: Accepted, AcceptedAt: now})
+		var paymentKey sql.NullString
+		if relay.Jetton != nil {
+			paymentKey = sql.NullString{String: chainassets.TONJettonPaymentKey(relay.Sender, relay.Jetton.PaymentHash), Valid: true}
+		}
+		_, err = lockedRows.Insert(ctx, &model.TonDepositOrder{JettonPaymentKey: paymentKey, QuoteIdx: idx, AuthHash: relay.AuthHash, UserSignature: signature, OrderSignature: orderSig, State: Accepted, AcceptedAt: now})
 		var duplicate *mysql.MySQLError
 		if errors.As(err, &duplicate) && duplicate.Number == 1062 {
 			return apperror.New(apperror.Conflict, errors.New("TON transaction already belongs to a deposit"))

@@ -1,3 +1,4 @@
+import jettonDeposit from '../../../backend/logic/chainreceipt/testdata/ton-self-deposit-jetton-repeat.json';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createAppI18n, I18nextProvider } from '@dexwallet/i18n';
@@ -408,4 +409,34 @@ it('shows the W5 fee limit before confirmation and the final trace fee on the cr
   expect(screen.getByText('1163296 nanoTON')).toBeInTheDocument();
   expect(screen.getByRole('link')).toHaveAttribute('href', '/records?kind=usd_balance');
   expect(screen.queryByRole('button', { name: 'Authorize TON deposit' })).toBeNull();
+});
+
+it('confirms a test Jetton quote and shows the existing wallet fee separately from the recoverable fee', async () => {
+  const q = jettonDeposit.Quote, now = Date.now();
+  const native = { id: q.GasAssetID, symbol: 'TON', origin: 'native' as const, contract: '', decimals: 9 };
+  const asset = { id: q.AssetID, symbol: 'USDT', origin: 'test_fixture' as const, contract: q.AssetID.slice('ton-testnet:usdt:'.length), decimals: 6 };
+  const terms = { ...quote(now), assetId: asset.id, gasAssetId: native.id, quoteIdx: q.QuoteIdx, targetUsd: q.TargetUSD, netUsd: q.NetUSD,
+    usdPerCoin: q.USDPerCoin, payQuantity: q.PayQuantity, gasUsd: q.GasUSD, estimatedGas: q.EstimatedGas, maxGas: q.MaxGas,
+    walletAddress: q.WalletAddress, walletFeePreview: true, emulatedMessageHash: q.EmulatedMessageHash, tonRecipient: q.Recipient,
+    tonAuthorizationHash: q.TON.AuthorizationHash, tonUserSeqno: q.TON.UserSeqno, tonValidUntil: Math.floor(now / 1000) + 300,
+    tonSimulatedGas: q.TON.SimulatedGas, tonSenderPaidGas: q.TON.SenderPaidGas, tonJettonWalletCode: q.TON.JettonWalletCode,
+    relayAttached: q.RelayAttached, relaySurplus: q.RelaySurplus, jettonExcess: q.JettonExcess, accountFunding: q.AccountFunding, accountFundingUsd: q.AccountFundingUSD };
+  vi.spyOn(client, 'userRequest').mockImplementation(async (path, decode) => {
+    if (path.endsWith('/preview')) return decode({ data: terms });
+    if (path.endsWith('/confirm')) return decode({ data: { quote: terms, confirmedAt: now + 1 } });
+    return decode({ data: { quoteIdx: q.QuoteIdx, state: 'credited', dispatchBodyHash: 'd'.repeat(64), receiveTxHash: 'e'.repeat(64),
+      actualFeeNano: '3546798', jettonSenderFeeNano: '12', recoverableFeeNano: '3546786', jettonExcessNano: '47786383', jettonReserveNano: '0',
+      relaySurplusNano: '2526650', creditedUsd: '0.01' } });
+  });
+  const i18n = await createAppI18n('user', appResources, 'en');
+  render(<MemoryRouter><I18nextProvider i18n={i18n}><DepositEstimate asset={asset} native={native} target="0.01" walletAddress={q.WalletAddress}
+    local={{ userIdx: 'self', walletId: 'w5' }}/></I18nextProvider></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Get network fee for this wallet' }));
+  expect(await screen.findByText(q.TON.SenderPaidGas + ' TON')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm quote' }));
+  expect(await screen.findByRole('button', { name: 'Authorize test USDT deposit' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Check TON deposit' }));
+  expect(await screen.findByText('3546786 nanoTON')).toBeInTheDocument();
+  for (const amount of ['12','3546798','47786383','2526650','0']) expect(screen.getByText(amount + ' nanoTON')).toBeInTheDocument();
+  expect(screen.getByRole('link')).toHaveAttribute('href', '/records?kind=usd_balance');
 });

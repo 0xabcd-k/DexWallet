@@ -1193,6 +1193,8 @@ type DepositQuoteRequest {
     WalletAddress string `json:"walletAddress,optional"`
 }
 type DepositQuoteData {
+    TonSenderPaidGas string `json:"tonSenderPaidGas,optional,omitempty"`
+    TonJettonWalletCode string `json:"tonJettonWalletCode,optional,omitempty"`
     TonSimulatedGas string `json:"tonSimulatedGas,optional,omitempty"`
     TonValidUntil int64 `json:"tonValidUntil,optional,omitempty"`
     TonUserSeqno int64 `json:"tonUserSeqno,optional,omitempty"`
@@ -1283,6 +1285,11 @@ type TonDepositOrderData {
     State string `json:"state,options=awaiting_signature|expired|accepted|signed|review|credited"`
     DispatchBodyHash string `json:"dispatchBodyHash,optional,omitempty"`
     ReceiveTxHash string `json:"receiveTxHash,optional,omitempty"`
+    JettonSenderFeeNano string `json:"jettonSenderFeeNano,optional,omitempty"`
+    RecoverableFeeNano string `json:"recoverableFeeNano,optional,omitempty"`
+    JettonExcessNano string `json:"jettonExcessNano,optional,omitempty"`
+    JettonReserveNano string `json:"jettonReserveNano,optional,omitempty"`
+    RelaySurplusNano string `json:"relaySurplusNano,optional,omitempty"`
     ActualFeeNano string `json:"actualFeeNano,optional,omitempty"`
     CreditedUsd string `json:"creditedUsd,optional,omitempty"`
 }

@@ -54,6 +54,12 @@ func (s *Service) request(ctx context.Context, n Network, e Endpoint, path strin
 		}
 		req.Header.Set(header, e.APIKey)
 	}
+	// Public TonAPI applies its quota across quote, admission and pre-broadcast requests.
+	if req.URL.Hostname() == "testnet.tonapi.io" && e.APIKey == "" {
+		if err := s.publicTonAPI.Wait(ctx); err != nil {
+			return err
+		}
+	}
 	response, err := s.client.Do(req)
 	if err != nil {
 		if u, ok := err.(*url.Error); ok {

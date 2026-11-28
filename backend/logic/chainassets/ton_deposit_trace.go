@@ -16,7 +16,7 @@ type tonDepositTrace struct {
 	Transaction struct{ Raw string }
 	Children    []tonDepositTrace
 }
-type tonDepositBudget struct{ network, dispatch, execution, excess, reserve decimal.Decimal }
+type tonDepositBudget struct{ network, dispatch, execution, excess, reserve, senderPaid decimal.Decimal }
 type tonTraceStep int
 
 const (

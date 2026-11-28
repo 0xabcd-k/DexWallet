@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"os"
 	"strings"
 	"testing"
@@ -55,6 +56,15 @@ func TestTONNativeSelfDepositLive(t *testing.T) {
 	if os.Getenv("DEXWALLET_TEST_TON_NATIVE_DEPOSIT_EXECUTE") != "1" {
 		t.Skip("requires explicit TON Testnet transfer")
 	}
+	runTONDepositLive(t, false)
+}
+func TestTONJettonSelfDepositLive(t *testing.T) {
+	if os.Getenv("DEXWALLET_TEST_TON_JETTON_DEPOSIT_EXECUTE") != "1" {
+		t.Skip("requires explicit test USDT transfer")
+	}
+	runTONDepositLive(t, true)
+}
+func runTONDepositLive(t *testing.T, token bool) {
 	raw, err := os.ReadFile(os.Getenv("DEXWALLET_TEST_TON_USER_KEYS"))
 	if err != nil {
 		t.Fatal(err)
@@ -79,13 +89,36 @@ func TestTONNativeSelfDepositLive(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer clear(sk)
-	db, users := userDatabase(t, "ton_native_live")
+	label := "ton_native_live"
+	if token {
+		label = "ton_jetton_live"
+	}
+	db, users := userDatabase(t, label)
 	mustExec(t, db, "INSERT INTO user(id,nickname) VALUES(1,'ton-test')")
 	rdb := redis.NewClient(&redis.Options{Addr: testenv.RedisAddress, Password: os.Getenv("DEXWALLET_REDIS_PASSWORD")})
 	defer rdb.Close()
-	ns := testRun.Name("redis", "ton_native_live")
+	ns := testRun.Name("redis", label)
 	now := time.Now().Unix()
-	chain, err := chainassets.New(chainassets.Config{Timeout: 25 * time.Second, Networks: []chainassets.Endpoint{{Network: chainassets.TONTestnet, URL: "https://testnet.toncenter.com"}}, DepositQuotes: &chainassets.DepositQuoteConfig{TONNativeExecution: true, TONNative: &chainassets.TONDepositFeeConfig{PlatformWallet: tonSponsor, TonAPIURL: "https://testnet.tonapi.io"}, Version: "w5-self-test", Assets: []chainassets.DepositQuoteRate{{AssetID: "ton-testnet:ton", USDPerCoin: "1", EstimatedGas: "0.001"}}, AsOf: now - 60, ValidUntil: now + 3600}}, chainassets.NewRedisLimiter(rdb, ns, 30))
+	route := &chainassets.TONDepositFeeConfig{PlatformWallet: tonSponsor, TonAPIURL: "https://testnet.tonapi.io"}
+	asset := "ton-testnet:ton"
+	node := chainassets.Endpoint{Network: chainassets.TONTestnet, URL: "https://testnet.toncenter.com"}
+	config := &chainassets.DepositQuoteConfig{TONNativeExecution: !token, TONNative: route, Version: "w5-self-test", Assets: []chainassets.DepositQuoteRate{{AssetID: asset, USDPerCoin: "1", EstimatedGas: "0.001"}}, AsOf: now - 60, ValidUntil: now + 3600}
+	b := deposit.TonBudget{Sender: tonPayer, Recipient: tonSponsor, MaxGrossNano: 13_000_000, MaxFeeNano: 3_000_000}
+	limit, attached := b.MaxGrossNano, "0.003"
+	if token {
+		asset = chainassets.TONDepositTestUSDT
+		node.TestUSDTContract = chainassets.TONDepositTestMaster
+		config.TONNative = nil
+		config.TONTestUSDT = route
+		config.TONTestUSDTExecution = true
+		config.Assets[0].USDPerCoin = "2"
+		config.Assets = append(config.Assets, chainassets.DepositQuoteRate{AssetID: asset, USDPerCoin: "0.98", EstimatedGas: "0.004"})
+		b.MaxGrossNano = 0
+		b.MaxJettonAtoms = 25_000
+		b.MaxFeeNano = 6_000_000
+		limit, attached = b.MaxJettonAtoms, "0.053"
+	}
+	chain, err := chainassets.New(chainassets.Config{Timeout: 25 * time.Second, Networks: []chainassets.Endpoint{node}, DepositQuotes: config}, chainassets.NewRedisLimiter(rdb, ns, 30))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +129,7 @@ func TestTONNativeSelfDepositLive(t *testing.T) {
 	quotes := deposit.NewConfirmations(conn, rdb, ns)
 	orders := deposit.NewTonOrders(conn, quotes, users, runner, chain)
 	ctx := context.Background()
-	q, err := chain.PreviewWalletDeposit(ctx, 1, "ton-testnet:ton", "0.01", tonPayer)
+	q, err := chain.PreviewWalletDeposit(ctx, 1, asset, "0.01", tonPayer)
 	if err != nil {
 		t.Fatal("preview", err, errors.Unwrap(err))
 	}
@@ -107,9 +140,8 @@ func TestTONNativeSelfDepositLive(t *testing.T) {
 	if _, err = quotes.Confirm(ctx, 1, q.QuoteIdx); err != nil {
 		t.Fatal(err)
 	}
-	b := deposit.TonBudget{Sender: tonPayer, Recipient: tonSponsor, MaxGrossNano: 13_000_000, MaxFeeNano: 3_000_000}
 	r, err := q.TONRelay(nil, nil)
-	if err != nil || r.Atoms.Int64() > b.MaxGrossNano || r.Recipient != b.Recipient || r.Sender != b.Sender || q.RelayAttached != "0.003" {
+	if err != nil || r.Atoms.Int64() > limit || r.Recipient != b.Recipient || r.Sender != b.Sender || q.RelayAttached != attached {
 		t.Fatal("unexpected test transfer", err)
 	}
 	sig := ed25519.Sign(k, r.UserDigest)
@@ -157,7 +189,16 @@ func TestTONNativeSelfDepositLive(t *testing.T) {
 		}
 		if o.State == deposit.TonCredited || o.State == deposit.TonReview {
 			for tries := 0; tries < 5; tries++ {
-				proof.Evidence, err = chain.ReadTONDepositEvidence(ctx, o.DispatchHash.String)
+				if token {
+					ps, _ := hex.DecodeString(proof.PlatformSignature)
+					relay, e := q.TONRelay(sig, ps)
+					if e != nil {
+						t.Fatal(e)
+					}
+					proof.Evidence, err = chain.ReadTONJettonDepositEvidence(ctx, relay)
+				} else {
+					proof.Evidence, err = chain.ReadTONDepositEvidence(ctx, o.DispatchHash.String)
+				}
 				if err == nil && len(proof.Evidence.Block) > 0 {
 					break
 				}
@@ -189,7 +230,17 @@ func TestTONNativeSelfDepositLive(t *testing.T) {
 			if e != nil {
 				t.Fatal(e)
 			}
-			receipt, total, e := chainreceipt.VerifyTONDeposit(proof.Evidence, relay)
+			var receipt chainreceipt.Receipt
+			var total *big.Int
+			if token {
+				var costs *chainreceipt.TONJettonCosts
+				receipt, total, costs, e = chainreceipt.VerifyTONJettonDeposit(proof.Evidence, relay)
+				if e == nil && (costs.Excess != o.JettonExcessNano.Int64 || costs.Reserve != o.JettonReserveNano.Int64 || costs.Surplus != o.RelaySurplusNano.Int64 || !o.JettonSenderFeeNano.Valid || costs.SenderPaid != o.JettonSenderFeeNano.Int64 || receipt.Event.Atoms != r.Atoms.String()) {
+					t.Fatal("Jetton funds differ from order", costs)
+				}
+			} else {
+				receipt, total, e = chainreceipt.VerifyTONDeposit(proof.Evidence, relay)
+			}
 			if e != nil || total.Int64() != o.ActualFeeNano.Int64 {
 				t.Fatal("receipt replay", e)
 			}

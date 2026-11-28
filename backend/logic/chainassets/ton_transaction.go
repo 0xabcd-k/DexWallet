@@ -21,6 +21,7 @@ const TONTestnetZeroState = "gj+B8wb/AmlPk1z1AhVI484rhrUpgSr2oSFIh56VoSg="
 const tonPublicRequestInterval = 1100 * time.Millisecond
 
 type TONEvidence struct {
+	Trace        json.RawMessage `json:"trace,omitempty"`
 	Dispatch     json.RawMessage `json:"dispatch,omitempty"`
 	SenderWallet json.RawMessage `json:"senderWallet,omitempty"`
 	Masterchain  json.RawMessage `json:"masterchain"`

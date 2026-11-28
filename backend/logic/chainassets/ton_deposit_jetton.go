@@ -13,21 +13,26 @@ import (
 )
 
 // Verified six-decimal community test USDT. This master uses ordinary wallet code cells.
-const tonDepositMaster = "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e"
+const tonDepositMaster = TONDepositTestMaster
+const TONDepositTestUSDT = TONTestnet + ":usdt:" + TONDepositTestMaster
+const TONDepositTestMaster = "0:f418a04cf196ebc959366844a6cdf53a6fd6fff1eadafc892f05210bba31593e"
 const tonJettonMasterCode = "GNW254D/C7RRJUwsdg0J1uSFY4zRQHq7lweHUsPBye4="
 const tonJettonWalletCode = "j0Utek39dAZraCNlF3JZ7QVzRDW+drX9S9XYryt8PWg="
 const (
-	tonJettonActionNano  = 50_000_000
-	tonJettonForwardNano = 1
-	tonJettonDecimals    = 6
-	jettonSendLocked     = 1
-	jettonReceiveLocked  = 2
+	tonJettonActionNano   = TONJettonTransferNano
+	TONJettonTransferNano = 50_000_000
+	tonJettonForwardNano  = 1
+	tonJettonDecimals     = 6
+	jettonSendLocked      = 1
+	jettonReceiveLocked   = 2
 )
 
 type tonDepositJetton struct {
 	sender, receiver *address.Address
 	balance          decimal.Decimal
 	receiverActive   bool
+	code             *cell.Cell
+	storage          []*tonStorageUsed
 }
 
 type tonJettonWalletData struct {
@@ -78,7 +83,7 @@ func (s *Service) tonDepositJetton(ctx context.Context, n Network, e Endpoint, u
 	if err != nil || base64.StdEncoding.EncodeToString(walletCode.Hash()) != tonJettonWalletCode {
 		return nil, apperror.New(apperror.ServiceUnavailable, invalid("unexpected test Jetton wallet code in master"))
 	}
-	token := &tonDepositJetton{sender: jettonDepositAddress(user.addr, master, walletCode), receiver: jettonDepositAddress(platform.addr, master, walletCode)}
+	token := &tonDepositJetton{code: walletCode, sender: jettonDepositAddress(user.addr, master, walletCode), receiver: jettonDepositAddress(platform.addr, master, walletCode)}
 	sender, err := s.tonQuoteAccount(ctx, n, e, token.sender.StringRaw())
 	if err != nil {
 		return nil, err
@@ -93,6 +98,7 @@ func (s *Service) tonDepositJetton(ctx context.Context, n Network, e Endpoint, u
 	if sender.Status != "active" || sw.Status&jettonSendLocked != 0 {
 		return nil, badTarget("test Jetton wallet cannot send")
 	}
+	token.storage = append(token.storage, sender.Storage)
 	token.balance = decimal.NewFromBigInt(sw.Tokens.Nano(), -tonJettonDecimals)
 	recv, err := s.tonQuoteAccount(ctx, n, e, token.receiver.StringRaw())
 	if err != nil {
@@ -109,6 +115,7 @@ func (s *Service) tonDepositJetton(ctx context.Context, n Network, e Endpoint, u
 			return nil, apperror.New(apperror.ServiceUnavailable, invalid("platform Jetton wallet cannot receive"))
 		}
 		token.receiverActive = true
+		token.storage = append(token.storage, recv.Storage)
 	default:
 		return nil, apperror.New(apperror.ServiceUnavailable, invalid("unexpected platform Jetton wallet state"))
 	}

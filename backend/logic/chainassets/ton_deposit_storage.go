@@ -21,7 +21,7 @@ type tonStoragePrice struct {
 	Cell  *int64 `json:"cell_price_ps"`
 }
 
-func (s *Service) tonStorageAllowance(ctx context.Context, n Network, e Endpoint, source, platform tonW5Account, at time.Time) (decimal.Decimal, error) {
+func (s *Service) tonStorageAllowance(ctx context.Context, n Network, e Endpoint, source, platform tonW5Account, at time.Time, jettons ...*tonStorageUsed) (decimal.Decimal, error) {
 	var cfg struct {
 		Storage struct {
 			Prices []tonStoragePrice `json:"storage_prices"`
@@ -30,9 +30,9 @@ func (s *Service) tonStorageAllowance(ctx context.Context, n Network, e Endpoint
 	if err := s.request(ctx, n, e, "/v2/blockchain/config", nil, nil, &cfg); err != nil {
 		return decimal.Zero, err
 	}
-	return tonRelayStorageCost(cfg.Storage.Prices, source.storage, platform.storage, at.Unix(), at.Add(tonRelayValidity).Unix())
+	return tonRelayStorageCost(cfg.Storage.Prices, source.storage, platform.storage, at.Unix(), at.Add(tonRelayValidity).Unix(), jettons...)
 }
-func tonRelayStorageCost(prices []tonStoragePrice, user, sponsor *tonStorageUsed, start, end int64) (decimal.Decimal, error) {
+func tonRelayStorageCost(prices []tonStoragePrice, user, sponsor *tonStorageUsed, start, end int64, jettons ...*tonStorageUsed) (decimal.Decimal, error) {
 	var last int64 = -1
 	var active bool
 	var bit, cell int64
@@ -52,7 +52,7 @@ func tonRelayStorageCost(prices []tonStoragePrice, user, sponsor *tonStorageUsed
 		return decimal.Zero, invalid("missing current TON storage prices")
 	}
 	total := new(big.Int)
-	for _, a := range []*tonStorageUsed{user, sponsor} {
+	for _, a := range append([]*tonStorageUsed{user, sponsor}, jettons...) {
 		if a == nil || a.Bits == nil || a.Cells == nil || *a.Bits <= 0 || *a.Cells <= 0 {
 			return decimal.Zero, invalid("missing W5 storage usage")
 		}
@@ -64,7 +64,12 @@ func tonRelayStorageCost(prices []tonStoragePrice, user, sponsor *tonStorageUsed
 	}
 	// The platform pays storage in two transactions, each rounded separately.
 	if bit > 0 || cell > 0 {
-		total.Add(total, big.NewInt(1))
+		rounding := int64(1)
+		// Notification and excess are separate platform transactions.
+		if len(jettons) > 0 {
+			rounding++
+		}
+		total.Add(total, big.NewInt(rounding))
 	}
 	return decimal.NewFromBigInt(total, -9), nil
 }

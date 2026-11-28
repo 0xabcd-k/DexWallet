@@ -395,6 +395,8 @@ type DepositQuoteConfirmRequest struct {
 }
 
 type DepositQuoteData struct {
+	TonSenderPaidGas     string `json:"tonSenderPaidGas,optional,omitempty"`
+	TonJettonWalletCode  string `json:"tonJettonWalletCode,optional,omitempty"`
 	TonSimulatedGas      string `json:"tonSimulatedGas,optional,omitempty"`
 	TonValidUntil        int64  `json:"tonValidUntil,optional,omitempty"`
 	TonUserSeqno         int64  `json:"tonUserSeqno,optional,omitempty"`
@@ -1139,12 +1141,17 @@ type TonDepositAuthorizeRequest struct {
 }
 
 type TonDepositOrderData struct {
-	QuoteIdx         string `json:"quoteIdx"`
-	State            string `json:"state,options=awaiting_signature|expired|accepted|signed|review|credited"`
-	DispatchBodyHash string `json:"dispatchBodyHash,optional,omitempty"`
-	ReceiveTxHash    string `json:"receiveTxHash,optional,omitempty"`
-	ActualFeeNano    string `json:"actualFeeNano,optional,omitempty"`
-	CreditedUsd      string `json:"creditedUsd,optional,omitempty"`
+	QuoteIdx            string `json:"quoteIdx"`
+	State               string `json:"state,options=awaiting_signature|expired|accepted|signed|review|credited"`
+	DispatchBodyHash    string `json:"dispatchBodyHash,optional,omitempty"`
+	ReceiveTxHash       string `json:"receiveTxHash,optional,omitempty"`
+	JettonSenderFeeNano string `json:"jettonSenderFeeNano,optional,omitempty"`
+	RecoverableFeeNano  string `json:"recoverableFeeNano,optional,omitempty"`
+	JettonExcessNano    string `json:"jettonExcessNano,optional,omitempty"`
+	JettonReserveNano   string `json:"jettonReserveNano,optional,omitempty"`
+	RelaySurplusNano    string `json:"relaySurplusNano,optional,omitempty"`
+	ActualFeeNano       string `json:"actualFeeNano,optional,omitempty"`
+	CreditedUsd         string `json:"creditedUsd,optional,omitempty"`
 }
 
 type TonDepositOrderResponse struct {
